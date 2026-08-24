@@ -1,32 +1,45 @@
 {
-  "name": "topferos-md",
+  "name": "topferos-wa-bot",
   "version": "1.0.0",
-  "description": "🦁 TOPFEROS MD - WhatsApp Multi-Device Bot",
-  "main": "start.js",
+  "description": "TOPFEROS MD - A powerful and customizable WhatsApp Bot made by TOPFEROS TECH",
+  "main": "index.js",
   "type": "commonjs",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js",
+    "portal": "node portal/server.js",
+    "check": "node --check index.js"
+  },
+  "keywords": [
+    "whatsapp",
+    "whatsapp-bot",
+    "bot",
+    "topferos",
+    "topferos-md",
+    "ai",
+    "web-portal"
+  ],
   "author": "TOPFEROS TECH",
   "license": "MIT",
-  "private": false,
-  "scripts": {
-    "start": "node start.js",
-    "dev": "nodemon start.js"
-  },
   "engines": {
     "node": ">=20.0.0"
   },
   "dependencies": {
-    "@hapi/boom": "^10.0.1",
     "@whiskeysockets/baileys": "latest",
-    "axios": "^1.11.0",
-    "chalk": "^4.1.2",
-    "dotenv": "^17.2.1",
-    "express": "^5.1.0",
-    "fs-extra": "^11.3.0",
-    "mongoose": "^8.16.5",
-    "pino": "^9.7.0",
-    "qrcode-terminal": "^0.12.0"
+    "axios": "latest",
+    "dotenv": "latest",
+    "express": "latest",
+    "express-session": "latest",
+    "mime-types": "latest",
+    "pino": "latest",
+    "qrcode": "latest",
+    "qrcode-terminal": "latest",
+    "better-sqlite3": "latest",
+    "bcryptjs": "latest",
+    "jsonwebtoken": "latest",
+    "uuid": "latest"
   },
   "devDependencies": {
-    "nodemon": "^3.1.10"
+    "nodemon": "latest"
   }
 }
