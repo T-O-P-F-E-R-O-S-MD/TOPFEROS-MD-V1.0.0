@@ -1,0 +1,32 @@
+{
+  "name": "topferos-md",
+  "version": "1.0.0",
+  "description": "🦁 TOPFEROS MD - WhatsApp Multi-Device Bot",
+  "main": "start.js",
+  "type": "commonjs",
+  "author": "TOPFEROS TECH",
+  "license": "MIT",
+  "private": false,
+  "scripts": {
+    "start": "node start.js",
+    "dev": "nodemon start.js"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "dependencies": {
+    "@hapi/boom": "^10.0.1",
+    "@whiskeysockets/baileys": "latest",
+    "axios": "^1.11.0",
+    "chalk": "^4.1.2",
+    "dotenv": "^17.2.1",
+    "express": "^5.1.0",
+    "fs-extra": "^11.3.0",
+    "mongoose": "^8.16.5",
+    "pino": "^9.7.0",
+    "qrcode-terminal": "^0.12.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
+  }
+}
