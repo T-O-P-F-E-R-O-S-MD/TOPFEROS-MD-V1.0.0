@@ -3,7 +3,7 @@
 const crypto = require("crypto");
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// ⚙️ TOPFEROS MD — SETTINGS PANEL
+// ⚙️ TOPFEROS MD — SETTINGS PANEL + RUNTIME SETTINGS
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 // URL Web Panel la
@@ -16,6 +16,48 @@ const sessions = new Map();
 
 // Eta koneksyon bot la
 let botConnected = false;
+
+// Socket bot aktyèl la
+let activeSock = null;
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ⚙️ DEFAULT SETTINGS
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+const defaultSettings = {
+  publicMode: false,
+  privateMode: false,
+
+  alwaysOnline: false,
+  fakeTyping: false,
+  fakeRecording: false,
+  autoReact: false,
+
+  autoStatus: false,
+  statusReply: false,
+  statusLike: false,
+  statusReact: false,
+
+  antiCall: false,
+  antiDelete: false,
+  antiSpam: false,
+
+  aiChat: false,
+
+  groupAntiSpam: false,
+  groupAntiLink: false,
+  groupAntiDelete: false,
+
+  adminGroup: false,
+
+  groupClose: false,
+  groupOpen: false
+};
+
+// Settings aktyèl yo nan RAM
+let runtimeSettings = {
+  ...defaultSettings
+};
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 🔢 JWENN NUMERO BOT LA
@@ -43,13 +85,42 @@ function generateCode() {
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🧹 VERIFY SETTINGS
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+function normalizeSettings(settings = {}) {
+  const result = {
+    ...defaultSettings
+  };
+
+  for (
+    const key of Object.keys(defaultSettings)
+  ) {
+    if (
+      Object.prototype.hasOwnProperty.call(
+        settings,
+        key
+      )
+    ) {
+      result[key] =
+        settings[key] === true;
+    }
+  }
+
+  return result;
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 🟢 BOT CONNECTED
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 function setBotConnected(sock) {
   botConnected = true;
 
-  // Lè bot rekonekte, ansyen sessions yo pa sèvi ankò.
+  activeSock = sock || null;
+
+  // Lè bot rekonekte, ansyen sessions yo
+  // pa sèvi ankò.
   sessions.clear();
 
   console.log(
@@ -63,6 +134,8 @@ function setBotConnected(sock) {
 
 function setBotDisconnected() {
   botConnected = false;
+
+  activeSock = null;
 
   // Tout code panel yo vin invalid
   // imedyatman lè bot la dekonekte.
@@ -79,6 +152,14 @@ function setBotDisconnected() {
 
 function isBotConnected() {
   return botConnected;
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🔌 GET ACTIVE SOCKET
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+function getActiveSocket() {
+  return activeSock;
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -332,20 +413,202 @@ async function sendPanelLink(
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ⚙️ GET ALL RUNTIME SETTINGS
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+function getSettings() {
+  return {
+    ...runtimeSettings
+  };
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ⚙️ GET ONE SETTING
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+function getSetting(name) {
+  if (
+    !Object.prototype.hasOwnProperty.call(
+      defaultSettings,
+      name
+    )
+  ) {
+    return undefined;
+  }
+
+  return runtimeSettings[name];
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🔘 CHECK SETTING
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+function isEnabled(name) {
+  return getSetting(name) === true;
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 💾 APPLY SETTINGS
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//
+// SAVE nan panel la rive isit la.
+// Settings yo antre nan RAM bot la touswit.
+//
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+async function applySettings(data = {}) {
+  if (!botConnected) {
+    return false;
+  }
+
+  const incoming =
+    data.settings || data;
+
+  runtimeSettings =
+    normalizeSettings(
+      incoming
+    );
+
+  console.log(
+    "⚙️ SETTINGS: Runtime settings updated."
+  );
+
+  return true;
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🤖 UPDATE BOT INFORMATION
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+let botInformation = {
+  name: "TOPFEROS MD",
+  age: 24,
+  prefix: "."
+};
+
+async function updateBotInformation(
+  bot = {}
+) {
+  if (!botConnected) {
+    return false;
+  }
+
+  if (
+    typeof bot.name === "string" &&
+    bot.name.trim()
+  ) {
+    botInformation.name =
+      bot.name.trim();
+  }
+
+  if (
+    Number.isFinite(
+      Number(bot.age)
+    )
+  ) {
+    botInformation.age =
+      Number(bot.age);
+  }
+
+  if (
+    typeof bot.prefix === "string" &&
+    bot.prefix.trim()
+  ) {
+    botInformation.prefix =
+      bot.prefix.trim();
+  }
+
+  console.log(
+    "🤖 SETTINGS: Bot information updated."
+  );
+
+  return true;
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🤖 GET BOT INFORMATION
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+function getBotInformation() {
+  return {
+    ...botInformation
+  };
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🔄 UPDATE ONE SETTING
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+async function setSetting(
+  name,
+  value
+) {
+  if (!botConnected) {
+    return false;
+  }
+
+  if (
+    !Object.prototype.hasOwnProperty.call(
+      defaultSettings,
+      name
+    )
+  ) {
+    return false;
+  }
+
+  runtimeSettings[name] =
+    value === true;
+
+  return true;
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🔄 LOAD SETTINGS INTO RUNTIME
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+function loadSettings(
+  settings = {}
+) {
+  runtimeSettings =
+    normalizeSettings(
+      settings
+    );
+
+  return getSettings();
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 📦 EXPORT
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 module.exports = {
   PANEL_URL,
 
+  // Connection
   setBotConnected,
   setBotDisconnected,
   isBotConnected,
+  getActiveSocket,
 
+  // Session
   createSession,
   verifySession,
   isAuthenticated,
   deleteSession,
+  sendPanelLink,
 
-  sendPanelLink
+  // Runtime settings
+  getSettings,
+  getSetting,
+  isEnabled,
+  setSetting,
+  applySettings,
+  loadSettings,
+
+  // Bot information
+  updateBotInformation,
+  getBotInformation,
+
+  // Default settings
+  defaultSettings
 };
