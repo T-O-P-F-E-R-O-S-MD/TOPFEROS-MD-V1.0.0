@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>TOPFEROS MD — Settings</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      font-family:
+        Arial,
+        Helvetica,
+        sans-serif;
+
+      background:
+        linear-gradient(
+          135deg,
+          #050505,
+          #111111,
+          #050505
+        );
+
+      color: #ffffff;
+      padding: 20px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 430px;
+    }
+
+    .card {
+      width: 100%;
+      padding: 32px 25px;
+
+      background:
+        rgba(20, 20, 20, 0.96);
+
+      border: 1px solid
+        rgba(255, 255, 255, 0.12);
+
+      border-radius: 22px;
+
+      box-shadow:
+        0 20px 60px
+        rgba(0, 0, 0, 0.55);
+
+      text-align: center;
+    }
+
+    .logo {
+      width: 105px;
+      height: 105px;
+
+      object-fit: cover;
+
+      border-radius: 50%;
+
+      display: block;
+
+      margin:
+        0 auto 20px;
+
+      border: 3px solid
+        rgba(255, 255, 255, 0.18);
+
+      background: #222;
+    }
+
+    .logo-placeholder {
+      width: 105px;
+      height: 105px;
+
+      margin:
+        0 auto 20px;
+
+      border-radius: 50%;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      background: #222;
+
+      border: 3px solid
+        rgba(255, 255, 255, 0.18);
+
+      font-size: 42px;
+    }
+
+    h1 {
+      font-size: 24px;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      color: #aaaaaa;
+      font-size: 14px;
+      margin-bottom: 28px;
+    }
+
+    .field {
+      text-align: left;
+      margin-bottom: 18px;
+    }
+
+    .field label {
+      display: block;
+
+      font-size: 14px;
+      font-weight: bold;
+
+      margin-bottom: 8px;
+      color: #dddddd;
+    }
+
+    .field input {
+      width: 100%;
+
+      padding: 14px 15px;
+
+      border-radius: 12px;
+
+      border: 1px solid
+        rgba(255, 255, 255, 0.12);
+
+      outline: none;
+
+      background: #0b0b0b;
+      color: #ffffff;
+
+      font-size: 16px;
+
+      transition: 0.2s;
+    }
+
+    .field input:focus {
+      border-color:
+        rgba(255, 255, 255, 0.45);
+    }
+
+    .next-button {
+      width: 100%;
+
+      border: none;
+      outline: none;
+
+      padding: 14px;
+
+      border-radius: 12px;
+
+      background: #ffffff;
+      color: #000000;
+
+      font-size: 16px;
+      font-weight: bold;
+
+      cursor: pointer;
+
+      margin-top: 8px;
+
+      transition:
+        transform 0.2s,
+        opacity 0.2s;
+    }
+
+    .next-button:hover {
+      opacity: 0.9;
+    }
+
+    .next-button:active {
+      transform: scale(0.98);
+    }
+
+    .next-button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .message {
+      min-height: 22px;
+
+      margin-top: 16px;
+
+      font-size: 13px;
+
+      color: #ff7777;
+    }
+
+    .footer {
+      margin-top: 28px;
+
+      padding-top: 18px;
+
+      border-top:
+        1px solid
+        rgba(255, 255, 255, 0.08);
+
+      color: #aaaaaa;
+
+      font-size: 12px;
+
+      line-height: 1.7;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+       SETTINGS HOME
+       ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+    .settings-screen {
+      text-align: left;
+    }
+
+    .settings-title {
+      text-align: center;
+      margin-bottom: 22px;
+    }
+
+    .connection {
+      text-align: center;
+
+      padding: 10px;
+
+      margin-bottom: 20px;
+
+      border-radius: 10px;
+
+      background:
+        rgba(0, 180, 90, 0.10);
+
+      color: #72ffad;
+
+      font-size: 13px;
+    }
+
+    .settings-box {
+      padding: 15px;
+
+      border-radius: 14px;
+
+      background: #0b0b0b;
+
+      border:
+        1px solid
+        rgba(255, 255, 255, 0.08);
+
+      margin-bottom: 12px;
+    }
+
+    .settings-box h3 {
+      font-size: 15px;
+      margin-bottom: 5px;
+    }
+
+    .settings-box p {
+      color: #999999;
+      font-size: 12px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <main class="container">
+
+    <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+         LOGIN SCREEN
+         ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+
+    <section
+      id="loginScreen"
+      class="card"
+    >
+
+      <!--
+        Mete logo bot la nan:
+        panel/public/logo.png
+
+        Si logo.png pa egziste,
+        placeholder la ap parèt.
+      -->
+
+      <img
+        id="botLogo"
+        class="logo hidden"
+        src="/logo.png"
+        alt="TOPFEROS MD"
+        onerror="showLogoPlaceholder()"
+      >
+
+      <div
+        id="logoPlaceholder"
+        class="logo-placeholder"
+      >
+        🤖
+      </div>
+
+      <h1>
+        TOPFEROS MD
+      </h1>
+
+      <p class="subtitle">
+        ⚙️ Settings Panel
+      </p>
+
+      <!-- NUMBER -->
+
+      <div class="field">
+
+        <label for="number">
+          Number :
+        </label>
+
+        <input
+          id="number"
+          type="tel"
+          inputmode="numeric"
+          autocomplete="off"
+          placeholder="Enter bot number"
+        >
+
+      </div>
+
+      <!-- CODE -->
+
+      <div class="field">
+
+        <label for="code">
+          Code :
+        </label>
+
+        <input
+          id="code"
+          type="text"
+          autocomplete="off"
+          autocapitalize="characters"
+          placeholder="Enter panel code"
+        >
+
+      </div>
+
+      <!-- NEXT -->
+
+      <button
+        id="nextButton"
+        class="next-button"
+        type="button"
+      >
+        NEXT
+      </button>
+
+      <div
+        id="message"
+        class="message"
+      ></div>
+
+      <!-- FOOTER -->
+
+      <div class="footer">
+        Made in TOPFEROS TECH
+        <br>
+        ========================
+      </div>
+
+    </section>
+
+
+    <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+         SETTINGS SCREEN
+         ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+
+    <section
+      id="settingsScreen"
+      class="card settings-screen hidden"
+    >
+
+      <div class="settings-title">
+
+        <img
+          class="logo"
+          src="/logo.png"
+          alt="TOPFEROS MD"
+          onerror="this.style.display='none'"
+        >
+
+        <h1>
+          SETTINGS PANEL
+        </h1>
+
+      </div>
+
+      <div class="connection">
+        🟢 Bot Connected
+      </div>
+
+      <!--
+        Zòn sa a se kote tout vrè
+        Settings yo ap antre.
+      -->
+
+      <div class="settings-box">
+
+        <h3>
+          ⚙️ Bot Settings
+        </h3>
+
+        <p>
+          Settings yo pral parèt isit la.
+        </p>
+
+      </div>
+
+      <div class="settings-box">
+
+        <h3>
+          👥 Group Settings
+        </h3>
+
+        <p>
+          Group controls yo pral parèt isit la.
+        </p>
+
+      </div>
+
+      <div class="settings-box">
+
+        <h3>
+          🤖 Automatic Systems
+        </h3>
+
+        <p>
+          Automatic systems yo pral parèt isit la.
+        </p>
+
+      </div>
+
+      <div class="footer">
+        Made in TOPFEROS TECH
+        <br>
+        ========================
+      </div>
+
+    </section>
+
+  </main>
+
+
+  <script>
+    "use strict";
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // 🔎 SESSION ID
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    const params =
+      new URLSearchParams(
+        window.location.search
+      );
+
+    const sessionId =
+      params.get("session");
+
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // 📦 ELEMENTS
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    const loginScreen =
+      document.getElementById(
+        "loginScreen"
+      );
+
+    const settingsScreen =
+      document.getElementById(
+        "settingsScreen"
+      );
+
+    const numberInput =
+      document.getElementById(
+        "number"
+      );
+
+    const codeInput =
+      document.getElementById(
+        "code"
+      );
+
+    const nextButton =
+      document.getElementById(
+        "nextButton"
+      );
+
+    const message =
+      document.getElementById(
+        "message"
+      );
+
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // 🖼️ LOGO FALLBACK
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    function showLogoPlaceholder() {
+
+      const logo =
+        document.getElementById(
+          "botLogo"
+        );
+
+      const placeholder =
+        document.getElementById(
+          "logoPlaceholder"
+        );
+
+      logo.classList.add(
+        "hidden"
+      );
+
+      placeholder.classList.remove(
+        "hidden"
+      );
+    }
+
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // ❌ MESSAGE
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    function showError(text) {
+
+      message.textContent =
+        text || "";
+
+    }
+
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // 🟢 SHOW SETTINGS
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    function showSettings() {
+
+      loginScreen.classList.add(
+        "hidden"
+      );
+
+      settingsScreen.classList.remove(
+        "hidden"
+      );
+
+    }
+
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // 🔐 NEXT / LOGIN
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    async function login() {
+
+      showError("");
+
+      const number =
+        numberInput.value.trim();
+
+      const code =
+        codeInput.value.trim();
+
+      if (!sessionId) {
+
+        showError(
+          "❌ Link panel la pa gen session."
+        );
+
+        return;
+      }
+
+      if (!number) {
+
+        showError(
+          "❌ Mete Number bot la."
+        );
+
+        numberInput.focus();
+
+        return;
+      }
+
+      if (!code) {
+
+        showError(
+          "❌ Mete Code panel la."
+        );
+
+        codeInput.focus();
+
+        return;
+      }
+
+      nextButton.disabled =
+        true;
+
+      nextButton.textContent =
+        "Checking...";
+
+      try {
+
+        // Verifye si bot la toujou konekte.
+        const statusResponse =
+          await fetch(
+            "/api/status"
+          );
+
+        const status =
+          await statusResponse.json();
+
+        if (!status.connected) {
+
+          showError(
+            "❌ Bot la dekonekte. Code la pa valid ankò."
+          );
+
+          return;
+        }
+
+
+        // Verifye Number + Code.
+        const response =
+          await fetch(
+            "/api/login",
+            {
+              method: "POST",
+
+              headers: {
+                "Content-Type":
+                  "application/json"
+              },
+
+              body:
+                JSON.stringify({
+                  sessionId,
+                  number,
+                  code
+                })
+            }
+          );
+
+        const result =
+          await response.json();
+
+        if (!response.ok ||
+            !result.success) {
+
+          showError(
+            result.message ||
+            "❌ Login echwe."
+          );
+
+          return;
+        }
+
+
+        // NEXT reyisi.
+        showSettings();
+
+      } catch (error) {
+
+        console.error(
+          "Panel login error:",
+          error
+        );
+
+        showError(
+          "❌ Pa kapab kontakte panel server la."
+        );
+
+      } finally {
+
+        nextButton.disabled =
+          false;
+
+        nextButton.textContent =
+          "NEXT";
+      }
+    }
+
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // 🖱️ BUTTON
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    nextButton.addEventListener(
+      "click",
+      login
+    );
+
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // ⌨️ ENTER KEY
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    codeInput.addEventListener(
+      "keydown",
+      event => {
+
+        if (
+          event.key ===
+          "Enter"
+        ) {
+          login();
+        }
+
+      }
+    );
+
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // 🔄 CHECK CONNECTION
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    setInterval(
+      async () => {
+
+        try {
+
+          const response =
+            await fetch(
+              "/api/status"
+            );
+
+          const status =
+            await response.json();
+
+          if (
+            !status.connected &&
+            !settingsScreen.classList.contains(
+              "hidden"
+            )
+          ) {
+
+            settingsScreen.classList.add(
+              "hidden"
+            );
+
+            loginScreen.classList.remove(
+              "hidden"
+            );
+
+            showError(
+              "🔴 Bot la dekonekte. Session panel la fèmen."
+            );
+          }
+
+        } catch (error) {
+          // Pa montre erè polling la bay user.
+        }
+
+      },
+      5000
+    );
+
+  </script>
+
+</body>
+</html>
