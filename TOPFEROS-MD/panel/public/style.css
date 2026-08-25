@@ -1,0 +1,436 @@
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   🎨 TOPFEROS MD — SETTINGS PANEL STYLE
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --background: #050505;
+  --card: #141414;
+  --input: #0b0b0b;
+  --text: #ffffff;
+  --muted: #aaaaaa;
+  --border: rgba(255, 255, 255, 0.12);
+  --border-light: rgba(255, 255, 255, 0.08);
+  --button: #ffffff;
+  --button-text: #000000;
+  --danger: #ff7777;
+  --success: #72ffad;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   🌐 BODY
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+html {
+  min-height: 100%;
+}
+
+body {
+  min-height: 100vh;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 20px;
+
+  font-family:
+    Arial,
+    Helvetica,
+    sans-serif;
+
+  background:
+    linear-gradient(
+      135deg,
+      #050505,
+      #111111,
+      #050505
+    );
+
+  color: var(--text);
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   📦 CONTAINER
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+.container {
+  width: 100%;
+  max-width: 430px;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   🪟 CARD
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+.card {
+  width: 100%;
+
+  padding: 32px 25px;
+
+  background:
+    rgba(20, 20, 20, 0.96);
+
+  border: 1px solid var(--border);
+
+  border-radius: 22px;
+
+  box-shadow:
+    0 20px 60px
+    rgba(0, 0, 0, 0.55);
+
+  text-align: center;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   🤖 LOGO
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+.logo {
+  width: 105px;
+  height: 105px;
+
+  display: block;
+
+  margin:
+    0 auto 20px;
+
+  object-fit: cover;
+
+  border-radius: 50%;
+
+  border:
+    3px solid
+    rgba(255, 255, 255, 0.18);
+
+  background: #222;
+}
+
+.logo-placeholder {
+  width: 105px;
+  height: 105px;
+
+  margin:
+    0 auto 20px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 50%;
+
+  background: #222;
+
+  border:
+    3px solid
+    rgba(255, 255, 255, 0.18);
+
+  font-size: 42px;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   📝 TITLES
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+h1 {
+  font-size: 24px;
+
+  margin-bottom: 8px;
+}
+
+.subtitle {
+  color: var(--muted);
+
+  font-size: 14px;
+
+  margin-bottom: 28px;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   🏷️ FORM
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+.field {
+  text-align: left;
+
+  margin-bottom: 18px;
+}
+
+.field label {
+  display: block;
+
+  color: #dddddd;
+
+  font-size: 14px;
+
+  font-weight: bold;
+
+  margin-bottom: 8px;
+}
+
+.field input {
+  width: 100%;
+
+  padding: 14px 15px;
+
+  border-radius: 12px;
+
+  border:
+    1px solid
+    var(--border);
+
+  outline: none;
+
+  background: var(--input);
+
+  color: var(--text);
+
+  font-size: 16px;
+
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+
+.field input::placeholder {
+  color: #666666;
+}
+
+.field input:focus {
+  border-color:
+    rgba(255, 255, 255, 0.45);
+
+  box-shadow:
+    0 0 0 3px
+    rgba(255, 255, 255, 0.04);
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   ➡️ NEXT BUTTON
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+.next-button {
+  width: 100%;
+
+  padding: 14px;
+
+  margin-top: 8px;
+
+  border: none;
+
+  outline: none;
+
+  border-radius: 12px;
+
+  background: var(--button);
+
+  color: var(--button-text);
+
+  font-size: 16px;
+
+  font-weight: bold;
+
+  cursor: pointer;
+
+  transition:
+    transform 0.2s,
+    opacity 0.2s;
+}
+
+.next-button:hover {
+  opacity: 0.9;
+}
+
+.next-button:active {
+  transform: scale(0.98);
+}
+
+.next-button:disabled {
+  opacity: 0.5;
+
+  cursor: not-allowed;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   ❌ MESSAGE
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+.message {
+  min-height: 22px;
+
+  margin-top: 16px;
+
+  color: var(--danger);
+
+  font-size: 13px;
+
+  line-height: 1.5;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   🦶 FOOTER
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+.footer {
+  margin-top: 28px;
+
+  padding-top: 18px;
+
+  border-top:
+    1px solid
+    var(--border-light);
+
+  color: var(--muted);
+
+  font-size: 12px;
+
+  line-height: 1.7;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   ⚙️ SETTINGS SCREEN
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+.settings-screen {
+  text-align: left;
+}
+
+.settings-title {
+  text-align: center;
+
+  margin-bottom: 22px;
+}
+
+.settings-title .logo {
+  margin-bottom: 15px;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   🟢 CONNECTION STATUS
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+.connection {
+  text-align: center;
+
+  padding: 10px;
+
+  margin-bottom: 20px;
+
+  border-radius: 10px;
+
+  background:
+    rgba(0, 180, 90, 0.10);
+
+  color: var(--success);
+
+  font-size: 13px;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   📦 SETTINGS BOX
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+.settings-box {
+  padding: 15px;
+
+  margin-bottom: 12px;
+
+  border-radius: 14px;
+
+  background: var(--input);
+
+  border:
+    1px solid
+    var(--border-light);
+}
+
+.settings-box h3 {
+  font-size: 15px;
+
+  margin-bottom: 5px;
+}
+
+.settings-box p {
+  color: #999999;
+
+  font-size: 12px;
+
+  line-height: 1.5;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   👁️ HIDDEN
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+.hidden {
+  display: none !important;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   📱 MOBILE
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+@media (max-width: 480px) {
+
+  body {
+    padding: 14px;
+  }
+
+  .card {
+    padding: 28px 20px;
+
+    border-radius: 18px;
+  }
+
+  .logo,
+  .logo-placeholder {
+    width: 90px;
+    height: 90px;
+  }
+
+  .logo-placeholder {
+    font-size: 36px;
+  }
+
+  h1 {
+    font-size: 21px;
+  }
+
+  .field input {
+    padding: 13px 14px;
+  }
+
+  .next-button {
+    padding: 13px;
+  }
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   📱 SMALL DEVICES
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+@media (max-width: 360px) {
+
+  body {
+    padding: 10px;
+  }
+
+  .card {
+    padding: 24px 16px;
+  }
+
+  .logo,
+  .logo-placeholder {
+    width: 80px;
+    height: 80px;
+  }
+
+  h1 {
+    font-size: 19px;
+  }
+}
