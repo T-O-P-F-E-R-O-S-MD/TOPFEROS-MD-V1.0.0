@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>TOPFEROS MD — Settings</title>
+
+  <link
+    rel="stylesheet"
+    href="/style.css"
+  >
+</head>
+
+<body>
+
+  <main class="container">
+
+    <section
+      id="settingsPanel"
+      class="card settings-screen"
+    >
+
+      <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+           🤖 LOGO BOT
+           ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+
+      <img
+        id="botLogo"
+        class="logo"
+        src="/logo.png"
+        alt="TOPFEROS MD"
+        onerror="this.style.display='none'"
+      >
+
+
+      <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+           🤖 BOT INFORMATION
+           ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+
+      <div class="settings-title">
+
+        <h1>
+          🤖 BOT INFORMATION
+        </h1>
+
+      </div>
+
+
+      <div class="settings-box">
+
+        <!-- NOM BOT -->
+
+        <div class="info-field">
+
+          <label for="botName">
+            Nom Bot:
+          </label>
+
+          <input
+            id="botName"
+            type="text"
+            value="TOPFEROS MD"
+            autocomplete="off"
+          >
+
+        </div>
+
+
+        <!-- ÂGE -->
+
+        <div class="info-field">
+
+          <label for="botAge">
+            Âge:
+          </label>
+
+          <input
+            id="botAge"
+            type="number"
+            value="24"
+            min="0"
+            autocomplete="off"
+          >
+
+        </div>
+
+
+        <!-- PREFIX -->
+
+        <div class="info-field">
+
+          <label for="botPrefix">
+            Prefix:
+          </label>
+
+          <input
+            id="botPrefix"
+            type="text"
+            value="."
+            maxlength="5"
+            autocomplete="off"
+          >
+
+        </div>
+
+      </div>
+
+
+      <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+           ⚙️ BOT SETTINGS
+           ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+
+      <div class="settings-box">
+
+        <h3>
+          ⚙️ BOT SETTINGS
+        </h3>
+
+
+        <!-- PUBLIC MODE -->
+
+        <div class="setting-row">
+
+          <div>
+            <strong>
+              Mode Public
+            </strong>
+          </div>
+
+          <label class="switch">
+
+            <input
+              type="checkbox"
+              data-setting="publicMode"
+            >
+
+            <span class="slider"></span>
+
+          </label>
+
+        </div>
+
+
+        <!-- PRIVATE MODE -->
+
+        <div class="setting-row">
+
+          <div>
+            <strong>
+              Mode Private
+            </strong>
+          </div>
+
+          <label class="switch">
+
+            <input
+              type="checkbox"
+              data-setting="privateMode"
+            >
+
+            <span class="slider"></span>
+
+          </label>
+
+        </div>
+
+
+        <!-- ALWAYS ONLINE -->
+
+        <div class="setting-row">
+
+          <div>
+            <strong>
+              Always Online
+            </strong>
+          </div>
+
+          <label class="switch">
+
+            <input
+              type="checkbox"
+              data-setting="alwaysOnline"
+            >
+
+            <span class="slider"></span>
+
+          </label>
+
+        </div>
+
+
+        <!-- FAKE TYPING -->
+
+        <div class="setting-row">
+
+          <div>
+            <strong>
+              Fake Typing
+            </strong>
+          </div>
+
+          <label class="switch">
+
+            <input
+              type="checkbox"
+              data-setting="fakeTyping"
+            >
+
+            <span class="slider"></span>
+
+          </label>
+
+        </div>
+
+
+        <!-- FAKE RECORDING -->
+
+        <div class="setting-row">
+
+          <div>
+            <strong>
+              Fake Recording
+            </strong>
+          </div>
+
+          <label class="switch">
+
+            <input
+              type="checkbox"
+              data-setting="fakeRecording"
+            >
+
+            <span class="slider"></span>
+
+          </label>
+
+        </div>
+
+
+        <!-- AUTO REACT -->
+
+        <div class="setting-row">
+
+          <div>
+            <strong>
+              Auto React
+            </strong>
+          </div>
+
+          <label class="switch">
+
+            <input
+              type="checkbox"
+              data-setting="autoReact"
+            >
+
+            <span class="slider"></span>
+
+          </label>
+
+        </div>
+
+
+        <!-- AUTO STATUS -->
+
+        <div class="setting-row">
+
+          <div>
+            <strong>
+              Auto Status
+            </strong>
+          </div>
+
+          <label class="switch">
+
+            <input
+              type="checkbox"
+              data-setting="autoStatus"
+            >
+
+            <span class="slider"></span>
+
+          </label>
+
+        </div>
+
+
+        <!-- STATUS REPLY -->
+
+        <div class="setting-row">
+
+          <div>
+            <strong>
+              Status Reply
+            </strong>
+          </div>
+
+          <label class="switch">
+
+            <input
+              type="checkbox"
+              data-setting="statusReply"
+            >
+
+            <span class="slider"></span>
+
+          </label>
+
+        </div>
+
+
+        <!-- STATUS LIKE -->
+
+        <div class="setting-row">
+
+          <div>
+            <strong>
+              Status Like
+            </strong>
+          </div>
+
+          <label class="switch">
+
+            <input
+              type="checkbox"
+              data-setting="statusLike"
+            >
+
+            <span class="slider"></span>
+
+          </label>
+
+        </div>
+
+
+        <!-- STATUS REACT -->
+
+        <div class="setting-row">
+
+          <div>
+            <strong>
+              Status React
+            </strong>
+          </div>
+
+          <label class="switch">
+
+            <input
+              type="checkbox"
+              data-setting="statusReact"
+            >
+
+            <span class="slider"></span>
+
+          </label>
+
+        </div>
+
+
+        <!-- ANTI CALL -->
+
+        <div class="setting-row">
+
+          <div>
+            <strong>
+              Anti Call
+            </strong>
+          </div>
+
+          <label class="switch">
+
+            <input
+              type="checkbox"
+              data-setting="antiCall"
+            >
+
+            <span class="slider"></span>
+
+          </label>
+
+        </div>
+
+
+        <!-- ANTI DELETE -->
+
+        <div class="setting-row">
+
+          <div>
+            <strong>
+              Anti Delete
+            </strong>
+          </div>
+
+          <label class="switch">
+
+            <input
+              type="checkbox"
+              data-setting="antiDelete"
+            >
+
+            <span class="slider"></span>
+
+          </label>
+
+        </div>
+
+
+        <!-- ANTI SPAM -->
+
+        <div class="setting-row">
+
+          <div>
+            <strong>
+              Anti Spam
+            </strong>
+          </div>
+
+          <label class="switch">
+
+            <input
+              type="checkbox"
+              data-setting="antiSpam"
+            >
+
+            <span class="slider"></span>
+
+          </label>
+
+        </div>
+
+
+        <!-- AI CHAT -->
+
+        <div class="setting-row">
+
+          <div>
+            <strong>
+              AI Chat
+            </strong>
+          </div>
+
+          <label class="switch">
+
+            <input
+              type="checkbox"
+              data-setting="aiChat"
+            >
+
+            <span class="slider"></span>
+
+          </label>
+
+        </div>
+
+      </div>
+
+
+      <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+           👥 GROUP SETTINGS
+           ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+
+      <div class="settings-box">
+
+        <h3>
+          👥 GROUP SETTINGS
+        </h3>
+
+
+        <!-- SECURITY -->
+
+        <div class="settings-subtitle">
+          🛡️ SECURITY
+        </div>
+
+
+        <!-- GROUP ANTI SPAM -->
+
+        <div class="setting-row">
+
+          <div>
+            <strong>
+              Anti Spam
+            </strong>
+          </div>
+
+          <label class="switch">
+
+            <input
+              type="checkbox"
+              data-setting="groupAntiSpam"
+            >
+
+            <span class="slider"></span>
+
+          </label>
+
+        </div>
+
+
+        <!-- GROUP ANTI LINK -->
+
+        <div class="setting-row">
+
+          <div>
+            <strong>
+              Anti Link
+            </strong>
+          </div>
+
+          <label class="switch">
+
+            <input
+              type="checkbox"
+              data-setting="groupAntiLink"
+            >
+
+            <span class="slider"></span>
+
+          </label>
+
+        </div>
+
+
+        <!-- GROUP ANTI DELETE -->
+
+        <div class="setting-row">
+
+          <div>
+            <strong>
+              Anti Delete
+            </strong>
+          </div>
+
+          <label class="switch">
+
+            <input
+              type="checkbox"
+              data-setting="groupAntiDelete"
+            >
+
+            <span class="slider"></span>
+
+          </label>
+
+        </div>
+
+
+        <!-- ADMIN GROUP -->
+
+        <div class="setting-row">
+
+          <div>
+            <strong>
+              Admin Group
+            </strong>
+          </div>
+
+          <label class="switch">
+
+            <input
+              type="checkbox"
+              data-setting="adminGroup"
+            >
+
+            <span class="slider"></span>
+
+          </label>
+
+        </div>
+
+
+        <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+             🔒 GROUP CONTROL
+             ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+
+        <div class="settings-subtitle">
+          🔒 Group Control
+        </div>
+
+
+        <!-- FERMETURE -->
+
+        <div class="setting-row">
+
+          <div>
+            <strong>
+              Fermeture
+            </strong>
+          </div>
+
+          <label class="switch">
+
+            <input
+              type="checkbox"
+              data-setting="groupClose"
+            >
+
+            <span class="slider"></span>
+
+          </label>
+
+        </div>
+
+
+        <!-- OUVERTURE -->
+
+        <div class="setting-row">
+
+          <div>
+            <strong>
+              Ouverture
+            </strong>
+          </div>
+
+          <label class="switch">
+
+            <input
+              type="checkbox"
+              data-setting="groupOpen"
+            >
+
+            <span class="slider"></span>
+
+          </label>
+
+        </div>
+
+      </div>
+
+
+      <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+           💾 SAVE
+           ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+
+      <button
+        id="saveSettings"
+        class="next-button"
+        type="button"
+      >
+        SAVE ✅
+      </button>
+
+
+      <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+           📢 MESSAGE
+           ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+
+      <div
+        id="settingsMessage"
+        class="message"
+      ></div>
+
+
+      <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+           🦶 FOOTER
+           ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+
+      <div class="footer">
+
+        Made in: TOPFEROS TECH
+
+        <br>
+
+        ========================
+
+      </div>
+
+    </section>
+
+  </main>
+
+
+  <script src="/app.js"></script>
+
+</body>
+</html>
