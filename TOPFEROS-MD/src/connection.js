@@ -7,19 +7,19 @@ const {
   default: makeWASocket,
   useMultiFileAuthState,
   DisconnectReason,
-  fetchLatestBaileysVersion
+  fetchLatestBaileysVersion,
+  Browsers
 } = require("@whiskeysockets/baileys");
-
-const P = require("@whiskeysockets/baileys").Browsers;
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 🤖 TOPFEROS MD — WHATSAPP CONNECTION
+// 🚀 TOPFEROS TECH
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-// Settings panel la
+// Settings panel
 const settingsPanel = require("../settings/panel");
 
-// Message handler la
+// Message handler
 const messageHandler = require("./messageHandler");
 
 // Auth folder
@@ -51,43 +51,27 @@ function prepareAuthDirectory() {
 // 📩 MESSAGE HANDLER
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-async function handleMessages(updates) {
+async function handleMessages(messages) {
   if (
-    !updates ||
-    !Array.isArray(updates) ||
-    updates.length === 0
+    !messages ||
+    !Array.isArray(messages) ||
+    messages.length === 0
   ) {
     return;
   }
 
-  for (const update of updates) {
+  for (const message of messages) {
     try {
+      // messageHandler.js ou a ekspòte:
+      // { handleMessage, getMessageText }
+
       if (
-        typeof messageHandler === "function"
+        messageHandler &&
+        typeof messageHandler.handleMessage === "function"
       ) {
-        await messageHandler(
+        await messageHandler.handleMessage(
           sock,
-          update
-        );
-      }
-
-      else if (
-        typeof messageHandler.handleMessages ===
-        "function"
-      ) {
-        await messageHandler.handleMessages(
-          sock,
-          update
-        );
-      }
-
-      else if (
-        typeof messageHandler.handle ===
-        "function"
-      ) {
-        await messageHandler.handle(
-          sock,
-          update
+          message
         );
       }
 
@@ -177,8 +161,10 @@ async function start() {
 
       version = latest.version;
 
-    } catch {
-      version = undefined;
+    } catch (error) {
+      console.log(
+        "⚠️ Could not fetch latest Baileys version."
+      );
     }
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -188,9 +174,17 @@ async function start() {
     const socketOptions = {
       auth: state,
 
+      logger: require("pino")({
+        level: "silent"
+      }),
+
       browser:
-        P?.ubuntu("TOPFEROS MD") ||
-        ["TOPFEROS MD", "Chrome", "1.0.0"],
+        Browsers?.ubuntu("TOPFEROS MD") ||
+        [
+          "TOPFEROS MD",
+          "Chrome",
+          "1.0.0"
+        ],
 
       printQRInTerminal: true,
 
@@ -232,6 +226,18 @@ async function start() {
         } = update;
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // 🟡 CONNECTING
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+        if (
+          connection === "connecting"
+        ) {
+          console.log(
+            "🟡 TOPFEROS MD: Connecting to WhatsApp..."
+          );
+        }
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         // 🟢 CONNECTED
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -247,10 +253,15 @@ async function start() {
           );
 
           console.log(
+            "📱 WhatsApp: ONLINE"
+          );
+
+          console.log(
             "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           );
 
-          // Mete panel la konnen bot la konekte.
+          // ⚙️ Settings panel la konnen bot la konekte.
+          // Sa fè nouvo panel code yo valid.
           settingsPanel.setBotConnected(
             sock
           );
@@ -277,26 +288,38 @@ async function start() {
             statusCode ===
             DisconnectReason.loggedOut;
 
-          // Panel code yo dwe invalid touswit.
+          // ⚙️ Sa invalid tout panel sessions/codes
+          // imedyatman lè WhatsApp dekonekte.
           settingsPanel.setBotDisconnected();
 
           console.log(
-            `🔴 TOPFEROS MD: WhatsApp disconnected. Code: ${statusCode || "unknown"}`
+            "🔴 TOPFEROS MD: WhatsApp disconnected."
+          );
+
+          console.log(
+            `📌 Status code: ${statusCode || "unknown"}`
           );
 
           sock = null;
           starting = false;
 
-          // Si session WhatsApp la pa efase,
-          // nou eseye rekonekte otomatikman.
-          if (!loggedOut && !stopped) {
+          // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+          // 🔄 AUTO RECONNECT
+          // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+          if (
+            !loggedOut &&
+            !stopped
+          ) {
             console.log(
               "🔄 TOPFEROS MD: Reconnecting in 5 seconds..."
             );
 
             scheduleReconnect();
 
-          } else if (loggedOut) {
+          } else if (
+            loggedOut
+          ) {
             console.log(
               "❌ TOPFEROS MD: WhatsApp session logged out."
             );
@@ -318,7 +341,8 @@ async function start() {
       async (data) => {
         try {
           if (
-            !data?.messages
+            !data ||
+            !Array.isArray(data.messages)
           ) {
             return;
           }
@@ -337,30 +361,15 @@ async function start() {
     );
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 🛑 CATCH SOCKET ERROR
+    // 🛑 CONNECTION ERROR
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-    sock.ev.on(
-      "connection.update",
-      (update) => {
-        if (
-          update?.connection === "connecting"
-        ) {
-          console.log(
-            "🟡 TOPFEROS MD: Connecting to WhatsApp..."
-          );
-        }
-      }
-    );
-
-    starting = false;
-
-    return sock;
 
   } catch (error) {
     starting = false;
     sock = null;
 
+    // ⚙️ Si connection pa fèt,
+    // panel code yo pa dwe konsidere bot la online.
     settingsPanel.setBotDisconnected();
 
     console.error(
@@ -374,6 +383,10 @@ async function start() {
 
     throw error;
   }
+
+  starting = false;
+
+  return sock;
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -391,6 +404,7 @@ async function stop() {
     reconnectTimer = null;
   }
 
+  // ⚙️ Invalid panel sessions yo
   settingsPanel.setBotDisconnected();
 
   try {
@@ -402,6 +416,7 @@ async function stop() {
         undefined
       );
     }
+
   } catch (error) {
     console.error(
       "❌ SOCKET STOP ERROR:",
