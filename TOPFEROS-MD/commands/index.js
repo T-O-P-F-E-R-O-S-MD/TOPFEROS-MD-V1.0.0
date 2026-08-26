@@ -1,3 +1,5 @@
+commands/index.js
+
 // ╔════════════════════════════════════════════════════╗
 // ║              🤖 TOPFEROS MD V1.0.0               ║
 // ║                 COMMAND HANDLER                  ║
@@ -9,17 +11,20 @@
 const fs = require("fs");
 const path = require("path");
 
+
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 📁 COMMAND DIRECTORY
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 const COMMANDS_DIR = __dirname;
 
+
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 📦 COMMAND CACHE
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 const commandCache = new Map();
+
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 📥 LOAD COMMAND
@@ -30,9 +35,13 @@ function loadCommand(commandName) {
     return null;
   }
 
-  const normalizedName = String(commandName)
-    .trim()
-    .toLowerCase();
+  const normalizedName =
+    String(commandName).trim().toLowerCase();
+
+  if (!normalizedName) {
+    return null;
+  }
+
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   // ⚡ CHECK CACHE
@@ -41,6 +50,7 @@ function loadCommand(commandName) {
   if (commandCache.has(normalizedName)) {
     return commandCache.get(normalizedName);
   }
+
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   // 📄 POSSIBLE COMMAND FILES
@@ -51,21 +61,25 @@ function loadCommand(commandName) {
     `${normalizedName}.command.js`
   ];
 
+
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   // 🔎 FIND COMMAND FILE
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   for (const fileName of possibleFiles) {
-    const filePath = path.join(
-      COMMANDS_DIR,
-      fileName
-    );
+    const filePath =
+      path.join(
+        COMMANDS_DIR,
+        fileName
+      );
 
     if (!fs.existsSync(filePath)) {
       continue;
     }
 
+
     try {
+
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
       // 🔄 CLEAR NODE REQUIRE CACHE
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -74,20 +88,29 @@ function loadCommand(commandName) {
         require.resolve(filePath)
       ];
 
+
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
       // 📦 LOAD COMMAND
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-      const command = require(filePath);
+      const command =
+        require(filePath);
+
+
+      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      // 💾 SAVE TO CACHE
+      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
       commandCache.set(
         normalizedName,
         command
       );
 
+
       return command;
 
     } catch (error) {
+
       console.error(
         `❌ Failed to load command "${normalizedName}":`,
         error?.message || error
@@ -97,22 +120,28 @@ function loadCommand(commandName) {
     }
   }
 
+
   return null;
 }
+
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 🔎 FIND COMMAND
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 function findCommand(commandName) {
-  return loadCommand(commandName);
+  return loadCommand(
+    commandName
+  );
 }
+
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // ⚡ EXECUTE COMMAND
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 async function handleCommand(context = {}) {
+
   const {
     command,
     args = [],
@@ -121,53 +150,90 @@ async function handleCommand(context = {}) {
     sock
   } = context;
 
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 🛑 NO COMMAND
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
   if (!command) {
     return false;
   }
+
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   // 🔎 FIND COMMAND MODULE
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  const commandModule = findCommand(command);
+  const commandModule =
+    findCommand(command);
+
 
   if (!commandModule) {
     return false;
   }
 
+
   try {
+
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // 🧩 FUNCTION COMMAND
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-    if (typeof commandModule === "function") {
-      await commandModule(context);
+    if (
+      typeof commandModule === "function"
+    ) {
+
+      await commandModule(
+        context
+      );
+
       return true;
     }
+
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // ▶️ EXECUTE METHOD
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-    if (typeof commandModule.execute === "function") {
-      await commandModule.execute(context);
+    if (
+      typeof commandModule.execute ===
+      "function"
+    ) {
+
+      await commandModule.execute(
+        context
+      );
+
       return true;
     }
+
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // ▶️ RUN METHOD
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-    if (typeof commandModule.run === "function") {
-      await commandModule.run(context);
+    if (
+      typeof commandModule.run ===
+      "function"
+    ) {
+
+      await commandModule.run(
+        context
+      );
+
       return true;
     }
+
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // ▶️ HANDLER METHOD
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-    if (typeof commandModule.handler === "function") {
+    if (
+      typeof commandModule.handler ===
+      "function"
+    ) {
+
       await commandModule.handler(
         sock,
         message,
@@ -179,27 +245,36 @@ async function handleCommand(context = {}) {
       return true;
     }
 
+
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 🤝 PARRAIN COMMAND SUPPORT
+    // ▶️ PARRAIN COMMAND
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     //
     // commands/parrain.js itilize:
-    // handleParrainCommand(context)
     //
-    // Sa pèmèt .parrain travay san nou pa bezwen
-    // chanje structure commands/parrain.js la.
+    // handleParrainCommand({ sock, jid, args, config })
+    //
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     if (
       typeof commandModule.handleParrainCommand ===
       "function"
     ) {
-      await commandModule.handleParrainCommand(
-        context
-      );
+
+      await commandModule.handleParrainCommand({
+        sock,
+        jid:
+          context.jid ||
+          message?.key?.remoteJid,
+        args,
+        config:
+          context.config ||
+          require("../config")
+      });
 
       return true;
     }
+
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // ⚠️ NO HANDLER
@@ -212,6 +287,7 @@ async function handleCommand(context = {}) {
     return false;
 
   } catch (error) {
+
     console.error(
       `❌ Error executing ".${command}":`,
       error?.message || error
@@ -221,57 +297,49 @@ async function handleCommand(context = {}) {
   }
 }
 
+
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 🧹 CLEAR COMMAND CACHE
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 function clearCommandCache() {
+
   commandCache.clear();
 
   console.log(
-    "🧹 TOPFEROS MD: Command cache cleared."
+    "🧹 Command cache cleared."
   );
 }
+
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 📋 GET LOADED COMMANDS
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 function getLoadedCommands() {
+
   return Array.from(
     commandCache.keys()
   );
 }
+
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 📊 GET COMMAND COUNT
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 function getCommandCount() {
+
   return commandCache.size;
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🔍 CHECK COMMAND
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-function hasCommand(commandName) {
-  if (!commandName) {
-    return false;
-  }
-
-  const normalizedName = String(commandName)
-    .trim()
-    .toLowerCase();
-
-  return !!findCommand(normalizedName);
-}
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 📤 EXPORT
+// 📤 EXPORTS
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 module.exports = {
+
   // 🔥 Main handler
   handle: handleCommand,
 
@@ -291,13 +359,11 @@ module.exports = {
   getLoadedCommands,
 
   // 📊 Command count
-  getCommandCount,
-
-  // 🔍 Command checker
-  hasCommand
+  getCommandCount
 };
 
-// ╔════════════════════════════════════════════════════╗
-// ║                 TOPFEROS TECH                     ║
-// ║                TOPFEROS MD V1.0.0                 ║
-// ╚════════════════════════════════════════════════════╝
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🤖 TOPFEROS MD V1.0.0
+// 🚀 TOPFEROS TECH
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
