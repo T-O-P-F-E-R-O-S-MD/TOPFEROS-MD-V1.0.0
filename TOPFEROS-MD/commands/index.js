@@ -9,7 +9,13 @@
 const fs = require("fs");
 const path = require("path");
 
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 📁 COMMAND DIRECTORY
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 const COMMANDS_DIR = __dirname;
+
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 📦 COMMAND CACHE
@@ -23,33 +29,60 @@ const commandCache = new Map();
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 function loadCommand(commandName) {
-  const normalizedName = commandName.toLowerCase();
+  if (!commandName) {
+    return null;
+  }
+
+  const normalizedName =
+    String(commandName).toLowerCase();
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // ⚡ CHECK CACHE
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   if (commandCache.has(normalizedName)) {
     return commandCache.get(normalizedName);
   }
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 📄 POSSIBLE COMMAND FILES
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   const possibleFiles = [
     `${normalizedName}.js`,
     `${normalizedName}.command.js`
   ];
 
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 🔎 FIND COMMAND FILE
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
   for (const fileName of possibleFiles) {
-    const filePath = path.join(
-      COMMANDS_DIR,
-      fileName
-    );
+    const filePath =
+      path.join(
+        COMMANDS_DIR,
+        fileName
+      );
 
     if (!fs.existsSync(filePath)) {
       continue;
     }
 
     try {
+      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      // 🔄 CLEAR NODE REQUIRE CACHE
+      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
       delete require.cache[
         require.resolve(filePath)
       ];
 
-      const command = require(filePath);
+      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      // 📦 LOAD COMMAND
+      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+      const command =
+        require(filePath);
 
       commandCache.set(
         normalizedName,
@@ -57,6 +90,7 @@ function loadCommand(commandName) {
       );
 
       return command;
+
     } catch (error) {
       console.error(
         `❌ Failed to load command "${normalizedName}":`,
@@ -76,13 +110,9 @@ function loadCommand(commandName) {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 function findCommand(commandName) {
-  const command = loadCommand(commandName);
-
-  if (command) {
-    return command;
-  }
-
-  return null;
+  return loadCommand(
+    commandName
+  );
 }
 
 
@@ -103,6 +133,10 @@ async function handleCommand(context) {
     return false;
   }
 
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 🔎 FIND COMMAND MODULE
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
   const commandModule =
     findCommand(command);
 
@@ -111,29 +145,59 @@ async function handleCommand(context) {
   }
 
   try {
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // 🧩 FUNCTION COMMAND
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
     if (
       typeof commandModule === "function"
     ) {
       await commandModule(context);
+
       return true;
     }
 
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // ▶️ EXECUTE METHOD
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
     if (
-      typeof commandModule.execute === "function"
+      typeof commandModule.execute ===
+      "function"
     ) {
-      await commandModule.execute(context);
+      await commandModule.execute(
+        context
+      );
+
       return true;
     }
 
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // ▶️ RUN METHOD
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
     if (
-      typeof commandModule.run === "function"
+      typeof commandModule.run ===
+      "function"
     ) {
-      await commandModule.run(context);
+      await commandModule.run(
+        context
+      );
+
       return true;
     }
 
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // ▶️ HANDLER METHOD
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
     if (
-      typeof commandModule.handler === "function"
+      typeof commandModule.handler ===
+      "function"
     ) {
       await commandModule.handler(
         sock,
@@ -146,6 +210,11 @@ async function handleCommand(context) {
       return true;
     }
 
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // ⚠️ NO HANDLER
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
     console.warn(
       `⚠️ Command "${command}" has no executable handler.`
     );
@@ -153,6 +222,7 @@ async function handleCommand(context) {
     return false;
 
   } catch (error) {
+
     console.error(
       `❌ Error executing ".${command}":`,
       error.message
@@ -164,16 +234,20 @@ async function handleCommand(context) {
 
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🧹 CLEAR CACHE
+// 🧹 CLEAR COMMAND CACHE
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 function clearCommandCache() {
   commandCache.clear();
+
+  console.log(
+    "🧹 Command cache cleared."
+  );
 }
 
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 📋 LIST LOADED COMMANDS
+// 📋 GET LOADED COMMANDS
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 function getLoadedCommands() {
@@ -184,13 +258,44 @@ function getLoadedCommands() {
 
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 📊 COMMAND STATUS
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+function getCommandCount() {
+  return commandCache.size;
+}
+
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 📤 EXPORT
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 module.exports = {
+
+  // 🔥 Main handler
+  handle: handleCommand,
+
+  // ⚡ Full handler name
   handleCommand,
+
+  // 🔎 Command finder
   findCommand,
+
+  // 📥 Command loader
   loadCommand,
+
+  // 🧹 Cache control
   clearCommandCache,
-  getLoadedCommands
+
+  // 📋 Loaded commands
+  getLoadedCommands,
+
+  // 📊 Command count
+  getCommandCount
 };
+
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🤖 TOPFEROS MD
+// 🚀 TOPFEROS TECH
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
