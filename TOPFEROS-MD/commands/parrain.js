@@ -1,159 +1,102 @@
-"commands/parrain.js"
-
 "use strict";
 
-const crypto = require("crypto");
+// ╔════════════════════════════════════════════════════╗
+// ║              🤖 TOPFEROS MD V1.0.0               ║
+// ║                 🤝 PARRAIN CODE                  ║
+// ║              🚀 TOPFEROS TECH                     ║
+// ╚════════════════════════════════════════════════════╝
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🤝 TOPFEROS MD — PARRAIN CODE
-// 🚀 TOPFEROS TECH
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 📦 LOAD CONFIGURATION
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-// Parrain codes yo rete pandan pwosesis bot la ap mache.
-const parrainCodes = new Map();
+const config = require("../config");
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🔐 GENERATE PARRAIN CODE
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🤝 LOAD PARRAIN SERVICE
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-function generateParrainCode() {
-  return (
-    "TOP-" +
-    crypto
-      .randomBytes(4)
-      .toString("hex")
-      .toUpperCase()
-  );
-}
+const parrainService =
+  require("../services/parrain");
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🆕 CREATE CODE
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-function createParrainCode(ownerNumber) {
-  const number = String(ownerNumber || "")
-    .replace(/\D/g, "");
-
-  if (!number) {
-    throw new Error(
-      "Owner number pa disponib."
-    );
-  }
-
-  const code = generateParrainCode();
-
-  parrainCodes.set(code, {
-    code,
-    ownerNumber: number,
-    createdAt: Date.now(),
-    used: false
-  });
-
-  return code;
-}
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🔎 VERIFY CODE
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-function verifyParrainCode(code) {
-  if (!code) {
-    return {
-      success: false,
-      message: "❌ Parrain Code obligatwa."
-    };
-  }
-
-  const cleanCode = String(code)
-    .trim()
-    .toUpperCase();
-
-  const data = parrainCodes.get(cleanCode);
-
-  if (!data) {
-    return {
-      success: false,
-      message: "❌ Parrain Code la pa valid."
-    };
-  }
-
-  if (data.used) {
-    return {
-      success: false,
-      message: "❌ Parrain Code sa deja itilize."
-    };
-  }
-
-  return {
-    success: true,
-    code: data
-  };
-}
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🟢 USE CODE
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-function useParrainCode(code) {
-  const result = verifyParrainCode(code);
-
-  if (!result.success) {
-    return result;
-  }
-
-  result.code.used = true;
-
-  return {
-    success: true,
-    message: "✅ Parrain Code valide.",
-    data: result.code
-  };
-}
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🧹 DELETE CODE
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-function deleteParrainCode(code) {
-  if (!code) {
-    return false;
-  }
-
-  return parrainCodes.delete(
-    String(code).trim().toUpperCase()
-  );
-}
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 📩 COMMAND
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 📩 PARRAIN COMMAND
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 async function handleParrainCommand({
   sock,
   jid,
-  args,
-  config
+  args = [],
+  config: commandConfig
 }) {
   try {
-    const ownerNumber =
-      config?.owner?.number;
 
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // ⚙️ USE PROVIDED CONFIG OR MAIN CONFIG
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    const botConfig =
+      commandConfig || config;
+
+    const ownerNumber =
+      botConfig?.owner?.number;
+
+    if (!ownerNumber) {
+      throw new Error(
+        "Owner number pa configured nan config la."
+      );
+    }
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // 🔐 CREATE PARRAIN CODE
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    const result =
+      parrainService.createParrainCode(
+        ownerNumber
+      );
+
+    // Service la ka retounen object oswa code
+    // selon fason li te prepare a.
     const code =
-      createParrainCode(ownerNumber);
+      typeof result === "string"
+        ? result
+        : result?.code;
+
+    if (!code) {
+      throw new Error(
+        "Parrain Code la pa kapab kreye."
+      );
+    }
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // 📤 SEND PARRAIN CODE
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     await sock.sendMessage(
       jid,
       {
         text:
           "╭━━━━━━━━━━━━━━━━━━━━━━━━━━━━╮\n" +
-          "┃ 🤝 PARRAIN CODE\n" +
+          "┃\n" +
+          "┃        🤝 PARRAIN CODE\n" +
+          "┃\n" +
           "╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯\n\n" +
-          "🔐 Code:\n" +
+
+          "🔐 *Code Parrain:*\n" +
           `${code}\n\n` +
-          "🟢 Code la pare pou itilize.\n\n" +
-          "Made in TOPFEROS TECH\n" +
-          "========================"
+
+          "🟢 Code la pare pou itilize.\n" +
+          "⏳ Li rete disponib jiskaske li itilize.\n\n" +
+
+          "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n" +
+          "🚀 TOPFEROS TECH\n" +
+          "━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
       }
+    );
+
+    console.log(
+      `🤝 Parrain Code created: ${code}`
     );
 
     return {
@@ -162,37 +105,68 @@ async function handleParrainCommand({
     };
 
   } catch (error) {
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // ❌ ERROR HANDLING
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
     console.error(
       "❌ PARRAIN COMMAND ERROR:",
       error?.message || error
     );
 
     if (sock && jid) {
-      await sock.sendMessage(
-        jid,
-        {
-          text:
-            "❌ Pa kapab kreye Parrain Code la.\n\n" +
-            "Verifye owner.number nan config la."
-        }
-      );
+      try {
+
+        await sock.sendMessage(
+          jid,
+          {
+            text:
+              "╭━━━━━━━━━━━━━━━━━━━━━━━━━━━━╮\n" +
+              "┃        ❌ PARRAIN ERROR\n" +
+              "╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯\n\n" +
+
+              "Pa kapab kreye Parrain Code la.\n\n" +
+
+              "⚙️ Verifye:\n" +
+              "• config.owner.number\n" +
+              "• services/parrain.js\n" +
+              "• WhatsApp connection\n\n" +
+
+              "🚀 TOPFEROS TECH"
+          }
+        );
+
+      } catch (sendError) {
+
+        console.error(
+          "❌ PARRAIN ERROR MESSAGE:",
+          sendError?.message || sendError
+        );
+
+      }
     }
 
     return {
       success: false,
-      message: error?.message || "Unknown error"
+      message:
+        error?.message ||
+        "Unknown error"
     };
   }
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 📦 EXPORT
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 📦 EXPORTS
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 module.exports = {
-  handleParrainCommand,
-  createParrainCode,
-  verifyParrainCode,
-  useParrainCode,
-  deleteParrainCode
+  handleParrainCommand
 };
+
+
+// ╔════════════════════════════════════════════════════╗
+// ║                 🚀 TOPFEROS TECH                 ║
+// ║                TOPFEROS MD V1.0.0                ║
+// ╚════════════════════════════════════════════════════╝
