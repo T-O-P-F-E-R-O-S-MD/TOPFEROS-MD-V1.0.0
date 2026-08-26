@@ -1,33 +1,67 @@
 "use strict";
 
+// ╔════════════════════════════════════════════════════╗
+// ║              🤖 TOPFEROS MD V1.0.0               ║
+// ║                📩 MESSAGE HANDLER                ║
+// ║              🚀 TOPFEROS TECH                     ║
+// ╚════════════════════════════════════════════════════╝
+
 const config = require("../config");
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🤖 MESSAGE HANDLER
-// TOPFEROS MD V1.0.0
-// 🚀 TOPFEROS TECH
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ⚙️ CONFIGURATION
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+const DEFAULT_PREFIX = ".";
+
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 📩 MAIN MESSAGE HANDLER
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 async function handleMessage(sock, message) {
   try {
-    if (!message || !message.message) {
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // 🛡️ BASIC MESSAGE VALIDATION
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    if (
+      !sock ||
+      !message ||
+      !message.message
+    ) {
       return;
     }
 
-    const remoteJid = message.key?.remoteJid;
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // 📍 GET CHAT JID
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    const remoteJid =
+      message.key?.remoteJid;
 
     if (!remoteJid) {
       return;
     }
 
-    // Ignore status messages for now.
-    if (remoteJid === "status@broadcast") {
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // 🚫 IGNORE WHATSAPP STATUS
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    if (
+      remoteJid === "status@broadcast"
+    ) {
       return;
     }
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // 👤 MESSAGE SENDER
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     const sender =
       message.key?.participant ||
@@ -36,149 +70,355 @@ async function handleMessage(sock, message) {
     const isFromMe =
       message.key?.fromMe === true;
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 💬 EXTRACT MESSAGE TEXT
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-    const text = getMessageText(message);
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // 💬 EXTRACT MESSAGE TEXT
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    const text =
+      getMessageText(message);
 
     if (!text) {
       return;
     }
 
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // 🔰 GET BOT PREFIX
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
     const prefix =
-      config.bot?.prefix || ".";
+      config?.bot?.prefix ||
+      DEFAULT_PREFIX;
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 🔰 CHECK PREFIX
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-    if (!text.startsWith(prefix)) {
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // 🔎 CHECK PREFIX
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    if (
+      !text.startsWith(prefix)
+    ) {
       return;
     }
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 🧩 PARSE COMMAND
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // ✂️ REMOVE PREFIX
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     const commandText =
-      text.slice(prefix.length).trim();
+      text
+        .slice(prefix.length)
+        .trim();
 
     if (!commandText) {
       return;
     }
 
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // 🧩 PARSE COMMAND
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
     const parts =
       commandText.split(/\s+/);
 
     const command =
-      parts.shift().toLowerCase();
+      String(
+        parts.shift() || ""
+      )
+        .trim()
+        .toLowerCase();
 
-    const args = parts;
+    const args =
+      parts;
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 📦 COMMAND DATA
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    if (!command) {
+      return;
+    }
+
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // 📝 FULL COMMAND TEXT
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    const commandArgsText =
+      args.join(" ").trim();
+
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // 📦 COMMAND CONTEXT
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     const commandData = {
+
+      // 🤖 WhatsApp socket
       sock,
+
+      // 📨 Original message
       message,
+
+      // 📍 Chat
       jid: remoteJid,
+
+      // 👤 Sender
       sender,
+
+      // 👑 From bot account
       isFromMe,
+
+      // 💬 Original text
       text,
+
+      // 🔰 Prefix
+      prefix,
+
+      // ⚡ Command
       command,
+
+      // 📋 Arguments
       args,
-      prefix
+
+      // 📝 Arguments as text
+      commandText: commandArgsText
     };
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 📝 LOG COMMAND
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // 📝 COMMAND LOG
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     console.log(
-      `[COMMAND] ${prefix}${command} | ${sender}`
+      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     );
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    console.log(
+      `📩 COMMAND: ${prefix}${command}`
+    );
+
+    console.log(
+      `👤 SENDER: ${sender}`
+    );
+
+    console.log(
+      `💬 TEXT: ${text}`
+    );
+
+    console.log(
+      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    );
+
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // 🔌 LOAD COMMAND ROUTER
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     const commandRouter =
       require("../commands");
 
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // ⚡ EXECUTE COMMAND
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
     if (
       commandRouter &&
-      typeof commandRouter.handle === "function"
+      typeof commandRouter.handle ===
+        "function"
     ) {
-      await commandRouter.handle(
-        commandData
+
+      const handled =
+        await commandRouter.handle(
+          commandData
+        );
+
+
+      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      // ✅ COMMAND EXECUTED
+      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+      if (handled) {
+
+        console.log(
+          `✅ COMMAND EXECUTED: ${prefix}${command}`
+        );
+
+        return;
+      }
+
+
+      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      // ⚠️ COMMAND NOT FOUND
+      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+      console.log(
+        `⚠️ COMMAND NOT HANDLED: ${prefix}${command}`
       );
+
+      return;
     }
 
-  } catch (error) {
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // ❌ COMMAND ROUTER ERROR
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
     console.error(
-      "❌ Message Handler Error:",
-      error.message
+      "❌ Command router pa disponib."
+    );
+
+  } catch (error) {
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // 🚨 GLOBAL MESSAGE HANDLER ERROR
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    console.error(
+      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    );
+
+    console.error(
+      "❌ MESSAGE HANDLER ERROR:"
+    );
+
+    console.error(
+      error?.message || error
+    );
+
+    console.error(
+      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     );
   }
 }
 
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 💬 GET MESSAGE TEXT
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 function getMessageText(message) {
+
   const content =
-    message.message;
+    message?.message;
 
   if (!content) {
     return null;
   }
 
-  // Plain text
-  if (content.conversation) {
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 💬 PLAIN TEXT
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  if (
+    typeof content.conversation ===
+      "string"
+  ) {
     return content.conversation;
   }
 
-  // Extended text
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 📝 EXTENDED TEXT
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
   if (
-    content.extendedTextMessage?.text
+    typeof content
+      .extendedTextMessage
+      ?.text === "string"
   ) {
-    return content.extendedTextMessage.text;
+    return content
+      .extendedTextMessage
+      .text;
   }
 
-  // Image caption
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 🖼️ IMAGE CAPTION
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
   if (
-    content.imageMessage?.caption
+    typeof content
+      .imageMessage
+      ?.caption === "string"
   ) {
-    return content.imageMessage.caption;
+    return content
+      .imageMessage
+      .caption;
   }
 
-  // Video caption
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 🎥 VIDEO CAPTION
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
   if (
-    content.videoMessage?.caption
+    typeof content
+      .videoMessage
+      ?.caption === "string"
   ) {
-    return content.videoMessage.caption;
+    return content
+      .videoMessage
+      .caption;
   }
 
-  // Document caption
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 📄 DOCUMENT CAPTION
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
   if (
-    content.documentMessage?.caption
+    typeof content
+      .documentMessage
+      ?.caption === "string"
   ) {
-    return content.documentMessage.caption;
+    return content
+      .documentMessage
+      .caption;
   }
+
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // ❌ NO TEXT FOUND
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   return null;
 }
 
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 📤 EXPORT
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🧹 NORMALIZE PREFIX
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+function getPrefix() {
+
+  return (
+    config?.bot?.prefix ||
+    DEFAULT_PREFIX
+  );
+}
+
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 📤 EXPORTS
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 module.exports = {
+
+  // 📩 Main handler
   handleMessage,
-  getMessageText
+
+  // 💬 Text extractor
+  getMessageText,
+
+  // 🔰 Prefix helper
+  getPrefix
 };
+
+
+// ╔════════════════════════════════════════════════════╗
+// ║              🤖 TOPFEROS MD V1.0.0               ║
+// ║                🚀 TOPFEROS TECH                  ║
+// ╚════════════════════════════════════════════════════╝
