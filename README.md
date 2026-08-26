@@ -1,51 +1,45 @@
-# 🤖 TOPFEROS MD
-
 <p align="center">
-  <img src="assets/1785077175499.png" width="180" alt="TOPFEROS MD Logo">
-</p>
-
-<h2 align="center">TOPFEROS MD • V1.0.0</h2>
-
-<p align="center">
+  <img src="assets/logo.png" width="220" alt="TOPFEROS MD Logo">
+</p><h1 align="center">TOPFEROS MD • V1.0.0</h1><p align="center">
   <strong>Smart • Powerful • Customizable WhatsApp Bot</strong>
-</p>
+</p><p align="center">
+  <img src="https://img.shields.io/badge/Version-V1.0.0-black?style=for-the-badge" alt="Version">
+  <img src="https://img.shields.io/badge/Node.js-18%2B-green?style=for-the-badge" alt="Node.js">
+  <img src="https://img.shields.io/badge/Status-Active-blue?style=for-the-badge" alt="Status">
+</p>---
 
-<p align="center">
-  Made with ❤️ by <strong>TOPFEROS TECH</strong>
-</p>
+📖 ABOUT TOPFEROS MD
 
----
-
-## 🤖 ABOUT TOPFEROS MD
-
-**TOPFEROS MD** se yon WhatsApp Bot modèn ki fèt pou bay yon
+TOPFEROS MD se yon WhatsApp Bot modèn ki fèt pou bay yon
 eksperyans rapid, entelijan, customizable ak fasil pou administre.
 
-Sistèm nan gen yon **Web Settings Portal** kote owner/user ki konekte
+Bot la fèt pou ede itilizatè yo jere mesaj, status, group, media,
+AI ak plizyè lòt fonksyon atravè yon sistèm ki byen òganize.
+
+Sistèm nan gen yon Web Settings Portal kote owner/user ki konekte
 bot la kapab kontwole configuration bot la san li pa bezwen modifye
 source code la dirèkteman.
 
 ---
 
-## 📦 BOT INFORMATION
+📦 BOT INFORMATION
 
-| Information | Value |
-|---|---|
-| 🤖 Bot Name | TOPFEROS MD |
-| 📦 Version | V1.0.0 |
-| 🔰 Default Prefix | `.` |
-| ⚙️ Default Mode | Public |
-| 👨‍💻 Developer | TOPFEROS TECH |
-| 🖼️ Logo | `assets/1785077175499.png` |
+Information| Value
+🤖 Bot Name| TOPFEROS MD
+📦 Version| V1.0.0
+🔰 Default Prefix| "."
+⚙️ Default Mode| Public
+👨‍💻 Developer| TOPFEROS TECH
+🖼️ Logo| "assets/logo.png"
 
 ---
 
-# ✨ FEATURES
+✨ FEATURES
 
-## 💬 MESSAGE SYSTEM
+💬 MESSAGE SYSTEM
 
 TOPFEROS MD sipòte plizyè fonksyon pou amelyore fason bot la
-reponn ak mesaj yo.
+jere ak reponn mesaj yo.
 
 - 💞 Always Online
 - ✍️ Fake Typing
@@ -53,24 +47,25 @@ reponn ak mesaj yo.
 - 🌈 Auto React
 - 🤖 AI Chat
 - 💬 Automatic Chat
+- ⚡ Fast Message Handling
 
 ---
 
-## 👁️ STATUS SYSTEM
+👁️ STATUS SYSTEM
 
-Bot la gen yon sistèm status ki ka configure nan Web Settings Portal la.
+Sistèm status la fèt pou ede bot la jere aktivite status WhatsApp yo.
 
 - 👀 Auto Status Seen
 - ❤️ Status Like
 - 💬 Status Reply
 - 🌈 Status React
+- ⚡ Automatic Status Handling
 
 ---
 
-## 🛡️ SECURITY SYSTEM
+🛡️ SECURITY SYSTEM
 
-Sistèm security bot la fèt pou ede owner la jere pwoteksyon bot la
-ak group li yo.
+Sistèm sekirite a ede owner la pwoteje bot la ak group yo.
 
 - 📞 Anti Call
 - 🗑️ Anti Delete
@@ -81,20 +76,21 @@ ak group li yo.
 
 ---
 
-## 🤖 AI SYSTEM
+🤖 AI SYSTEM
 
-TOPFEROS MD gen sipò pou fonksyon AI.
+TOPFEROS MD gen sipò pou plizyè fonksyon AI.
 
 - 🧠 Smart AI
 - 💬 AI Chat
 - 🤖 Automatic AI Reply
 - 🎨 AI Image Generation
+- ⚙️ AI Configuration
 
-AI configuration yo kapab jere atravè settings yo.
+AI configuration yo kapab jere atravè Web Settings Portal la.
 
 ---
 
-## 📥 MEDIA SYSTEM
+📥 MEDIA SYSTEM
 
 Bot la prepare pou travay avèk plizyè kalite media ak downloader.
 
@@ -108,7 +104,9 @@ Bot la prepare pou travay avèk plizyè kalite media ak downloader.
 
 ---
 
-## 🎨 MEDIA TOOLS
+🎨 MEDIA TOOLS
+
+TOPFEROS MD gen plizyè zouti pou travay avèk media.
 
 - 🖼️ Sticker
 - 🔄 Image Conversion
@@ -118,17 +116,22 @@ Bot la prepare pou travay avèk plizyè kalite media ak downloader.
 
 ---
 
-# 👥 GROUP MANAGEMENT
+👥 GROUP MANAGEMENT
 
-TOPFEROS MD gen yon sistèm pou jere group yo.
+Sistèm group management la pèmèt owner/admin jere group yo pi fasil.
 
-Fonksyon group management yo gen ladan:
+👤 MEMBER MANAGEMENT
 
-- 👤 Member Management
-- 👑 Admin Management
+- ➕ Add Member
+- 🚫 Remove Member
+- 👑 Promote Admin
+- 👤 Demote Admin
+
+🔧 GROUP CONTROLS
+
 - 🔇 Group Mute
 - 🔊 Group Unmute
-- 📢 Tag System
+- 📢 Tag All
 - 👻 Hidden Tag
 - 👋 Welcome System
 - 🔗 Group Link Management
@@ -137,16 +140,169 @@ Fonksyon group management yo gen ladan:
 
 ---
 
-# 🔒 GROUP SCHEDULE
+🔒 GROUP SCHEDULE
 
 Owner/user la kapab configure lè yon group dwe fèmen oswa ouvri
 atravè Web Settings Portal la.
 
-```text
-🔒 Automatic Group Close
+🔒 AUTOMATIC GROUP CLOSE
+
 ⏰ Close Time
-
-🔓 Automatic Group Open
-⏰ Open Time
-
 🌍 Timezone
+
+
+🔓 AUTOMATIC GROUP OPEN
+
+⏰ Open Time
+🌍 Timezone
+
+---
+
+⚙️ WEB SETTINGS PORTAL
+
+TOPFEROS MD gen yon Web Settings Portal ki fèt pou fè
+configuration bot la pi fasil.
+
+Portal la ka pèmèt owner/user la kontwole:
+
+- 🔰 Bot Prefix
+- 🌐 Bot Mode
+- 💞 Always Online
+- ✍️ Fake Typing
+- 🎤 Fake Recording
+- 🌈 Auto React
+- 👁️ Auto Status
+- ❤️ Status Like
+- 💬 Status Reply
+- 🌈 Status React
+- 📞 Anti Call
+- 🗑️ Anti Delete
+- 🚫 Anti Spam
+- 🤖 AI Chat
+- 🔗 Anti Link
+- 🛡️ Group Security
+- 🔒 Automatic Group Close
+- 🔓 Automatic Group Open
+
+---
+
+🔐 PARRAIN CODE SYSTEM
+
+TOPFEROS MD gen yon sistèm Parrain Code pou kreye ak verifye
+codes yo.
+
+Sistèm nan kapab:
+
+- 🔐 Generate Parrain Code
+- 🆕 Create Code
+- 🔎 Verify Code
+- 🟢 Use Code
+- 🧹 Delete Code
+
+---
+
+🧩 COMMAND SYSTEM
+
+Command system lan itilize yon router ki pèmèt bot la chaje command
+yo nan folder "commands/".
+
+Sa fè li pi fasil pou ajoute nouvo commands san modifye tout
+sistèm message handler la.
+
+---
+
+📁 PROJECT STRUCTURE
+
+TOPFEROS-MD-V1.0.0/
+│
+├── assets/
+│   └── logo.png
+│
+├── commands/
+│   ├── index.js
+│   ├── status.js
+│   ├── vv2.js
+│   └── ...
+│
+├── src/
+│   ├── messageHandler.js
+│   └── connection.js
+│
+├── panel/
+│   ├── server.js
+│   ├── settings-api.js
+│   └── public/
+│       ├── index.html
+│       ├── style.css
+│       ├── app.js
+│       ├── settings.html
+│       └── settings.js
+│
+├── config.js
+├── package.json
+├── .env.example
+├── .gitignore
+├── LICENSE
+└── README.md
+
+---
+
+🛠️ TECHNOLOGY
+
+TOPFEROS MD fèt avèk teknoloji tankou:
+
+- 🟢 Node.js
+- 📦 JavaScript
+- 💬 WhatsApp Web API
+- ⚡ Baileys
+- 🌐 Web Settings Portal
+
+---
+
+🚀 INSTALLATION
+
+1️⃣ CLONE REPOSITORY
+
+git clone https://github.com/T-O-P-F-E-R-O-S-MD/TOPFEROS-MD-V1.0.0.git
+
+2️⃣ ENTER PROJECT DIRECTORY
+
+cd TOPFEROS-MD-V1.0.0
+
+3️⃣ INSTALL DEPENDENCIES
+
+npm install
+
+4️⃣ CONFIGURE BOT
+
+Verifye "config.js" ak ".env" selon configuration pwojè a.
+
+5️⃣ START BOT
+
+npm start
+
+---
+
+📌 PROJECT STATUS
+
+╔══════════════════════════════════════╗
+║           TOPFEROS MD V1.0.0         ║
+╠══════════════════════════════════════╣
+║ Status    : Active                   ║
+║ Mode      : Public                   ║
+║ Prefix    : .                        ║
+║ Developer : TOPFEROS TECH            ║
+╚══════════════════════════════════════╝
+
+---
+
+📄 LICENSE
+
+This project is distributed under the license included in the
+"LICENSE" file of this repository.
+
+---
+
+<p align="center">
+  <strong>BY TOPFEROS TECH</strong>
+</p>
