@@ -17,10 +17,51 @@ __dirname,
 );
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 👤 GET CONNECTED WHATSAPP USER
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+function getConnectedUser(sock) {
+
+const user = sock?.user;
+
+if (!user) {
+return {
+name: "Unknown",
+number: "Unknown"
+};
+}
+
+// 👤 Non kont WhatsApp la
+const name =
+user.name ||
+user.verifiedName ||
+"Unknown";
+
+// 📱 JID kont WhatsApp la
+const id =
+user.id ||
+"";
+
+// 📱 Retire :device ak @s.whatsapp.net
+const number =
+id
+.split(":")[0]
+.split("@")[0]
+.replace(/\D/g, "") ||
+"Unknown";
+
+return {
+name,
+number
+};
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 📋 MENU EXECUTE
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 async function execute(context) {
+
 const {
 sock,
 message
@@ -34,7 +75,7 @@ return;
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// ⚙️ CONFIGURATION
+// ⚙️ BOT CONFIGURATION
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 const botName =
@@ -50,16 +91,49 @@ config.bot?.prefix ||
 ".";
 
 const mode =
+String(
 config.bot?.mode ||
-"public";
+"public"
+).toLowerCase();
 
 const developer =
 config.bot?.developer ||
 "TOPFEROS TECH";
 
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 👤 CONNECTED USER
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+const connectedUser =
+getConnectedUser(sock);
+
+const showUserName =
+config.bot?.session?.showUserName !== false;
+
+const showUserNumber =
+config.bot?.session?.showUserNumber !== false;
+
+const userName =
+showUserName
+? connectedUser.name
+: "Hidden";
+
+const userNumber =
+showUserNumber
+? connectedUser.number
+: "Hidden";
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 👑 OWNER
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 const ownerName =
 config.owner?.name ||
 "TOPFEROS MD";
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🔗 LINKS
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 const channel =
 config.links?.channel ||
@@ -70,17 +144,16 @@ config.links?.group ||
 "Not configured";
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🦁 SESSION HEADER
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+const sessionHeader = "======= 🦁 Session ======== ║ ║ Name: ${botName} ${version} ║ STATUT : ONLINE ║ PREFIX : (${prefix}) ║ Mode : ${mode} ║ Name user : ${userName} ║ Number user : ${userNumber} ║ ╚════════════════════════════";
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 📋 MENU
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-const menu = `======= 🦁 Session ========
-║
-║ ${botName} ${version}
-║ STATUT : ONLINE
-║ MODE : ${String(mode).toUpperCase()}
-║ PREFIX : (${prefix})
-║
-╚════════════════════════════
+const menu = `${sessionHeader}
 
 ╭━━━━━━━━━━━━━━━━━━━━━━━━━━━━╮
 ┃       🤖 ${botName}
@@ -209,9 +282,7 @@ const menu = `======= 🦁 Session ========
 
 try {
 
-if (
-  fs.existsSync(LOGO_PATH)
-) {
+if (fs.existsSync(LOGO_PATH)) {
 
   const logo =
     fs.readFileSync(LOGO_PATH);
@@ -278,5 +349,5 @@ execute
 };
 
 // ╔════════════════════════════════════════════════════╗
-// ║                    by TOPFEROS MD                    ║
+// ║                    by TOPFEROS MD                  ║
 // ╚════════════════════════════════════════════════════╝
