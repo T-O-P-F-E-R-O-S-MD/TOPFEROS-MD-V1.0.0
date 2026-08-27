@@ -1,8 +1,10 @@
 "use strict";
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// ⚙️ TOPFEROS MD — SETTINGS PANEL SERVER
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ╔════════════════════════════════════════════════════╗
+// ║              🤖 TOPFEROS MD V1.0.0               ║
+// ║          ⚙️ MULTI-SESSION SETTINGS PANEL          ║
+// ║              🚀 TOPFEROS TECH                     ║
+// ╚════════════════════════════════════════════════════╝
 
 const express = require("express");
 const path = require("path");
@@ -36,7 +38,7 @@ const publicDir =
   );
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🖼️ BOT LOGO
+// 🖼️ LOGO PATH
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 const logoPath =
@@ -73,7 +75,7 @@ app.use(
 );
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🖼️ SERVE BOT LOGO
+// 🖼️ SERVE LOGO
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 app.get(
@@ -82,7 +84,7 @@ app.get(
 
     res.sendFile(
       logoPath,
-      (error) => {
+      error => {
 
         if (error) {
 
@@ -94,9 +96,12 @@ app.get(
           if (!res.headersSent) {
 
             return res.status(404).json({
+
               success: false,
+
               message:
                 "Logo assets/logo.png pa jwenn."
+
             });
 
           }
@@ -110,25 +115,64 @@ app.get(
 );
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🟢 CHECK BOT CONNECTION
+// 🟢 GLOBAL STATUS
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 app.get(
   "/api/status",
   (req, res) => {
 
-    return res.json({
-      success: true,
+    try {
 
-      connected:
-        settingsPanel.isBotConnected()
-    });
+      const sessions =
+        settingsPanel.getConnectedSessions();
+
+      return res.json({
+
+        success: true,
+
+        connected:
+          sessions.length > 0,
+
+        sessionCount:
+          sessions.length,
+
+        sessions
+
+      });
+
+    } catch (error) {
+
+      console.error(
+        "❌ STATUS ERROR:",
+        error?.message || error
+      );
+
+      return res.status(500).json({
+
+        success: false,
+
+        message:
+          "Pa kapab verifye status bot yo."
+
+      });
+
+    }
 
   }
 );
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🔐 VERIFY NUMBER + CODE
+// 🔐 LOGIN
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// POST /api/login
+//
+// body:
+// {
+//   sessionId,
+//   number,
+//   code
+// }
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 app.post(
@@ -146,9 +190,38 @@ app.post(
       if (!sessionId) {
 
         return res.status(400).json({
+
           success: false,
+
           message:
             "Session ID manke."
+
+        });
+
+      }
+
+      if (!number) {
+
+        return res.status(400).json({
+
+          success: false,
+
+          message:
+            "Number manke."
+
+        });
+
+      }
+
+      if (!code) {
+
+        return res.status(400).json({
+
+          success: false,
+
+          message:
+            "Code manke."
+
         });
 
       }
@@ -175,7 +248,10 @@ app.post(
         message:
           "Login reyisi.",
 
-        sessionId
+        sessionId,
+
+        number:
+          result.session.number
 
       });
 
@@ -201,7 +277,102 @@ app.post(
 );
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🔒 AUTH SESSION
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// GET /api/auth?session=SESSION_ID
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+app.get(
+  "/api/auth",
+  (req, res) => {
+
+    try {
+
+      const sessionId =
+        String(
+          req.query.session || ""
+        ).trim();
+
+      if (!sessionId) {
+
+        return res.status(401).json({
+
+          success: false,
+
+          connected: false,
+
+          message:
+            "Session ID manke."
+
+        });
+
+      }
+
+      const authenticated =
+        settingsPanel.isAuthenticated(
+          sessionId
+        );
+
+      if (!authenticated) {
+
+        return res.status(401).json({
+
+          success: false,
+
+          connected: false,
+
+          message:
+            "Session lan pa valid oswa bot la dekonekte."
+
+        });
+
+      }
+
+      const sessionInfo =
+        settingsPanel.getSessionInfo(
+          sessionId
+        );
+
+      return res.json({
+
+        success: true,
+
+        connected: true,
+
+        sessionId,
+
+        number:
+          sessionInfo?.number || null
+
+      });
+
+    } catch (error) {
+
+      console.error(
+        "❌ AUTH ERROR:",
+        error?.message || error
+      );
+
+      return res.status(500).json({
+
+        success: false,
+
+        connected: false,
+
+        message:
+          "Erè pandan verifikasyon session lan."
+
+      });
+
+    }
+
+  }
+);
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // ⚙️ GET SETTINGS
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// GET /api/settings?session=SESSION_ID
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 app.get(
@@ -211,14 +382,19 @@ app.get(
     try {
 
       const sessionId =
-        req.query.session;
+        String(
+          req.query.session || ""
+        ).trim();
 
       if (!sessionId) {
 
         return res.status(400).json({
+
           success: false,
+
           message:
             "Session ID manke."
+
         });
 
       }
@@ -230,34 +406,43 @@ app.get(
       ) {
 
         return res.status(401).json({
+
           success: false,
+
           message:
-            "Session lan pa valid."
+            "Session lan pa otantifye oswa bot la dekonekte."
+
         });
 
       }
 
-      if (
-        !settingsPanel.isBotConnected()
-      ) {
+      const bot =
+        settingsPanel.getBotInformation(
+          sessionId
+        );
 
-        return res.status(401).json({
-          success: false,
-          message:
-            "Bot la dekonekte."
-        });
+      const settings =
+        settingsPanel.getSettings(
+          sessionId
+        );
 
-      }
+      const sessionInfo =
+        settingsPanel.getSessionInfo(
+          sessionId
+        );
 
       return res.json({
 
         success: true,
 
-        bot:
-          settingsPanel.getBotInformation(),
+        sessionId,
 
-        settings:
-          settingsPanel.getSettings()
+        bot,
+
+        settings,
+
+        connected:
+          sessionInfo?.connected === true
 
       });
 
@@ -273,7 +458,7 @@ app.get(
         success: false,
 
         message:
-          "Erè pandan chajman settings yo."
+          "Pa kapab chaje settings yo."
 
       });
 
@@ -285,6 +470,15 @@ app.get(
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 💾 SAVE SETTINGS
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// POST /api/settings
+//
+// body:
+// {
+//   sessionId,
+//   bot,
+//   settings
+// }
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 app.post(
   "/api/settings",
@@ -294,16 +488,19 @@ app.post(
 
       const {
         sessionId,
-        bot,
-        settings
+        bot = {},
+        settings = {}
       } = req.body || {};
 
       if (!sessionId) {
 
         return res.status(400).json({
+
           success: false,
+
           message:
             "Session ID manke."
+
         });
 
       }
@@ -315,41 +512,12 @@ app.post(
       ) {
 
         return res.status(401).json({
+
           success: false,
+
           message:
-            "Session lan pa valid."
-        });
+            "Session lan pa valid oswa bot la dekonekte."
 
-      }
-
-      if (
-        !settingsPanel.isBotConnected()
-      ) {
-
-        return res.status(401).json({
-          success: false,
-          message:
-            "Bot la dekonekte."
-        });
-
-      }
-
-      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-      // ⚙️ APPLY RUNTIME SETTINGS
-      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-      const settingsSaved =
-        await settingsPanel.applySettings({
-          settings:
-            settings || {}
-        });
-
-      if (!settingsSaved) {
-
-        return res.status(500).json({
-          success: false,
-          message:
-            "Settings yo pa t kapab aplike."
         });
 
       }
@@ -358,22 +526,47 @@ app.post(
       // 🤖 UPDATE BOT INFORMATION
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-      if (bot) {
+      const botUpdated =
+        await settingsPanel.updateBotInformation(
+          sessionId,
+          bot
+        );
 
-        const botUpdated =
-          await settingsPanel.updateBotInformation(
-            bot
-          );
+      if (!botUpdated) {
 
-        if (!botUpdated) {
+        return res.status(409).json({
 
-          return res.status(500).json({
-            success: false,
-            message:
-              "Bot information yo pa t kapab mete ajou."
-          });
+          success: false,
 
-        }
+          message:
+            "Bot session sa a pa konekte ankò."
+
+        });
+
+      }
+
+      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      // ⚙️ APPLY SETTINGS
+      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+      const settingsUpdated =
+        await settingsPanel.applySettings(
+          sessionId,
+          {
+            settings
+          }
+        );
+
+      if (!settingsUpdated) {
+
+        return res.status(409).json({
+
+          success: false,
+
+          message:
+            "Settings yo pa kapab aplike pou session sa a."
+
+        });
 
       }
 
@@ -384,11 +577,17 @@ app.post(
         message:
           "Settings yo sove avèk siksè.",
 
+        sessionId,
+
         bot:
-          settingsPanel.getBotInformation(),
+          settingsPanel.getBotInformation(
+            sessionId
+          ),
 
         settings:
-          settingsPanel.getSettings()
+          settingsPanel.getSettings(
+            sessionId
+          )
 
       });
 
@@ -414,24 +613,61 @@ app.post(
 );
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🔒 VERIFY AUTHENTICATED SESSION
+// 🔘 UPDATE ONE SETTING
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// POST /api/settings/toggle
+//
+// body:
+// {
+//   sessionId,
+//   name,
+//   value
+// }
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-app.get(
-  "/api/auth",
-  (req, res) => {
+app.post(
+  "/api/settings/toggle",
+  async (req, res) => {
 
     try {
 
-      const sessionId =
-        req.query.session;
+      const {
+        sessionId,
+        name,
+        value
+      } = req.body || {};
 
-      const authenticated =
-        settingsPanel.isAuthenticated(
+      if (!sessionId) {
+
+        return res.status(400).json({
+
+          success: false,
+
+          message:
+            "Session ID manke."
+
+        });
+
+      }
+
+      if (!name) {
+
+        return res.status(400).json({
+
+          success: false,
+
+          message:
+            "Setting name manke."
+
+        });
+
+      }
+
+      if (
+        !settingsPanel.isAuthenticated(
           sessionId
-        );
-
-      if (!authenticated) {
+        )
+      ) {
 
         return res.status(401).json({
 
@@ -444,19 +680,49 @@ app.get(
 
       }
 
+      const updated =
+        await settingsPanel.setSetting(
+          sessionId,
+          name,
+          value === true
+        );
+
+      if (!updated) {
+
+        return res.status(400).json({
+
+          success: false,
+
+          message:
+            "Setting sa a pa disponib."
+
+        });
+
+      }
+
       return res.json({
 
         success: true,
 
-        connected:
-          settingsPanel.isBotConnected()
+        message:
+          "Setting la mete ajou.",
+
+        sessionId,
+
+        name,
+
+        value:
+          settingsPanel.getSetting(
+            sessionId,
+            name
+          )
 
       });
 
     } catch (error) {
 
       console.error(
-        "❌ AUTH ERROR:",
+        "❌ TOGGLE SETTING ERROR:",
         error?.message || error
       );
 
@@ -465,7 +731,166 @@ app.get(
         success: false,
 
         message:
-          "Erè pandan verifikasyon session lan."
+          "Erè pandan modification setting la."
+
+      });
+
+    }
+
+  }
+);
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🤖 SESSION INFORMATION
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// GET /api/session?session=SESSION_ID
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+app.get(
+  "/api/session",
+  (req, res) => {
+
+    try {
+
+      const sessionId =
+        String(
+          req.query.session || ""
+        ).trim();
+
+      if (!sessionId) {
+
+        return res.status(400).json({
+
+          success: false,
+
+          message:
+            "Session ID manke."
+
+        });
+
+      }
+
+      const info =
+        settingsPanel.getSessionInfo(
+          sessionId
+        );
+
+      if (!info) {
+
+        return res.status(404).json({
+
+          success: false,
+
+          message:
+            "Session lan pa jwenn."
+
+        });
+
+      }
+
+      return res.json({
+
+        success: true,
+
+        session: info
+
+      });
+
+    } catch (error) {
+
+      console.error(
+        "❌ SESSION INFO ERROR:",
+        error?.message || error
+      );
+
+      return res.status(500).json({
+
+        success: false,
+
+        message:
+          "Pa kapab jwenn enfòmasyon session lan."
+
+      });
+
+    }
+
+  }
+);
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🚪 LOGOUT / DELETE PANEL SESSION
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// POST /api/logout
+//
+// body:
+// {
+//   sessionId
+// }
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+app.post(
+  "/api/logout",
+  (req, res) => {
+
+    try {
+
+      const {
+        sessionId
+      } = req.body || {};
+
+      if (!sessionId) {
+
+        return res.status(400).json({
+
+          success: false,
+
+          message:
+            "Session ID manke."
+
+        });
+
+      }
+
+      const deleted =
+        settingsPanel.deleteSession(
+          sessionId
+        );
+
+      if (!deleted) {
+
+        return res.status(404).json({
+
+          success: false,
+
+          message:
+            "Session lan pa jwenn."
+
+        });
+
+      }
+
+      return res.json({
+
+        success: true,
+
+        message:
+          "Session panel la fèmen."
+
+      });
+
+    } catch (error) {
+
+      console.error(
+        "❌ LOGOUT ERROR:",
+        error?.message || error
+      );
+
+      return res.status(500).json({
+
+        success: false,
+
+        message:
+          "Erè pandan logout."
 
       });
 
@@ -482,18 +907,38 @@ app.get(
   "/",
   (req, res) => {
 
-    return res.sendFile(
+    res.sendFile(
       path.join(
         publicDir,
         "index.html"
-      )
+      ),
+      error => {
+
+        if (error) {
+
+          console.error(
+            "❌ PANEL HOME ERROR:",
+            error?.message || error
+          );
+
+          if (!res.headersSent) {
+
+            res.status(500).send(
+              "TOPFEROS MD Panel pa kapab chaje."
+            );
+
+          }
+
+        }
+
+      }
     );
 
   }
 );
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🚫 404 API
+// 🚫 API 404
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 app.use(
@@ -513,7 +958,7 @@ app.use(
 );
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// ❌ ERROR HANDLER
+// ❌ GLOBAL ERROR HANDLER
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 app.use(
@@ -552,6 +997,10 @@ function startPanel() {
 
   if (server) {
 
+    console.log(
+      "⚠️ Panel server deja ap kouri."
+    );
+
     return server;
 
   }
@@ -567,7 +1016,7 @@ function startPanel() {
         );
 
         console.log(
-          "⚙️ TOPFEROS SETTINGS PANEL"
+          "⚙️ TOPFEROS MD MULTI-SESSION PANEL"
         );
 
         console.log(
@@ -580,6 +1029,10 @@ function startPanel() {
 
         console.log(
           "🖼️ Logo: assets/logo.png"
+        );
+
+        console.log(
+          "👥 Multi-session: ENABLED"
         );
 
         console.log(
@@ -608,13 +1061,17 @@ function stopPanel() {
 
   }
 
-  server.close();
+  server.close(
+    () => {
+
+      console.log(
+        "🔴 SETTINGS PANEL SERVER STOPPED."
+      );
+
+    }
+  );
 
   server = null;
-
-  console.log(
-    "🔴 SETTINGS PANEL SERVER STOPPED."
-  );
 
   return true;
 }
@@ -632,3 +1089,7 @@ module.exports = {
   stopPanel
 
 };
+
+// ╔════════════════════════════════════════════════════╗
+// ║                 By TOPFEROS TECH                  ║
+// ╚════════════════════════════════════════════════════╝
