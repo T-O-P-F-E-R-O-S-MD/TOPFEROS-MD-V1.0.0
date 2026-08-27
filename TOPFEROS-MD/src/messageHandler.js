@@ -1,3 +1,5 @@
+"src/messageHandler.js"
+
 "use strict";
 
 // ╔════════════════════════════════════════════════════╗
@@ -7,7 +9,6 @@
 // ╚════════════════════════════════════════════════════╝
 
 const config = require("../config");
-
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // ⚙️ CONFIGURATION
@@ -24,7 +25,7 @@ async function handleMessage(sock, message) {
   try {
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 🛡️ BASIC MESSAGE VALIDATION
+    // 🛡️ BASIC VALIDATION
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     if (
@@ -37,7 +38,7 @@ async function handleMessage(sock, message) {
 
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 📍 GET CHAT JID
+    // 📍 CHAT JID
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     const remoteJid =
@@ -49,7 +50,7 @@ async function handleMessage(sock, message) {
 
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 🚫 IGNORE WHATSAPP STATUS
+    // 🚫 IGNORE STATUS
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     if (
@@ -60,7 +61,7 @@ async function handleMessage(sock, message) {
 
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 👤 MESSAGE SENDER
+    // 👤 SENDER
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     const sender =
@@ -72,207 +73,263 @@ async function handleMessage(sock, message) {
 
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 💬 EXTRACT MESSAGE TEXT
+    // 💬 EXTRACT TEXT
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     const text =
       getMessageText(message);
 
-    if (!text) {
-      return;
-    }
-
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 🔰 GET BOT PREFIX
+    // 🔰 GET PREFIX
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     const prefix =
-      config?.bot?.prefix ||
-      DEFAULT_PREFIX;
+      getPrefix();
 
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 🔎 CHECK PREFIX
+    // 📦 COMMAND DETECTION
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-    if (
-      !text.startsWith(prefix)
-    ) {
-      return;
-    }
+    const hasPrefix =
+      typeof text === "string" &&
+      text.startsWith(prefix);
 
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // ✂️ REMOVE PREFIX
+    // ⚙️ COMMAND HANDLING
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-    const commandText =
-      text
-        .slice(prefix.length)
-        .trim();
+    if (hasPrefix) {
 
-    if (!commandText) {
-      return;
-    }
+      const commandText =
+        text
+          .slice(prefix.length)
+          .trim();
 
-
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 🧩 PARSE COMMAND
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-    const parts =
-      commandText.split(/\s+/);
-
-    const command =
-      String(
-        parts.shift() || ""
-      )
-        .trim()
-        .toLowerCase();
-
-    const args =
-      parts;
-
-
-    if (!command) {
-      return;
-    }
-
-
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 📝 FULL COMMAND TEXT
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-    const commandArgsText =
-      args.join(" ").trim();
-
-
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 📦 COMMAND CONTEXT
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-    const commandData = {
-
-      // 🤖 WhatsApp socket
-      sock,
-
-      // 📨 Original message
-      message,
-
-      // 📍 Chat
-      jid: remoteJid,
-
-      // 👤 Sender
-      sender,
-
-      // 👑 From bot account
-      isFromMe,
-
-      // 💬 Original text
-      text,
-
-      // 🔰 Prefix
-      prefix,
-
-      // ⚡ Command
-      command,
-
-      // 📋 Arguments
-      args,
-
-      // 📝 Arguments as text
-      commandText: commandArgsText
-    };
-
-
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 📝 COMMAND LOG
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-    console.log(
-      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    );
-
-    console.log(
-      `📩 COMMAND: ${prefix}${command}`
-    );
-
-    console.log(
-      `👤 SENDER: ${sender}`
-    );
-
-    console.log(
-      `💬 TEXT: ${text}`
-    );
-
-    console.log(
-      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    );
-
-
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 🔌 LOAD COMMAND ROUTER
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-    const commandRouter =
-      require("../commands");
-
-
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // ⚡ EXECUTE COMMAND
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-    if (
-      commandRouter &&
-      typeof commandRouter.handle ===
-        "function"
-    ) {
-
-      const handled =
-        await commandRouter.handle(
-          commandData
-        );
-
-
-      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-      // ✅ COMMAND EXECUTED
-      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-      if (handled) {
-
-        console.log(
-          `✅ COMMAND EXECUTED: ${prefix}${command}`
-        );
-
+      if (!commandText) {
         return;
       }
 
 
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-      // ⚠️ COMMAND NOT FOUND
+      // 🧩 PARSE COMMAND
+      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+      const parts =
+        commandText.split(/\s+/);
+
+      const command =
+        String(
+          parts.shift() || ""
+        )
+          .trim()
+          .toLowerCase();
+
+      const args =
+        parts;
+
+      if (!command) {
+        return;
+      }
+
+
+      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      // 📝 ARGUMENTS TEXT
+      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+      const commandArgsText =
+        args.join(" ").trim();
+
+
+      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      // 📦 COMMAND CONTEXT
+      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+      const commandData = {
+
+        // 🤖 WhatsApp socket
+        sock,
+
+        // 📨 Original message
+        message,
+
+        // 📍 Chat
+        jid: remoteJid,
+
+        // 👤 Sender
+        sender,
+
+        // 👑 Bot account
+        isFromMe,
+
+        // 💬 Original text
+        text,
+
+        // 🔰 Prefix
+        prefix,
+
+        // ⚡ Command
+        command,
+
+        // 📋 Arguments
+        args,
+
+        // 📝 Arguments as text
+        commandText: commandArgsText,
+
+        // ⚙️ Config
+        config
+
+      };
+
+
+      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      // 📝 COMMAND LOG
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
       console.log(
-        `⚠️ COMMAND NOT HANDLED: ${prefix}${command}`
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
       );
+
+      console.log(
+        `📩 COMMAND: ${prefix}${command}`
+      );
+
+      console.log(
+        `👤 SENDER: ${sender}`
+      );
+
+      console.log(
+        `💬 TEXT: ${text}`
+      );
+
+      console.log(
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+      );
+
+
+      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      // 🔌 LOAD COMMAND ROUTER
+      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+      const commandRouter =
+        require("../commands");
+
+
+      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      // ⚡ EXECUTE COMMAND
+      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+      if (
+        commandRouter &&
+        typeof commandRouter.handle ===
+          "function"
+      ) {
+
+        const handled =
+          await commandRouter.handle(
+            commandData
+          );
+
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // ✅ COMMAND EXECUTED
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+        if (handled) {
+
+          console.log(
+            `✅ COMMAND EXECUTED: ${prefix}${command}`
+          );
+
+          return;
+        }
+
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // ⚠️ COMMAND NOT FOUND
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+        console.log(
+          `⚠️ COMMAND NOT HANDLED: ${prefix}${command}`
+        );
+
+      } else {
+
+        console.error(
+          "❌ Command router pa disponib."
+        );
+
+      }
 
       return;
     }
 
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // ❌ COMMAND ROUTER ERROR
+    // 🤖 NON-PREFIX MESSAGE
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    //
+    // Mesaj san prefix yo pa command.
+    //
+    // Yo rete disponib pou fonksyon otomatik yo:
+    //
+    // • Auto Status
+    // • View Once
+    // • Auto Chat / AI
+    // • Auto React
+    // • Anti Spam
+    // • Lòt handlers otomatik
+    //
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-    console.error(
-      "❌ Command router pa disponib."
-    );
+    const automaticContext = {
+
+      sock,
+
+      message,
+
+      jid: remoteJid,
+
+      sender,
+
+      isFromMe,
+
+      text,
+
+      prefix,
+
+      config
+
+    };
+
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // 🔄 AUTOMATIC HANDLER HOOK
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    //
+    // Pou kounye a nou pa fòse okenn fonksyon isit la.
+    // Sa pèmèt nou ajoute yo san nou pa kraze commands.
+    //
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    if (
+      typeof module.exports.handleAutomatic ===
+        "function"
+    ) {
+
+      await module.exports.handleAutomatic(
+        automaticContext
+      );
+
+    }
 
   } catch (error) {
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 🚨 GLOBAL MESSAGE HANDLER ERROR
+    // 🚨 GLOBAL ERROR
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     console.error(
@@ -290,6 +347,7 @@ async function handleMessage(sock, message) {
     console.error(
       "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     );
+
   }
 }
 
@@ -316,6 +374,7 @@ function getMessageText(message) {
     typeof content.conversation ===
       "string"
   ) {
+
     return content.conversation;
   }
 
@@ -329,6 +388,7 @@ function getMessageText(message) {
       .extendedTextMessage
       ?.text === "string"
   ) {
+
     return content
       .extendedTextMessage
       .text;
@@ -344,6 +404,7 @@ function getMessageText(message) {
       .imageMessage
       ?.caption === "string"
   ) {
+
     return content
       .imageMessage
       .caption;
@@ -359,6 +420,7 @@ function getMessageText(message) {
       .videoMessage
       ?.caption === "string"
   ) {
+
     return content
       .videoMessage
       .caption;
@@ -374,6 +436,7 @@ function getMessageText(message) {
       .documentMessage
       ?.caption === "string"
   ) {
+
     return content
       .documentMessage
       .caption;
@@ -381,7 +444,7 @@ function getMessageText(message) {
 
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // ❌ NO TEXT FOUND
+  // ❌ NO TEXT
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   return null;
@@ -389,7 +452,7 @@ function getMessageText(message) {
 
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🧹 NORMALIZE PREFIX
+// 🔰 GET PREFIX
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 function getPrefix() {
@@ -398,6 +461,21 @@ function getPrefix() {
     config?.bot?.prefix ||
     DEFAULT_PREFIX
   );
+}
+
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🔄 AUTOMATIC HANDLER
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//
+// Fonksyon sa a se yon hook pou handlers otomatik.
+// Nou kite l vid pou kounye a pou evite erè.
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+async function handleAutomatic(context = {}) {
+
+  // Fonksyon otomatik yo pral ajoute isit la.
+  return false;
 }
 
 
@@ -414,11 +492,14 @@ module.exports = {
   getMessageText,
 
   // 🔰 Prefix helper
-  getPrefix
+  getPrefix,
+
+  // 🔄 Automatic handler
+  handleAutomatic
+
 };
 
 
 // ╔════════════════════════════════════════════════════╗
-// ║              🤖 TOPFEROS MD V1.0.0               ║
-// ║                🚀 TOPFEROS TECH                  ║
+// ║                    By TOPFEROS MD                 ║
 // ╚════════════════════════════════════════════════════╝
