@@ -1,259 +1,388 @@
-// ╔══════════════════════════════════════════════╗
-// ║            🤖 TOPFEROS MD V1.0.0            ║
-// ║              🚀 TOPFEROS TECH               ║
-// ╚══════════════════════════════════════════════╝
+"use strict";
+
+// ╔════════════════════════════════════════════════════╗
+// ║                                                    ║
+// ║                 🤖 TOPFEROS MD                    ║
+// ║                    V1.0.0                          ║
+// ║                                                    ║
+// ║                 🚀 TOPFEROS TECH                   ║
+// ║                                                    ║
+// ╚════════════════════════════════════════════════════╝
 
 require("dotenv").config();
 
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🤖 TOPFEROS MD — CONFIGURATION
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 const config = {
 
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // 🤖 BOT INFORMATION
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🤖 BOT INFORMATION
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  bot: {
-    name: "TOPFEROS MD",
-    version: "V1.0.0",
-    prefix: ".",
-    developer: "TOPFEROS TECH",
+bot: {
 
-    // 🖼️ Logo prensipal bot la
-    logo: "assets/1785077175499.png",
+name:
+  "TOPFEROS MD",
 
-    // Public / Private
-    mode: "public"
+version:
+  "V1.0.0",
+
+// 🔰 Prefix default
+prefix:
+  ".",
+
+// 👥 public / private
+mode:
+  "public",
+
+// 👨‍💻 Developer
+developer:
+  "TOPFEROS TECH",
+
+// 🖼️ Logo prensipal bot la
+logo:
+  "assets/logo.png",
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🦁 SESSION INFORMATION
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//
+// Non ak nimewo user la PA ekri isit la.
+// Yo pral soti dirèkteman nan kont WhatsApp
+// ki konekte a atravè sock.user.
+//
+
+session: {
+
+  // 👤 Montre non kont WhatsApp ki konekte a
+  showUserName:
+    true,
+
+  // 📱 Montre nimewo kont WhatsApp ki konekte a
+  showUserNumber:
+    true
+}
+
+},
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 👑 OWNER / ADMIN BOT
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+owner: {
+
+name:
+  process.env.OWNER_NAME ||
+  "TOPFEROS MD",
+
+number:
+  process.env.OWNER_NUMBER ||
+  ""
+
+},
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🔗 OFFICIAL LINKS
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+links: {
+
+// 📢 WhatsApp Channel
+channel:
+  "https://whatsapp.com/channel/0029Vb8mtECL7UVSGYQOdm13",
+
+// 👥 WhatsApp Group
+group:
+  "https://chat.whatsapp.com/COEEHvkaiu33hXwWfiO0Pq?s=cl&p=a&mlu=4",
+
+// 🌐 Web Bot
+web:
+  process.env.WEB_BOT_LINK ||
+  ""
+
+},
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ⚙️ BOT FEATURES
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+features: {
+
+// 💬 Message System
+alwaysOnline:
+  true,
+
+fakeTyping:
+  true,
+
+fakeRecording:
+  false,
+
+autoReact:
+  true,
+
+
+// 👁️ Status System
+autoStatusSeen:
+  true,
+
+statusLike:
+  true,
+
+statusReply:
+  false,
+
+statusReact:
+  true,
+
+
+// 🛡️ Security System
+antiCall:
+  true,
+
+antiDelete:
+  true,
+
+antiSpam:
+  true,
+
+
+// 🤖 AI System
+aiChat:
+  true,
+
+autoAIReply:
+  false
+
+},
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 👥 GROUP MANAGEMENT
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+group: {
+
+// 👋 Welcome / Goodbye
+welcome:
+  true,
+
+goodbye:
+  false,
+
+
+// 🛡️ Group Security
+antiSpam:
+  true,
+
+antiLink:
+  false,
+
+antiDelete:
+  true,
+
+groupSecurity:
+  true,
+
+
+// 👑 Admin Bot
+adminNumber:
+  process.env.ADMIN_BOT_NUMBER ||
+  "",
+
+adminName:
+  process.env.ADMIN_BOT_NAME ||
+  "TOPFEROS MD",
+
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🔒 GROUP SCHEDULE
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+schedule: {
+
+  enabled:
+    false,
+
+
+  // 🔒 Fèmen group
+  close: {
+
+    enabled:
+      false,
+
+    time:
+      "22:00"
   },
 
 
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // 👑 OWNER / ADMIN BOT
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 🔓 Louvri group
+  open: {
 
-  owner: {
-    name: process.env.OWNER_NAME || "TOPFEROS MD",
-    number: process.env.OWNER_NUMBER || ""
+    enabled:
+      false,
+
+    time:
+      "06:00"
   },
 
 
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // 🔗 OFFICIAL LINKS
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 🇭🇹 Haiti timezone
+  timezone:
+    "America/Port-au-Prince"
+}
 
-  links: {
+},
 
-    // 📢 WhatsApp Channel
-    channel:
-      "https://whatsapp.com/channel/0029Vb8mtECL7UVSGYQOdm13",
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🌐 WEB SETTINGS PORTAL
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-    // 👥 WhatsApp Group
-    group:
-      "https://chat.whatsapp.com/COEEHvkaiu33hXwWfiO0Pq?s=cl&p=a&mlu=4",
+portal: {
 
-    // 🌐 Web Bot
-    // Nou pral mete sa apre deployment portal la.
-    web:
-      process.env.WEB_BOT_LINK || ""
-  },
+enabled:
+  true,
 
+// 🌐 Port Web Portal la
+port:
+  Number(
+    process.env.PORTAL_PORT
+  ) || 3000,
 
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // ⚙️ BOT FEATURES
-  // Tout ON/OFF sa yo pral kontwole
-  // nan Web Settings Portal la.
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🔐 Session Secret
+sessionSecret:
+  process.env.SESSION_SECRET ||
+  "CHANGE_THIS_SECRET",
 
-  features: {
+// 🔑 Longè setting code la
+settingCodeLength:
+  12
 
-    // 💬 Message
-    alwaysOnline: true,
-    fakeTyping: true,
-    fakeRecording: false,
-    autoReact: true,
+},
 
-    // 👁️ Status
-    autoStatusSeen: true,
-    statusLike: true,
-    statusReply: false,
-    statusReact: true,
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🗄️ DATABASE
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-    // 🛡️ Security
-    antiCall: true,
-    antiDelete: true,
-    antiSpam: true,
+database: {
 
-    // 🤖 AI
-    aiChat: true,
-    autoAIReply: false
-  },
+type:
+  "sqlite",
 
+path:
+  process.env.DATABASE_PATH ||
+  "./database/topferos.db"
 
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // 👥 GROUP MANAGEMENT
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+},
 
-  group: {
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🤖 AI CONFIGURATION
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-    // 👋 Welcome / Goodbye
-    welcome: true,
-    goodbye: false,
+ai: {
 
-    // 🛡️ Group Security
-    antiSpam: true,
-    antiLink: false,
-    antiDelete: true,
-    groupSecurity: true,
+enabled:
+  true,
 
-    // 👑 Admin Bot
-    adminNumber:
-      process.env.ADMIN_BOT_NUMBER || "",
+provider:
+  process.env.AI_PROVIDER ||
+  "",
 
-    adminName:
-      process.env.ADMIN_BOT_NAME || "TOPFEROS MD",
+apiKey:
+  process.env.AI_API_KEY ||
+  "",
 
+model:
+  process.env.AI_MODEL ||
+  "",
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 🔒 GROUP SCHEDULE
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+autoReply:
+  false
 
-    schedule: {
+},
 
-      enabled: false,
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 📥 MEDIA DOWNLOADER
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-      // 🔒 Fèmen group
-      close: {
-        enabled: false,
-        time: "22:00"
-      },
+downloader: {
 
-      // 🔓 Louvri group
-      open: {
-        enabled: false,
-        time: "06:00"
-      },
+enabled:
+  true,
 
-      // 🇭🇹 Haiti timezone
-      timezone: "America/Port-au-Prince"
-    }
-  },
+youtube:
+  true,
 
+tiktok:
+  true,
 
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // 🌐 WEB SETTINGS PORTAL
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+instagram:
+  true,
 
-  portal: {
+facebook:
+  true
 
-    enabled: true,
+},
 
-    // Port Web Portal la
-    port:
-      Number(process.env.PORTAL_PORT) || 3000,
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 👋 WELCOME MESSAGE
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-    // Session secret
-    sessionSecret:
-      process.env.SESSION_SECRET ||
-      "CHANGE_THIS_SECRET",
+welcome: {
 
-    // Longè setting code la
-    settingCodeLength: 12
-  },
+enabled:
+  true,
 
+// 🖼️ Montre logo
+showLogo:
+  true,
 
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // 🗄️ DATABASE
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🔗 Montre Channel / Group / Web
+showLinks:
+  true,
 
-  database: {
+// ✨ Montre kapasite bot la
+showFeatures:
+  true
 
-    type: "sqlite",
+},
 
-    path:
-      process.env.DATABASE_PATH ||
-      "./database/topferos.db"
-  },
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🛡️ SECURITY CONFIGURATION
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+security: {
 
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // 🤖 AI CONFIGURATION
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ⚠️ Konbyen warning anvan aksyon
+maxWarnings:
+  3,
 
-  ai: {
 
-    enabled: true,
+antiSpam: {
 
-    provider:
-      process.env.AI_PROVIDER || "",
+  enabled:
+    true,
 
-    apiKey:
-      process.env.AI_API_KEY || "",
+  // 📩 Maksimòm mesaj
+  maxMessages:
+    5,
 
-    model:
-      process.env.AI_MODEL || "",
+  // ⏱️ Interval: 10 segonn
+  interval:
+    10000
+}
 
-    autoReply: false
-  },
-
-
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // 📥 MEDIA DOWNLOADER
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-  downloader: {
-
-    enabled: true,
-
-    youtube: true,
-    tiktok: true,
-    instagram: true,
-    facebook: true
-  },
-
-
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // 👋 WELCOME MESSAGE
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-  welcome: {
-
-    enabled: true,
-
-    // 🖼️ Montre logo a
-    showLogo: true,
-
-    // 🔗 Montre Channel / Group / Web
-    showLinks: true,
-
-    // ✨ Montre kapasite bot la
-    showFeatures: true
-  },
-
-
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // 🛡️ SECURITY CONFIGURATION
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-  security: {
-
-    // Konbyen warning anvan aksyon
-    maxWarnings: 3,
-
-    antiSpam: {
-
-      enabled: true,
-
-      // Maksimòm mesaj
-      maxMessages: 5,
-
-      // 10 segonn
-      interval: 10000
-    }
-  }
+}
 
 };
 
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 📤 EXPORT CONFIGURATION
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 module.exports = config;
+
+// ╔════════════════════════════════════════════════════╗
+// ║                    by TOPFEROS MD                    ║
+// ╚════════════════════════════════════════════════════╝
