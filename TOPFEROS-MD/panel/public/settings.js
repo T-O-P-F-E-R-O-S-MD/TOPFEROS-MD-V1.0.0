@@ -1,16 +1,26 @@
 "use strict";
 
+// ╔════════════════════════════════════════════════════╗
+// ║              🤖 TOPFEROS MD V1.0.0               ║
+// ║          ⚙️ SETTINGS PANEL — MULTI-SESSION       ║
+// ║              🚀 TOPFEROS TECH                     ║
+// ╚════════════════════════════════════════════════════╝
+
+
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// ⚙️ TOPFEROS MD — SETTINGS PANEL LOGIC
+// 🖼️ LOGO
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//
+// server.js ap sèvi assets/logo.png kòm:
+// /logo.png
+//
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-// 🖼️ Logo bot la
-// Fichier logo a dwe disponib kòm:
-// panel/public/logo.png
 const LOGO_URL = "/logo.png";
 
+
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🔐 SESSION PANEL
+// 🔐 SESSION ID
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 const params =
@@ -20,6 +30,7 @@ const params =
 
 const sessionId =
   params.get("session");
+
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 📦 ELEMENTS
@@ -55,11 +66,13 @@ const botLogo =
     "botLogo"
   );
 
+
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// ⚙️ SETTINGS KI DISPONIB
+// ⚙️ SETTINGS KI PANEL LA SIPÒTE
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 const settingNames = [
+
   "publicMode",
   "privateMode",
 
@@ -87,7 +100,9 @@ const settingNames = [
 
   "groupClose",
   "groupOpen"
+
 ];
+
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 🔎 JWENN SWITCH YO
@@ -100,14 +115,16 @@ function getSwitches() {
       "input[data-setting]"
     )
   );
+
 }
+
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 📢 SHOW MESSAGE
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 function showMessage(
-  text,
+  text = "",
   success = false
 ) {
 
@@ -116,13 +133,15 @@ function showMessage(
   }
 
   settingsMessage.textContent =
-    text || "";
+    text;
 
   settingsMessage.style.color =
     success
       ? "#72ffad"
       : "#ff7777";
+
 }
+
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 🔐 VERIFY SESSION
@@ -131,8 +150,14 @@ function showMessage(
 async function verifySession() {
 
   if (!sessionId) {
+
+    showMessage(
+      "❌ Session ID pa jwenn."
+    );
+
     return false;
   }
+
 
   try {
 
@@ -147,28 +172,34 @@ async function verifySession() {
         }
       );
 
+
     if (!response.ok) {
       return false;
     }
 
+
     const result =
       await response.json();
+
 
     return (
       result.success === true &&
       result.connected === true
     );
 
+
   } catch (error) {
 
     console.error(
       "❌ SETTINGS AUTH ERROR:",
-      error?.message || error
+      error
     );
 
     return false;
   }
+
 }
+
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 📥 LOAD SETTINGS
@@ -182,8 +213,11 @@ async function loadSettings() {
       "❌ Session panel la pa jwenn."
     );
 
-    return;
+    disableSave();
+
+    return false;
   }
+
 
   try {
 
@@ -198,8 +232,10 @@ async function loadSettings() {
         }
       );
 
+
     const result =
       await response.json();
+
 
     if (
       !response.ok ||
@@ -211,12 +247,13 @@ async function loadSettings() {
         "❌ Pa kapab chaje settings yo."
       );
 
-      return;
+      return false;
     }
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // 🤖 BOT INFORMATION
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     if (
       result.bot &&
@@ -225,7 +262,9 @@ async function loadSettings() {
 
       botNameInput.value =
         result.bot.name || "";
+
     }
+
 
     if (
       result.bot &&
@@ -234,7 +273,9 @@ async function loadSettings() {
 
       botAgeInput.value =
         result.bot.age ?? "";
+
     }
+
 
     if (
       result.bot &&
@@ -243,14 +284,17 @@ async function loadSettings() {
 
       botPrefixInput.value =
         result.bot.prefix || ".";
+
     }
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // ⚙️ ON / OFF SETTINGS
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // ⚙️ SETTINGS
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     const settings =
       result.settings || {};
+
 
     getSwitches()
       .forEach(input => {
@@ -258,7 +302,9 @@ async function loadSettings() {
         const name =
           input.dataset.setting;
 
+
         if (
+          settingNames.includes(name) &&
           Object.prototype.hasOwnProperty.call(
             settings,
             name
@@ -267,27 +313,37 @@ async function loadSettings() {
 
           input.checked =
             settings[name] === true;
+
         }
 
       });
+
 
     showMessage(
       "",
       true
     );
 
+
+    return true;
+
+
   } catch (error) {
 
     console.error(
       "❌ LOAD SETTINGS ERROR:",
-      error?.message || error
+      error
     );
 
     showMessage(
       "❌ Erè pandan chajman settings yo."
     );
+
+    return false;
   }
+
 }
+
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 📤 COLLECT SETTINGS
@@ -297,11 +353,13 @@ function collectSettings() {
 
   const settings = {};
 
+
   getSwitches()
     .forEach(input => {
 
       const name =
         input.dataset.setting;
+
 
       if (
         settingNames.includes(name)
@@ -309,34 +367,23 @@ function collectSettings() {
 
         settings[name] =
           input.checked;
+
       }
 
     });
 
+
   return settings;
 }
 
+
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 💾 SAVE SETTINGS
+// 🤖 COLLECT BOT INFORMATION
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-async function saveSettings() {
+function collectBotInformation() {
 
-  showMessage("");
-
-  const authenticated =
-    await verifySession();
-
-  if (!authenticated) {
-
-    showMessage(
-      "🔴 Bot la dekonekte oswa session la pa valid."
-    );
-
-    return;
-  }
-
-  const bot = {
+  return {
 
     name:
       botNameInput
@@ -354,11 +401,17 @@ async function saveSettings() {
       botPrefixInput
         ? botPrefixInput.value.trim()
         : "."
+
   };
 
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // 🔎 VALIDATION
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+}
+
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🔎 VALIDATE BOT INFORMATION
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+function validateBotInformation(bot) {
 
   if (!bot.name) {
 
@@ -366,12 +419,11 @@ async function saveSettings() {
       "❌ Nom Bot pa ka vid."
     );
 
-    if (botNameInput) {
-      botNameInput.focus();
-    }
+    botNameInput?.focus();
 
-    return;
+    return false;
   }
+
 
   if (
     !Number.isFinite(bot.age) ||
@@ -382,12 +434,11 @@ async function saveSettings() {
       "❌ Âge Bot la pa valid."
     );
 
-    if (botAgeInput) {
-      botAgeInput.focus();
-    }
+    botAgeInput?.focus();
 
-    return;
+    return false;
   }
+
 
   if (!bot.prefix) {
 
@@ -395,15 +446,98 @@ async function saveSettings() {
       "❌ Prefix pa ka vid."
     );
 
-    if (botPrefixInput) {
-      botPrefixInput.focus();
-    }
+    botPrefixInput?.focus();
+
+    return false;
+  }
+
+
+  return true;
+}
+
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🔒 DISABLE SAVE
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+function disableSave() {
+
+  if (saveButton) {
+    saveButton.disabled = true;
+  }
+
+}
+
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🔓 ENABLE SAVE
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+function enableSave() {
+
+  if (saveButton) {
+    saveButton.disabled = false;
+  }
+
+}
+
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 💾 SAVE SETTINGS
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+async function saveSettings() {
+
+  showMessage("");
+
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 🔐 VERIFY CURRENT SESSION
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  const authenticated =
+    await verifySession();
+
+
+  if (!authenticated) {
+
+    showMessage(
+      "🔴 Bot la dekonekte oswa session la pa valid."
+    );
+
+    disableSave();
 
     return;
   }
 
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 🤖 BOT INFORMATION
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  const bot =
+    collectBotInformation();
+
+
+  if (
+    !validateBotInformation(bot)
+  ) {
+
+    return;
+  }
+
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // ⚙️ SETTINGS
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
   const settings =
     collectSettings();
+
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 🔒 DISABLE BUTTON
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   if (saveButton) {
 
@@ -412,9 +546,15 @@ async function saveSettings() {
 
     saveButton.textContent =
       "Saving...";
+
   }
 
+
   try {
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // 📡 SEND TO SERVER
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     const response =
       await fetch(
@@ -429,15 +569,30 @@ async function saveSettings() {
 
           body:
             JSON.stringify({
+
+              // 🔐 SESSION SA A
               sessionId,
+
+              // 🤖 BOT INFORMATION
               bot,
+
+              // ⚙️ SETTINGS
               settings
+
             })
+
+          }
         }
       );
 
+
     const result =
       await response.json();
+
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // ❌ SAVE ERROR
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     if (
       !response.ok ||
@@ -452,21 +607,28 @@ async function saveSettings() {
       return;
     }
 
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // ✅ SAVE SUCCESS
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
     showMessage(
       "✅ Settings yo sove avèk siksè.",
       true
     );
 
+
   } catch (error) {
 
     console.error(
       "❌ SAVE SETTINGS ERROR:",
-      error?.message || error
+      error
     );
 
     showMessage(
       "❌ Pa kapab kontakte server panel la."
     );
+
 
   } finally {
 
@@ -477,9 +639,13 @@ async function saveSettings() {
 
       saveButton.textContent =
         "SAVE ✅";
+
     }
+
   }
+
 }
+
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 🖱️ SAVE BUTTON
@@ -491,34 +657,9 @@ if (saveButton) {
     "click",
     saveSettings
   );
+
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🔄 CHECK CONNECTION
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-async function monitorSettings() {
-
-  const authenticated =
-    await verifySession();
-
-  if (!authenticated) {
-
-    showMessage(
-      "🔴 Bot la dekonekte oswa session la ekspire."
-    );
-
-    if (saveButton) {
-      saveButton.disabled = true;
-    }
-
-    return;
-  }
-
-  if (saveButton) {
-    saveButton.disabled = false;
-  }
-}
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 🖼️ SETUP LOGO
@@ -527,44 +668,200 @@ async function monitorSettings() {
 function setupLogo() {
 
   if (!botLogo) {
-    console.warn(
-      "⚠️ Element #botLogo pa jwenn nan settings.html"
-    );
-
     return;
   }
+
 
   botLogo.src =
     LOGO_URL;
 
+
   botLogo.alt =
     "TOPFEROS MD V1.0.0";
+
 
   botLogo.style.display =
     "block";
 
-  botLogo.onerror = () => {
 
-    console.warn(
-      "⚠️ Logo pa kapab chaje:",
-      LOGO_URL
-    );
+  botLogo.onerror =
+    () => {
 
-  };
+      console.warn(
+        "⚠️ Logo pa kapab chaje:",
+        LOGO_URL
+      );
+
+    };
+
 }
 
+
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🚀 INITIALIZE SETTINGS
+// 🦶 SETUP FOOTER
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//
+// Footer sa a ap parèt anba entèfas la.
+// HTML la dwe genyen yon element:
+// <div class="footer"></div>
+//
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-(async function initSettings() {
+function setupFooter() {
 
-  // Logo
-  setupLogo();
+  let footer =
+    document.querySelector(
+      ".footer"
+    );
 
-  // Verify session
+
+  // Si footer la pa egziste,
+  // nou kreye li otomatikman.
+  if (!footer) {
+
+    footer =
+      document.createElement(
+        "div"
+      );
+
+    footer.className =
+      "footer";
+
+
+    document.body.appendChild(
+      footer
+    );
+
+  }
+
+
+  footer.innerHTML = `
+    <div class="footer-line">
+      =========================
+    </div>
+
+    <div class="footer-text">
+      By TOPFEROS TECH
+    </div>
+
+    <div class="footer-line">
+      =========================
+    </div>
+  `;
+
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 🎨 FOOTER STYLE
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  footer.style.width =
+    "100%";
+
+  footer.style.textAlign =
+    "center";
+
+  footer.style.marginTop =
+    "40px";
+
+  footer.style.padding =
+    "20px 10px";
+
+  footer.style.boxSizing =
+    "border-box";
+
+  footer.style.fontWeight =
+    "600";
+
+  footer.style.fontSize =
+    "14px";
+
+  footer.style.lineHeight =
+    "1.8";
+
+
+  const lines =
+    footer.querySelectorAll(
+      ".footer-line"
+    );
+
+
+  lines.forEach(line => {
+
+    line.style.opacity =
+      "0.7";
+
+  });
+
+
+  const footerText =
+    footer.querySelector(
+      ".footer-text"
+    );
+
+
+  if (footerText) {
+
+    footerText.style.margin =
+      "4px 0";
+
+  }
+
+}
+
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🔄 MONITOR SESSION
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+async function monitorSettings() {
+
+  if (!sessionId) {
+
+    disableSave();
+
+    return;
+  }
+
+
   const authenticated =
     await verifySession();
+
+
+  if (!authenticated) {
+
+    showMessage(
+      "🔴 Bot la dekonekte oswa session la ekspire."
+    );
+
+    disableSave();
+
+    return;
+  }
+
+
+  enableSave();
+
+}
+
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🚀 INITIALIZE
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+async function initSettings() {
+
+  // 🖼️ Logo
+  setupLogo();
+
+
+  // 🦶 Footer
+  setupFooter();
+
+
+  // 🔐 Verify session
+  const authenticated =
+    await verifySession();
+
 
   if (!authenticated) {
 
@@ -572,17 +869,24 @@ function setupLogo() {
       "❌ Session panel la pa valid oswa bot la dekonekte."
     );
 
-    if (saveButton) {
-      saveButton.disabled = true;
-    }
+    disableSave();
 
     return;
   }
 
-  // Load settings
+
+  // 📥 Load settings
   await loadSettings();
 
-})();
+}
+
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🚀 START
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+initSettings();
+
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // ⏱️ AUTO CONNECTION CHECK
@@ -593,6 +897,7 @@ setInterval(
   5000
 );
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🦁 TOPFEROS MD V1.0.0
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+// ╔════════════════════════════════════════════════════╗
+// ║                    By TOPFEROS TECH               ║
+// ╚════════════════════════════════════════════════════╝
