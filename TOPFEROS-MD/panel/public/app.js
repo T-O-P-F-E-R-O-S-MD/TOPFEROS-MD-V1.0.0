@@ -1,340 +1,644 @@
 "use strict";
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// ⚙️ TOPFEROS MD — SETTINGS PANEL APP
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ╔════════════════════════════════════════════════════╗
+// ║              🤖 TOPFEROS MD V1.0.0               ║
+// ║             🌐 PANEL APPLICATION JS              ║
+// ║          ⚙️ MULTI-SESSION + LANGUAGE              ║
+// ║              🚀 TOPFEROS TECH                     ║
+// ╚════════════════════════════════════════════════════╝
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 🔎 SESSION ID
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 const params =
-  new URLSearchParams(
-    window.location.search
-  );
+new URLSearchParams(
+window.location.search
+);
 
 const sessionId =
-  params.get("session");
+params.get("session");
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 📦 ELEMENTS
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 const loginScreen =
-  document.getElementById(
-    "loginScreen"
-  );
-
-const settingsScreen =
-  document.getElementById(
-    "settingsScreen"
-  );
+document.getElementById(
+"loginScreen"
+);
 
 const numberInput =
-  document.getElementById(
-    "number"
-  );
+document.getElementById(
+"number"
+);
 
 const codeInput =
-  document.getElementById(
-    "code"
-  );
+document.getElementById(
+"code"
+);
 
 const nextButton =
-  document.getElementById(
-    "nextButton"
-  );
+document.getElementById(
+"nextButton"
+);
 
 const message =
-  document.getElementById(
-    "message"
+document.getElementById(
+"message"
+);
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🌍 LANGUAGE
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+const LANGUAGE_KEY =
+"topferos_language";
+
+const SUPPORTED_LANGUAGES = [
+"en",
+"fr",
+"es"
+];
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🌐 LANGUAGE TEXT
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+const translations = {
+
+en: {
+title:
+"TOPFEROS MD",
+
+subtitle:
+  "⚙️ Settings Panel",
+
+number:
+  "Number:",
+
+numberPlaceholder:
+  "Enter bot number",
+
+code:
+  "Code:",
+
+codePlaceholder:
+  "Enter panel code",
+
+next:
+  "NEXT",
+
+checking:
+  "Checking...",
+
+sessionMissing:
+  "❌ Panel link has no session.",
+
+numberMissing:
+  "❌ Enter the bot number.",
+
+codeMissing:
+  "❌ Enter the panel code.",
+
+disconnected:
+  "❌ Bot is disconnected. This code is no longer valid.",
+
+loginFailed:
+  "❌ Login failed.",
+
+serverError:
+  "❌ Unable to contact the panel server.",
+
+made:
+  "Made in TOPFEROS TECH"
+
+},
+
+fr: {
+title:
+"TOPFEROS MD",
+
+subtitle:
+  "⚙️ Panneau de configuration",
+
+number:
+  "Numéro :",
+
+numberPlaceholder:
+  "Entrez le numéro du bot",
+
+code:
+  "Code :",
+
+codePlaceholder:
+  "Entrez le code du panneau",
+
+next:
+  "SUIVANT",
+
+checking:
+  "Vérification...",
+
+sessionMissing:
+  "❌ Le lien du panneau ne contient aucune session.",
+
+numberMissing:
+  "❌ Entrez le numéro du bot.",
+
+codeMissing:
+  "❌ Entrez le code du panneau.",
+
+disconnected:
+  "❌ Le bot est déconnecté. Ce code n'est plus valide.",
+
+loginFailed:
+  "❌ Échec de la connexion.",
+
+serverError:
+  "❌ Impossible de contacter le serveur du panneau.",
+
+made:
+  "Made in TOPFEROS TECH"
+
+},
+
+es: {
+title:
+"TOPFEROS MD",
+
+subtitle:
+  "⚙️ Panel de configuración",
+
+number:
+  "Número:",
+
+numberPlaceholder:
+  "Introduce el número del bot",
+
+code:
+  "Código:",
+
+codePlaceholder:
+  "Introduce el código del panel",
+
+next:
+  "SIGUIENTE",
+
+checking:
+  "Verificando...",
+
+sessionMissing:
+  "❌ El enlace del panel no contiene ninguna sesión.",
+
+numberMissing:
+  "❌ Introduce el número del bot.",
+
+codeMissing:
+  "❌ Introduce el código del panel.",
+
+disconnected:
+  "❌ El bot está desconectado. Este código ya no es válido.",
+
+loginFailed:
+  "❌ Error de inicio de sesión.",
+
+serverError:
+  "❌ No se puede contactar con el servidor del panel.",
+
+made:
+  "Made in TOPFEROS TECH"
+
+}
+
+};
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🌍 GET LANGUAGE
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+function getLanguage() {
+
+const saved =
+localStorage.getItem(
+LANGUAGE_KEY
+);
+
+if (
+SUPPORTED_LANGUAGES.includes(
+saved
+)
+) {
+return saved;
+}
+
+return "en";
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 💾 SAVE LANGUAGE
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+function saveLanguage(
+language
+) {
+
+if (
+!SUPPORTED_LANGUAGES.includes(
+language
+)
+) {
+return false;
+}
+
+localStorage.setItem(
+LANGUAGE_KEY,
+language
+);
+
+return true;
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 📝 APPLY LOGIN LANGUAGE
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+function applyLanguage(
+language = getLanguage()
+) {
+
+if (
+!translations[language]
+) {
+language = "en";
+}
+
+const t =
+translations[language];
+
+document.documentElement.lang =
+language;
+
+const title =
+document.querySelector(
+"#loginScreen h1"
+);
+
+if (title) {
+title.textContent =
+t.title;
+}
+
+const subtitle =
+document.querySelector(
+"#loginScreen .subtitle"
+);
+
+if (subtitle) {
+subtitle.textContent =
+t.subtitle;
+}
+
+const numberLabel =
+document.querySelector(
+'label[for="number"]'
+);
+
+if (numberLabel) {
+numberLabel.textContent =
+t.number;
+}
+
+const codeLabel =
+document.querySelector(
+'label[for="code"]'
+);
+
+if (codeLabel) {
+codeLabel.textContent =
+t.code;
+}
+
+if (numberInput) {
+numberInput.placeholder =
+t.numberPlaceholder;
+}
+
+if (codeInput) {
+codeInput.placeholder =
+t.codePlaceholder;
+}
+
+if (
+nextButton &&
+!nextButton.disabled
+) {
+nextButton.textContent =
+t.next;
+}
+
+const footer =
+document.querySelector(
+"#loginScreen .footer"
+);
+
+if (footer) {
+footer.innerHTML =
+"${t.made}<br>========================";
+}
+
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 📢 SHOW MESSAGE
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+function showMessage(
+text
+) {
+
+if (!message) {
+return;
+}
+
+message.textContent =
+text || "";
+
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🔢 CLEAN NUMBER
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+function cleanNumber(
+number
+) {
+
+return String(number || "")
+.replace(/\D/g, "");
+
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🟢 CHECK BOT STATUS
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+async function checkStatus() {
+
+try {
+
+const response =
+  await fetch(
+    "/api/status",
+    {
+      method: "GET",
+      cache: "no-store"
+    }
   );
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🖼️ LOGO FALLBACK
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+if (!response.ok) {
+  return false;
+}
 
-function showLogoPlaceholder() {
-  const logo =
-    document.getElementById(
-      "botLogo"
-    );
+const result =
+  await response.json();
 
-  const placeholder =
-    document.getElementById(
-      "logoPlaceholder"
-    );
+return (
+  result.success === true &&
+  result.connected === true
+);
 
-  if (logo) {
-    logo.classList.add(
-      "hidden"
-    );
-  }
+} catch (error) {
 
-  if (placeholder) {
-    placeholder.classList.remove(
-      "hidden"
-    );
-  }
+console.error(
+  "❌ STATUS ERROR:",
+  error
+);
+
+return false;
+
+}
+
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// ❌ SHOW MESSAGE
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-function showError(text) {
-  if (!message) {
-    return;
-  }
-
-  message.textContent =
-    text || "";
-}
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🟢 SHOW SETTINGS PANEL
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-function showSettings() {
-  if (loginScreen) {
-    loginScreen.classList.add(
-      "hidden"
-    );
-  }
-
-  if (settingsScreen) {
-    settingsScreen.classList.remove(
-      "hidden"
-    );
-  }
-}
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🔴 SHOW LOGIN
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-function showLogin(text) {
-  if (settingsScreen) {
-    settingsScreen.classList.add(
-      "hidden"
-    );
-  }
-
-  if (loginScreen) {
-    loginScreen.classList.remove(
-      "hidden"
-    );
-  }
-
-  showError(text);
-}
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 📡 CHECK BOT CONNECTION
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-async function checkBotConnection() {
-  try {
-    const response =
-      await fetch(
-        "/api/status",
-        {
-          method: "GET",
-          cache: "no-store"
-        }
-      );
-
-    if (!response.ok) {
-      return false;
-    }
-
-    const result =
-      await response.json();
-
-    return result.connected === true;
-
-  } catch (error) {
-    console.error(
-      "❌ CONNECTION CHECK ERROR:",
-      error
-    );
-
-    return false;
-  }
-}
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🔐 VERIFY CURRENT SESSION
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-async function checkSession() {
-  if (!sessionId) {
-    showLogin(
-      "❌ Link panel la pa gen session."
-    );
-
-    return false;
-  }
-
-  try {
-    const response =
-      await fetch(
-        `/api/auth?session=${encodeURIComponent(
-          sessionId
-        )}`,
-        {
-          method: "GET",
-          cache: "no-store"
-        }
-      );
-
-    if (!response.ok) {
-      return false;
-    }
-
-    const result =
-      await response.json();
-
-    return (
-      result.success === true &&
-      result.connected === true
-    );
-
-  } catch (error) {
-    console.error(
-      "❌ SESSION CHECK ERROR:",
-      error
-    );
-
-    return false;
-  }
-}
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🔐 NEXT / LOGIN
+// 🔐 LOGIN
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 async function login() {
-  showError("");
 
-  if (!sessionId) {
-    showError(
-      "❌ Link panel la pa gen session."
-    );
+const language =
+getLanguage();
 
-    return;
-  }
+const t =
+translations[language];
 
-  const number =
-    numberInput?.value.trim();
+showMessage("");
 
-  const code =
-    codeInput?.value.trim();
+if (!sessionId) {
 
-  if (!number) {
-    showError(
-      "❌ Mete Number bot la."
-    );
+showMessage(
+  t.sessionMissing
+);
 
-    numberInput?.focus();
+return;
 
-    return;
-  }
+}
 
-  if (!code) {
-    showError(
-      "❌ Mete Code panel la."
-    );
+const number =
+cleanNumber(
+numberInput?.value
+);
 
-    codeInput?.focus();
+const code =
+String(
+codeInput?.value || ""
+)
+.trim()
+.toUpperCase();
 
-    return;
-  }
+if (!number) {
 
-  if (nextButton) {
-    nextButton.disabled = true;
-    nextButton.textContent =
-      "Checking...";
-  }
+showMessage(
+  t.numberMissing
+);
 
-  try {
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 🟢 BOT CONNECTION
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+numberInput?.focus();
 
-    const connected =
-      await checkBotConnection();
+return;
 
-    if (!connected) {
-      showError(
-        "❌ Bot la dekonekte. Code la pa valid ankò."
-      );
+}
 
-      return;
+if (!code) {
+
+showMessage(
+  t.codeMissing
+);
+
+codeInput?.focus();
+
+return;
+
+}
+
+if (nextButton) {
+
+nextButton.disabled =
+  true;
+
+nextButton.textContent =
+  t.checking;
+
+}
+
+try {
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🟢 CHECK CONNECTION
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+const connected =
+  await checkStatus();
+
+if (!connected) {
+
+  showMessage(
+    t.disconnected
+  );
+
+  return;
+}
+
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🔐 VERIFY SESSION
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+const response =
+  await fetch(
+    "/api/login",
+    {
+      method: "POST",
+
+      headers: {
+        "Content-Type":
+          "application/json"
+      },
+
+      body:
+        JSON.stringify({
+
+          sessionId,
+
+          number,
+
+          code
+
+        })
     }
+  );
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 🔐 VERIFY NUMBER + CODE
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-    const response =
-      await fetch(
-        "/api/login",
-        {
-          method: "POST",
+const result =
+  await response.json();
 
-          headers: {
-            "Content-Type":
-              "application/json"
-          },
 
-          body:
-            JSON.stringify({
-              sessionId,
-              number,
-              code
-            })
-        }
-      );
+if (
+  !response.ok ||
+  result.success !== true
+) {
 
-    const result =
-      await response.json();
+  showMessage(
+    result.message ||
+    t.loginFailed
+  );
 
-    if (
-      !response.ok ||
-      result.success !== true
-    ) {
-      showError(
-        result.message ||
-        "❌ Number oswa Code pa kòrèk."
-      );
+  return;
+}
 
-      return;
-    }
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // ✅ LOGIN REYISI
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 💾 SAVE SELECTED LANGUAGE
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-    showSettings();
+saveLanguage(
+  language
+);
 
-  } catch (error) {
-    console.error(
-      "❌ PANEL LOGIN ERROR:",
-      error
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🌍 SAVE LANGUAGE FOR SESSION
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+try {
+
+  await fetch(
+    "/api/language",
+    {
+      method: "POST",
+
+      headers: {
+        "Content-Type":
+          "application/json"
+      },
+
+      body:
+        JSON.stringify({
+
+          sessionId,
+
+          language
+
+        })
+      }
     );
 
-    showError(
-      "❌ Pa kapab kontakte server panel la."
-    );
+} catch (languageError) {
 
-  } finally {
-    if (nextButton) {
-      nextButton.disabled = false;
-      nextButton.textContent =
-        "NEXT";
-    }
-  }
+  console.warn(
+    "⚠️ LANGUAGE SAVE WARNING:",
+    languageError
+  );
+
+}
+
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🚀 OPEN SETTINGS
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+window.location.href =
+  `/settings.html?session=${encodeURIComponent(
+    sessionId
+  )}&language=${encodeURIComponent(
+    language
+  )}`;
+
+} catch (error) {
+
+console.error(
+  "❌ PANEL LOGIN ERROR:",
+  error
+);
+
+showMessage(
+  t.serverError
+);
+
+} finally {
+
+if (nextButton) {
+
+  nextButton.disabled =
+    false;
+
+  nextButton.textContent =
+    t.next;
+
+}
+
+}
+
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -342,10 +646,12 @@ async function login() {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 if (nextButton) {
-  nextButton.addEventListener(
-    "click",
-    login
-  );
+
+nextButton.addEventListener(
+"click",
+login
+);
+
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -353,97 +659,77 @@ if (nextButton) {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 if (codeInput) {
-  codeInput.addEventListener(
-    "keydown",
-    event => {
-      if (
-        event.key ===
-        "Enter"
-      ) {
-        login();
-      }
-    }
-  );
-}
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🔄 MONITOR BOT CONNECTION
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+codeInput.addEventListener(
+"keydown",
+event => {
 
-async function monitorConnection() {
-  const connected =
-    await checkBotConnection();
-
-  if (!connected) {
-    // Si user la te deja antre nan panel,
-    // fè l soti imedyatman.
-    if (
-      settingsScreen &&
-      !settingsScreen.classList.contains(
-        "hidden"
-      )
-    ) {
-      showLogin(
-        "🔴 Bot la dekonekte. Panel la fèmen."
-      );
-    }
-
-    return;
-  }
-
-  // Si session lan pa valide ankò,
-  // pa kite user la rete nan panel la.
   if (
-    settingsScreen &&
-    !settingsScreen.classList.contains(
-      "hidden"
-    )
+    event.key ===
+    "Enter"
   ) {
-    const authenticated =
-      await checkSession();
 
-    if (!authenticated) {
-      showLogin(
-        "🔐 Session panel la pa valid ankò."
-      );
-    }
+    login();
+
   }
+
+}
+
+);
+
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// ⏱️ AUTO CHECK
+// 🔄 CONNECTION MONITOR
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 setInterval(
-  monitorConnection,
-  5000
+async () => {
+
+const connected =
+  await checkStatus();
+
+if (
+  !connected &&
+  !document.hidden
+) {
+
+  showMessage(
+    translations[
+      getLanguage()
+    ].disconnected
+  );
+
+}
+
+},
+5000
 );
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🚀 INITIAL CHECK
+// 🚀 INITIALIZE
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-(async function init() {
-  if (!sessionId) {
-    showLogin(
-      "❌ Louvri panel la ak link ou te resevwa nan bot la."
-    );
+(function init() {
 
-    return;
-  }
+const language =
+getLanguage();
 
-  const connected =
-    await checkBotConnection();
+applyLanguage(
+language
+);
 
-  if (!connected) {
-    showLogin(
-      "🔴 Bot la pa konekte. Panel la pa disponib."
-    );
+if (!sessionId) {
 
-    return;
-  }
+showMessage(
+  translations[language]
+    .sessionMissing
+);
 
-  // Pa antre otomatikman nan Settings.
-  // User la dwe antre Number + Code epi peze NEXT.
-  showLogin("");
+}
+
 })();
+
+// ╔════════════════════════════════════════════════════╗
+// ║                 By TOPFEROS TECH                  ║
+// ╚════════════════════════════════════════════════════╝
