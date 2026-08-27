@@ -1,66 +1,91 @@
 "use strict";
 
+const fs = require("fs");
+const path = require("path");
 const config = require("../config");
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 📋 TOPFEROS MD — MENU COMMAND
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+// 🖼️ Logo bot la
+const LOGO_PATH = path.join(
+__dirname,
+"..",
+"assets",
+"logo.png"
+);
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 📋 MENU EXECUTE
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 async function execute(context) {
-  const {
-    sock,
-    message
-  } = context;
+const {
+sock,
+message
+} = context;
 
-  const chatId =
-    message?.key?.remoteJid;
+const chatId =
+message?.key?.remoteJid;
 
-  if (!chatId) {
-    return;
-  }
+if (!chatId) {
+return;
+}
 
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // ⚙️ CONFIGURATION
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ⚙️ CONFIGURATION
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  const botName =
-    config.bot?.name ||
-    "TOPFEROS MD";
+const botName =
+config.bot?.name ||
+"TOPFEROS MD";
 
-  const version =
-    config.bot?.version ||
-    "V1.0.0";
+const version =
+config.bot?.version ||
+"V1.0.0";
 
-  const prefix =
-    config.bot?.prefix ||
-    ".";
+const prefix =
+config.bot?.prefix ||
+".";
 
-  const developer =
-    config.bot?.developer ||
-    "TOPFEROS TECH";
+const mode =
+config.bot?.mode ||
+"public";
 
-  const ownerName =
-    config.owner?.name ||
-    "TOPFEROS MD";
+const developer =
+config.bot?.developer ||
+"TOPFEROS TECH";
 
-  const channel =
-    config.links?.channel ||
-    "Not configured";
+const ownerName =
+config.owner?.name ||
+"TOPFEROS MD";
 
-  const group =
-    config.links?.group ||
-    "Not configured";
+const channel =
+config.links?.channel ||
+"Not configured";
 
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // 📋 MENU
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+const group =
+config.links?.group ||
+"Not configured";
 
-  const menu = `╭━━━━━━━━━━━━━━━━━━━━━━━━━━━━╮
-┃
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 📋 MENU
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+const menu = `======= 🦁 Session ========
+║
+║ ${botName} ${version}
+║ STATUT : ONLINE
+║ MODE : ${String(mode).toUpperCase()}
+║ PREFIX : (${prefix})
+║
+╚════════════════════════════
+
+╭━━━━━━━━━━━━━━━━━━━━━━━━━━━━╮
 ┃       🤖 ${botName}
 ┃       🚀 ${developer}
 ┃       📦 ${version}
-┃
 ╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯
 
 ╭━━━〔 ℹ️ INFORMATION 〕━━━╮
@@ -101,9 +126,8 @@ async function execute(context) {
 ┃ 👁️ View Once
 ┃ ${prefix}vv2
 ┃
-┃ 👁️View Once
-┃   reply/forward View Once 
-┃    
+┃ 👁️ View Once
+┃   Reply / Forward View Once
 ┃
 ╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯
 
@@ -173,30 +197,61 @@ async function execute(context) {
 ┃ 🚀 ${developer}
 ┃ ❤️ Thanks for using the bot
 ┃
-╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯`;
+╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯
 
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // 📤 SEND MENU
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+╔════════════════════════════════════════════════════╗
+║                    By TOPFEROS MD                  ║
+╚════════════════════════════════════════════════════╝`;
 
-  try {
-    await sock.sendMessage(
-      chatId,
-      {
-        text: menu
-      },
-      {
-        quoted: message
-      }
-    );
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 📤 SEND MENU WITH LOGO
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  } catch (error) {
+try {
 
-    console.error(
-      "❌ MENU ERROR:",
-      error.message
-    );
-  }
+if (
+  fs.existsSync(LOGO_PATH)
+) {
+
+  const logo =
+    fs.readFileSync(LOGO_PATH);
+
+  await sock.sendMessage(
+    chatId,
+    {
+      image: logo,
+      caption: menu
+    },
+    {
+      quoted: message
+    }
+  );
+
+} else {
+
+  console.warn(
+    `⚠️ Logo pa jwenn: ${LOGO_PATH}`
+  );
+
+  await sock.sendMessage(
+    chatId,
+    {
+      text: menu
+    },
+    {
+      quoted: message
+    }
+  );
+}
+
+} catch (error) {
+
+console.error(
+  "❌ MENU ERROR:",
+  error?.message || error
+);
+
+}
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -204,19 +259,24 @@ async function execute(context) {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 module.exports = {
-  name: "menu",
 
-  aliases: [
-    "commands",
-    "cmds",
-    "list"
-  ],
+name: "menu",
 
-  description:
-    "Montre tout command TOPFEROS MD yo.",
+aliases: [
+"commands",
+"cmds",
+"list"
+],
 
-  usage:
-    ".menu",
+description:
+"Montre tout command TOPFEROS MD yo.",
 
-  execute
+usage:
+".menu",
+
+execute
 };
+
+// ╔════════════════════════════════════════════════════╗
+// ║                    by TOPFEROS MD                    ║
+// ╚════════════════════════════════════════════════════╝
