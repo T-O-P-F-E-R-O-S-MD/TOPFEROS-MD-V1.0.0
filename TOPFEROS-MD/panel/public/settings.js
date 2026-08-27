@@ -4,7 +4,15 @@
 // ⚙️ TOPFEROS MD — SETTINGS PANEL LOGIC
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-// Session panel la soti nan URL la
+// 🖼️ Logo bot la
+// Fichier logo a dwe disponib kòm:
+// panel/public/logo.png
+const LOGO_URL = "/logo.png";
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🔐 SESSION PANEL
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 const params =
   new URLSearchParams(
     window.location.search
@@ -42,6 +50,10 @@ const botPrefixInput =
     "botPrefix"
   );
 
+const botLogo =
+  document.getElementById(
+    "botLogo"
+  );
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // ⚙️ SETTINGS KI DISPONIB
@@ -77,7 +89,6 @@ const settingNames = [
   "groupOpen"
 ];
 
-
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 🔎 JWENN SWITCH YO
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -91,9 +102,8 @@ function getSwitches() {
   );
 }
 
-
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 📢 MESSAGE
+// 📢 SHOW MESSAGE
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 function showMessage(
@@ -113,7 +123,6 @@ function showMessage(
       ? "#72ffad"
       : "#ff7777";
 }
-
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 🔐 VERIFY SESSION
@@ -154,13 +163,12 @@ async function verifySession() {
 
     console.error(
       "❌ SETTINGS AUTH ERROR:",
-      error
+      error?.message || error
     );
 
     return false;
   }
 }
-
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 📥 LOAD SETTINGS
@@ -206,7 +214,6 @@ async function loadSettings() {
       return;
     }
 
-
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // 🤖 BOT INFORMATION
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -215,6 +222,7 @@ async function loadSettings() {
       result.bot &&
       botNameInput
     ) {
+
       botNameInput.value =
         result.bot.name || "";
     }
@@ -223,6 +231,7 @@ async function loadSettings() {
       result.bot &&
       botAgeInput
     ) {
+
       botAgeInput.value =
         result.bot.age ?? "";
     }
@@ -231,13 +240,13 @@ async function loadSettings() {
       result.bot &&
       botPrefixInput
     ) {
+
       botPrefixInput.value =
         result.bot.prefix || ".";
     }
 
-
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // ⚙️ ON / OFF
+    // ⚙️ ON / OFF SETTINGS
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     const settings =
@@ -262,7 +271,6 @@ async function loadSettings() {
 
       });
 
-
     showMessage(
       "",
       true
@@ -272,7 +280,7 @@ async function loadSettings() {
 
     console.error(
       "❌ LOAD SETTINGS ERROR:",
-      error
+      error?.message || error
     );
 
     showMessage(
@@ -280,7 +288,6 @@ async function loadSettings() {
     );
   }
 }
-
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 📤 COLLECT SETTINGS
@@ -309,7 +316,6 @@ function collectSettings() {
   return settings;
 }
 
-
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 💾 SAVE SETTINGS
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -329,7 +335,6 @@ async function saveSettings() {
 
     return;
   }
-
 
   const bot = {
 
@@ -351,7 +356,6 @@ async function saveSettings() {
         : "."
   };
 
-
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   // 🔎 VALIDATION
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -362,7 +366,9 @@ async function saveSettings() {
       "❌ Nom Bot pa ka vid."
     );
 
-    botNameInput?.focus();
+    if (botNameInput) {
+      botNameInput.focus();
+    }
 
     return;
   }
@@ -376,7 +382,9 @@ async function saveSettings() {
       "❌ Âge Bot la pa valid."
     );
 
-    botAgeInput?.focus();
+    if (botAgeInput) {
+      botAgeInput.focus();
+    }
 
     return;
   }
@@ -387,15 +395,15 @@ async function saveSettings() {
       "❌ Prefix pa ka vid."
     );
 
-    botPrefixInput?.focus();
+    if (botPrefixInput) {
+      botPrefixInput.focus();
+    }
 
     return;
   }
 
-
   const settings =
     collectSettings();
-
 
   if (saveButton) {
 
@@ -405,7 +413,6 @@ async function saveSettings() {
     saveButton.textContent =
       "Saving...";
   }
-
 
   try {
 
@@ -432,7 +439,6 @@ async function saveSettings() {
     const result =
       await response.json();
 
-
     if (
       !response.ok ||
       result.success !== true
@@ -446,7 +452,6 @@ async function saveSettings() {
       return;
     }
 
-
     showMessage(
       "✅ Settings yo sove avèk siksè.",
       true
@@ -456,7 +461,7 @@ async function saveSettings() {
 
     console.error(
       "❌ SAVE SETTINGS ERROR:",
-      error
+      error?.message || error
     );
 
     showMessage(
@@ -476,7 +481,6 @@ async function saveSettings() {
   }
 }
 
-
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 🖱️ SAVE BUTTON
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -488,7 +492,6 @@ if (saveButton) {
     saveSettings
   );
 }
-
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 🔄 CHECK CONNECTION
@@ -517,13 +520,49 @@ async function monitorSettings() {
   }
 }
 
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🖼️ SETUP LOGO
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+function setupLogo() {
+
+  if (!botLogo) {
+    console.warn(
+      "⚠️ Element #botLogo pa jwenn nan settings.html"
+    );
+
+    return;
+  }
+
+  botLogo.src =
+    LOGO_URL;
+
+  botLogo.alt =
+    "TOPFEROS MD V1.0.0";
+
+  botLogo.style.display =
+    "block";
+
+  botLogo.onerror = () => {
+
+    console.warn(
+      "⚠️ Logo pa kapab chaje:",
+      LOGO_URL
+    );
+
+  };
+}
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🚀 INITIALIZE
+// 🚀 INITIALIZE SETTINGS
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 (async function initSettings() {
 
+  // Logo
+  setupLogo();
+
+  // Verify session
   const authenticated =
     await verifySession();
 
@@ -540,10 +579,10 @@ async function monitorSettings() {
     return;
   }
 
+  // Load settings
   await loadSettings();
 
 })();
-
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // ⏱️ AUTO CONNECTION CHECK
@@ -553,3 +592,7 @@ setInterval(
   monitorSettings,
   5000
 );
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🦁 TOPFEROS MD V1.0.0
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
