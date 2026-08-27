@@ -73,7 +73,7 @@ app.use(
 );
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🖼️ SERVE TOPFEROS MD LOGO
+// 🖼️ SERVE BOT LOGO
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 app.get(
@@ -93,7 +93,7 @@ app.get(
 
           if (!res.headersSent) {
 
-            res.status(404).json({
+            return res.status(404).json({
               success: false,
               message:
                 "Logo assets/logo.png pa jwenn."
@@ -117,7 +117,7 @@ app.get(
   "/api/status",
   (req, res) => {
 
-    res.json({
+    return res.json({
       success: true,
 
       connected:
@@ -147,7 +147,6 @@ app.post(
 
         return res.status(400).json({
           success: false,
-
           message:
             "Session ID manke."
         });
@@ -202,6 +201,219 @@ app.post(
 );
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ⚙️ GET SETTINGS
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+app.get(
+  "/api/settings",
+  (req, res) => {
+
+    try {
+
+      const sessionId =
+        req.query.session;
+
+      if (!sessionId) {
+
+        return res.status(400).json({
+          success: false,
+          message:
+            "Session ID manke."
+        });
+
+      }
+
+      if (
+        !settingsPanel.isAuthenticated(
+          sessionId
+        )
+      ) {
+
+        return res.status(401).json({
+          success: false,
+          message:
+            "Session lan pa valid."
+        });
+
+      }
+
+      if (
+        !settingsPanel.isBotConnected()
+      ) {
+
+        return res.status(401).json({
+          success: false,
+          message:
+            "Bot la dekonekte."
+        });
+
+      }
+
+      return res.json({
+
+        success: true,
+
+        bot:
+          settingsPanel.getBotInformation(),
+
+        settings:
+          settingsPanel.getSettings()
+
+      });
+
+    } catch (error) {
+
+      console.error(
+        "❌ GET SETTINGS ERROR:",
+        error?.message || error
+      );
+
+      return res.status(500).json({
+
+        success: false,
+
+        message:
+          "Erè pandan chajman settings yo."
+
+      });
+
+    }
+
+  }
+);
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 💾 SAVE SETTINGS
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+app.post(
+  "/api/settings",
+  async (req, res) => {
+
+    try {
+
+      const {
+        sessionId,
+        bot,
+        settings
+      } = req.body || {};
+
+      if (!sessionId) {
+
+        return res.status(400).json({
+          success: false,
+          message:
+            "Session ID manke."
+        });
+
+      }
+
+      if (
+        !settingsPanel.isAuthenticated(
+          sessionId
+        )
+      ) {
+
+        return res.status(401).json({
+          success: false,
+          message:
+            "Session lan pa valid."
+        });
+
+      }
+
+      if (
+        !settingsPanel.isBotConnected()
+      ) {
+
+        return res.status(401).json({
+          success: false,
+          message:
+            "Bot la dekonekte."
+        });
+
+      }
+
+      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      // ⚙️ APPLY RUNTIME SETTINGS
+      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+      const settingsSaved =
+        await settingsPanel.applySettings({
+          settings:
+            settings || {}
+        });
+
+      if (!settingsSaved) {
+
+        return res.status(500).json({
+          success: false,
+          message:
+            "Settings yo pa t kapab aplike."
+        });
+
+      }
+
+      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      // 🤖 UPDATE BOT INFORMATION
+      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+      if (bot) {
+
+        const botUpdated =
+          await settingsPanel.updateBotInformation(
+            bot
+          );
+
+        if (!botUpdated) {
+
+          return res.status(500).json({
+            success: false,
+            message:
+              "Bot information yo pa t kapab mete ajou."
+          });
+
+        }
+
+      }
+
+      return res.json({
+
+        success: true,
+
+        message:
+          "Settings yo sove avèk siksè.",
+
+        bot:
+          settingsPanel.getBotInformation(),
+
+        settings:
+          settingsPanel.getSettings()
+
+      });
+
+    } catch (error) {
+
+      console.error(
+        "❌ SAVE SETTINGS ERROR:",
+        error?.message || error
+      );
+
+      return res.status(500).json({
+
+        success: false,
+
+        message:
+          "Erè pandan sauvegarde settings yo."
+
+      });
+
+    }
+
+  }
+);
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 🔒 VERIFY AUTHENTICATED SESSION
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -209,35 +421,55 @@ app.get(
   "/api/auth",
   (req, res) => {
 
-    const sessionId =
-      req.query.session;
+    try {
 
-    const authenticated =
-      settingsPanel.isAuthenticated(
-        sessionId
+      const sessionId =
+        req.query.session;
+
+      const authenticated =
+        settingsPanel.isAuthenticated(
+          sessionId
+        );
+
+      if (!authenticated) {
+
+        return res.status(401).json({
+
+          success: false,
+
+          message:
+            "Session lan pa valid."
+
+        });
+
+      }
+
+      return res.json({
+
+        success: true,
+
+        connected:
+          settingsPanel.isBotConnected()
+
+      });
+
+    } catch (error) {
+
+      console.error(
+        "❌ AUTH ERROR:",
+        error?.message || error
       );
 
-    if (!authenticated) {
-
-      return res.status(401).json({
+      return res.status(500).json({
 
         success: false,
 
         message:
-          "Session lan pa valid."
+          "Erè pandan verifikasyon session lan."
 
       });
 
     }
-
-    return res.json({
-
-      success: true,
-
-      connected:
-        settingsPanel.isBotConnected()
-
-    });
 
   }
 );
@@ -250,7 +482,7 @@ app.get(
   "/",
   (req, res) => {
 
-    res.sendFile(
+    return res.sendFile(
       path.join(
         publicDir,
         "index.html"
@@ -268,7 +500,7 @@ app.use(
   "/api",
   (req, res) => {
 
-    res.status(404).json({
+    return res.status(404).json({
 
       success: false,
 
@@ -298,7 +530,7 @@ app.use(
 
     }
 
-    res.status(500).json({
+    return res.status(500).json({
 
       success: false,
 
