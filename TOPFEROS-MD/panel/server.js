@@ -36,6 +36,18 @@ const publicDir =
   );
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🖼️ BOT LOGO
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+const logoPath =
+  path.join(
+    __dirname,
+    "..",
+    "assets",
+    "logo.png"
+  );
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 🔧 MIDDLEWARE
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -61,17 +73,57 @@ app.use(
 );
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🖼️ SERVE TOPFEROS MD LOGO
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+app.get(
+  "/logo.png",
+  (req, res) => {
+
+    res.sendFile(
+      logoPath,
+      (error) => {
+
+        if (error) {
+
+          console.error(
+            "❌ LOGO ERROR:",
+            error?.message || error
+          );
+
+          if (!res.headersSent) {
+
+            res.status(404).json({
+              success: false,
+              message:
+                "Logo assets/logo.png pa jwenn."
+            });
+
+          }
+
+        }
+
+      }
+    );
+
+  }
+);
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 🟢 CHECK BOT CONNECTION
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 app.get(
   "/api/status",
   (req, res) => {
+
     res.json({
       success: true,
+
       connected:
         settingsPanel.isBotConnected()
     });
+
   }
 );
 
@@ -82,7 +134,9 @@ app.get(
 app.post(
   "/api/login",
   (req, res) => {
+
     try {
+
       const {
         sessionId,
         number,
@@ -90,11 +144,14 @@ app.post(
       } = req.body || {};
 
       if (!sessionId) {
+
         return res.status(400).json({
           success: false,
+
           message:
             "Session ID manke."
         });
+
       }
 
       const result =
@@ -105,30 +162,42 @@ app.post(
         );
 
       if (!result.success) {
+
         return res.status(401).json(
           result
         );
+
       }
 
       return res.json({
+
         success: true,
+
         message:
           "Login reyisi.",
+
         sessionId
+
       });
 
     } catch (error) {
+
       console.error(
         "❌ PANEL LOGIN ERROR:",
-        error
+        error?.message || error
       );
 
       return res.status(500).json({
+
         success: false,
+
         message:
           "Erè pandan verifikasyon an."
+
       });
+
     }
+
   }
 );
 
@@ -139,6 +208,7 @@ app.post(
 app.get(
   "/api/auth",
   (req, res) => {
+
     const sessionId =
       req.query.session;
 
@@ -148,18 +218,27 @@ app.get(
       );
 
     if (!authenticated) {
+
       return res.status(401).json({
+
         success: false,
+
         message:
           "Session lan pa valid."
+
       });
+
     }
 
     return res.json({
+
       success: true,
+
       connected:
         settingsPanel.isBotConnected()
+
     });
+
   }
 );
 
@@ -170,12 +249,14 @@ app.get(
 app.get(
   "/",
   (req, res) => {
+
     res.sendFile(
       path.join(
         publicDir,
         "index.html"
       )
     );
+
   }
 );
 
@@ -186,11 +267,16 @@ app.get(
 app.use(
   "/api",
   (req, res) => {
+
     res.status(404).json({
+
       success: false,
+
       message:
         "API route pa jwenn."
+
     });
+
   }
 );
 
@@ -200,20 +286,27 @@ app.use(
 
 app.use(
   (error, req, res, next) => {
+
     console.error(
       "❌ PANEL SERVER ERROR:",
-      error
+      error?.message || error
     );
 
     if (res.headersSent) {
+
       return next(error);
+
     }
 
     res.status(500).json({
+
       success: false,
+
       message:
         "Erè entèn nan panel la."
+
     });
+
   }
 );
 
@@ -224,8 +317,11 @@ app.use(
 let server = null;
 
 function startPanel() {
+
   if (server) {
+
     return server;
+
   }
 
   server =
@@ -233,6 +329,7 @@ function startPanel() {
       PORT,
       HOST,
       () => {
+
         console.log(
           "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
         );
@@ -250,12 +347,17 @@ function startPanel() {
         );
 
         console.log(
+          "🖼️ Logo: assets/logo.png"
+        );
+
+        console.log(
           "🟢 Panel server is running."
         );
 
         console.log(
           "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
         );
+
       }
     );
 
@@ -267,8 +369,11 @@ function startPanel() {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 function stopPanel() {
+
   if (!server) {
+
     return false;
+
   }
 
   server.close();
@@ -287,7 +392,11 @@ function stopPanel() {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 module.exports = {
+
   app,
+
   startPanel,
+
   stopPanel
+
 };
