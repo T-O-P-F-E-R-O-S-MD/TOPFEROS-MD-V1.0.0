@@ -11,6 +11,8 @@ const {
   Browsers
 } = require("@whiskeysockets/baileys");
 
+const pino = require("pino");
+
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 🤖 TOPFEROS MD — WHATSAPP CONNECTION
 // 🚀 TOPFEROS TECH
@@ -22,18 +24,65 @@ const settingsPanel = require("../settings/panel");
 // Message handler
 const messageHandler = require("./messageHandler");
 
-// Auth folder
+// Config
+const config = require("../config");
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 📱 PHONE NUMBER
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//
+// Mete nimewo WhatsApp bot la nan config.js:
+//
+// whatsapp: {
+//   phoneNumber: "509XXXXXXXX"
+// }
+//
+// Pa mete +, espas oswa -.
+//
+// Egzanp:
+// 50937000000
+//
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+const PHONE_NUMBER =
+  String(
+    config?.whatsapp?.phoneNumber ||
+    process.env.WHATSAPP_NUMBER ||
+    ""
+  )
+    .replace(/\D/g, "");
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🔐 AUTH DIRECTORY
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//
+// Pou kounya se session prensipal la.
+// Apre sa nou ka pase sou:
+//
+// auth/
+//   session-1/
+//   session-2/
+//   session-3/
+//
+// pou plizyè bot/session.
+//
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 const AUTH_DIR = path.join(
   __dirname,
   "..",
   "auth"
 );
 
-// Evite plizyè connection an menm tan
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ⚙️ CONNECTION STATE
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 let sock = null;
 let starting = false;
 let reconnectTimer = null;
 let stopped = false;
+let pairingRequested = false;
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 📁 PREPARE AUTH DIRECTORY
@@ -45,6 +94,56 @@ function prepareAuthDirectory() {
       recursive: true
     });
   }
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🔎 CHECK PHONE NUMBER
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+function validatePhoneNumber() {
+  if (!PHONE_NUMBER) {
+    console.log("");
+    console.log(
+      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    );
+    console.log(
+      "⚠️ WHATSAPP NUMBER PA CONFIGURED."
+    );
+    console.log("");
+    console.log(
+      "📱 Mete nimewo WhatsApp bot la nan:"
+    );
+    console.log(
+      "config.js → whatsapp.phoneNumber"
+    );
+    console.log("");
+    console.log(
+      "Egzanp:"
+    );
+    console.log(
+      'phoneNumber: "509XXXXXXXX"'
+    );
+    console.log("");
+    console.log(
+      "Pa mete +, espas oswa -."
+    );
+    console.log(
+      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    );
+    console.log("");
+
+    return false;
+  }
+
+  if (PHONE_NUMBER.length < 8) {
+    console.log(
+      "❌ WhatsApp phone number lan pa sanble valid."
+    );
+
+    return false;
+  }
+
+  return true;
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -62,19 +161,16 @@ async function handleMessages(messages) {
 
   for (const message of messages) {
     try {
-      // messageHandler.js ou a ekspòte:
-      // { handleMessage, getMessageText }
-
       if (
         messageHandler &&
-        typeof messageHandler.handleMessage === "function"
+        typeof messageHandler.handleMessage ===
+          "function"
       ) {
         await messageHandler.handleMessage(
           sock,
           message
         );
       }
-
     } catch (error) {
       console.error(
         "❌ MESSAGE HANDLER ERROR:",
@@ -139,6 +235,15 @@ async function start() {
     prepareAuthDirectory();
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // 📱 VERIFY NUMBER
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    if (!validatePhoneNumber()) {
+      starting = false;
+      return null;
+    }
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // 🔐 LOAD AUTH SESSION
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -168,13 +273,13 @@ async function start() {
     }
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 🤖 CREATE SOCKET
+    // 🤖 SOCKET OPTIONS
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     const socketOptions = {
       auth: state,
 
-      logger: require("pino")({
+      logger: pino({
         level: "silent"
       }),
 
@@ -186,7 +291,8 @@ async function start() {
           "1.0.0"
         ],
 
-      printQRInTerminal: true,
+      // Pa konte sou QR terminal.
+      printQRInTerminal: false,
 
       markOnlineOnConnect: false,
 
@@ -198,6 +304,10 @@ async function start() {
     if (version) {
       socketOptions.version = version;
     }
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // 🔌 CREATE SOCKET
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     sock =
       makeWASocket(
@@ -214,12 +324,98 @@ async function start() {
     );
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // 🔐 PAIRING CODE
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    if (
+      !state.creds.registered &&
+      PHONE_NUMBER &&
+      !pairingRequested
+    ) {
+      pairingRequested = true;
+
+      try {
+        console.log("");
+        console.log(
+          "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        );
+
+        console.log(
+          "📱 WHATSAPP PAIRING"
+        );
+
+        console.log(
+          `📞 Number: ${PHONE_NUMBER}`
+        );
+
+        console.log(
+          "⏳ Generating pairing code..."
+        );
+
+        console.log(
+          "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        );
+
+        const pairingCode =
+          await sock.requestPairingCode(
+            PHONE_NUMBER
+          );
+
+        console.log("");
+        console.log(
+          "╔══════════════════════════════════════╗"
+        );
+
+        console.log(
+          "║       🔐 TOPFEROS MD PAIRING        ║"
+        );
+
+        console.log(
+          "╠══════════════════════════════════════╣"
+        );
+
+        console.log(
+          `║  CODE: ${pairingCode}`
+        );
+
+        console.log(
+          "╚══════════════════════════════════════╝"
+        );
+
+        console.log("");
+
+        console.log(
+          "📱 WhatsApp → Linked Devices → Link a device"
+        );
+
+        console.log(
+          "🔢 Chwazi: Link with phone number instead"
+        );
+
+        console.log(
+          "🔐 Mete pairing code ki anlè a."
+        );
+
+        console.log("");
+
+      } catch (error) {
+        pairingRequested = false;
+
+        console.error(
+          "❌ PAIRING CODE ERROR:",
+          error?.message || error
+        );
+      }
+    }
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // 📡 CONNECTION UPDATE
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     sock.ev.on(
       "connection.update",
       async (update) => {
+
         const {
           connection,
           lastDisconnect
@@ -238,12 +434,14 @@ async function start() {
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // 🟢 CONNECTED
+        // 🟢 OPEN
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
         if (
           connection === "open"
         ) {
+          console.log("");
+
           console.log(
             "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           );
@@ -256,23 +454,35 @@ async function start() {
             "📱 WhatsApp: ONLINE"
           );
 
+          if (sock.user?.id) {
+            console.log(
+              `📞 Connected account: ${sock.user.id}`
+            );
+          }
+
+          console.log(
+            "👥 Multi-session architecture: ENABLED"
+          );
+
           console.log(
             "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           );
 
-          // ⚙️ Settings panel la konnen bot la konekte.
-          // Sa fè nouvo panel code yo valid.
+          console.log("");
+
+          // Panel konnen bot la online.
           settingsPanel.setBotConnected(
             sock
           );
 
           starting = false;
+          pairingRequested = false;
 
           return;
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // 🔴 DISCONNECTED
+        // 🔴 CLOSE
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
         if (
@@ -288,8 +498,6 @@ async function start() {
             statusCode ===
             DisconnectReason.loggedOut;
 
-          // ⚙️ Sa invalid tout panel sessions/codes
-          // imedyatman lè WhatsApp dekonekte.
           settingsPanel.setBotDisconnected();
 
           console.log(
@@ -297,11 +505,14 @@ async function start() {
           );
 
           console.log(
-            `📌 Status code: ${statusCode || "unknown"}`
+            `📌 Status code: ${
+              statusCode || "unknown"
+            }`
           );
 
           sock = null;
           starting = false;
+          pairingRequested = false;
 
           // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
           // 🔄 AUTO RECONNECT
@@ -360,16 +571,12 @@ async function start() {
       }
     );
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 🛑 CONNECTION ERROR
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
   } catch (error) {
+
     starting = false;
     sock = null;
+    pairingRequested = false;
 
-    // ⚙️ Si connection pa fèt,
-    // panel code yo pa dwe konsidere bot la online.
     settingsPanel.setBotDisconnected();
 
     console.error(
@@ -404,7 +611,6 @@ async function stop() {
     reconnectTimer = null;
   }
 
-  // ⚙️ Invalid panel sessions yo
   settingsPanel.setBotDisconnected();
 
   try {
@@ -416,7 +622,6 @@ async function stop() {
         undefined
       );
     }
-
   } catch (error) {
     console.error(
       "❌ SOCKET STOP ERROR:",
@@ -426,6 +631,7 @@ async function stop() {
 
   sock = null;
   starting = false;
+  pairingRequested = false;
 
   console.log(
     "🛑 TOPFEROS MD: WhatsApp connection stopped."
@@ -452,6 +658,14 @@ function isConnected() {
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 📱 GET PHONE NUMBER
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+function getPhoneNumber() {
+  return PHONE_NUMBER;
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 📦 EXPORT
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -459,5 +673,6 @@ module.exports = {
   start,
   stop,
   getSocket,
-  isConnected
+  isConnected,
+  getPhoneNumber
 };
