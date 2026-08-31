@@ -7,209 +7,133 @@
 // ║              🚀 TOPFEROS TECH                     ║
 // ╚════════════════════════════════════════════════════╝
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🔎 SESSION ID
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+const params = new URLSearchParams(window.location.search);
 
-const params =
-new URLSearchParams(
-window.location.search
-);
-
-const sessionId =
-params.get("session");
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 📦 ELEMENTS
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-const loginScreen =
-document.getElementById(
-"loginScreen"
-);
-
-const numberInput =
-document.getElementById(
-"number"
-);
-
-const codeInput =
-document.getElementById(
-"code"
-);
-
-const nextButton =
-document.getElementById(
-"nextButton"
-);
-
-const message =
-document.getElementById(
-"message"
-);
+const sessionId = params.get("session");
+const urlLanguage = params.get("language");
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 🌍 LANGUAGE
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-const LANGUAGE_KEY =
-"topferos_language";
+const LANGUAGE_KEY = "topferos_language";
 
 const SUPPORTED_LANGUAGES = [
-"en",
-"fr",
-"es"
+  "en",
+  "fr",
+  "es"
 ];
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🌐 LANGUAGE TEXT
+// 🌐 TRANSLATIONS
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 const translations = {
 
-en: {
-title:
-"TOPFEROS MD",
+  en: {
+    title: "TOPFEROS MD",
+    subtitle: "⚙️ Settings Panel",
 
-subtitle:
-  "⚙️ Settings Panel",
+    number: "Number:",
+    numberPlaceholder: "Enter bot number",
 
-number:
-  "Number:",
+    code: "Code:",
+    codePlaceholder: "Enter panel code",
 
-numberPlaceholder:
-  "Enter bot number",
+    next: "NEXT",
+    checking: "Checking...",
 
-code:
-  "Code:",
+    sessionMissing:
+      "❌ Panel link has no session.",
 
-codePlaceholder:
-  "Enter panel code",
+    numberMissing:
+      "❌ Enter the bot number.",
 
-next:
-  "NEXT",
+    codeMissing:
+      "❌ Enter the panel code.",
 
-checking:
-  "Checking...",
+    disconnected:
+      "❌ Bot is disconnected. This code is no longer valid.",
 
-sessionMissing:
-  "❌ Panel link has no session.",
+    loginFailed:
+      "❌ Login failed.",
 
-numberMissing:
-  "❌ Enter the bot number.",
+    serverError:
+      "❌ Unable to contact the panel server.",
 
-codeMissing:
-  "❌ Enter the panel code.",
+    made:
+      "Made in TOPFEROS TECH"
+  },
 
-disconnected:
-  "❌ Bot is disconnected. This code is no longer valid.",
+  fr: {
+    title: "TOPFEROS MD",
+    subtitle: "⚙️ Panneau de configuration",
 
-loginFailed:
-  "❌ Login failed.",
+    number: "Numéro :",
+    numberPlaceholder: "Entrez le numéro du bot",
 
-serverError:
-  "❌ Unable to contact the panel server.",
+    code: "Code :",
+    codePlaceholder: "Entrez le code du panneau",
 
-made:
-  "Made in TOPFEROS TECH"
+    next: "SUIVANT",
+    checking: "Vérification...",
 
-},
+    sessionMissing:
+      "❌ Le lien du panneau ne contient aucune session.",
 
-fr: {
-title:
-"TOPFEROS MD",
+    numberMissing:
+      "❌ Entrez le numéro du bot.",
 
-subtitle:
-  "⚙️ Panneau de configuration",
+    codeMissing:
+      "❌ Entrez le code du panneau.",
 
-number:
-  "Numéro :",
+    disconnected:
+      "❌ Le bot est déconnecté. Ce code n'est plus valide.",
 
-numberPlaceholder:
-  "Entrez le numéro du bot",
+    loginFailed:
+      "❌ Échec de la connexion.",
 
-code:
-  "Code :",
+    serverError:
+      "❌ Impossible de contacter le serveur du panneau.",
 
-codePlaceholder:
-  "Entrez le code du panneau",
+    made:
+      "Made in TOPFEROS TECH"
+  },
 
-next:
-  "SUIVANT",
+  es: {
+    title: "TOPFEROS MD",
+    subtitle: "⚙️ Panel de configuración",
 
-checking:
-  "Vérification...",
+    number: "Número:",
+    numberPlaceholder: "Introduce el número del bot",
 
-sessionMissing:
-  "❌ Le lien du panneau ne contient aucune session.",
+    code: "Código:",
+    codePlaceholder: "Introduce el código del panel",
 
-numberMissing:
-  "❌ Entrez le numéro du bot.",
+    next: "SIGUIENTE",
+    checking: "Verificando...",
 
-codeMissing:
-  "❌ Entrez le code du panneau.",
+    sessionMissing:
+      "❌ El enlace del panel no contiene ninguna sesión.",
 
-disconnected:
-  "❌ Le bot est déconnecté. Ce code n'est plus valide.",
+    numberMissing:
+      "❌ Introduce el número del bot.",
 
-loginFailed:
-  "❌ Échec de la connexion.",
+    codeMissing:
+      "❌ Introduce el código del panel.",
 
-serverError:
-  "❌ Impossible de contacter le serveur du panneau.",
+    disconnected:
+      "❌ El bot está desconectado. Este código ya no es válido.",
 
-made:
-  "Made in TOPFEROS TECH"
+    loginFailed:
+      "❌ Error de inicio de sesión.",
 
-},
+    serverError:
+      "❌ No se puede contactar con el servidor del panel.",
 
-es: {
-title:
-"TOPFEROS MD",
-
-subtitle:
-  "⚙️ Panel de configuración",
-
-number:
-  "Número:",
-
-numberPlaceholder:
-  "Introduce el número del bot",
-
-code:
-  "Código:",
-
-codePlaceholder:
-  "Introduce el código del panel",
-
-next:
-  "SIGUIENTE",
-
-checking:
-  "Verificando...",
-
-sessionMissing:
-  "❌ El enlace del panel no contiene ninguna sesión.",
-
-numberMissing:
-  "❌ Introduce el número del bot.",
-
-codeMissing:
-  "❌ Introduce el código del panel.",
-
-disconnected:
-  "❌ El bot está desconectado. Este código ya no es válido.",
-
-loginFailed:
-  "❌ Error de inicio de sesión.",
-
-serverError:
-  "❌ No se puede contactar con el servidor del panel.",
-
-made:
-  "Made in TOPFEROS TECH"
-
-}
+    made:
+      "Made in TOPFEROS TECH"
+  }
 
 };
 
@@ -219,164 +143,203 @@ made:
 
 function getLanguage() {
 
-const saved =
-localStorage.getItem(
-LANGUAGE_KEY
-);
+  const saved = localStorage.getItem(LANGUAGE_KEY);
 
-if (
-SUPPORTED_LANGUAGES.includes(
-saved
-)
-) {
-return saved;
-}
+  if (SUPPORTED_LANGUAGES.includes(saved)) {
+    return saved;
+  }
 
-return "en";
+  if (SUPPORTED_LANGUAGES.includes(urlLanguage)) {
+    return urlLanguage;
+  }
+
+  return "en";
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 💾 SAVE LANGUAGE
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-function saveLanguage(
-language
-) {
+function saveLanguage(language) {
 
-if (
-!SUPPORTED_LANGUAGES.includes(
-language
-)
-) {
-return false;
-}
+  if (!SUPPORTED_LANGUAGES.includes(language)) {
+    return false;
+  }
 
-localStorage.setItem(
-LANGUAGE_KEY,
-language
-);
+  localStorage.setItem(
+    LANGUAGE_KEY,
+    language
+  );
 
-return true;
+  return true;
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 📝 APPLY LOGIN LANGUAGE
+// 🌍 LANGUAGE SELECTOR
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+function setupLanguageSelector() {
+
+  const buttons = document.querySelectorAll(
+    "[data-language], .language-btn, .lang-btn"
+  );
+
+  buttons.forEach(button => {
+
+    button.addEventListener("click", () => {
+
+      const language =
+        button.dataset.language ||
+        button.dataset.lang;
+
+      if (!SUPPORTED_LANGUAGES.includes(language)) {
+        return;
+      }
+
+      saveLanguage(language);
+
+      // Kenbe lang lan nan URL tou
+      const currentUrl =
+        new URL(window.location.href);
+
+      currentUrl.searchParams.set(
+        "language",
+        language
+      );
+
+      // Si se paj login/settings lan,
+      // reload li ak nouvo lang lan.
+      window.location.href =
+        currentUrl.toString();
+
+    });
+
+  });
+
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 📝 APPLY LANGUAGE
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 function applyLanguage(
-language = getLanguage()
+  language = getLanguage()
 ) {
 
-if (
-!translations[language]
-) {
-language = "en";
-}
+  if (!translations[language]) {
+    language = "en";
+  }
 
-const t =
-translations[language];
+  const t = translations[language];
 
-document.documentElement.lang =
-language;
+  document.documentElement.lang =
+    language;
 
-const title =
-document.querySelector(
-"#loginScreen h1"
-);
+  const title =
+    document.querySelector(
+      "#loginScreen h1"
+    );
 
-if (title) {
-title.textContent =
-t.title;
-}
+  if (title) {
+    title.textContent =
+      t.title;
+  }
 
-const subtitle =
-document.querySelector(
-"#loginScreen .subtitle"
-);
+  const subtitle =
+    document.querySelector(
+      "#loginScreen .subtitle"
+    );
 
-if (subtitle) {
-subtitle.textContent =
-t.subtitle;
-}
+  if (subtitle) {
+    subtitle.textContent =
+      t.subtitle;
+  }
 
-const numberLabel =
-document.querySelector(
-'label[for="number"]'
-);
+  const numberLabel =
+    document.querySelector(
+      'label[for="number"]'
+    );
 
-if (numberLabel) {
-numberLabel.textContent =
-t.number;
-}
+  if (numberLabel) {
+    numberLabel.textContent =
+      t.number;
+  }
 
-const codeLabel =
-document.querySelector(
-'label[for="code"]'
-);
+  const codeLabel =
+    document.querySelector(
+      'label[for="code"]'
+    );
 
-if (codeLabel) {
-codeLabel.textContent =
-t.code;
-}
+  if (codeLabel) {
+    codeLabel.textContent =
+      t.code;
+  }
 
-if (numberInput) {
-numberInput.placeholder =
-t.numberPlaceholder;
-}
+  const numberInput =
+    document.getElementById("number");
 
-if (codeInput) {
-codeInput.placeholder =
-t.codePlaceholder;
-}
+  const codeInput =
+    document.getElementById("code");
 
-if (
-nextButton &&
-!nextButton.disabled
-) {
-nextButton.textContent =
-t.next;
-}
+  const nextButton =
+    document.getElementById("nextButton");
 
-const footer =
-document.querySelector(
-"#loginScreen .footer"
-);
+  if (numberInput) {
+    numberInput.placeholder =
+      t.numberPlaceholder;
+  }
 
-if (footer) {
-footer.innerHTML =
-"${t.made}<br>========================";
-}
+  if (codeInput) {
+    codeInput.placeholder =
+      t.codePlaceholder;
+  }
 
+  if (
+    nextButton &&
+    !nextButton.disabled
+  ) {
+    nextButton.textContent =
+      t.next;
+  }
+
+  const footer =
+    document.querySelector(
+      "#loginScreen .footer"
+    );
+
+  if (footer) {
+
+    footer.innerHTML =
+      `${t.made}<br>========================`;
+
+  }
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 📢 SHOW MESSAGE
+// 📢 MESSAGE
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-function showMessage(
-text
-) {
+function showMessage(text) {
 
-if (!message) {
-return;
-}
+  const message =
+    document.getElementById("message");
 
-message.textContent =
-text || "";
+  if (!message) {
+    return;
+  }
 
+  message.textContent =
+    text || "";
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 🔢 CLEAN NUMBER
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-function cleanNumber(
-number
-) {
+function cleanNumber(number) {
 
-return String(number || "")
-.replace(/\D/g, "");
-
+  return String(number || "")
+    .replace(/\D/g, "");
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -385,40 +348,38 @@ return String(number || "")
 
 async function checkStatus() {
 
-try {
+  try {
 
-const response =
-  await fetch(
-    "/api/status",
-    {
-      method: "GET",
-      cache: "no-store"
+    const response =
+      await fetch(
+        "/api/status",
+        {
+          method: "GET",
+          cache: "no-store"
+        }
+      );
+
+    if (!response.ok) {
+      return false;
     }
-  );
 
-if (!response.ok) {
-  return false;
-}
+    const result =
+      await response.json();
 
-const result =
-  await response.json();
+    return (
+      result.success === true &&
+      result.connected === true
+    );
 
-return (
-  result.success === true &&
-  result.connected === true
-);
+  } catch (error) {
 
-} catch (error) {
+    console.error(
+      "❌ STATUS ERROR:",
+      error
+    );
 
-console.error(
-  "❌ STATUS ERROR:",
-  error
-);
-
-return false;
-
-}
-
+    return false;
+  }
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -427,256 +388,224 @@ return false;
 
 async function login() {
 
-const language =
-getLanguage();
+  const language =
+    getLanguage();
 
-const t =
-translations[language];
+  const t =
+    translations[language];
 
-showMessage("");
+  const numberInput =
+    document.getElementById("number");
 
-if (!sessionId) {
+  const codeInput =
+    document.getElementById("code");
 
-showMessage(
-  t.sessionMissing
-);
+  const nextButton =
+    document.getElementById("nextButton");
 
-return;
+  showMessage("");
 
-}
+  if (!sessionId) {
 
-const number =
-cleanNumber(
-numberInput?.value
-);
-
-const code =
-String(
-codeInput?.value || ""
-)
-.trim()
-.toUpperCase();
-
-if (!number) {
-
-showMessage(
-  t.numberMissing
-);
-
-numberInput?.focus();
-
-return;
-
-}
-
-if (!code) {
-
-showMessage(
-  t.codeMissing
-);
-
-codeInput?.focus();
-
-return;
-
-}
-
-if (nextButton) {
-
-nextButton.disabled =
-  true;
-
-nextButton.textContent =
-  t.checking;
-
-}
-
-try {
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🟢 CHECK CONNECTION
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-const connected =
-  await checkStatus();
-
-if (!connected) {
-
-  showMessage(
-    t.disconnected
-  );
-
-  return;
-}
-
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🔐 VERIFY SESSION
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-const response =
-  await fetch(
-    "/api/login",
-    {
-      method: "POST",
-
-      headers: {
-        "Content-Type":
-          "application/json"
-      },
-
-      body:
-        JSON.stringify({
-
-          sessionId,
-
-          number,
-
-          code
-
-        })
-    }
-  );
-
-
-const result =
-  await response.json();
-
-
-if (
-  !response.ok ||
-  result.success !== true
-) {
-
-  showMessage(
-    result.message ||
-    t.loginFailed
-  );
-
-  return;
-}
-
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 💾 SAVE SELECTED LANGUAGE
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-saveLanguage(
-  language
-);
-
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🌍 SAVE LANGUAGE FOR SESSION
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-try {
-
-  await fetch(
-    "/api/language",
-    {
-      method: "POST",
-
-      headers: {
-        "Content-Type":
-          "application/json"
-      },
-
-      body:
-        JSON.stringify({
-
-          sessionId,
-
-          language
-
-        })
-      }
+    showMessage(
+      t.sessionMissing
     );
 
-} catch (languageError) {
+    return;
+  }
 
-  console.warn(
-    "⚠️ LANGUAGE SAVE WARNING:",
-    languageError
-  );
+  const number =
+    cleanNumber(
+      numberInput?.value
+    );
 
-}
+  const code =
+    String(
+      codeInput?.value || ""
+    )
+    .trim()
+    .toUpperCase();
 
+  if (!number) {
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🚀 OPEN SETTINGS
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    showMessage(
+      t.numberMissing
+    );
 
-window.location.href =
-  `/settings.html?session=${encodeURIComponent(
-    sessionId
-  )}&language=${encodeURIComponent(
-    language
-  )}`;
+    numberInput?.focus();
 
-} catch (error) {
+    return;
+  }
 
-console.error(
-  "❌ PANEL LOGIN ERROR:",
-  error
-);
+  if (!code) {
 
-showMessage(
-  t.serverError
-);
+    showMessage(
+      t.codeMissing
+    );
 
-} finally {
+    codeInput?.focus();
 
-if (nextButton) {
+    return;
+  }
 
-  nextButton.disabled =
-    false;
+  if (nextButton) {
 
-  nextButton.textContent =
-    t.next;
+    nextButton.disabled =
+      true;
 
-}
+    nextButton.textContent =
+      t.checking;
+  }
 
-}
+  try {
 
+    const connected =
+      await checkStatus();
+
+    if (!connected) {
+
+      showMessage(
+        t.disconnected
+      );
+
+      return;
+    }
+
+    const response =
+      await fetch(
+        "/api/login",
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+
+          body:
+            JSON.stringify({
+              sessionId,
+              number,
+              code
+            })
+        }
+      );
+
+    const result =
+      await response.json();
+
+    if (
+      !response.ok ||
+      result.success !== true
+    ) {
+
+      showMessage(
+        result.message ||
+        t.loginFailed
+      );
+
+      return;
+    }
+
+    saveLanguage(language);
+
+    // Sove lang pou session lan
+    try {
+
+      await fetch(
+        "/api/language",
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+
+          body:
+            JSON.stringify({
+              sessionId,
+              language
+            })
+        }
+      );
+
+    } catch (languageError) {
+
+      console.warn(
+        "⚠️ LANGUAGE SAVE WARNING:",
+        languageError
+      );
+    }
+
+    // Ale nan Settings
+    window.location.href =
+      `/settings.html?session=${encodeURIComponent(
+        sessionId
+      )}&language=${encodeURIComponent(
+        language
+      )}`;
+
+  } catch (error) {
+
+    console.error(
+      "❌ PANEL LOGIN ERROR:",
+      error
+    );
+
+    showMessage(
+      t.serverError
+    );
+
+  } finally {
+
+    if (nextButton) {
+
+      nextButton.disabled =
+        false;
+
+      nextButton.textContent =
+        t.next;
+    }
+  }
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 🖱️ NEXT BUTTON
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+const nextButton =
+  document.getElementById(
+    "nextButton"
+  );
+
 if (nextButton) {
 
-nextButton.addEventListener(
-"click",
-login
-);
-
+  nextButton.addEventListener(
+    "click",
+    login
+  );
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // ⌨️ ENTER KEY
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+const codeInput =
+  document.getElementById("code");
+
 if (codeInput) {
 
-codeInput.addEventListener(
-"keydown",
-event => {
+  codeInput.addEventListener(
+    "keydown",
+    event => {
 
-  if (
-    event.key ===
-    "Enter"
-  ) {
+      if (event.key === "Enter") {
+        login();
+      }
 
-    login();
-
-  }
-
-}
-
-);
-
+    }
+  );
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -684,26 +613,27 @@ event => {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 setInterval(
-async () => {
+  async () => {
 
-const connected =
-  await checkStatus();
+    const connected =
+      await checkStatus();
 
-if (
-  !connected &&
-  !document.hidden
-) {
+    if (
+      !connected &&
+      !document.hidden
+    ) {
 
-  showMessage(
-    translations[
-      getLanguage()
-    ].disconnected
-  );
+      const language =
+        getLanguage();
 
-}
+      showMessage(
+        translations[language]
+          .disconnected
+      );
+    }
 
-},
-5000
+  },
+  5000
 );
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -712,21 +642,27 @@ if (
 
 (function init() {
 
-const language =
-getLanguage();
+  setupLanguageSelector();
 
-applyLanguage(
-language
-);
+  const language =
+    getLanguage();
 
-if (!sessionId) {
+  applyLanguage(language);
 
-showMessage(
-  translations[language]
-    .sessionMissing
-);
+  if (!sessionId) {
 
-}
+    const message =
+      document.getElementById(
+        "message"
+      );
+
+    if (message) {
+
+      message.textContent =
+        translations[language]
+          .sessionMissing;
+    }
+  }
 
 })();
 
