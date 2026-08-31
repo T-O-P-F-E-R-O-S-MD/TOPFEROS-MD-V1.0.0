@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
 
@@ -118,7 +119,9 @@
 
     .subtitle {
       color: #aaaaaa;
+
       font-size: 14px;
+
       margin-bottom: 28px;
     }
 
@@ -126,6 +129,7 @@
       text-align: left;
 
       font-size: 14px;
+
       font-weight: bold;
 
       margin-bottom: 12px;
@@ -138,7 +142,7 @@
 
       gap: 10px;
 
-      margin-bottom: 20px;
+      margin-bottom: 10px;
     }
 
     .language-button {
@@ -157,6 +161,7 @@
       color: #ffffff;
 
       font-size: 15px;
+
       font-weight: bold;
 
       cursor: pointer;
@@ -178,6 +183,7 @@
 
     .language-button.selected {
       background: #ffffff;
+
       color: #000000;
 
       border-color: #ffffff;
@@ -185,6 +191,7 @@
 
     .language-button:disabled {
       opacity: 0.5;
+
       cursor: not-allowed;
     }
 
@@ -198,6 +205,7 @@
       display: block;
 
       font-size: 14px;
+
       font-weight: bold;
 
       margin-bottom: 8px;
@@ -233,10 +241,11 @@
         rgba(255, 255, 255, 0.45);
     }
 
-    .next-button {
+    .login-button {
       width: 100%;
 
       border: none;
+
       outline: none;
 
       padding: 14px;
@@ -248,6 +257,7 @@
       color: #000000;
 
       font-size: 16px;
+
       font-weight: bold;
 
       cursor: pointer;
@@ -259,16 +269,17 @@
         opacity 0.2s;
     }
 
-    .next-button:hover {
+    .login-button:hover {
       opacity: 0.9;
     }
 
-    .next-button:active {
+    .login-button:active {
       transform: scale(0.98);
     }
 
-    .next-button:disabled {
+    .login-button:disabled {
       opacity: 0.5;
+
       cursor: not-allowed;
     }
 
@@ -361,9 +372,11 @@
   </style>
 </head>
 
+
 <body>
 
   <main class="container">
+
 
     <!--
     ══════════════════════════════════════════════
@@ -496,6 +509,7 @@
         ⚙️ Parrain Code
       </p>
 
+
       <div class="field">
 
         <label
@@ -514,6 +528,7 @@
         >
 
       </div>
+
 
       <div class="field">
 
@@ -534,18 +549,21 @@
 
       </div>
 
+
       <button
         id="loginButton"
-        class="next-button"
+        class="login-button"
         type="button"
       >
         LOGIN 🔐
       </button>
 
+
       <div
         id="message"
         class="message"
       ></div>
+
 
       <div
         id="loginFooter"
@@ -581,6 +599,7 @@
       <div class="settings-title">
 
         <img
+          id="settingsLogo"
           class="logo"
           src="/logo.png"
           alt="TOPFEROS MD V1.0.0"
@@ -593,12 +612,14 @@
 
       </div>
 
+
       <div
         id="connection"
         class="connection"
       >
         🟢 Bot Connected
       </div>
+
 
       <div class="settings-box">
 
@@ -612,6 +633,7 @@
 
       </div>
 
+
       <div class="settings-box">
 
         <h3 id="groupSettingsTitle">
@@ -624,6 +646,7 @@
 
       </div>
 
+
       <div class="settings-box">
 
         <h3 id="automaticTitle">
@@ -635,6 +658,7 @@
         </p>
 
       </div>
+
 
       <div class="footer">
 
@@ -694,6 +718,16 @@
     const languageMessage =
       document.getElementById(
         "languageMessage"
+      );
+
+    const languageSubtitle =
+      document.getElementById(
+        "languageSubtitle"
+      );
+
+    const languageTitle =
+      document.getElementById(
+        "languageTitle"
       );
 
     const numberInput =
@@ -963,17 +997,17 @@
 
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 🌐 SELECTED LANGUAGE
+    // 🌐 LANGUAGE
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     let selectedLanguage =
       localStorage.getItem(
         "topferos_language"
-      ) || null;
+      );
 
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 🧠 TRANSLATION
+    // 🧠 TRANSLATION HELPER
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     function t(key) {
@@ -1055,9 +1089,7 @@
     // ❌ MESSAGES
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-    function showLanguageError(
-      text
-    ) {
+    function showLanguageError(text) {
 
       languageMessage.textContent =
         text || "";
@@ -1068,9 +1100,7 @@
     }
 
 
-    function showError(
-      text
-    ) {
+    function showError(text) {
 
       message.textContent =
         text || "";
@@ -1081,9 +1111,7 @@
     }
 
 
-    function showSuccess(
-      text
-    ) {
+    function showSuccess(text) {
 
       message.textContent =
         text || "";
@@ -1098,4 +1126,95 @@
     // 🌐 APPLY LANGUAGE
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-    function
+    function applyLanguage() {
+
+      if (!selectedLanguage) {
+        return;
+      }
+
+      const lang =
+        translations[
+          selectedLanguage
+        ];
+
+      if (!lang) {
+        selectedLanguage = "en";
+        applyLanguage();
+        return;
+      }
+
+      document.documentElement.lang =
+        selectedLanguage;
+
+
+      languageTitle.textContent =
+        lang.languageTitle;
+
+
+      languageSubtitle.textContent =
+        lang.languageSubtitle;
+
+
+      document.getElementById(
+        "loginSubtitle"
+      ).textContent =
+        lang.parrain;
+
+
+      document.getElementById(
+        "numberLabel"
+      ).textContent =
+        lang.number;
+
+
+      document.getElementById(
+        "codeLabel"
+      ).textContent =
+        lang.code;
+
+
+      numberInput.placeholder =
+        lang.numberPlaceholder;
+
+
+      codeInput.placeholder =
+        lang.codePlaceholder;
+
+
+      loginButton.textContent =
+        lang.login;
+
+
+      document.getElementById(
+        "settingsTitle"
+      ).textContent =
+        lang.settings;
+
+
+      document.getElementById(
+        "connection"
+      ).textContent =
+        lang.connected;
+
+
+      document.getElementById(
+        "botSettingsTitle"
+      ).textContent =
+        lang.botSettings;
+
+
+      document.getElementById(
+        "botSettingsText"
+      ).textContent =
+        lang.botSettingsText;
+
+
+      document.getElementById(
+        "groupSettingsTitle"
+      ).textContent =
+        lang.groupSettings;
+
+
+      document.getElementById(
+        "groupSettingsText"
+      )
