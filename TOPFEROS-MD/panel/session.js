@@ -3,20 +3,20 @@
 const crypto = require("crypto");
 
 // ╔════════════════════════════════════════════════════╗
-// ║          🦁 TOPFEROS MD - SESSION MANAGER        ║
-// ║                🚀 TOPFEROS TECH                   ║
+// ║        🦁 TOPFEROS MD - SESSION MANAGER          ║
+// ║              🚀 TOPFEROS TECH                    ║
 // ╚════════════════════════════════════════════════════╝
 
-// Tout session panel yo ap rete isit la.
+// Tout session panel yo rete nan memwa isit la.
 const sessions = new Map();
 
-// Konbyen tan yon session ka rete aktif.
-// 24 èdtan.
-const SESSION_TTL = 24 * 60 * 60 * 1000;
+// Session lan valab pandan 24 èdtan.
+const SESSION_TTL =
+  24 * 60 * 60 * 1000;
 
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🆔 KREYE YON SESSION ID
+// 🆔 KREYE SESSION ID
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 function generateSessionId() {
@@ -29,26 +29,32 @@ function generateSessionId() {
 
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🔐 KREYE SESSION PANEL
+// 🔐 KREYE YON SESSION PANEL
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 function createSession(options = {}) {
 
+  const now = Date.now();
+
   const sessionId =
     generateSessionId();
-
-  const now =
-    Date.now();
 
   const session = {
 
     sessionId,
 
     number:
-      options.number || null,
+      options.number
+        ? String(options.number)
+            .replace(/\D/g, "")
+        : null,
 
     code:
-      options.code || null,
+      options.code
+        ? String(options.code)
+            .trim()
+            .toUpperCase()
+        : null,
 
     language:
       options.language || null,
@@ -63,16 +69,17 @@ function createSession(options = {}) {
 
     expiresAt:
       now + SESSION_TTL
-  };
 
+  };
 
   sessions.set(
     sessionId,
     session
   );
 
-
-  return session;
+  return {
+    ...session
+  };
 
 }
 
@@ -94,11 +101,10 @@ function getSession(sessionId) {
     return null;
   }
 
-
-  // Si session lan ekspire, retire li.
+  // Si session lan ekspire, efase li.
   if (
     session.expiresAt &&
-    session.expiresAt < Date.now()
+    session.expiresAt <= Date.now()
   ) {
 
     sessions.delete(
@@ -107,7 +113,6 @@ function getSession(sessionId) {
 
     return null;
   }
-
 
   return session;
 
@@ -130,10 +135,7 @@ function setConnected(
     return false;
   }
 
-
-  session.connected =
-    true;
-
+  session.connected = true;
 
   if (number) {
 
@@ -143,16 +145,13 @@ function setConnected(
 
   }
 
-
   session.expiresAt =
     Date.now() + SESSION_TTL;
-
 
   sessions.set(
     sessionId,
     session
   );
-
 
   return true;
 
@@ -174,19 +173,14 @@ function setDisconnected(
     return false;
   }
 
+  session.connected = false;
 
-  session.connected =
-    false;
-
-  session.authenticated =
-    false;
-
+  session.authenticated = false;
 
   sessions.set(
     sessionId,
     session
   );
-
 
   return true;
 
@@ -194,7 +188,7 @@ function setDisconnected(
 
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🌐 SOVE LANG
+// 🌐 SOVE LANG POU SESSION LAN
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 function setLanguage(
@@ -209,20 +203,18 @@ function setLanguage(
     return false;
   }
 
-
   session.language =
-    language;
-
+    String(language || "")
+      .trim()
+      .toLowerCase();
 
   session.expiresAt =
     Date.now() + SESSION_TTL;
-
 
   sessions.set(
     sessionId,
     session
   );
-
 
   return true;
 
@@ -255,7 +247,6 @@ function verifyLogin(
 
   }
 
-
   if (!session.connected) {
 
     return {
@@ -269,17 +260,14 @@ function verifyLogin(
 
   }
 
-
   const cleanNumber =
     String(number || "")
       .replace(/\D/g, "");
-
 
   const cleanCode =
     String(code || "")
       .trim()
       .toUpperCase();
-
 
   if (!cleanNumber) {
 
@@ -294,7 +282,6 @@ function verifyLogin(
 
   }
 
-
   if (!cleanCode) {
 
     return {
@@ -308,7 +295,7 @@ function verifyLogin(
 
   }
 
-
+  // Verifye nimewo a.
   if (
     session.number &&
     session.number !== cleanNumber
@@ -325,7 +312,7 @@ function verifyLogin(
 
   }
 
-
+  // Verifye Parrain Code la.
   if (
     session.code &&
     session.code !== cleanCode
@@ -342,10 +329,13 @@ function verifyLogin(
 
   }
 
-
+  // Si session lan pa t gen nimewo,
+  // mete nimewo moun lan kounya.
   session.number =
     cleanNumber;
 
+  // Si session lan pa t gen code,
+  // mete code moun lan kounya.
   session.code =
     cleanCode;
 
@@ -355,12 +345,10 @@ function verifyLogin(
   session.expiresAt =
     Date.now() + SESSION_TTL;
 
-
   sessions.set(
     sessionId,
     session
   );
-
 
   return {
 
@@ -371,6 +359,27 @@ function verifyLogin(
     sessionId
 
   };
+
+}
+
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🔐 VERIFY SESSION
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// Alias sa a pèmèt panel/server.js itilize:
+// settingsPanel.verifySession(...)
+
+function verifySession(
+  sessionId,
+  number,
+  code
+) {
+
+  return verifyLogin(
+    sessionId,
+    number,
+    code
+  );
 
 }
 
@@ -414,12 +423,16 @@ function isSessionConnected(
 
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🗑️ EFASE SESSION
+// 🗑️ EFASE YON SESSION
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 function deleteSession(
   sessionId
 ) {
+
+  if (!sessionId) {
+    return false;
+  }
 
   return sessions.delete(
     sessionId
@@ -434,33 +447,19 @@ function deleteSession(
 
 function getSessions() {
 
+  cleanupSessions();
+
   const result = [];
 
   for (
     const session of sessions.values()
   ) {
 
-    if (
-      session.expiresAt &&
-      session.expiresAt < Date.now()
-    ) {
-
-      sessions.delete(
-        session.sessionId
-      );
-
-      continue;
-    }
-
-
-    result.push(
-      {
-        ...session
-      }
-    );
+    result.push({
+      ...session
+    });
 
   }
-
 
   return result;
 
@@ -483,7 +482,7 @@ function cleanupSessions() {
 
     if (
       session.expiresAt &&
-      session.expiresAt < now
+      session.expiresAt <= now
     ) {
 
       sessions.delete(
@@ -498,16 +497,33 @@ function cleanupSessions() {
 
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 📊 KONTE SESSION
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+function getSessionCount() {
+
+  cleanupSessions();
+
+  return sessions.size;
+
+}
+
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 📦 EXPORT
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 module.exports = {
+
+  generateSessionId,
 
   createSession,
 
   getSession,
 
   getSessions,
+
+  getSessionCount,
 
   setConnected,
 
@@ -516,6 +532,8 @@ module.exports = {
   setLanguage,
 
   verifyLogin,
+
+  verifySession,
 
   isAuthenticated,
 
