@@ -19,6 +19,7 @@
 
     body {
       min-height: 100vh;
+
       display: flex;
       align-items: center;
       justify-content: center;
@@ -37,6 +38,7 @@
         );
 
       color: #ffffff;
+
       padding: 20px;
     }
 
@@ -47,12 +49,14 @@
 
     .card {
       width: 100%;
+
       padding: 32px 25px;
 
       background:
         rgba(20, 20, 20, 0.96);
 
-      border: 1px solid
+      border:
+        1px solid
         rgba(255, 255, 255, 0.12);
 
       border-radius: 22px;
@@ -77,7 +81,8 @@
       margin:
         0 auto 20px;
 
-      border: 3px solid
+      border:
+        3px solid
         rgba(255, 255, 255, 0.18);
 
       background: #222;
@@ -93,12 +98,14 @@
       border-radius: 50%;
 
       display: flex;
+
       align-items: center;
       justify-content: center;
 
       background: #222;
 
-      border: 3px solid
+      border:
+        3px solid
         rgba(255, 255, 255, 0.18);
 
       font-size: 42px;
@@ -128,6 +135,7 @@
 
     .language-options {
       display: grid;
+
       gap: 10px;
 
       margin-bottom: 20px;
@@ -136,11 +144,12 @@
     .language-button {
       width: 100%;
 
-      padding: 13px 15px;
+      padding: 14px 15px;
 
       border-radius: 12px;
 
-      border: 1px solid
+      border:
+        1px solid
         rgba(255, 255, 255, 0.12);
 
       background: #0b0b0b;
@@ -163,6 +172,10 @@
         rgba(255, 255, 255, 0.35);
     }
 
+    .language-button:active {
+      transform: scale(0.98);
+    }
+
     .language-button.selected {
       background: #ffffff;
       color: #000000;
@@ -170,8 +183,14 @@
       border-color: #ffffff;
     }
 
+    .language-button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
     .field {
       text-align: left;
+
       margin-bottom: 18px;
     }
 
@@ -182,6 +201,7 @@
       font-weight: bold;
 
       margin-bottom: 8px;
+
       color: #dddddd;
     }
 
@@ -192,17 +212,20 @@
 
       border-radius: 12px;
 
-      border: 1px solid
+      border:
+        1px solid
         rgba(255, 255, 255, 0.12);
 
       outline: none;
 
       background: #0b0b0b;
+
       color: #ffffff;
 
       font-size: 16px;
 
-      transition: 0.2s;
+      transition:
+        0.2s;
     }
 
     .field input:focus {
@@ -221,6 +244,7 @@
       border-radius: 12px;
 
       background: #ffffff;
+
       color: #000000;
 
       font-size: 16px;
@@ -258,6 +282,10 @@
       color: #ff7777;
     }
 
+    .success-message {
+      color: #72ffad;
+    }
+
     .footer {
       margin-top: 28px;
 
@@ -284,6 +312,7 @@
 
     .settings-title {
       text-align: center;
+
       margin-bottom: 22px;
     }
 
@@ -320,11 +349,13 @@
 
     .settings-box h3 {
       font-size: 15px;
+
       margin-bottom: 5px;
     }
 
     .settings-box p {
       color: #999999;
+
       font-size: 12px;
     }
   </style>
@@ -334,9 +365,11 @@
 
   <main class="container">
 
-    <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-         LANGUAGE SCREEN
-         ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+    <!--
+    ══════════════════════════════════════════════
+    🌐 LANGUAGE SCREEN
+    ══════════════════════════════════════════════
+    -->
 
     <section
       id="languageScreen"
@@ -362,12 +395,18 @@
         🦁 TOPFEROS MD V1.0.0
       </h1>
 
-      <p class="subtitle">
-        • Language principale
+      <p
+        id="languageSubtitle"
+        class="subtitle"
+      >
+        Choose your principal language.
       </p>
 
-      <div class="language-title">
-        • Language principale
+      <div
+        id="languageTitle"
+        class="language-title"
+      >
+        • Principal Language
       </div>
 
       <div class="language-options">
@@ -398,34 +437,33 @@
 
       </div>
 
-      <button
-        id="languageNextButton"
-        class="next-button"
-        type="button"
-        disabled
-      >
-        Suivant ⏭️
-      </button>
-
       <div
         id="languageMessage"
         class="message"
       ></div>
 
       <div class="footer">
+
         ========================
+
         <br>
+
         By TOPFEROS TECH
+
         <br>
+
         ========================
+
       </div>
 
     </section>
 
 
-    <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-         LOGIN / PARRAIN CODE SCREEN
-         ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+    <!--
+    ══════════════════════════════════════════════
+    🔐 LOGIN SCREEN
+    ══════════════════════════════════════════════
+    -->
 
     <section
       id="loginScreen"
@@ -497,11 +535,11 @@
       </div>
 
       <button
-        id="nextButton"
+        id="loginButton"
         class="next-button"
         type="button"
       >
-        NEXT ⏭️
+        LOGIN 🔐
       </button>
 
       <div
@@ -513,19 +551,27 @@
         id="loginFooter"
         class="footer"
       >
+
         ========================
+
         <br>
+
         By TOPFEROS TECH
+
         <br>
+
         ========================
+
       </div>
 
     </section>
 
 
-    <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-         SETTINGS SCREEN
-         ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+    <!--
+    ══════════════════════════════════════════════
+    ⚙️ SETTINGS SCREEN
+    ══════════════════════════════════════════════
+    -->
 
     <section
       id="settingsScreen"
@@ -561,7 +607,7 @@
         </h3>
 
         <p id="botSettingsText">
-          Settings yo pral parèt isit la.
+          Bot settings will appear here.
         </p>
 
       </div>
@@ -573,7 +619,7 @@
         </h3>
 
         <p id="groupSettingsText">
-          Group controls yo pral parèt isit la.
+          Group controls will appear here.
         </p>
 
       </div>
@@ -585,17 +631,23 @@
         </h3>
 
         <p id="automaticText">
-          Automatic systems yo pral parèt isit la.
+          Automatic systems will appear here.
         </p>
 
       </div>
 
       <div class="footer">
+
         ========================
+
         <br>
+
         By TOPFEROS TECH
+
         <br>
+
         ========================
+
       </div>
 
     </section>
@@ -606,9 +658,10 @@
   <script>
     "use strict";
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // 🔎 SESSION ID
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     const params =
       new URLSearchParams(
@@ -619,9 +672,9 @@
       params.get("session");
 
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // 📦 ELEMENTS
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     const languageScreen =
       document.getElementById(
@@ -636,11 +689,6 @@
     const settingsScreen =
       document.getElementById(
         "settingsScreen"
-      );
-
-    const languageNextButton =
-      document.getElementById(
-        "languageNextButton"
       );
 
     const languageMessage =
@@ -658,9 +706,9 @@
         "code"
       );
 
-    const nextButton =
+    const loginButton =
       document.getElementById(
-        "nextButton"
+        "loginButton"
       );
 
     const message =
@@ -669,21 +717,19 @@
       );
 
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 🌐 LANGUAGE DATA
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // 🌐 TRANSLATIONS
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     const translations = {
 
       en: {
+
         languageTitle:
           "• Principal Language",
 
         languageSubtitle:
           "Choose your principal language.",
-
-        next:
-          "Next ⏭️",
 
         parrain:
           "⚙️ Parrain Code",
@@ -700,14 +746,20 @@
         codePlaceholder:
           "Enter panel code",
 
+        login:
+          "LOGIN 🔐",
+
         checking:
           "Checking...",
 
-        botDisconnected:
-          "❌ Bot is disconnected. The code is no longer valid.",
+        languageSaving:
+          "Saving language...",
 
         sessionMissing:
           "❌ The panel link has no session.",
+
+        languageFailed:
+          "❌ Language selection failed.",
 
         numberMissing:
           "❌ Enter the bot number.",
@@ -720,6 +772,9 @@
 
         serverError:
           "❌ Cannot contact the panel server.",
+
+        botDisconnected:
+          "❌ Bot is disconnected.",
 
         connected:
           "🟢 Bot Connected",
@@ -743,21 +798,17 @@
           "🤖 Automatic Systems",
 
         automaticText:
-          "Automatic systems will appear here.",
-
-        footer:
-          "By TOPFEROS TECH"
+          "Automatic systems will appear here."
       },
 
+
       fr: {
+
         languageTitle:
           "• Langue principale",
 
         languageSubtitle:
           "Choisissez votre langue principale.",
-
-        next:
-          "Suivant ⏭️",
 
         parrain:
           "⚙️ Code Parrain",
@@ -774,14 +825,20 @@
         codePlaceholder:
           "Entrez le code du panneau",
 
+        login:
+          "CONNEXION 🔐",
+
         checking:
           "Vérification...",
 
-        botDisconnected:
-          "❌ Le bot est déconnecté. Le code n'est plus valide.",
+        languageSaving:
+          "Enregistrement de la langue...",
 
         sessionMissing:
           "❌ Le lien du panneau ne contient pas de session.",
+
+        languageFailed:
+          "❌ Échec de la sélection de la langue.",
 
         numberMissing:
           "❌ Entrez le numéro du bot.",
@@ -794,6 +851,9 @@
 
         serverError:
           "❌ Impossible de contacter le serveur du panneau.",
+
+        botDisconnected:
+          "❌ Le bot est déconnecté.",
 
         connected:
           "🟢 Bot connecté",
@@ -817,21 +877,17 @@
           "🤖 Systèmes automatiques",
 
         automaticText:
-          "Les systèmes automatiques apparaîtront ici.",
-
-        footer:
-          "By TOPFEROS TECH"
+          "Les systèmes automatiques apparaîtront ici."
       },
 
+
       es: {
+
         languageTitle:
           "• Idioma principal",
 
         languageSubtitle:
           "Elige tu idioma principal.",
-
-        next:
-          "Siguiente ⏭️",
 
         parrain:
           "⚙️ Código de referencia",
@@ -842,20 +898,26 @@
         code:
           "Código :",
 
-        checking:
-          "Comprobando...",
-
         numberPlaceholder:
           "Introduce el número del bot",
 
         codePlaceholder:
           "Introduce el código del panel",
 
-        botDisconnected:
-          "❌ El bot está desconectado. El código ya no es válido.",
+        login:
+          "INICIAR SESIÓN 🔐",
+
+        checking:
+          "Comprobando...",
+
+        languageSaving:
+          "Guardando idioma...",
 
         sessionMissing:
           "❌ El enlace del panel no contiene una sesión.",
+
+        languageFailed:
+          "❌ Error al seleccionar el idioma.",
 
         numberMissing:
           "❌ Introduce el número del bot.",
@@ -868,6 +930,9 @@
 
         serverError:
           "❌ No se puede contactar con el servidor del panel.",
+
+        botDisconnected:
+          "❌ El bot está desconectado.",
 
         connected:
           "🟢 Bot conectado",
@@ -891,25 +956,25 @@
           "🤖 Sistemas automáticos",
 
         automaticText:
-          "Los sistemas automáticos aparecerán aquí.",
-
-        footer:
-          "By TOPFEROS TECH"
+          "Los sistemas automáticos aparecerán aquí."
       }
 
     };
 
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // 🌐 SELECTED LANGUAGE
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-    let selectedLanguage = null;
+    let selectedLanguage =
+      localStorage.getItem(
+        "topferos_language"
+      ) || null;
 
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 🧠 TRANSLATION HELPER
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // 🧠 TRANSLATION
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     function t(key) {
 
@@ -926,9 +991,9 @@
     }
 
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // 🖼️ LOGO FALLBACK
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     function showLanguageLogoPlaceholder() {
 
@@ -943,12 +1008,14 @@
         );
 
       if (logo) {
+
         logo.classList.add(
           "hidden"
         );
       }
 
       if (placeholder) {
+
         placeholder.classList.remove(
           "hidden"
         );
@@ -969,12 +1036,14 @@
         );
 
       if (logo) {
+
         logo.classList.add(
           "hidden"
         );
       }
 
       if (placeholder) {
+
         placeholder.classList.remove(
           "hidden"
         );
@@ -982,162 +1051,51 @@
     }
 
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // ❌ LANGUAGE MESSAGE
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // ❌ MESSAGES
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-    function showLanguageError(text) {
+    function showLanguageError(
+      text
+    ) {
 
       languageMessage.textContent =
         text || "";
 
+      languageMessage.classList.remove(
+        "success-message"
+      );
     }
 
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // ❌ LOGIN MESSAGE
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-    function showError(text) {
+    function showError(
+      text
+    ) {
 
       message.textContent =
         text || "";
 
+      message.classList.remove(
+        "success-message"
+      );
     }
 
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    function showSuccess(
+      text
+    ) {
+
+      message.textContent =
+        text || "";
+
+      message.classList.add(
+        "success-message"
+      );
+    }
+
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // 🌐 APPLY LANGUAGE
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-    function applyLanguage() {
-
-      if (!selectedLanguage) {
-        return;
-      }
-
-      const lang =
-        translations[
-          selectedLanguage
-        ];
-
-      document.documentElement.lang =
-        selectedLanguage;
-
-      document.querySelector(
-        ".language-title"
-      ).textContent =
-        lang.languageTitle;
-
-      document.querySelector(
-        "#languageScreen .subtitle"
-      ).textContent =
-        lang.languageSubtitle;
-
-      languageNextButton.textContent =
-        lang.next;
-
-      document.getElementById(
-        "loginSubtitle"
-      ).textContent =
-        lang.parrain;
-
-      document.getElementById(
-        "numberLabel"
-      ).textContent =
-        lang.number;
-
-      document.getElementById(
-        "codeLabel"
-      ).textContent =
-        lang.code;
-
-      numberInput.placeholder =
-        lang.numberPlaceholder;
-
-      codeInput.placeholder =
-        lang.codePlaceholder;
-
-      document.getElementById(
-        "settingsTitle"
-      ).textContent =
-        lang.settings;
-
-      document.getElementById(
-        "connection"
-      ).textContent =
-        lang.connected;
-
-      document.getElementById(
-        "botSettingsTitle"
-      ).textContent =
-        lang.botSettings;
-
-      document.getElementById(
-        "botSettingsText"
-      ).textContent =
-        lang.botSettingsText;
-
-      document.getElementById(
-        "groupSettingsTitle"
-      ).textContent =
-        lang.groupSettings;
-
-      document.getElementById(
-        "groupSettingsText"
-      ).textContent =
-        lang.groupSettingsText;
-
-      document.getElementById(
-        "automaticTitle"
-      ).textContent =
-        lang.automatic;
-
-      document.getElementById(
-        "automaticText"
-      ).textContent =
-        lang.automaticText;
-
-    }
-
-
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 💾 SAVE LANGUAGE TO SESSION
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-    async function saveLanguage() {
-
-      if (!sessionId) {
-
-        showLanguageError(
-          "❌ Session panel la pa jwenn."
-        );
-
-        return false;
-      }
-
-      if (!selectedLanguage) {
-
-        showLanguageError(
-          "❌ Please select a language."
-        );
-
-        return false;
-      }
-
-      try {
-
-        const response =
-          await fetch(
-            "/api/language",
-            {
-              method: "POST",
-
-              headers: {
-                "Content-Type":
-                  "application/json"
-              },
-
-              body:
-                JSON.stringify({
-                 
+    function
