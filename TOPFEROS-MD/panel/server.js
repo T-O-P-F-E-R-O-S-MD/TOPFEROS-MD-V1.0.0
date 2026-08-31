@@ -1,1143 +1,926 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
+"use strict";
 
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
-  >
+const express = require("express");
+const path = require("path");
+const crypto = require("crypto");
 
-  <title>TOPFEROS MD V1.0.0</title>
+const settingsPanel = require("../settings/panel");
+const settingsApi = require("./settings-api");
 
-  <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+const app = express();
 
-    body {
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+const PORT =
+  Number(process.env.PANEL_PORT || process.env.PORT || 3000);
 
-      font-family:
-        Arial,
-        Helvetica,
-        sans-serif;
+const HOST =
+  process.env.PANEL_HOST || "0.0.0.0";
 
-      background:
-        linear-gradient(
-          135deg,
-          #050505,
-          #111111,
-          #050505
-        );
+const PANEL_URL =
+  process.env.PANEL_URL || `http://localhost:${PORT}`;
 
-      color: #ffffff;
-      padding: 20px;
-    }
+const publicDir =
+  path.join(__dirname, "public");
 
-    .container {
-      width: 100%;
-      max-width: 430px;
-    }
 
-    .card {
-      width: 100%;
-      padding: 32px 25px;
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🧱 EXPRESS
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-      background:
-        rgba(20, 20, 20, 0.96);
+app.disable("x-powered-by");
 
-      border: 1px solid
-        rgba(255, 255, 255, 0.12);
+app.use(
+  express.json({
+    limit: "1mb"
+  })
+);
 
-      border-radius: 22px;
+app.use(
+  express.urlencoded({
+    extended: true,
+    limit: "1mb"
+  })
+);
 
-      box-shadow:
-        0 20px 60px
-        rgba(0, 0, 0, 0.55);
 
-      text-align: center;
-    }
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🔐 SESSION DATA
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-    .logo {
-      width: 105px;
-      height: 105px;
+const languageSessions =
+  new Map();
 
-      object-fit: cover;
 
-      border-radius: 50%;
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🧹 SESSION CLEANUP
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-      display: block;
+function cleanupSessions() {
 
-      margin:
-        0 auto 20px;
+  const now = Date.now();
 
-      border: 3px solid
-        rgba(255, 255, 255, 0.18);
+  for (
+    const [sessionId, data]
+    of languageSessions.entries()
+  ) {
 
-      background: #222;
-    }
-
-    .logo-placeholder {
-      width: 105px;
-      height: 105px;
-
-      margin:
-        0 auto 20px;
-
-      border-radius: 50%;
-
-      display: flex;
-      align-items: center;
-      justify-content: center;
-
-      background: #222;
-
-      border: 3px solid
-        rgba(255, 255, 255, 0.18);
-
-      font-size: 42px;
-    }
-
-    h1 {
-      font-size: 24px;
-      margin-bottom: 8px;
-    }
-
-    .subtitle {
-      color: #aaaaaa;
-      font-size: 14px;
-      margin-bottom: 28px;
-    }
-
-    .language-title {
-      text-align: left;
-
-      font-size: 14px;
-      font-weight: bold;
-
-      margin-bottom: 12px;
-
-      color: #dddddd;
-    }
-
-    .language-options {
-      display: grid;
-      gap: 10px;
-
-      margin-bottom: 20px;
-    }
-
-    .language-button {
-      width: 100%;
-
-      padding: 13px 15px;
-
-      border-radius: 12px;
-
-      border: 1px solid
-        rgba(255, 255, 255, 0.12);
-
-      background: #0b0b0b;
-
-      color: #ffffff;
-
-      font-size: 15px;
-      font-weight: bold;
-
-      cursor: pointer;
-
-      text-align: left;
-
-      transition:
-        0.2s;
-    }
-
-    .language-button:hover {
-      border-color:
-        rgba(255, 255, 255, 0.35);
-    }
-
-    .language-button.selected {
-      background: #ffffff;
-      color: #000000;
-
-      border-color: #ffffff;
-    }
-
-    .field {
-      text-align: left;
-      margin-bottom: 18px;
-    }
-
-    .field label {
-      display: block;
-
-      font-size: 14px;
-      font-weight: bold;
-
-      margin-bottom: 8px;
-      color: #dddddd;
-    }
-
-    .field input {
-      width: 100%;
-
-      padding: 14px 15px;
-
-      border-radius: 12px;
-
-      border: 1px solid
-        rgba(255, 255, 255, 0.12);
-
-      outline: none;
-
-      background: #0b0b0b;
-      color: #ffffff;
-
-      font-size: 16px;
-
-      transition: 0.2s;
-    }
-
-    .field input:focus {
-      border-color:
-        rgba(255, 255, 255, 0.45);
-    }
-
-    .next-button {
-      width: 100%;
-
-      border: none;
-      outline: none;
-
-      padding: 14px;
-
-      border-radius: 12px;
-
-      background: #ffffff;
-      color: #000000;
-
-      font-size: 16px;
-      font-weight: bold;
-
-      cursor: pointer;
-
-      margin-top: 8px;
-
-      transition:
-        transform 0.2s,
-        opacity 0.2s;
-    }
-
-    .next-button:hover {
-      opacity: 0.9;
-    }
-
-    .next-button:active {
-      transform: scale(0.98);
-    }
-
-    .next-button:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-
-    .message {
-      min-height: 22px;
-
-      margin-top: 16px;
-
-      font-size: 13px;
-
-      color: #ff7777;
-    }
-
-    .footer {
-      margin-top: 28px;
-
-      padding-top: 18px;
-
-      border-top:
-        1px solid
-        rgba(255, 255, 255, 0.08);
-
-      color: #aaaaaa;
-
-      font-size: 12px;
-
-      line-height: 1.7;
-    }
-
-    .hidden {
-      display: none !important;
-    }
-
-    .settings-screen {
-      text-align: left;
-    }
-
-    .settings-title {
-      text-align: center;
-      margin-bottom: 22px;
-    }
-
-    .connection {
-      text-align: center;
-
-      padding: 10px;
-
-      margin-bottom: 20px;
-
-      border-radius: 10px;
-
-      background:
-        rgba(0, 180, 90, 0.10);
-
-      color: #72ffad;
-
-      font-size: 13px;
-    }
-
-    .settings-box {
-      padding: 15px;
-
-      border-radius: 14px;
-
-      background: #0b0b0b;
-
-      border:
-        1px solid
-        rgba(255, 255, 255, 0.08);
-
-      margin-bottom: 12px;
-    }
-
-    .settings-box h3 {
-      font-size: 15px;
-      margin-bottom: 5px;
-    }
-
-    .settings-box p {
-      color: #999999;
-      font-size: 12px;
-    }
-  </style>
-</head>
-
-<body>
-
-  <main class="container">
-
-    <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-         LANGUAGE SCREEN
-         ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
-
-    <section
-      id="languageScreen"
-      class="card"
-    >
-
-      <img
-        id="languageLogo"
-        class="logo hidden"
-        src="/logo.png"
-        alt="TOPFEROS MD V1.0.0"
-        onerror="showLanguageLogoPlaceholder()"
-      >
-
-      <div
-        id="languageLogoPlaceholder"
-        class="logo-placeholder"
-      >
-        🦁
-      </div>
-
-      <h1>
-        🦁 TOPFEROS MD V1.0.0
-      </h1>
-
-      <p class="subtitle">
-        • Language principale
-      </p>
-
-      <div class="language-title">
-        • Language principale
-      </div>
-
-      <div class="language-options">
-
-        <button
-          type="button"
-          class="language-button"
-          data-language="en"
-        >
-          🇺🇸 English
-        </button>
-
-        <button
-          type="button"
-          class="language-button"
-          data-language="fr"
-        >
-          🇫🇷 Français
-        </button>
-
-        <button
-          type="button"
-          class="language-button"
-          data-language="es"
-        >
-          🇪🇸 Español
-        </button>
-
-      </div>
-
-      <button
-        id="languageNextButton"
-        class="next-button"
-        type="button"
-        disabled
-      >
-        Suivant ⏭️
-      </button>
-
-      <div
-        id="languageMessage"
-        class="message"
-      ></div>
-
-      <div class="footer">
-        ========================
-        <br>
-        By TOPFEROS TECH
-        <br>
-        ========================
-      </div>
-
-    </section>
-
-
-    <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-         LOGIN / PARRAIN CODE SCREEN
-         ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
-
-    <section
-      id="loginScreen"
-      class="card hidden"
-    >
-
-      <img
-        id="botLogo"
-        class="logo hidden"
-        src="/logo.png"
-        alt="TOPFEROS MD V1.0.0"
-        onerror="showLogoPlaceholder()"
-      >
-
-      <div
-        id="logoPlaceholder"
-        class="logo-placeholder"
-      >
-        🦁
-      </div>
-
-      <h1>
-        🦁 TOPFEROS MD V1.0.0
-      </h1>
-
-      <p
-        id="loginSubtitle"
-        class="subtitle"
-      >
-        ⚙️ Parrain Code
-      </p>
-
-      <div class="field">
-
-        <label
-          id="numberLabel"
-          for="number"
-        >
-          Number :
-        </label>
-
-        <input
-          id="number"
-          type="tel"
-          inputmode="numeric"
-          autocomplete="off"
-          placeholder="Enter bot number"
-        >
-
-      </div>
-
-      <div class="field">
-
-        <label
-          id="codeLabel"
-          for="code"
-        >
-          Code :
-        </label>
-
-        <input
-          id="code"
-          type="text"
-          autocomplete="off"
-          autocapitalize="characters"
-          placeholder="Enter panel code"
-        >
-
-      </div>
-
-      <button
-        id="nextButton"
-        class="next-button"
-        type="button"
-      >
-        NEXT ⏭️
-      </button>
-
-      <div
-        id="message"
-        class="message"
-      ></div>
-
-      <div
-        id="loginFooter"
-        class="footer"
-      >
-        ========================
-        <br>
-        By TOPFEROS TECH
-        <br>
-        ========================
-      </div>
-
-    </section>
-
-
-    <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-         SETTINGS SCREEN
-         ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
-
-    <section
-      id="settingsScreen"
-      class="card settings-screen hidden"
-    >
-
-      <div class="settings-title">
-
-        <img
-          class="logo"
-          src="/logo.png"
-          alt="TOPFEROS MD V1.0.0"
-          onerror="this.style.display='none'"
-        >
-
-        <h1 id="settingsTitle">
-          ⚙️ SETTINGS PANEL
-        </h1>
-
-      </div>
-
-      <div
-        id="connection"
-        class="connection"
-      >
-        🟢 Bot Connected
-      </div>
-
-      <div class="settings-box">
-
-        <h3 id="botSettingsTitle">
-          ⚙️ Bot Settings
-        </h3>
-
-        <p id="botSettingsText">
-          Settings yo pral parèt isit la.
-        </p>
-
-      </div>
-
-      <div class="settings-box">
-
-        <h3 id="groupSettingsTitle">
-          👥 Group Settings
-        </h3>
-
-        <p id="groupSettingsText">
-          Group controls yo pral parèt isit la.
-        </p>
-
-      </div>
-
-      <div class="settings-box">
-
-        <h3 id="automaticTitle">
-          🤖 Automatic Systems
-        </h3>
-
-        <p id="automaticText">
-          Automatic systems yo pral parèt isit la.
-        </p>
-
-      </div>
-
-      <div class="footer">
-        ========================
-        <br>
-        By TOPFEROS TECH
-        <br>
-        ========================
-      </div>
-
-    </section>
-
-  </main>
-
-
-  <script>
-    "use strict";
-
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 🔎 SESSION ID
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-    const params =
-      new URLSearchParams(
-        window.location.search
+    if (
+      data.expiresAt &&
+      data.expiresAt < now
+    ) {
+      languageSessions.delete(
+        sessionId
       );
+    }
+  }
+}
 
-    const sessionId =
-      params.get("session");
 
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🆔 GENERATE SESSION
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 📦 ELEMENTS
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function generateSessionId() {
 
-    const languageScreen =
-      document.getElementById(
-        "languageScreen"
-      );
+  return crypto
+    .randomBytes(32)
+    .toString("hex");
+}
 
-    const loginScreen =
-      document.getElementById(
-        "loginScreen"
-      );
 
-    const settingsScreen =
-      document.getElementById(
-        "settingsScreen"
-      );
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🌐 LANGUAGES
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-    const languageNextButton =
-      document.getElementById(
-        "languageNextButton"
-      );
+const translations = {
 
-    const languageMessage =
-      document.getElementById(
-        "languageMessage"
-      );
+  en: {
 
-    const numberInput =
-      document.getElementById(
-        "number"
-      );
+    languageTitle:
+      "• Principal Language",
 
-    const codeInput =
-      document.getElementById(
-        "code"
-      );
+    languageSubtitle:
+      "Choose your principal language.",
 
-    const nextButton =
-      document.getElementById(
-        "nextButton"
-      );
+    parrain:
+      "⚙️ Parrain Code",
 
-    const message =
-      document.getElementById(
-        "message"
-      );
+    number:
+      "Number :",
 
+    code:
+      "Code :",
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 🌐 LANGUAGE DATA
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    numberPlaceholder:
+      "Enter bot number",
 
-    const translations = {
+    codePlaceholder:
+      "Enter panel code",
 
-      en: {
-        languageTitle:
-          "• Principal Language",
+    checking:
+      "Checking...",
 
-        languageSubtitle:
-          "Choose your principal language.",
+    botDisconnected:
+      "❌ Bot is disconnected. The code is no longer valid.",
 
-        next:
-          "Next ⏭️",
+    sessionMissing:
+      "❌ The panel link has no session.",
 
-        parrain:
-          "⚙️ Parrain Code",
+    numberMissing:
+      "❌ Enter the bot number.",
 
-        number:
-          "Number :",
+    codeMissing:
+      "❌ Enter the panel code.",
 
-        code:
-          "Code :",
+    loginFailed:
+      "❌ Login failed.",
 
-        numberPlaceholder:
-          "Enter bot number",
+    serverError:
+      "❌ Cannot contact the panel server.",
 
-        codePlaceholder:
-          "Enter panel code",
+    connected:
+      "🟢 Bot Connected",
 
-        checking:
-          "Checking...",
+    settings:
+      "⚙️ SETTINGS PANEL",
 
-        botDisconnected:
-          "❌ Bot is disconnected. The code is no longer valid.",
+    botSettings:
+      "⚙️ Bot Settings",
 
-        sessionMissing:
-          "❌ The panel link has no session.",
+    groupSettings:
+      "👥 Group Settings",
 
-        numberMissing:
-          "❌ Enter the bot number.",
+    automatic:
+      "🤖 Automatic Systems",
 
-        codeMissing:
-          "❌ Enter the panel code.",
+    footer:
+      "By TOPFEROS TECH"
+  },
 
-        loginFailed:
-          "❌ Login failed.",
 
-        serverError:
-          "❌ Cannot contact the panel server.",
+  fr: {
 
-        connected:
-          "🟢 Bot Connected",
+    languageTitle:
+      "• Langue principale",
 
-        settings:
-          "⚙️ SETTINGS PANEL",
+    languageSubtitle:
+      "Choisissez votre langue principale.",
 
-        botSettings:
-          "⚙️ Bot Settings",
+    parrain:
+      "⚙️ Code Parrain",
 
-        botSettingsText:
-          "Bot settings will appear here.",
+    number:
+      "Numéro :",
 
-        groupSettings:
-          "👥 Group Settings",
+    code:
+      "Code :",
 
-        groupSettingsText:
-          "Group controls will appear here.",
+    numberPlaceholder:
+      "Entrez le numéro du bot",
 
-        automatic:
-          "🤖 Automatic Systems",
+    codePlaceholder:
+      "Entrez le code du panneau",
 
-        automaticText:
-          "Automatic systems will appear here.",
+    checking:
+      "Vérification...",
 
-        footer:
-          "By TOPFEROS TECH"
-      },
+    botDisconnected:
+      "❌ Le bot est déconnecté. Le code n'est plus valide.",
 
-      fr: {
-        languageTitle:
-          "• Langue principale",
+    sessionMissing:
+      "❌ Le lien du panneau ne contient pas de session.",
 
-        languageSubtitle:
-          "Choisissez votre langue principale.",
+    numberMissing:
+      "❌ Entrez le numéro du bot.",
 
-        next:
-          "Suivant ⏭️",
+    codeMissing:
+      "❌ Entrez le code du panneau.",
 
-        parrain:
-          "⚙️ Code Parrain",
+    loginFailed:
+      "❌ La connexion a échoué.",
 
-        number:
-          "Numéro :",
+    serverError:
+      "❌ Impossible de contacter le serveur du panneau.",
 
-        code:
-          "Code :",
+    connected:
+      "🟢 Bot connecté",
 
-        numberPlaceholder:
-          "Entrez le numéro du bot",
+    settings:
+      "⚙️ PANNEAU DE CONFIGURATION",
 
-        codePlaceholder:
-          "Entrez le code du panneau",
+    botSettings:
+      "⚙️ Paramètres du bot",
 
-        checking:
-          "Vérification...",
+    groupSettings:
+      "👥 Paramètres du groupe",
 
-        botDisconnected:
-          "❌ Le bot est déconnecté. Le code n'est plus valide.",
+    automatic:
+      "🤖 Systèmes automatiques",
 
-        sessionMissing:
-          "❌ Le lien du panneau ne contient pas de session.",
+    footer:
+      "By TOPFEROS TECH"
+  },
 
-        numberMissing:
-          "❌ Entrez le numéro du bot.",
 
-        codeMissing:
-          "❌ Entrez le code du panneau.",
+  es: {
 
-        loginFailed:
-          "❌ La connexion a échoué.",
+    languageTitle:
+      "• Idioma principal",
 
-        serverError:
-          "❌ Impossible de contacter le serveur du panneau.",
+    languageSubtitle:
+      "Elige tu idioma principal.",
 
-        connected:
-          "🟢 Bot connecté",
+    parrain:
+      "⚙️ Código de referencia",
 
-        settings:
-          "⚙️ PANNEAU DE CONFIGURATION",
+    number:
+      "Número :",
 
-        botSettings:
-          "⚙️ Paramètres du bot",
+    code:
+      "Código :",
 
-        botSettingsText:
-          "Les paramètres du bot apparaîtront ici.",
+    numberPlaceholder:
+      "Introduce el número del bot",
 
-        groupSettings:
-          "👥 Paramètres du groupe",
+    codePlaceholder:
+      "Introduce el código del panel",
 
-        groupSettingsText:
-          "Les contrôles du groupe apparaîtront ici.",
+    checking:
+      "Comprobando...",
 
-        automatic:
-          "🤖 Systèmes automatiques",
+    botDisconnected:
+      "❌ El bot está desconectado. El código ya no es válido.",
 
-        automaticText:
-          "Les systèmes automatiques apparaîtront ici.",
+    sessionMissing:
+      "❌ El enlace del panel no contiene una sesión.",
 
-        footer:
-          "By TOPFEROS TECH"
-      },
+    numberMissing:
+      "❌ Introduce el número del bot.",
 
-      es: {
-        languageTitle:
-          "• Idioma principal",
+    codeMissing:
+      "❌ Introduce el código del panel.",
 
-        languageSubtitle:
-          "Elige tu idioma principal.",
+    loginFailed:
+      "❌ El inicio de sesión falló.",
 
-        next:
-          "Siguiente ⏭️",
+    serverError:
+      "❌ No se puede contactar con el servidor del panel.",
 
-        parrain:
-          "⚙️ Código de referencia",
+    connected:
+      "🟢 Bot conectado",
 
-        number:
-          "Número :",
+    settings:
+      "⚙️ PANEL DE CONFIGURACIÓN",
 
-        code:
-          "Código :",
+    botSettings:
+      "⚙️ Configuración del bot",
 
-        checking:
-          "Comprobando...",
+    groupSettings:
+      "👥 Configuración del grupo",
 
-        numberPlaceholder:
-          "Introduce el número del bot",
+    automatic:
+      "🤖 Sistemas automáticos",
 
-        codePlaceholder:
-          "Introduce el código del panel",
+    footer:
+      "By TOPFEROS TECH"
+  }
 
-        botDisconnected:
-          "❌ El bot está desconectado. El código ya no es válido.",
+};
 
-        sessionMissing:
-          "❌ El enlace del panel no contiene una sesión.",
 
-        numberMissing:
-          "❌ Introduce el número del bot.",
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🔎 VALID LANGUAGE
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-        codeMissing:
-          "❌ Introduce el código del panel.",
+function isValidLanguage(
+  language
+) {
 
-        loginFailed:
-          "❌ El inicio de sesión falló.",
+  return Object.prototype.hasOwnProperty.call(
+    translations,
+    language
+  );
+}
 
-        serverError:
-          "❌ No se puede contactar con el servidor del panel.",
 
-        connected:
-          "🟢 Bot conectado",
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🤖 BOT NUMBER
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-        settings:
-          "⚙️ PANEL DE CONFIGURACIÓN",
+function getBotNumber() {
 
-        botSettings:
-          "⚙️ Configuración del bot",
+  try {
 
-        botSettingsText:
-          "La configuración del bot aparecerá aquí.",
+    if (
+      typeof settingsPanel.getBotNumber ===
+      "function"
+    ) {
 
-        groupSettings:
-          "👥 Configuración del grupo",
+      return settingsPanel.getBotNumber();
+    }
 
-        groupSettingsText:
-          "Los controles del grupo aparecerán aquí.",
+  } catch (error) {
 
-        automatic:
-          "🤖 Sistemas automáticos",
+    console.error(
+      "❌ GET BOT NUMBER ERROR:",
+      error
+    );
+  }
 
-        automaticText:
-          "Los sistemas automáticos aparecerán aquí.",
+  return null;
+}
 
-        footer:
-          "By TOPFEROS TECH"
-      }
 
-    };
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🟢 BOT CONNECTED
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+function isBotConnected() {
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 🌐 SELECTED LANGUAGE
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  try {
 
-    let selectedLanguage = null;
-
-
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 🧠 TRANSLATION HELPER
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-    function t(key) {
-
-      const language =
-        translations[
-          selectedLanguage
-        ] || translations.en;
+    if (
+      typeof settingsPanel.isBotConnected ===
+      "function"
+    ) {
 
       return (
-        language[key] ||
-        translations.en[key] ||
-        key
+        settingsPanel.isBotConnected() ===
+        true
       );
     }
 
+  } catch (error) {
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 🖼️ LOGO FALLBACK
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    console.error(
+      "❌ BOT CONNECTION CHECK ERROR:",
+      error
+    );
+  }
 
-    function showLanguageLogoPlaceholder() {
+  return false;
+}
 
-      const logo =
-        document.getElementById(
-          "languageLogo"
-        );
 
-      const placeholder =
-        document.getElementById(
-          "languageLogoPlaceholder"
-        );
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🔐 VERIFY PANEL SESSION
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-      if (logo) {
-        logo.classList.add(
-          "hidden"
-        );
+function verifySession(
+  sessionId
+) {
+
+  if (!sessionId) {
+    return false;
+  }
+
+  try {
+
+    if (
+      typeof settingsPanel.isAuthenticated ===
+      "function"
+    ) {
+
+      return (
+        settingsPanel.isAuthenticated(
+          sessionId
+        ) === true
+      );
+    }
+
+  } catch (error) {
+
+    console.error(
+      "❌ SESSION VERIFY ERROR:",
+      error
+    );
+  }
+
+  return false;
+}
+
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🌐 HOME
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+app.get(
+  "/",
+  (req, res) => {
+
+    return res.sendFile(
+      path.join(
+        publicDir,
+        "index.html"
+      )
+    );
+  }
+);
+
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🖼️ LOGO
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+app.get(
+  "/logo.png",
+  (req, res) => {
+
+    const logoPath =
+      path.join(
+        publicDir,
+        "logo.png"
+      );
+
+    return res.sendFile(
+      logoPath,
+      error => {
+
+        if (error) {
+
+          return res
+            .status(404)
+            .end();
+        }
       }
+    );
+  }
+);
 
-      if (placeholder) {
-        placeholder.classList.remove(
-          "hidden"
-        );
-      }
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🌐 LANGUAGE API
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//
+// POST /api/language
+//
+// Chwazi lang lan otomatikman.
+// Pa gen NEXT.
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+app.post(
+  "/api/language",
+  (req, res) => {
+
+    cleanupSessions();
+
+    const {
+      sessionId,
+      language
+    } = req.body || {};
+
+
+    if (!sessionId) {
+
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message:
+            "Session panel la pa jwenn."
+        });
     }
 
 
-    function showLogoPlaceholder() {
+    if (
+      !isValidLanguage(language)
+    ) {
 
-      const logo =
-        document.getElementById(
-          "botLogo"
-        );
-
-      const placeholder =
-        document.getElementById(
-          "logoPlaceholder"
-        );
-
-      if (logo) {
-        logo.classList.add(
-          "hidden"
-        );
-      }
-
-      if (placeholder) {
-        placeholder.classList.remove(
-          "hidden"
-        );
-      }
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message:
+            "Language la pa valid."
+        });
     }
 
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // ❌ LANGUAGE MESSAGE
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    const old =
+      languageSessions.get(
+        sessionId
+      ) || {};
 
-    function showLanguageError(text) {
 
-      languageMessage.textContent =
-        text || "";
+    languageSessions.set(
+      sessionId,
+      {
+        ...old,
 
+        language,
+
+        expiresAt:
+          Date.now() +
+          1000 * 60 * 60 * 24
+      }
+    );
+
+
+    return res.json({
+      success: true,
+      language,
+
+      message:
+        "Language saved successfully."
+    });
+  }
+);
+
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🌐 GET LANGUAGE
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+app.get(
+  "/api/language",
+  (req, res) => {
+
+    cleanupSessions();
+
+    const {
+      session
+    } = req.query;
+
+
+    if (!session) {
+
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message:
+            "Session panel la pa jwenn."
+        });
     }
 
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // ❌ LOGIN MESSAGE
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    const data =
+      languageSessions.get(
+        session
+      );
 
-    function showError(text) {
 
-      message.textContent =
-        text || "";
+    return res.json({
+      success: true,
 
+      language:
+        data?.language || null
+    });
+  }
+);
+
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🔐 LOGIN API
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//
+// POST /api/login
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+app.post(
+  "/api/login",
+  async (req, res) => {
+
+    cleanupSessions();
+
+    const {
+      sessionId,
+      number,
+      code
+    } = req.body || {};
+
+
+    if (!sessionId) {
+
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message:
+            "Session panel la pa jwenn."
+        });
     }
 
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 🌐 APPLY LANGUAGE
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    const sessionData =
+      languageSessions.get(
+        sessionId
+      );
 
-    function applyLanguage() {
 
-      if (!selectedLanguage) {
-        return;
-      }
+    if (!sessionData) {
 
-      const lang =
-        translations[
-          selectedLanguage
-        ];
-
-      document.documentElement.lang =
-        selectedLanguage;
-
-      document.querySelector(
-        ".language-title"
-      ).textContent =
-        lang.languageTitle;
-
-      document.querySelector(
-        "#languageScreen .subtitle"
-      ).textContent =
-        lang.languageSubtitle;
-
-      languageNextButton.textContent =
-        lang.next;
-
-      document.getElementById(
-        "loginSubtitle"
-      ).textContent =
-        lang.parrain;
-
-      document.getElementById(
-        "numberLabel"
-      ).textContent =
-        lang.number;
-
-      document.getElementById(
-        "codeLabel"
-      ).textContent =
-        lang.code;
-
-      numberInput.placeholder =
-        lang.numberPlaceholder;
-
-      codeInput.placeholder =
-        lang.codePlaceholder;
-
-      document.getElementById(
-        "settingsTitle"
-      ).textContent =
-        lang.settings;
-
-      document.getElementById(
-        "connection"
-      ).textContent =
-        lang.connected;
-
-      document.getElementById(
-        "botSettingsTitle"
-      ).textContent =
-        lang.botSettings;
-
-      document.getElementById(
-        "botSettingsText"
-      ).textContent =
-        lang.botSettingsText;
-
-      document.getElementById(
-        "groupSettingsTitle"
-      ).textContent =
-        lang.groupSettings;
-
-      document.getElementById(
-        "groupSettingsText"
-      ).textContent =
-        lang.groupSettingsText;
-
-      document.getElementById(
-        "automaticTitle"
-      ).textContent =
-        lang.automatic;
-
-      document.getElementById(
-        "automaticText"
-      ).textContent =
-        lang.automaticText;
-
+      return res
+        .status(401)
+        .json({
+          success: false,
+          message:
+            "Session panel la pa valid."
+        });
     }
 
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 💾 SAVE LANGUAGE TO SESSION
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    if (!number) {
 
-    async function saveLanguage() {
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message:
+            "Enter bot number."
+        });
+    }
 
-      if (!sessionId) {
 
-        showLanguageError(
-          "❌ Session panel la pa jwenn."
-        );
+    if (!code) {
 
-        return false;
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message:
+            "Enter panel code."
+        });
+    }
+
+
+    if (!isBotConnected()) {
+
+      return res
+        .status(401)
+        .json({
+          success: false,
+          message:
+            "Bot la dekonekte."
+        });
+    }
+
+
+    try {
+
+      if (
+        typeof settingsPanel.verifySession ===
+        "function"
+      ) {
+
+        const valid =
+          await settingsPanel.verifySession(
+            sessionId,
+            String(number),
+            String(code)
+          );
+
+
+        if (!valid) {
+
+          return res
+            .status(401)
+            .json({
+              success: false,
+              message:
+                "Login failed."
+            });
+        }
+
+      } else if (
+        typeof settingsPanel.isAuthenticated ===
+        "function"
+      ) {
+
+        const valid =
+          settingsPanel.isAuthenticated(
+            sessionId
+          );
+
+        if (!valid) {
+
+          return res
+            .status(401)
+            .json({
+              success: false,
+              message:
+                "Login failed."
+            });
+        }
+
+      } else {
+
+        return res
+          .status(500)
+          .json({
+            success: false,
+            message:
+              "Panel authentication function is missing."
+          });
       }
 
-      if (!selectedLanguage) {
 
-        showLanguageError(
-          "❌ Please select a language."
-        );
+      languageSessions.set(
+        sessionId,
+        {
+          ...sessionData,
 
-        return false;
-      }
+          language:
+            sessionData.language || "en",
 
-      try {
+          authenticated: true,
 
-        const response =
-          await fetch(
-            "/api/language",
-            {
-              method: "POST",
+          number:
+            String(number),
 
-              headers: {
-                "Content-Type":
-                  "application/json"
-              },
+          expiresAt:
+            Date.now() +
+            1000 * 60 * 60 * 24
+        }
+      );
 
-              body:
-                JSON.stringify({
-                 
+
+      return res.json({
+        success: true,
+
+        message:
+          "Login successful."
+      });
+
+    } catch (error) {
+
+      console.error(
+        "❌ LOGIN ERROR:",
+        error
+      );
+
+      return res
+        .status(500)
+        .json({
+          success: false,
+          message:
+            "Cannot contact the panel server."
+        });
+    }
+  }
+);
+
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🔎 PANEL STATUS
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+app.get(
+  "/api/status",
+  (req, res) => {
+
+    const {
+      session
+    } = req.query;
+
+
+    return res.json({
+
+      success: true,
+
+      botConnected:
+        isBotConnected(),
+
+      authenticated:
+        verifySession(session),
+
+      botNumber:
+        getBotNumber()
+    });
+  }
+);
+
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ⚙️ SETTINGS API
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+if (
+  settingsApi &&
+  typeof settingsApi.registerSettingsRoutes ===
+  "function"
+) {
+
+  settingsApi.registerSettingsRoutes(
+    app
+  );
+
+}
+
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🧹 404 API
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+app.use(
+  "/api",
+  (req, res) => {
+
+    return res
+      .status(404)
+      .json({
+        success: false,
+        message:
+          "API route not found."
+      });
+  }
+);
+
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ❌ ERROR HANDLER
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+app.use(
+  (error, req, res, next) => {
+
+    console.error(
+      "❌ PANEL ERROR:",
+      error
+    );
+
+    if (
+      res.headersSent
+    ) {
+
+      return next(error);
+    }
+
+    return res
+      .status(500)
+      .json({
+        success: false,
+        message:
+          "Internal panel server error."
+      });
+  }
+);
+
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🚀 START SERVER
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+if (
+  require.main === module
+) {
+
+  app.listen(
+    PORT,
+    HOST,
+    () => {
+
+      console.log("");
+      console.log(
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+      );
+
+      console.log(
+        "🦁 TOPFEROS MD V1.0.0"
+      );
+
+      console.log(
+        "🌐 PANEL SERVER"
+      );
+
+      console.log(
+        `📡 ${PANEL_URL}`
+      );
+
+      console.log(
+        `🔌 ${HOST}:${PORT}`
+      );
+
+      console.log(
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+      );
+
+      console.log("");
+    }
+  );
+}
+
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 📦 EXPORT
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+module.exports = {
+
+  app,
+
+  PORT,
+
+  HOST,
+
+  PANEL_URL,
+
+  translations,
+
+  generateSessionId,
+
+  isBotConnected,
+
+  getBotNumber,
+
+  verifySession
+};
