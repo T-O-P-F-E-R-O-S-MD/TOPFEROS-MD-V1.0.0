@@ -6,7 +6,22 @@ const path = require("path");
 const settingsPanel = require("../settings/panel");
 const settingsApi = require("./settings-api");
 
+// Session Manager panel la
+const sessionManager = require("./session");
+
 const app = express();
+
+
+// ╔════════════════════════════════════════════════════╗
+// ║              🦁 TOPFEROS MD V1.0.0                ║
+// ║                 🌐 WEB PANEL                      ║
+// ║                🚀 TOPFEROS TECH                   ║
+// ╚════════════════════════════════════════════════════╝
+
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ⚙️ KONFIGIRASYON SERVER
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 const PORT =
   Number(
@@ -15,23 +30,48 @@ const PORT =
     3000
   );
 
+
 const HOST =
   process.env.PANEL_HOST ||
   "0.0.0.0";
+
 
 const PANEL_URL =
   process.env.PANEL_URL ||
   `http://localhost:${PORT}`;
 
-const publicDir =
-  path.join(__dirname, "public");
 
-// Logo prensipal bot la nan root project/assets/
-const logoPath =
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 📁 CHEMEN DOSYE YO
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+// Dosye kote index.html ak lòt paj panel yo ye.
+const publicDir =
+  path.join(
+    __dirname,
+    "public"
+  );
+
+
+// Dosye assets bot la.
+// Egzanp:
+// TOPFEROS-MD/
+// ├── assets/
+// │   └── logo.png
+// └── panel/
+//     └── server.js
+
+const assetsDir =
   path.join(
     __dirname,
     "..",
-    "assets",
+    "assets"
+  );
+
+
+const logoPath =
+  path.join(
+    assetsDir,
     "logo.png"
   );
 
@@ -40,13 +80,17 @@ const logoPath =
 // 🧱 EXPRESS
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-app.disable("x-powered-by");
+app.disable(
+  "x-powered-by"
+);
+
 
 app.use(
   express.json({
     limit: "1mb"
   })
 );
+
 
 app.use(
   express.urlencoded({
@@ -57,40 +101,106 @@ app.use(
 
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🌐 LANGUAGE SESSIONS
+// 📂 FICHYE PUBLIC
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-const languageSessions = new Map();
+// CSS, JS ak lòt fichye ki nan panel/public/
+app.use(
+  express.static(
+    publicDir
+  )
+);
 
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🧹 CLEANUP
+// 🖼️ ASSETS BOT LA
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+// Sa pèmèt:
+// /assets/logo.png
+//
+// mache dirèkteman ak:
+// TOPFEROS-MD/assets/logo.png
+
+app.use(
+  "/assets",
+  express.static(
+    assetsDir
+  )
+);
+
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🖼️ ROUTE LOGO
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+// Sa pèmèt tou:
+// /logo.png
+
+app.get(
+  "/logo.png",
+  (req, res) => {
+
+    return res.sendFile(
+      logoPath,
+      error => {
+
+        if (error) {
+
+          console.error(
+            "❌ LOGO ERROR:",
+            error.message
+          );
+
+          if (
+            !res.headersSent
+          ) {
+
+            return res
+              .status(404)
+              .send(
+                "Logo not found"
+              );
+          }
+        }
+      }
+    );
+  }
+);
+
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🧹 NETWAYAJ SESSION
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 function cleanupSessions() {
 
-  const now = Date.now();
-
-  for (
-    const [sessionId, data]
-    of languageSessions.entries()
-  ) {
+  try {
 
     if (
-      data.expiresAt &&
-      data.expiresAt < now
+      sessionManager &&
+      typeof sessionManager.cleanupSessions ===
+      "function"
     ) {
 
-      languageSessions.delete(
-        sessionId
-      );
+      sessionManager.cleanupSessions();
+
     }
+
+  } catch (error) {
+
+    console.error(
+      "❌ SESSION CLEANUP ERROR:",
+      error.message
+    );
+
   }
+
 }
 
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🌐 TRANSLATIONS
+// 🌐 LANGUE DISPONIB
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 const translations = {
@@ -156,6 +266,7 @@ const translations = {
 
     footer:
       "By TOPFEROS TECH"
+
   },
 
 
@@ -220,6 +331,7 @@ const translations = {
 
     footer:
       "By TOPFEROS TECH"
+
   },
 
 
@@ -284,100 +396,135 @@ const translations = {
 
     footer:
       "By TOPFEROS TECH"
+
   }
 
 };
 
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🔎 VALID LANGUAGE
+// 🔎 VERIFYE LANGUE
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-function isValidLanguage(language) {
+function isValidLanguage(
+  language
+) {
 
   return Object.prototype.hasOwnProperty.call(
     translations,
     language
   );
+
 }
 
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🤖 GET BOT NUMBER
+// 🆕 KREYE SESSION PANEL OTOMATIKMAN
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-function getBotNumber() {
+function createPanelSession() {
 
   try {
 
-    const sessions =
-      typeof settingsPanel.getSessions ===
+    if (
+      !sessionManager ||
+      typeof sessionManager.createSession !==
       "function"
-        ? settingsPanel.getSessions()
-        : [];
+    ) {
 
-    const connected =
-      sessions.find(
-        session =>
-          session.connected === true
-      );
+      return null;
 
-    return connected?.number || null;
+    }
+
+
+    const session =
+      sessionManager.createSession({
+
+        language: null,
+
+        connected: false
+
+      });
+
+
+    return session;
 
   } catch (error) {
 
     console.error(
-      "❌ GET BOT NUMBER ERROR:",
-      error
+      "❌ CREATE PANEL SESSION ERROR:",
+      error.message
     );
 
     return null;
+
   }
+
 }
 
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🟢 CHECK BOT CONNECTED
+// 🔎 JWENN SESSION
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-function isBotConnected() {
+function getPanelSession(
+  sessionId
+) {
+
+  if (!sessionId) {
+    return null;
+  }
+
 
   try {
 
-    return (
-      typeof settingsPanel.isBotConnected ===
-      "function" &&
-      settingsPanel.isBotConnected() === true
+    if (
+      typeof sessionManager.getSession !==
+      "function"
+    ) {
+
+      return null;
+
+    }
+
+
+    return sessionManager.getSession(
+      sessionId
     );
 
   } catch (error) {
 
     console.error(
-      "❌ BOT CONNECTION CHECK ERROR:",
-      error
+      "❌ GET PANEL SESSION ERROR:",
+      error.message
     );
 
-    return false;
+    return null;
+
   }
+
 }
 
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🔐 VERIFY AUTHENTICATED SESSION
+// 🔐 VERIFYE AUTHENTIFICATION
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-function verifySession(sessionId) {
+function verifySession(
+  sessionId
+) {
 
   if (!sessionId) {
     return false;
   }
 
+
   try {
 
     return (
-      typeof settingsPanel.isAuthenticated ===
+      typeof sessionManager.isAuthenticated ===
       "function" &&
-      settingsPanel.isAuthenticated(
+      sessionManager.isAuthenticated(
         sessionId
       ) === true
     );
@@ -386,11 +533,184 @@ function verifySession(sessionId) {
 
     console.error(
       "❌ SESSION VERIFY ERROR:",
-      error
+      error.message
     );
 
     return false;
+
   }
+
+}
+
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🟢 VERIFYE SESSION CONNECTED
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+function isSessionConnected(
+  sessionId
+) {
+
+  if (!sessionId) {
+    return false;
+  }
+
+
+  try {
+
+    return (
+      typeof sessionManager.isSessionConnected ===
+      "function" &&
+      sessionManager.isSessionConnected(
+        sessionId
+      ) === true
+    );
+
+  } catch (error) {
+
+    console.error(
+      "❌ SESSION CONNECTION ERROR:",
+      error.message
+    );
+
+    return false;
+
+  }
+
+}
+
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🤖 JWENN NUMERO BOT LA
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+function getBotNumber() {
+
+  try {
+
+    // Premye opsyon:
+    // verifye tout session panel yo.
+
+    if (
+      typeof sessionManager.getSessions ===
+      "function"
+    ) {
+
+      const sessions =
+        sessionManager.getSessions();
+
+
+      const connected =
+        sessions.find(
+          session =>
+            session.connected === true
+        );
+
+
+      if (
+        connected?.number
+      ) {
+
+        return connected.number;
+
+      }
+
+    }
+
+
+    // Dezyèm opsyon:
+    // itilize settings/panel.js si li genyen fonksyon an.
+
+    if (
+      typeof settingsPanel.getSessions ===
+      "function"
+    ) {
+
+      const sessions =
+        settingsPanel.getSessions();
+
+
+      const connected =
+        sessions.find(
+          session =>
+            session.connected === true
+        );
+
+
+      return connected?.number || null;
+
+    }
+
+
+    return null;
+
+  } catch (error) {
+
+    console.error(
+      "❌ GET BOT NUMBER ERROR:",
+      error.message
+    );
+
+    return null;
+
+  }
+
+}
+
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🟢 VERIFYE SI BOT LA CONNECTED
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+function isBotConnected() {
+
+  try {
+
+    // Si settings/panel.js gen fonksyon an,
+    // itilize li.
+
+    if (
+      typeof settingsPanel.isBotConnected ===
+      "function"
+    ) {
+
+      return (
+        settingsPanel.isBotConnected() === true
+      );
+
+    }
+
+
+    // Sinon gade session manager la.
+
+    if (
+      typeof sessionManager.getSessions ===
+      "function"
+    ) {
+
+      return sessionManager
+        .getSessions()
+        .some(
+          session =>
+            session.connected === true
+        );
+
+    }
+
+
+    return false;
+
+  } catch (error) {
+
+    console.error(
+      "❌ BOT CONNECTION CHECK ERROR:",
+      error.message
+    );
+
+    return false;
+
+  }
+
 }
 
 
@@ -402,12 +722,50 @@ app.get(
   "/",
   (req, res) => {
 
+    cleanupSessions();
+
+
+    let sessionId =
+      String(
+        req.query.session ||
+        req.query.sessionId ||
+        ""
+      ).trim();
+
+
+    // Si pa gen sessionId,
+    // kreye youn otomatikman.
+
+    if (!sessionId) {
+
+      const session =
+        createPanelSession();
+
+
+      if (
+        session?.sessionId
+      ) {
+
+        sessionId =
+          session.sessionId;
+
+
+        return res.redirect(
+          `/?session=${encodeURIComponent(sessionId)}`
+        );
+
+      }
+
+    }
+
+
     return res.sendFile(
       path.join(
         publicDir,
         "index.html"
       )
     );
+
   }
 );
 
@@ -420,60 +778,45 @@ app.get(
   "/settings.html",
   (req, res) => {
 
+    cleanupSessions();
+
+
+    const sessionId =
+      String(
+        req.query.session ||
+        req.query.sessionId ||
+        ""
+      ).trim();
+
+
+    // Pa kite yon moun antre dirèkteman
+    // nan settings san li pa login.
+
+    if (
+      !sessionId ||
+      !verifySession(sessionId)
+    ) {
+
+      return res.redirect(
+        "/"
+      );
+
+    }
+
+
     return res.sendFile(
       path.join(
         publicDir,
         "settings.html"
       )
     );
+
   }
 );
 
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🖼️ BOT LOGO
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// Logo a soti nan:
-// TOPFEROS-MD/assets/logo.png
-//
-// URL panel la:
-// /logo.png
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-app.get(
-  "/logo.png",
-  (req, res) => {
-
-    return res.sendFile(
-      logoPath,
-      error => {
-
-        if (error) {
-
-          console.error(
-            "❌ LOGO ERROR:",
-            error.message
-          );
-
-          if (
-            !res.headersSent
-          ) {
-
-            return res
-              .status(404)
-              .send(
-                "Logo not found"
-              );
-          }
-        }
-      }
-    );
-  }
-);
-
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🌐 LANGUAGE API
+// 🌐 API LANGUAGE
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 app.post(
@@ -481,6 +824,7 @@ app.post(
   (req, res) => {
 
     cleanupSessions();
+
 
     const {
       sessionId,
@@ -498,7 +842,27 @@ app.post(
 
           message:
             "Session panel la pa jwenn."
+
         });
+
+    }
+
+
+    if (
+      !getPanelSession(sessionId)
+    ) {
+
+      return res
+        .status(401)
+        .json({
+
+          success: false,
+
+          message:
+            "Session panel la pa valid oswa li ekspire."
+
+        });
+
     }
 
 
@@ -514,43 +878,59 @@ app.post(
 
           message:
             "Language la pa valid."
+
         });
+
     }
 
 
-    const old =
-      languageSessions.get(
-        sessionId
-      ) || {};
+    try {
+
+      if (
+        typeof sessionManager.setLanguage ===
+        "function"
+      ) {
+
+        sessionManager.setLanguage(
+          sessionId,
+          language
+        );
+
+      }
 
 
-    languageSessions.set(
-      sessionId,
-      {
+      return res.json({
 
-        ...old,
+        success: true,
 
         language,
 
-        expiresAt:
-          Date.now() +
-          1000 *
-          60 *
-          60 *
-          24
-      }
-    );
+        message:
+          "Language saved successfully."
+
+      });
+
+    } catch (error) {
+
+      console.error(
+        "❌ LANGUAGE ERROR:",
+        error.message
+      );
 
 
-    return res.json({
+      return res
+        .status(500)
+        .json({
 
-      success: true,
+          success: false,
 
-      language,
+          message:
+            "Pa kapab sove language la."
 
-      message:
-        "Language saved successfully."
-    });
+        });
+
+    }
+
   }
 );
 
@@ -565,12 +945,16 @@ app.get(
 
     cleanupSessions();
 
-    const {
-      session
-    } = req.query;
+
+    const sessionId =
+      String(
+        req.query.session ||
+        req.query.sessionId ||
+        ""
+      ).trim();
 
 
-    if (!session) {
+    if (!sessionId) {
 
       return res
         .status(400)
@@ -580,13 +964,15 @@ app.get(
 
           message:
             "Session panel la pa jwenn."
+
         });
+
     }
 
 
-    const data =
-      languageSessions.get(
-        session
+    const session =
+      getPanelSession(
+        sessionId
       );
 
 
@@ -595,8 +981,10 @@ app.get(
       success: true,
 
       language:
-        data?.language || null
+        session?.language || null
+
     });
+
   }
 );
 
@@ -610,6 +998,7 @@ app.post(
   async (req, res) => {
 
     cleanupSessions();
+
 
     const {
       sessionId,
@@ -628,17 +1017,19 @@ app.post(
 
           message:
             "Session panel la pa jwenn."
+
         });
+
     }
 
 
-    const languageSession =
-      languageSessions.get(
+    const session =
+      getPanelSession(
         sessionId
       );
 
 
-    if (!languageSession) {
+    if (!session) {
 
       return res
         .status(401)
@@ -647,8 +1038,10 @@ app.post(
           success: false,
 
           message:
-            "Session panel la pa valid."
+            "Session panel la pa valid oswa li ekspire."
+
         });
+
     }
 
 
@@ -661,8 +1054,10 @@ app.post(
           success: false,
 
           message:
-            "Enter bot number."
+            "Tanpri antre nimewo bot la."
+
         });
+
     }
 
 
@@ -675,38 +1070,94 @@ app.post(
           success: false,
 
           message:
-            "Enter Parrain Code."
+            "Tanpri antre Parrain Code la."
+
         });
+
     }
 
 
-    if (
-      typeof settingsPanel.isSessionConnected !==
-      "function" ||
-      !settingsPanel.isSessionConnected(
-        sessionId
-      )
-    ) {
+    // Nimewo a dwe sèlman chif.
+    const cleanNumber =
+      String(number)
+        .replace(/\D/g, "");
+
+
+    // Code a netwaye pou evite
+    // pwoblèm ak lèt miniskil.
+    const cleanCode =
+      String(code)
+        .trim()
+        .toUpperCase();
+
+
+    if (!cleanNumber) {
 
       return res
-        .status(401)
+        .status(400)
         .json({
 
           success: false,
 
           message:
-            "Bot la dekonekte oswa session lan pa egziste."
+            "Nimewo bot la pa valid."
+
         });
+
     }
 
 
+    if (!cleanCode) {
+
+      return res
+        .status(400)
+        .json({
+
+          success: false,
+
+          message:
+            "Parrain Code la pa valid."
+
+        });
+
+    }
+
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // 🔐 VERIFYE PARRAIN CODE LA AK SESSION MANAGER
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
     try {
 
+      if (
+        typeof sessionManager.verifyLogin !==
+        "function"
+      ) {
+
+        console.error(
+          "❌ verifyLogin() pa jwenn nan panel/session.js"
+        );
+
+
+        return res
+          .status(500)
+          .json({
+
+            success: false,
+
+            message:
+              "Session Manager pa pare."
+
+          });
+
+      }
+
+
       const result =
-        settingsPanel.verifySession(
+        sessionManager.verifyLogin(
           sessionId,
-          String(number),
-          String(code)
+          cleanNumber,
+          cleanCode
         );
 
 
@@ -724,35 +1175,10 @@ app.post(
             message:
               result?.message ||
               "Login failed."
+
           });
+
       }
-
-
-      languageSessions.set(
-        sessionId,
-        {
-
-          ...languageSession,
-
-          language:
-            languageSession.language ||
-            "en",
-
-          authenticated:
-            true,
-
-          number:
-            String(number)
-              .replace(/\D/g, ""),
-
-          expiresAt:
-            Date.now() +
-            1000 *
-            60 *
-            60 *
-            24
-        }
-      );
 
 
       return res.json({
@@ -763,8 +1189,17 @@ app.post(
 
         sessionId,
 
+        language:
+          getPanelSession(
+            sessionId
+          )?.language || "en",
+
+        number:
+          cleanNumber,
+
         message:
           "Login successful."
+
       });
 
     } catch (error) {
@@ -774,6 +1209,7 @@ app.post(
         error
       );
 
+
       return res
         .status(500)
         .json({
@@ -781,9 +1217,12 @@ app.post(
           success: false,
 
           message:
-            "Cannot contact the panel server."
+            "Pa kapab verifye login lan."
+
         });
+
     }
+
   }
 );
 
@@ -796,25 +1235,21 @@ app.get(
   "/api/status",
   (req, res) => {
 
-    const {
-      session
-    } = req.query;
+    cleanupSessions();
 
 
-    let sessionInfo = null;
+    const sessionId =
+      String(
+        req.query.session ||
+        req.query.sessionId ||
+        ""
+      ).trim();
 
 
-    if (
-      session &&
-      typeof settingsPanel.getSession ===
-      "function"
-    ) {
-
-      sessionInfo =
-        settingsPanel.getSession(
-          session
-        );
-    }
+    const session =
+      getPanelSession(
+        sessionId
+      );
 
 
     return res.json({
@@ -823,18 +1258,99 @@ app.get(
 
       botConnected:
         session
-          ? !!sessionInfo?.connected
+          ? session.connected === true
           : isBotConnected(),
 
       authenticated:
-        verifySession(
-          session
-        ),
+        sessionId
+          ? verifySession(
+              sessionId
+            )
+          : false,
 
       botNumber:
-        sessionInfo?.number ||
-        getBotNumber()
+        session?.number ||
+        getBotNumber(),
+
+      sessionId:
+        session?.sessionId ||
+        null,
+
+      language:
+        session?.language ||
+        null
+
     });
+
+  }
+);
+
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🔐 SESSION INFO
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+app.get(
+  "/api/session",
+  (req, res) => {
+
+    cleanupSessions();
+
+
+    const sessionId =
+      String(
+        req.query.session ||
+        req.query.sessionId ||
+        ""
+      ).trim();
+
+
+    if (!sessionId) {
+
+      return res
+        .status(400)
+        .json({
+
+          success: false,
+
+          message:
+            "Session ID la pa jwenn."
+
+        });
+
+    }
+
+
+    const session =
+      getPanelSession(
+        sessionId
+      );
+
+
+    if (!session) {
+
+      return res
+        .status(404)
+        .json({
+
+          success: false,
+
+          message:
+            "Session lan pa egziste oswa li ekspire."
+
+        });
+
+    }
+
+
+    return res.json({
+
+      success: true,
+
+      session
+
+    });
+
   }
 );
 
@@ -852,137 +1368,8 @@ if (
   settingsApi.registerSettingsRoutes(
     app
   );
+
 }
 
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🧹 404 API
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-app.use(
-  "/api",
-  (req, res) => {
-
-    return res
-      .status(404)
-      .json({
-
-        success: false,
-
-        message:
-          "API route not found."
-      });
-  }
-);
-
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// ❌ ERROR HANDLER
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-app.use(
-  (
-    error,
-    req,
-    res,
-    next
-  ) => {
-
-    console.error(
-      "❌ PANEL ERROR:",
-      error
-    );
-
-
-    if (
-      res.headersSent
-    ) {
-
-      return next(error);
-    }
-
-
-    return res
-      .status(500)
-      .json({
-
-        success: false,
-
-        message:
-          "Internal panel server error."
-      });
-  }
-);
-
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🚀 START SERVER
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-if (
-  require.main === module
-) {
-
-  app.listen(
-    PORT,
-    HOST,
-    () => {
-
-      console.log("");
-
-      console.log(
-        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-      );
-
-      console.log(
-        "🦁 TOPFEROS MD V1.0.0"
-      );
-
-      console.log(
-        "🌐 PANEL SERVER"
-      );
-
-      console.log(
-        `📡 ${PANEL_URL}`
-      );
-
-      console.log(
-        `🔌 ${HOST}:${PORT}`
-      );
-
-      console.log(
-        "🔐 Parrain Code: SESSION-BASED"
-      );
-
-      console.log(
-        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-      );
-
-      console.log("");
-    }
-  );
-}
-
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 📦 EXPORT
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-module.exports = {
-
-  app,
-
-  PORT,
-
-  HOST,
-
-  PANEL_URL,
-
-  translations,
-
-  isBotConnected,
-
-  getBotNumber,
-
-  verifySession
-};
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
