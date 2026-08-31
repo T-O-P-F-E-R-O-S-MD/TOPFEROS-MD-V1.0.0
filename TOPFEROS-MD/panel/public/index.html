@@ -1,9 +1,10 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 
 <head>
   <meta charset="UTF-8">
 
+  <!-- Fè paj la adapte ak ekran telefòn -->
   <meta
     name="viewport"
     content="width=device-width, initial-scale=1.0"
@@ -11,165 +12,380 @@
 
   <title>TOPFEROS MD</title>
 
-  <link
-    rel="stylesheet"
-    href="/style.css"
-  >
+  <style>
+    /* Retire espas default navigatè a */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    /* Kò paj la */
+    body {
+      min-height: 100vh;
+
+      display: flex;
+      justify-content: center;
+      align-items: center;
+
+      padding: 20px;
+
+      background: #000;
+      color: #fff;
+
+      font-family: Arial, sans-serif;
+    }
+
+    /* Bwat prensipal panel la */
+    .container {
+      width: 100%;
+      max-width: 430px;
+      text-align: center;
+    }
+
+    /* Logo TOPFEROS MD */
+    .logo {
+      width: 120px;
+      height: 120px;
+
+      object-fit: contain;
+
+      margin: 0 auto 25px;
+
+      display: block;
+    }
+
+    /* Tit lang lan */
+    .title {
+      font-size: 22px;
+      font-weight: 700;
+
+      margin-bottom: 20px;
+    }
+
+    /* Bwat bouton lang yo */
+    .languages {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+
+      margin-bottom: 22px;
+    }
+
+    /* Chak bouton lang */
+    .language {
+      flex: 1;
+
+      padding: 13px 8px;
+
+      border: 1px solid #444;
+      border-radius: 8px;
+
+      background: #111;
+      color: #fff;
+
+      cursor: pointer;
+
+      font-size: 14px;
+    }
+
+    /* Efè lè moun touche bouton lang lan */
+    .language:hover {
+      background: #222;
+    }
+
+    /* Ti eksplikasyon anba lang yo */
+    .description {
+      color: #aaa;
+
+      font-size: 14px;
+      line-height: 1.6;
+
+      margin-bottom: 35px;
+    }
+
+    /* Liy separasyon */
+    .separator {
+      color: #777;
+      margin: 15px 0;
+    }
+
+    /* Siyati TOPFEROS TECH */
+    .footer {
+      color: #fff;
+
+      font-size: 13px;
+      font-weight: 600;
+
+      line-height: 1.8;
+    }
+
+    /* Ekran Login lan kache okòmansman */
+    #loginScreen {
+      display: none;
+    }
+
+    /* Tit Login lan */
+    .login-title {
+      font-size: 22px;
+      font-weight: 700;
+
+      margin-bottom: 30px;
+    }
+
+    /* Bwat chak input */
+    .input-box {
+      text-align: left;
+      margin-bottom: 12px;
+    }
+
+    /* Non input lan */
+    .input-box label {
+      display: block;
+
+      margin-bottom: 7px;
+
+      font-size: 14px;
+    }
+
+    /* Input nimewo ak Parrain Code */
+    .input-box input {
+      width: 100%;
+
+      padding: 14px;
+
+      border: 1px solid #444;
+      border-radius: 8px;
+
+      background: #111;
+      color: #fff;
+
+      outline: none;
+
+      font-size: 15px;
+    }
+
+    /* Lè moun klike nan input lan */
+    .input-box input:focus {
+      border-color: #777;
+    }
+
+    /* Eksplikasyon anba nimewo a */
+    .help {
+      text-align: left;
+
+      color: #aaa;
+
+      font-size: 12px;
+
+      margin-top: 8px;
+      margin-bottom: 25px;
+    }
+
+    /* Bouton NEXT */
+    #nextButton {
+      width: 100%;
+
+      padding: 14px;
+
+      border: none;
+      border-radius: 8px;
+
+      background: #fff;
+      color: #000;
+
+      font-size: 15px;
+      font-weight: 700;
+
+      cursor: pointer;
+    }
+
+    /* NEXT vin fèb pandan l ap verifye */
+    #nextButton:disabled {
+      opacity: 0.5;
+    }
+
+    /* Mesaj erè yo */
+    #message {
+      min-height: 25px;
+
+      margin-top: 15px;
+
+      color: #ff6666;
+
+      font-size: 13px;
+    }
+  </style>
 </head>
 
 <body>
 
-  <!-- ==================================================
-       🦁 TOPFEROS MD
-       Paj prensipal Panel la
-
-       Flow:
-       1. Chwazi lang
-       2. Login ak Number + Parrain Code
-       3. Ale nan Settings Panel
-       ================================================== -->
-
   <main class="container">
 
-    <!-- ==================================================
-         🌍 ETAP 1 — CHWAZI LANG
-         ================================================== -->
+    <!-- =================================================
+         PREMIYE EKRAN:
+         MOUN NAN DWE CHWAZI LANG LI
+    ================================================== -->
 
-    <section
-      id="languageScreen"
-      class="card"
-    >
+    <section id="languageScreen">
 
+      <!-- Logo bot la -->
       <img
-        src="/logo.png"
+        src="/assets/logo.png"
         alt="TOPFEROS MD"
         class="logo"
-        onerror="this.style.display='none'"
+        onerror="this.style.display='none';"
       >
 
-      <h1>TOPFEROS MD</h1>
-
-      <p class="subtitle">
-        • Principal Language
-      </p>
-
-      <p>
-        Choose your principal language.
-      </p>
-
-      <select
-        id="language"
-        class="input"
+      <!-- Tit lang -->
+      <div
+        id="languageTitle"
+        class="title"
       >
+        • Langue principale
+      </div>
 
-        <option value="en">
-          English
-        </option>
+      <!-- Bouton pou chwazi lang -->
+      <div class="languages">
 
-        <option value="fr">
+        <button
+          class="language"
+          data-language="en"
+        >
+          Anglais
+        </button>
+
+        <button
+          class="language"
+          data-language="fr"
+        >
           Français
-        </option>
+        </button>
 
-        <option value="es">
-          Español
-        </option>
+        <button
+          class="language"
+          data-language="es"
+        >
+          Espagnol
+        </button>
 
-      </select>
+      </div>
 
-      <button
-        id="languageNext"
-        class="button"
-        type="button"
+      <!-- Eksplikasyon -->
+      <div
+        id="languageDescription"
+        class="description"
       >
-        NEXT
-      </button>
+        Choisissez une langue pour pouvoir déployer le bot
+      </div>
+
+      <div class="separator">
+        ==========================
+      </div>
+
+      <!-- Siyati -->
+      <div class="footer">
+        Par TOPFEROS TECH
+      </div>
+
+      <div class="separator">
+        ==========================
+      </div>
 
     </section>
 
 
-    <!-- ==================================================
-         🔐 ETAP 2 — LOGIN
-         Number + Parrain Code
-         ================================================== -->
+    <!-- =================================================
+         DEZYÈM EKRAN:
+         LOGIN BOT LA
+    ================================================== -->
 
-    <section
-      id="loginScreen"
-      class="card"
-      style="display:none;"
-    >
+    <section id="loginScreen">
 
+      <!-- Logo bot la -->
       <img
-        src="/logo.png"
+        src="/assets/logo.png"
         alt="TOPFEROS MD"
         class="logo"
-        onerror="this.style.display='none'"
+        onerror="this.style.display='none';"
       >
 
-      <h1>
-        TOPFEROS MD
-      </h1>
-
-      <p class="subtitle">
-        ⚙️ Settings Panel
-      </p>
-
-
-      <!-- Nimewo bot la -->
-
-      <label for="number">
-        Number :
-      </label>
-
-      <input
-        id="number"
-        name="number"
-        class="input"
-        type="tel"
-        inputmode="numeric"
-        autocomplete="off"
-        placeholder="Enter bot number"
-      >
-
-
-      <!-- Code Parrain lan -->
-
-      <label for="code">
-        Code :
-      </label>
-
-      <input
-        id="code"
-        name="code"
-        class="input"
-        type="text"
-        autocomplete="off"
-        placeholder="Enter Parrain Code"
-      >
-
-
-      <!-- Mesaj erè / enfòmasyon -->
-
+      <!-- Tit Login -->
       <div
-        id="message"
-        class="message"
-      ></div>
+        id="loginTitle"
+        class="login-title"
+      >
+        Connexion au bot
+      </div>
 
 
-      <!-- Bouton NEXT -->
+      <!-- Antre nimewo bot la -->
+      <div class="input-box">
 
+        <label for="number">
+          Numéro
+        </label>
+
+        <input
+          type="tel"
+          id="number"
+          inputmode="numeric"
+          autocomplete="tel"
+          placeholder="1849xxxxxxx"
+        >
+
+      </div>
+
+
+      <!-- Eksplikasyon nimewo -->
+      <div
+        id="numberHelp"
+        class="help"
+      >
+        Entrez le numéro sans mettre le +
+      </div>
+
+
+      <!-- Antre Parrain Code -->
+      <div class="input-box">
+
+        <label for="code">
+          Code Parrain
+        </label>
+
+        <input
+          type="text"
+          id="code"
+          autocomplete="off"
+          placeholder="Entrez le Code Parrain"
+        >
+
+      </div>
+
+
+      <!-- Bouton pou kontinye -->
       <button
-        id="nextButton"
-        class="button"
         type="button"
+        id="nextButton"
       >
         NEXT
       </button>
 
 
+      <!-- Mesaj erè -->
+      <div id="message"></div>
+
+
+      <div class="separator">
+        ==========================
+      </div>
+
       <div class="footer">
-        Made in TOPFEROS TECH
-        <br>
-        ========================
+        Par TOPFEROS TECH
+      </div>
+
+      <div class="separator">
+        ==========================
       </div>
 
     </section>
@@ -177,16 +393,337 @@
   </main>
 
 
-  <!-- ==================================================
-       📜 SCRIPT
-       app.js ap jere:
+  <script>
 
-       • Lang
-       • Session ID
-       • Login
-       • Parrain Code
-       • Redireksyon Settings Panel
-       ================================================== -->
+    "use strict";
+
+
+    // =================================================
+    // LANG YO
+    // =================================================
+
+    const translations = {
+
+      // Anglè
+      en: {
+
+        title:
+          "• Principal Language",
+
+        description:
+          "Choose a language to deploy the bot",
+
+        loginTitle:
+          "Bot Login",
+
+        number:
+          "Number",
+
+        numberHelp:
+          "Enter the number without +",
+
+        numberPlaceholder:
+          "1849xxxxxxx",
+
+        code:
+          "Parrain Code",
+
+        codePlaceholder:
+          "Enter Parrain Code",
+
+        next:
+          "NEXT"
+
+      },
+
+
+      // Franse
+      fr: {
+
+        title:
+          "• Langue principale",
+
+        description:
+          "Choisissez une langue pour pouvoir déployer le bot",
+
+        loginTitle:
+          "Connexion au bot",
+
+        number:
+          "Numéro",
+
+        numberHelp:
+          "Entrez le numéro sans mettre le +",
+
+        numberPlaceholder:
+          "1849xxxxxxx",
+
+        code:
+          "Code Parrain",
+
+        codePlaceholder:
+          "Entrez le Code Parrain",
+
+        next:
+          "SUIVANT"
+
+      },
+
+
+      // Panyòl
+      es: {
+
+        title:
+          "• Idioma principal",
+
+        description:
+          "Elige un idioma para poder desplegar el bot",
+
+        loginTitle:
+          "Inicio de sesión del bot",
+
+        number:
+          "Número",
+
+        numberHelp:
+          "Introduce el número sin poner +",
+
+        numberPlaceholder:
+          "1849xxxxxxx",
+
+        code:
+          "Código Parrain",
+
+        codePlaceholder:
+          "Introduce el Código Parrain",
+
+        next:
+          "SIGUIENTE"
+
+      }
+
+    };
+
+
+    // =================================================
+    // RANMASE ELEMAN YO NAN PAJ LA
+    // =================================================
+
+    const languageScreen =
+      document.getElementById(
+        "languageScreen"
+      );
+
+    const loginScreen =
+      document.getElementById(
+        "loginScreen"
+      );
+
+    const languageTitle =
+      document.getElementById(
+        "languageTitle"
+      );
+
+    const languageDescription =
+      document.getElementById(
+        "languageDescription"
+      );
+
+    const loginTitle =
+      document.getElementById(
+        "loginTitle"
+      );
+
+    const numberLabel =
+      document.querySelector(
+        'label[for="number"]'
+      );
+
+    const numberHelp =
+      document.getElementById(
+        "numberHelp"
+      );
+
+    const numberInput =
+      document.getElementById(
+        "number"
+      );
+
+    const codeLabel =
+      document.querySelector(
+        'label[for="code"]'
+      );
+
+    const codeInput =
+      document.getElementById(
+        "code"
+      );
+
+    const nextButton =
+      document.getElementById(
+        "nextButton"
+      );
+
+
+    // =================================================
+    // APLIKE LANG MOUN NAN CHWAZI A
+    // =================================================
+
+    function applyLanguage(language) {
+
+      const t =
+        translations[language] ||
+        translations.fr;
+
+
+      document.documentElement.lang =
+        language;
+
+
+      languageTitle.textContent =
+        t.title;
+
+
+      languageDescription.textContent =
+        t.description;
+
+
+      loginTitle.textContent =
+        t.loginTitle;
+
+
+      numberLabel.textContent =
+        t.number;
+
+
+      numberHelp.textContent =
+        t.numberHelp;
+
+
+      numberInput.placeholder =
+        t.numberPlaceholder;
+
+
+      codeLabel.textContent =
+        t.code;
+
+
+      codeInput.placeholder =
+        t.codePlaceholder;
+
+
+      nextButton.textContent =
+        t.next;
+
+    }
+
+
+    // =================================================
+    // LÈ MOUN CHWAZI LANG:
+    // KACHE LANG SCREEN LAN
+    // EPI MONTRE LOGIN LAN
+    // =================================================
+
+    function selectLanguage(language) {
+
+      if (!translations[language]) {
+        return;
+      }
+
+
+      // Sove lang lan nan telefòn/navigatè a
+      localStorage.setItem(
+        "topferos_language",
+        language
+      );
+
+
+      // Aplike lang lan
+      applyLanguage(
+        language
+      );
+
+
+      // Kache ekran lang lan
+      languageScreen.style.display =
+        "none";
+
+
+      // Montre ekran Login lan
+      loginScreen.style.display =
+        "block";
+
+
+      // Mete cursor la sou nimewo a
+      numberInput.focus();
+
+    }
+
+
+    // =================================================
+    // FÈ CHAK BOUTON LANG FONKSYONE
+    // =================================================
+
+    document
+      .querySelectorAll(
+        ".language"
+      )
+      .forEach(button => {
+
+        button.addEventListener(
+          "click",
+          () => {
+
+            selectLanguage(
+              button.dataset.language
+            );
+
+          }
+        );
+
+      });
+
+
+    // =================================================
+    // KÒMANSMAN PAJ LA
+    // =================================================
+
+    const savedLanguage =
+      localStorage.getItem(
+        "topferos_language"
+      );
+
+
+    /*
+     * Si moun nan te deja chwazi yon lang,
+     * nou ka itilize lang li te sove a.
+     *
+     * Si li poko chwazi,
+     * nou montre ekran chwa lang lan.
+     */
+
+    if (
+      translations[savedLanguage]
+    ) {
+
+      selectLanguage(
+        savedLanguage
+      );
+
+    } else {
+
+      applyLanguage("fr");
+
+    }
+
+  </script>
+
+
+  <!--
+    app.js la okipe pati Login,
+    session ID, Parrain Code,
+    epi voye moun nan Settings Panel.
+  -->
 
   <script src="/app.js"></script>
 
