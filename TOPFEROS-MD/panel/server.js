@@ -26,6 +26,15 @@ const PANEL_URL =
 const publicDir =
   path.join(__dirname, "public");
 
+// Logo prensipal bot la nan root project/assets/
+const logoPath =
+  path.join(
+    __dirname,
+    "..",
+    "assets",
+    "logo.png"
+  );
+
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 🧱 EXPRESS
@@ -404,18 +413,36 @@ app.get(
 
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🖼️ LOGO
+// ⚙️ SETTINGS PAGE
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+app.get(
+  "/settings.html",
+  (req, res) => {
+
+    return res.sendFile(
+      path.join(
+        publicDir,
+        "settings.html"
+      )
+    );
+  }
+);
+
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🖼️ BOT LOGO
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// Logo a soti nan:
+// TOPFEROS-MD/assets/logo.png
+//
+// URL panel la:
+// /logo.png
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 app.get(
   "/logo.png",
   (req, res) => {
-
-    const logoPath =
-      path.join(
-        publicDir,
-        "logo.png"
-      );
 
     return res.sendFile(
       logoPath,
@@ -423,9 +450,21 @@ app.get(
 
         if (error) {
 
-          return res
-            .status(404)
-            .end();
+          console.error(
+            "❌ LOGO ERROR:",
+            error.message
+          );
+
+          if (
+            !res.headersSent
+          ) {
+
+            return res
+              .status(404)
+              .send(
+                "Logo not found"
+              );
+          }
         }
       }
     );
@@ -640,8 +679,6 @@ app.post(
         });
     }
 
-
-    // Verifye session WhatsApp espesifik la.
 
     if (
       typeof settingsPanel.isSessionConnected !==
