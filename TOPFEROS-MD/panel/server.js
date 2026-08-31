@@ -2,7 +2,6 @@
 
 const express = require("express");
 const path = require("path");
-const crypto = require("crypto");
 
 const settingsPanel = require("../settings/panel");
 const settingsApi = require("./settings-api");
@@ -10,13 +9,19 @@ const settingsApi = require("./settings-api");
 const app = express();
 
 const PORT =
-  Number(process.env.PANEL_PORT || process.env.PORT || 3000);
+  Number(
+    process.env.PANEL_PORT ||
+    process.env.PORT ||
+    3000
+  );
 
 const HOST =
-  process.env.PANEL_HOST || "0.0.0.0";
+  process.env.PANEL_HOST ||
+  "0.0.0.0";
 
 const PANEL_URL =
-  process.env.PANEL_URL || `http://localhost:${PORT}`;
+  process.env.PANEL_URL ||
+  `http://localhost:${PORT}`;
 
 const publicDir =
   path.join(__dirname, "public");
@@ -43,15 +48,14 @@ app.use(
 
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🔐 SESSION DATA
+// 🌐 LANGUAGE SESSIONS
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-const languageSessions =
-  new Map();
+const languageSessions = new Map();
 
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🧹 SESSION CLEANUP
+// 🧹 CLEANUP
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 function cleanupSessions() {
@@ -67,6 +71,7 @@ function cleanupSessions() {
       data.expiresAt &&
       data.expiresAt < now
     ) {
+
       languageSessions.delete(
         sessionId
       );
@@ -76,19 +81,7 @@ function cleanupSessions() {
 
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🆔 GENERATE SESSION
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-function generateSessionId() {
-
-  return crypto
-    .randomBytes(32)
-    .toString("hex");
-}
-
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🌐 LANGUAGES
+// 🌐 TRANSLATIONS
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 const translations = {
@@ -114,13 +107,13 @@ const translations = {
       "Enter bot number",
 
     codePlaceholder:
-      "Enter panel code",
+      "Enter Parrain Code",
 
     checking:
       "Checking...",
 
     botDisconnected:
-      "❌ Bot is disconnected. The code is no longer valid.",
+      "❌ Bot is disconnected. The Parrain Code is no longer valid.",
 
     sessionMissing:
       "❌ The panel link has no session.",
@@ -129,7 +122,7 @@ const translations = {
       "❌ Enter the bot number.",
 
     codeMissing:
-      "❌ Enter the panel code.",
+      "❌ Enter the Parrain Code.",
 
     loginFailed:
       "❌ Login failed.",
@@ -178,13 +171,13 @@ const translations = {
       "Entrez le numéro du bot",
 
     codePlaceholder:
-      "Entrez le code du panneau",
+      "Entrez le Code Parrain",
 
     checking:
       "Vérification...",
 
     botDisconnected:
-      "❌ Le bot est déconnecté. Le code n'est plus valide.",
+      "❌ Le bot est déconnecté. Le Code Parrain n'est plus valide.",
 
     sessionMissing:
       "❌ Le lien du panneau ne contient pas de session.",
@@ -193,7 +186,7 @@ const translations = {
       "❌ Entrez le numéro du bot.",
 
     codeMissing:
-      "❌ Entrez le code du panneau.",
+      "❌ Entrez le Code Parrain.",
 
     loginFailed:
       "❌ La connexion a échoué.",
@@ -230,7 +223,7 @@ const translations = {
       "Elige tu idioma principal.",
 
     parrain:
-      "⚙️ Código de referencia",
+      "⚙️ Código Parrain",
 
     number:
       "Número :",
@@ -242,13 +235,13 @@ const translations = {
       "Introduce el número del bot",
 
     codePlaceholder:
-      "Introduce el código del panel",
+      "Introduce el Código Parrain",
 
     checking:
       "Comprobando...",
 
     botDisconnected:
-      "❌ El bot está desconectado. El código ya no es válido.",
+      "❌ El bot está desconectado. El Código Parrain ya no es válido.",
 
     sessionMissing:
       "❌ El enlace del panel no contiene una sesión.",
@@ -257,7 +250,7 @@ const translations = {
       "❌ Introduce el número del bot.",
 
     codeMissing:
-      "❌ Introduce el código del panel.",
+      "❌ Introduce el Código Parrain.",
 
     loginFailed:
       "❌ El inicio de sesión falló.",
@@ -291,9 +284,7 @@ const translations = {
 // 🔎 VALID LANGUAGE
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-function isValidLanguage(
-  language
-) {
+function isValidLanguage(language) {
 
   return Object.prototype.hasOwnProperty.call(
     translations,
@@ -303,20 +294,26 @@ function isValidLanguage(
 
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🤖 BOT NUMBER
+// 🤖 GET BOT NUMBER
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 function getBotNumber() {
 
   try {
 
-    if (
-      typeof settingsPanel.getBotNumber ===
+    const sessions =
+      typeof settingsPanel.getSessions ===
       "function"
-    ) {
+        ? settingsPanel.getSessions()
+        : [];
 
-      return settingsPanel.getBotNumber();
-    }
+    const connected =
+      sessions.find(
+        session =>
+          session.connected === true
+      );
+
+    return connected?.number || null;
 
   } catch (error) {
 
@@ -324,30 +321,25 @@ function getBotNumber() {
       "❌ GET BOT NUMBER ERROR:",
       error
     );
-  }
 
-  return null;
+    return null;
+  }
 }
 
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🟢 BOT CONNECTED
+// 🟢 CHECK BOT CONNECTED
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 function isBotConnected() {
 
   try {
 
-    if (
+    return (
       typeof settingsPanel.isBotConnected ===
-      "function"
-    ) {
-
-      return (
-        settingsPanel.isBotConnected() ===
-        true
-      );
-    }
+      "function" &&
+      settingsPanel.isBotConnected() === true
+    );
 
   } catch (error) {
 
@@ -355,19 +347,17 @@ function isBotConnected() {
       "❌ BOT CONNECTION CHECK ERROR:",
       error
     );
-  }
 
-  return false;
+    return false;
+  }
 }
 
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🔐 VERIFY PANEL SESSION
+// 🔐 VERIFY AUTHENTICATED SESSION
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-function verifySession(
-  sessionId
-) {
+function verifySession(sessionId) {
 
   if (!sessionId) {
     return false;
@@ -375,17 +365,13 @@ function verifySession(
 
   try {
 
-    if (
+    return (
       typeof settingsPanel.isAuthenticated ===
-      "function"
-    ) {
-
-      return (
-        settingsPanel.isAuthenticated(
-          sessionId
-        ) === true
-      );
-    }
+      "function" &&
+      settingsPanel.isAuthenticated(
+        sessionId
+      ) === true
+    );
 
   } catch (error) {
 
@@ -393,14 +379,14 @@ function verifySession(
       "❌ SESSION VERIFY ERROR:",
       error
     );
-  }
 
-  return false;
+    return false;
+  }
 }
 
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🌐 HOME
+// 🏠 HOME
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 app.get(
@@ -450,12 +436,6 @@ app.get(
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 🌐 LANGUAGE API
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//
-// POST /api/language
-//
-// Chwazi lang lan otomatikman.
-// Pa gen NEXT.
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 app.post(
   "/api/language",
@@ -474,7 +454,9 @@ app.post(
       return res
         .status(400)
         .json({
+
           success: false,
+
           message:
             "Session panel la pa jwenn."
         });
@@ -488,7 +470,9 @@ app.post(
       return res
         .status(400)
         .json({
+
           success: false,
+
           message:
             "Language la pa valid."
         });
@@ -504,19 +488,25 @@ app.post(
     languageSessions.set(
       sessionId,
       {
+
         ...old,
 
         language,
 
         expiresAt:
           Date.now() +
-          1000 * 60 * 60 * 24
+          1000 *
+          60 *
+          60 *
+          24
       }
     );
 
 
     return res.json({
+
       success: true,
+
       language,
 
       message:
@@ -546,7 +536,9 @@ app.get(
       return res
         .status(400)
         .json({
+
           success: false,
+
           message:
             "Session panel la pa jwenn."
         });
@@ -560,6 +552,7 @@ app.get(
 
 
     return res.json({
+
       success: true,
 
       language:
@@ -571,9 +564,6 @@ app.get(
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 🔐 LOGIN API
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//
-// POST /api/login
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 app.post(
@@ -594,25 +584,29 @@ app.post(
       return res
         .status(400)
         .json({
+
           success: false,
+
           message:
             "Session panel la pa jwenn."
         });
     }
 
 
-    const sessionData =
+    const languageSession =
       languageSessions.get(
         sessionId
       );
 
 
-    if (!sessionData) {
+    if (!languageSession) {
 
       return res
         .status(401)
         .json({
+
           success: false,
+
           message:
             "Session panel la pa valid."
         });
@@ -624,7 +618,9 @@ app.post(
       return res
         .status(400)
         .json({
+
           success: false,
+
           message:
             "Enter bot number."
         });
@@ -636,80 +632,61 @@ app.post(
       return res
         .status(400)
         .json({
+
           success: false,
+
           message:
-            "Enter panel code."
+            "Enter Parrain Code."
         });
     }
 
 
-    if (!isBotConnected()) {
+    // Verifye session WhatsApp espesifik la.
+
+    if (
+      typeof settingsPanel.isSessionConnected !==
+      "function" ||
+      !settingsPanel.isSessionConnected(
+        sessionId
+      )
+    ) {
 
       return res
         .status(401)
         .json({
+
           success: false,
+
           message:
-            "Bot la dekonekte."
+            "Bot la dekonekte oswa session lan pa egziste."
         });
     }
 
 
     try {
 
+      const result =
+        settingsPanel.verifySession(
+          sessionId,
+          String(number),
+          String(code)
+        );
+
+
       if (
-        typeof settingsPanel.verifySession ===
-        "function"
+        !result ||
+        result.success !== true
       ) {
-
-        const valid =
-          await settingsPanel.verifySession(
-            sessionId,
-            String(number),
-            String(code)
-          );
-
-
-        if (!valid) {
-
-          return res
-            .status(401)
-            .json({
-              success: false,
-              message:
-                "Login failed."
-            });
-        }
-
-      } else if (
-        typeof settingsPanel.isAuthenticated ===
-        "function"
-      ) {
-
-        const valid =
-          settingsPanel.isAuthenticated(
-            sessionId
-          );
-
-        if (!valid) {
-
-          return res
-            .status(401)
-            .json({
-              success: false,
-              message:
-                "Login failed."
-            });
-        }
-
-      } else {
 
         return res
-          .status(500)
+          .status(401)
           .json({
+
             success: false,
+
             message:
-              "Panel authentication function is missing."
+              result?.message ||
+              "Login failed."
           });
       }
 
@@ -717,25 +694,37 @@ app.post(
       languageSessions.set(
         sessionId,
         {
-          ...sessionData,
+
+          ...languageSession,
 
           language:
-            sessionData.language || "en",
+            languageSession.language ||
+            "en",
 
-          authenticated: true,
+          authenticated:
+            true,
 
           number:
-            String(number),
+            String(number)
+              .replace(/\D/g, ""),
 
           expiresAt:
             Date.now() +
-            1000 * 60 * 60 * 24
+            1000 *
+            60 *
+            60 *
+            24
         }
       );
 
 
       return res.json({
+
         success: true,
+
+        authenticated: true,
+
+        sessionId,
 
         message:
           "Login successful."
@@ -751,7 +740,9 @@ app.post(
       return res
         .status(500)
         .json({
+
           success: false,
+
           message:
             "Cannot contact the panel server."
         });
@@ -773,17 +764,38 @@ app.get(
     } = req.query;
 
 
+    let sessionInfo = null;
+
+
+    if (
+      session &&
+      typeof settingsPanel.getSession ===
+      "function"
+    ) {
+
+      sessionInfo =
+        settingsPanel.getSession(
+          session
+        );
+    }
+
+
     return res.json({
 
       success: true,
 
       botConnected:
-        isBotConnected(),
+        session
+          ? !!sessionInfo?.connected
+          : isBotConnected(),
 
       authenticated:
-        verifySession(session),
+        verifySession(
+          session
+        ),
 
       botNumber:
+        sessionInfo?.number ||
         getBotNumber()
     });
   }
@@ -803,7 +815,6 @@ if (
   settingsApi.registerSettingsRoutes(
     app
   );
-
 }
 
 
@@ -818,7 +829,9 @@ app.use(
     return res
       .status(404)
       .json({
+
         success: false,
+
         message:
           "API route not found."
       });
@@ -831,12 +844,18 @@ app.use(
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 app.use(
-  (error, req, res, next) => {
+  (
+    error,
+    req,
+    res,
+    next
+  ) => {
 
     console.error(
       "❌ PANEL ERROR:",
       error
     );
+
 
     if (
       res.headersSent
@@ -845,10 +864,13 @@ app.use(
       return next(error);
     }
 
+
     return res
       .status(500)
       .json({
+
         success: false,
+
         message:
           "Internal panel server error."
       });
@@ -870,6 +892,7 @@ if (
     () => {
 
       console.log("");
+
       console.log(
         "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
       );
@@ -888,6 +911,10 @@ if (
 
       console.log(
         `🔌 ${HOST}:${PORT}`
+      );
+
+      console.log(
+        "🔐 Parrain Code: SESSION-BASED"
       );
 
       console.log(
@@ -915,8 +942,6 @@ module.exports = {
   PANEL_URL,
 
   translations,
-
-  generateSessionId,
 
   isBotConnected,
 
