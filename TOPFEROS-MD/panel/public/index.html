@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
 
@@ -8,552 +9,187 @@
     content="width=device-width, initial-scale=1.0"
   >
 
-  <title>TOPFEROS MD V1.0.0</title>
+  <title>TOPFEROS MD</title>
 
-  <style>
-    * {
-      box-sizing: border-box;
-    }
-
-    body {
-      margin: 0;
-      min-height: 100vh;
-      background: #0d0d0d;
-      color: #fff;
-      font-family: Arial, sans-serif;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      padding: 30px 15px;
-    }
-
-    .panel {
-      width: 100%;
-      max-width: 610px;
-      background: #151515;
-      border: 1px solid #333;
-      border-radius: 28px;
-      padding: 35px 30px;
-      text-align: center;
-      box-shadow: 0 0 30px rgba(0,0,0,.5);
-    }
-
-    .logo {
-      width: 190px;
-      height: 190px;
-      object-fit: cover;
-      border-radius: 50%;
-      border: 6px solid #555;
-      margin-bottom: 25px;
-    }
-
-    h1 {
-      font-size: 42px;
-      margin: 5px 0 15px;
-    }
-
-    .version {
-      font-size: 34px;
-      font-weight: bold;
-    }
-
-    .subtitle {
-      color: #aaa;
-      font-size: 23px;
-      margin: 20px 0 30px;
-    }
-
-    .title {
-      text-align: left;
-      font-size: 22px;
-      font-weight: bold;
-      margin-bottom: 15px;
-    }
-
-    button {
-      width: 100%;
-      padding: 20px;
-      margin: 9px 0;
-      border-radius: 18px;
-      border: 1px solid #333;
-      background: #111;
-      color: white;
-      text-align: left;
-      font-size: 23px;
-      font-weight: bold;
-      cursor: pointer;
-    }
-
-    button:hover {
-      background: #222;
-    }
-
-    input {
-      width: 100%;
-      padding: 18px;
-      margin: 10px 0;
-      border-radius: 15px;
-      border: 1px solid #444;
-      background: #101010;
-      color: white;
-      font-size: 18px;
-      outline: none;
-    }
-
-    .next {
-      text-align: center;
-      background: #222;
-      margin-top: 18px;
-    }
-
-    .hidden {
-      display: none;
-    }
-
-    .message {
-      margin-top: 15px;
-      font-size: 16px;
-      color: #aaa;
-      min-height: 25px;
-    }
-
-    .footer {
-      border-top: 1px solid #333;
-      margin-top: 55px;
-      padding-top: 25px;
-      color: #aaa;
-      font-size: 18px;
-      line-height: 1.8;
-    }
-  </style>
+  <link
+    rel="stylesheet"
+    href="/style.css"
+  >
 </head>
 
 <body>
 
-  <div class="panel">
+  <!-- ==================================================
+       🦁 TOPFEROS MD
+       Paj prensipal Panel la
 
-    <img
-      src="/logo.png"
-      class="logo"
-      alt="TOPFEROS MD"
+       Flow:
+       1. Chwazi lang
+       2. Login ak Number + Parrain Code
+       3. Ale nan Settings Panel
+       ================================================== -->
+
+  <main class="container">
+
+    <!-- ==================================================
+         🌍 ETAP 1 — CHWAZI LANG
+         ================================================== -->
+
+    <section
+      id="languageScreen"
+      class="card"
     >
 
-    <h1>
-      🦁 TOPFEROS MD
-      <br>
-      <span class="version">V1.0.0</span>
-    </h1>
-
-    <!-- LANGUAGE PAGE -->
-    <div id="languagePage">
-
-      <div class="subtitle">
-        Chwazi lang prensipal ou.
-      </div>
-
-      <div class="title">
-        • Lang Prensipal
-      </div>
-
-      <button onclick="selectLanguage('en')">
-        🇺🇸 Angle
-      </button>
-
-      <button onclick="selectLanguage('fr')">
-        🇫🇷 Franse
-      </button>
-
-      <button onclick="selectLanguage('es')">
-        🇪🇸 Panyòl
-      </button>
-
-    </div>
-
-
-    <!-- LOGIN PAGE -->
-    <div id="loginPage" class="hidden">
-
-      <div class="subtitle" id="loginTitle">
-        🔐 Panel Login
-      </div>
-
-      <input
-        id="number"
-        type="text"
-        inputmode="numeric"
-        placeholder="Enter bot number"
+      <img
+        src="/logo.png"
+        alt="TOPFEROS MD"
+        class="logo"
+        onerror="this.style.display='none'"
       >
 
-      <input
-        id="code"
-        type="text"
-        placeholder="Enter panel code"
-        autocomplete="off"
+      <h1>TOPFEROS MD</h1>
+
+      <p class="subtitle">
+        • Principal Language
+      </p>
+
+      <p>
+        Choose your principal language.
+      </p>
+
+      <select
+        id="language"
+        class="input"
       >
+
+        <option value="en">
+          English
+        </option>
+
+        <option value="fr">
+          Français
+        </option>
+
+        <option value="es">
+          Español
+        </option>
+
+      </select>
 
       <button
-        class="next"
-        onclick="login()"
+        id="languageNext"
+        class="button"
+        type="button"
       >
         NEXT
       </button>
+
+    </section>
+
+
+    <!-- ==================================================
+         🔐 ETAP 2 — LOGIN
+         Number + Parrain Code
+         ================================================== -->
+
+    <section
+      id="loginScreen"
+      class="card"
+      style="display:none;"
+    >
+
+      <img
+        src="/logo.png"
+        alt="TOPFEROS MD"
+        class="logo"
+        onerror="this.style.display='none'"
+      >
+
+      <h1>
+        TOPFEROS MD
+      </h1>
+
+      <p class="subtitle">
+        ⚙️ Settings Panel
+      </p>
+
+
+      <!-- Nimewo bot la -->
+
+      <label for="number">
+        Number :
+      </label>
+
+      <input
+        id="number"
+        name="number"
+        class="input"
+        type="tel"
+        inputmode="numeric"
+        autocomplete="off"
+        placeholder="Enter bot number"
+      >
+
+
+      <!-- Code Parrain lan -->
+
+      <label for="code">
+        Code :
+      </label>
+
+      <input
+        id="code"
+        name="code"
+        class="input"
+        type="text"
+        autocomplete="off"
+        placeholder="Enter Parrain Code"
+      >
+
+
+      <!-- Mesaj erè / enfòmasyon -->
 
       <div
         id="message"
         class="message"
       ></div>
 
-    </div>
 
+      <!-- Bouton NEXT -->
 
-    <div class="footer">
-      =========================<br>
-      By TOPFEROS TECH<br>
-      =========================
-    </div>
+      <button
+        id="nextButton"
+        class="button"
+        type="button"
+      >
+        NEXT
+      </button>
 
-  </div>
 
+      <div class="footer">
+        Made in TOPFEROS TECH
+        <br>
+        ========================
+      </div>
 
-<script>
+    </section>
 
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // SESSION
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  </main>
 
-  const params =
-    new URLSearchParams(
-      window.location.search
-    );
 
-  let sessionId =
-    params.get("session");
+  <!-- ==================================================
+       📜 SCRIPT
+       app.js ap jere:
 
+       • Lang
+       • Session ID
+       • Login
+       • Parrain Code
+       • Redireksyon Settings Panel
+       ================================================== -->
 
-  /*
-   * Si URL la gen session,
-   * nou kenbe li.
-   *
-   * Egzanp:
-   * http://localhost:3000/?session=XXXXXXXX
-   */
-
-
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // LANGUAGE
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-  async function selectLanguage(language) {
-
-    if (!sessionId) {
-
-      showMessage(
-        "❌ Session panel la pa jwenn. Louvri link panel bot la.",
-        true
-      );
-
-      return;
-    }
-
-
-    try {
-
-      const response =
-        await fetch(
-          "/api/language",
-          {
-            method: "POST",
-
-            headers: {
-              "Content-Type":
-                "application/json"
-            },
-
-            body: JSON.stringify({
-              sessionId,
-              language
-            })
-          }
-        );
-
-
-      const data =
-        await response.json();
-
-
-      if (!data.success) {
-
-        showMessage(
-          data.message ||
-          "❌ Language pa ka sove.",
-          true
-        );
-
-        return;
-      }
-
-
-      // KACHE LANGUAGE PAGE
-      document
-        .getElementById("languagePage")
-        .classList
-        .add("hidden");
-
-
-      // MONTRE LOGIN PAGE
-      document
-        .getElementById("loginPage")
-        .classList
-        .remove("hidden");
-
-
-      const title =
-        document.getElementById(
-          "loginTitle"
-        );
-
-
-      if (language === "fr") {
-
-        title.textContent =
-          "🔐 Connexion au panneau";
-
-        document.getElementById(
-          "number"
-        ).placeholder =
-          "Entrez le numéro du bot";
-
-        document.getElementById(
-          "code"
-        ).placeholder =
-          "Entrez le code du panneau";
-
-      }
-
-      else if (language === "es") {
-
-        title.textContent =
-          "🔐 Inicio de sesión";
-
-        document.getElementById(
-          "number"
-        ).placeholder =
-          "Introduce el número del bot";
-
-        document.getElementById(
-          "code"
-        ).placeholder =
-          "Introduce el código del panel";
-
-      }
-
-      else {
-
-        title.textContent =
-          "🔐 Panel Login";
-      }
-
-
-    } catch (error) {
-
-      console.error(error);
-
-      showMessage(
-        "❌ Cannot contact the panel server.",
-        true
-      );
-    }
-  }
-
-
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // LOGIN
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-  async function login() {
-
-    const number =
-      document
-        .getElementById("number")
-        .value
-        .trim();
-
-
-    const code =
-      document
-        .getElementById("code")
-        .value
-        .trim();
-
-
-    if (!sessionId) {
-
-      showMessage(
-        "❌ Session panel la pa jwenn.",
-        true
-      );
-
-      return;
-    }
-
-
-    if (!number) {
-
-      showMessage(
-        "❌ Enter bot number.",
-        true
-      );
-
-      return;
-    }
-
-
-    if (!code) {
-
-      showMessage(
-        "❌ Enter panel code.",
-        true
-      );
-
-      return;
-    }
-
-
-    showMessage(
-      "⏳ Checking...",
-      false
-    );
-
-
-    try {
-
-      const response =
-        await fetch(
-          "/api/login",
-          {
-            method: "POST",
-
-            headers: {
-              "Content-Type":
-                "application/json"
-            },
-
-            body: JSON.stringify({
-
-              sessionId,
-
-              number,
-
-              code
-
-            })
-          }
-        );
-
-
-      const data =
-        await response.json();
-
-
-      if (!data.success) {
-
-        showMessage(
-          data.message ||
-          "❌ Login failed.",
-          true
-        );
-
-        return;
-      }
-
-
-      showMessage(
-        "🟢 Login successful...",
-        false
-      );
-
-
-      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-      // ALE NAN SETTINGS PANEL
-      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-      setTimeout(() => {
-
-        window.location.href =
-          "/settings.html?session=" +
-          encodeURIComponent(
-            sessionId
-          );
-
-      }, 500);
-
-
-    } catch (error) {
-
-      console.error(error);
-
-      showMessage(
-        "❌ Cannot contact the panel server.",
-        true
-      );
-    }
-  }
-
-
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // MESSAGE
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-  function showMessage(
-    text,
-    error
-  ) {
-
-    const message =
-      document.getElementById(
-        "message"
-      );
-
-
-    if (!message) {
-      return;
-    }
-
-
-    message.textContent =
-      text;
-
-
-    message.style.color =
-      error
-        ? "#ff6b6b"
-        : "#aaa";
-  }
-
-
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // ENTER KEY
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-  document.addEventListener(
-    "keydown",
-    function(event) {
-
-      if (
-        event.key === "Enter" &&
-        !document
-          .getElementById("loginPage")
-          .classList
-          .contains("hidden")
-      ) {
-
-        login();
-      }
-
-    }
-  );
-
-</script>
+  <script src="/app.js"></script>
 
 </body>
+
 </html>
