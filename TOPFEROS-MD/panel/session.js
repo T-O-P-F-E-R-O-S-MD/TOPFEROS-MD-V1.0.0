@@ -2,78 +2,84 @@
 
 const crypto = require("crypto");
 
-// =====================================================
-// 🦁 TOPFEROS MD
-// SESSION MANAGER
-// TOPFEROS TECH
-// =====================================================
+// ╔════════════════════════════════════════════════════╗
+// ║          🦁 TOPFEROS MD - SESSION MANAGER        ║
+// ║                🚀 TOPFEROS TECH                   ║
+// ╚════════════════════════════════════════════════════╝
 
+// Tout session panel yo ap rete isit la.
 const sessions = new Map();
 
-// =====================================================
-// 🔐 GENERATE SESSION ID
-// =====================================================
+// Konbyen tan yon session ka rete aktif.
+// 24 èdtan.
+const SESSION_TTL = 24 * 60 * 60 * 1000;
+
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🆔 KREYE YON SESSION ID
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 function generateSessionId() {
-  return crypto.randomBytes(24).toString("hex");
+
+  return crypto
+    .randomBytes(24)
+    .toString("hex");
+
 }
 
-// =====================================================
-// 🔑 GENERATE PANEL CODE
-// =====================================================
 
-function generatePanelCode() {
-  return (
-    "TOP-" +
-    crypto
-      .randomBytes(4)
-      .toString("hex")
-      .toUpperCase()
-  );
-}
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🔐 KREYE SESSION PANEL
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-// =====================================================
-// 🟢 CREATE SESSION
-// =====================================================
-
-function createSession(sock = null) {
+function createSession(options = {}) {
 
   const sessionId =
     generateSessionId();
 
-  const code =
-    generatePanelCode();
+  const now =
+    Date.now();
 
   const session = {
+
     sessionId,
-    code,
 
-    number: null,
+    number:
+      options.number || null,
 
-    language: "en",
+    code:
+      options.code || null,
+
+    language:
+      options.language || null,
+
+    connected:
+      options.connected === true,
 
     authenticated: false,
 
-    connected: !!sock,
+    createdAt:
+      now,
 
-    sock,
-
-    createdAt: Date.now(),
-
-    updatedAt: Date.now()
+    expiresAt:
+      now + SESSION_TTL
   };
+
 
   sessions.set(
     sessionId,
     session
   );
 
+
   return session;
+
 }
 
-// =====================================================
-// 🔎 GET SESSION
-// =====================================================
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🔎 JWENN YON SESSION
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 function getSession(sessionId) {
 
@@ -81,19 +87,40 @@ function getSession(sessionId) {
     return null;
   }
 
-  return (
-    sessions.get(sessionId) ||
-    null
-  );
+  const session =
+    sessions.get(sessionId);
+
+  if (!session) {
+    return null;
+  }
+
+
+  // Si session lan ekspire, retire li.
+  if (
+    session.expiresAt &&
+    session.expiresAt < Date.now()
+  ) {
+
+    sessions.delete(
+      sessionId
+    );
+
+    return null;
+  }
+
+
+  return session;
+
 }
 
-// =====================================================
-// 🟢 SET SOCKET
-// =====================================================
 
-function setSocket(
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🟢 METE SESSION LAN CONNECTED
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+function setConnected(
   sessionId,
-  sock
+  number = null
 ) {
 
   const session =
@@ -103,25 +130,41 @@ function setSocket(
     return false;
   }
 
-  session.sock =
-    sock;
 
   session.connected =
-    !!sock;
+    true;
 
-  session.updatedAt =
-    Date.now();
+
+  if (number) {
+
+    session.number =
+      String(number)
+        .replace(/\D/g, "");
+
+  }
+
+
+  session.expiresAt =
+    Date.now() + SESSION_TTL;
+
+
+  sessions.set(
+    sessionId,
+    session
+  );
+
 
   return true;
+
 }
 
-// =====================================================
-// 📱 SET NUMBER
-// =====================================================
 
-function setNumber(
-  sessionId,
-  number
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🔴 DEKONEKTE SESSION
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+function setDisconnected(
+  sessionId
 ) {
 
   const session =
@@ -131,35 +174,34 @@ function setNumber(
     return false;
   }
 
-  session.number =
-    String(number || "")
-      .replace(/\D/g, "");
 
-  session.updatedAt =
-    Date.now();
+  session.connected =
+    false;
+
+  session.authenticated =
+    false;
+
+
+  sessions.set(
+    sessionId,
+    session
+  );
+
 
   return true;
+
 }
 
-// =====================================================
-// 🌍 SET LANGUAGE
-// =====================================================
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🌐 SOVE LANG
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 function setLanguage(
   sessionId,
   language
 ) {
 
-  const allowed = [
-    "en",
-    "fr",
-    "es"
-  ];
-
-  if (!allowed.includes(language)) {
-    return false;
-  }
-
   const session =
     getSession(sessionId);
 
@@ -167,20 +209,31 @@ function setLanguage(
     return false;
   }
 
+
   session.language =
     language;
 
-  session.updatedAt =
-    Date.now();
+
+  session.expiresAt =
+    Date.now() + SESSION_TTL;
+
+
+  sessions.set(
+    sessionId,
+    session
+  );
+
 
   return true;
+
 }
 
-// =====================================================
-// 🔐 VERIFY LOGIN
-// =====================================================
 
-function verifySession(
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🔐 VERIFYE LOGIN
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+function verifyLogin(
   sessionId,
   number,
   code
@@ -192,73 +245,139 @@ function verifySession(
   if (!session) {
 
     return {
+
       success: false,
+
       message:
-        "Session not found."
+        "Session panel la pa egziste oswa li ekspire."
+
     };
 
   }
+
 
   if (!session.connected) {
 
     return {
+
       success: false,
+
       message:
-        "Bot is disconnected."
+        "Bot la pa konekte."
+
     };
 
   }
 
+
   const cleanNumber =
     String(number || "")
       .replace(/\D/g, "");
+
 
   const cleanCode =
     String(code || "")
       .trim()
       .toUpperCase();
 
-  if (
-    cleanNumber !==
-    String(session.number || "")
-  ) {
+
+  if (!cleanNumber) {
 
     return {
+
       success: false,
+
       message:
-        "Invalid bot number."
+        "Tanpri antre nimewo bot la."
+
     };
 
   }
 
-  if (
-    cleanCode !==
-    String(session.code || "")
-  ) {
+
+  if (!cleanCode) {
 
     return {
+
       success: false,
+
       message:
-        "Invalid panel code."
+        "Tanpri antre Parrain Code la."
+
     };
 
   }
+
+
+  if (
+    session.number &&
+    session.number !== cleanNumber
+  ) {
+
+    return {
+
+      success: false,
+
+      message:
+        "Nimewo a pa koresponn ak session sa a."
+
+    };
+
+  }
+
+
+  if (
+    session.code &&
+    session.code !== cleanCode
+  ) {
+
+    return {
+
+      success: false,
+
+      message:
+        "Parrain Code la pa kòrèk."
+
+    };
+
+  }
+
+
+  session.number =
+    cleanNumber;
+
+  session.code =
+    cleanCode;
 
   session.authenticated =
     true;
 
-  session.updatedAt =
-    Date.now();
+  session.expiresAt =
+    Date.now() + SESSION_TTL;
+
+
+  sessions.set(
+    sessionId,
+    session
+  );
+
 
   return {
+
     success: true,
-    session
+
+    authenticated: true,
+
+    sessionId
+
   };
+
 }
 
-// =====================================================
-// 🔓 AUTH CHECK
-// =====================================================
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ✅ VERIFYE SI LOGIN LAN FÈT
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 function isAuthenticated(
   sessionId
@@ -267,45 +386,36 @@ function isAuthenticated(
   const session =
     getSession(sessionId);
 
-  return !!(
-    session &&
-    session.authenticated
+  return (
+    !!session &&
+    session.authenticated === true
   );
+
 }
 
-// =====================================================
-// 🔴 DISCONNECT
-// =====================================================
 
-function disconnectSession(
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🟢 VERIFYE SI SESSION LAN CONNECTED
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+function isSessionConnected(
   sessionId
 ) {
 
   const session =
     getSession(sessionId);
 
-  if (!session) {
-    return false;
-  }
+  return (
+    !!session &&
+    session.connected === true
+  );
 
-  session.connected =
-    false;
-
-  session.authenticated =
-    false;
-
-  session.sock =
-    null;
-
-  session.updatedAt =
-    Date.now();
-
-  return true;
 }
 
-// =====================================================
-// 🗑️ DELETE SESSION
-// =====================================================
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🗑️ EFASE SESSION
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 function deleteSession(
   sessionId
@@ -314,22 +424,82 @@ function deleteSession(
   return sessions.delete(
     sessionId
   );
+
 }
 
-// =====================================================
-// 📋 ALL SESSIONS
-// =====================================================
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 📋 JWENN TOUT SESSION YO
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 function getSessions() {
 
-  return Array.from(
-    sessions.values()
-  );
+  const result = [];
+
+  for (
+    const session of sessions.values()
+  ) {
+
+    if (
+      session.expiresAt &&
+      session.expiresAt < Date.now()
+    ) {
+
+      sessions.delete(
+        session.sessionId
+      );
+
+      continue;
+    }
+
+
+    result.push(
+      {
+        ...session
+      }
+    );
+
+  }
+
+
+  return result;
+
 }
 
-// =====================================================
-// 📤 EXPORT
-// =====================================================
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🧹 NETWAYE SESSION KI EKSPIRE
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+function cleanupSessions() {
+
+  const now =
+    Date.now();
+
+  for (
+    const [sessionId, session]
+    of sessions.entries()
+  ) {
+
+    if (
+      session.expiresAt &&
+      session.expiresAt < now
+    ) {
+
+      sessions.delete(
+        sessionId
+      );
+
+    }
+
+  }
+
+}
+
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 📦 EXPORT
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 module.exports = {
 
@@ -337,24 +507,22 @@ module.exports = {
 
   getSession,
 
-  setSocket,
+  getSessions,
 
-  setNumber,
+  setConnected,
+
+  setDisconnected,
 
   setLanguage,
 
-  verifySession,
+  verifyLogin,
 
   isAuthenticated,
 
-  disconnectSession,
+  isSessionConnected,
 
   deleteSession,
 
-  getSessions,
-
-  generateSessionId,
-
-  generatePanelCode
+  cleanupSessions
 
 };
