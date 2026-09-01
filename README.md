@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/logo.png" width="220" alt="TOPFEROS MD Logo">
+  <img src="TOPFEROS/assets/logo.png" width="220" alt="TOPFEROS MD Logo">
 </p>
 
 <h1 align="center">TOPFEROS MD • V1.0.0</h1>
@@ -39,7 +39,7 @@ source code la dirèkteman.
 | 🔰 Default Prefix | `.` |
 | ⚙️ Default Mode | Public |
 | 👨‍💻 Developer | TOPFEROS TECH |
-| 🖼️ Logo | `assets/logo.png` |
+| 🖼️ Logo | `TOPFEROS/assets/logo.png` |
 
 ---
 
@@ -224,8 +224,9 @@ sistèm message handler la.
 ```text
 TOPFEROS-MD-V1.0.0/
 │
-├── assets/
-│   └── logo.png
+├── TOPFEROS/
+│   └── assets/
+│       └── logo.png
 │
 ├── commands/
 │   ├── index.js
