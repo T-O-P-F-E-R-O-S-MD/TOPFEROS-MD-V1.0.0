@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="TOPFEROS/assets/logo.png" width="220" alt="TOPFEROS MD Logo">
+  <img src="TOPFEROS-MD/assets/logo.png" width="220" alt="TOPFEROS MD Logo">
 </p>
 
 <h1 align="center">TOPFEROS MD • V1.0.0</h1>
@@ -39,7 +39,7 @@ source code la dirèkteman.
 | 🔰 Default Prefix | `.` |
 | ⚙️ Default Mode | Public |
 | 👨‍💻 Developer | TOPFEROS TECH |
-| 🖼️ Logo | `TOPFEROS/assets/logo.png` |
+| 🖼️ Logo | `TOPFEROS-MD/assets/logo.png` |
 
 ---
 
@@ -224,42 +224,45 @@ sistèm message handler la.
 ```text
 TOPFEROS-MD-V1.0.0/
 │
-├── TOPFEROS/
-│   └── assets/
-│       └── logo.png
-│
-├── commands/
+├── TOPFEROS-MD/
+│   │
+│   ├── assets/
+│   │   └── logo.png
+│   │
+│   ├── commands/
+│   │   ├── index.js
+│   │   ├── status.js
+│   │   ├── vv2.js
+│   │   └── ...
+│   │
+│   ├── src/
+│   │   ├── messageHandler.js
+│   │   └── connection.js
+│   │
+│   ├── services/
+│   │   └── ...
+│   │
+│   ├── settings/
+│   │   └── ...
+│   │
+│   ├── panel/
+│   │   ├── server.js
+│   │   ├── settings-api.js
+│   │   ├── session.js
+│   │   ├── session-manager.js
+│   │   └── public/
+│   │       ├── index.html
+│   │       ├── style.css
+│   │       ├── app.js
+│   │       ├── settings.html
+│   │       └── settings.js
+│   │
+│   ├── config.js
 │   ├── index.js
-│   ├── status.js
-│   ├── vv2.js
-│   └── ...
+│   ├── package.json
+│   ├── .env.example
+│   ├── .gitignore
+│   ├── LICENSE
+│   └── README.md
 │
-├── src/
-│   ├── messageHandler.js
-│   └── connection.js
-│
-├── services/
-│   └── ...
-│
-├── settings/
-│   └── ...
-│
-├── panel/
-│   ├── server.js
-│   ├── settings-api.js
-│   ├── session.js
-│   ├── session-manager.js
-│   └── public/
-│       ├── index.html
-│       ├── style.css
-│       ├── app.js
-│       ├── settings.html
-│       └── settings.js
-│
-├── config.js
-├── index.js
-├── package.json
-├── .env.example
-├── .gitignore
-├── LICENSE
 └── README.md
