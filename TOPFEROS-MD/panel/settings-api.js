@@ -1,794 +1,771 @@
 "use strict";
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// ⚙️ TOPFEROS MD — SETTINGS API
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//
-// Fonksyon:
-//   GET  /api/settings
-//   POST /api/settings
-//
-// Li verifye:
-//   • Session panel la
-//   • Bot la toujou konekte
-//   • Number / session authorization
-//
-// Li pa ajoute okenn nouvo setting.
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ╔════════════════════════════════════════════════════╗
+// ║              🤖 TOPFEROS MD V1.0.0               ║
+// ║                 ⚙️ PANEL SERVER                  ║
+// ║                 🚀 TOPFEROS TECH                 ║
+// ╚════════════════════════════════════════════════════╝
 
-const fs = require("fs");
 const path = require("path");
+const fs = require("fs");
+const express = require("express");
 
 const settingsPanel =
   require("../settings/panel");
 
+const settingsApi =
+  require("./settings-api");
+
+
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 📁 SETTINGS FILE
+// 🧱 EXPRESS
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-const dataDir =
-  path.join(
+const app = express();
+
+app.disable("x-powered-by");
+
+app.use(
+  express.json({
+    limit: "1mb"
+  })
+);
+
+app.use(
+  express.urlencoded({
+    extended: true,
+    limit: "1mb"
+  })
+);
+
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 📁 CHEMEN DOSYE YO
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+const publicDir =
+  path.resolve(
+    __dirname,
+    "public"
+  );
+
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🖼️ TOPFEROS MD ASSETS
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//
+// server.js:
+// TOPFEROS-MD/panel/server.js
+//
+// Logo:
+// TOPFEROS-MD/assets/logo.png
+//
+// URL:
+// /assets/logo.png
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+const assetsDir =
+  path.resolve(
     __dirname,
     "..",
-    "data"
+    "assets"
   );
 
-const settingsFile =
-  path.join(
-    dataDir,
-    "bot-settings.json"
+const logoPath =
+  path.resolve(
+    assetsDir,
+    "logo.png"
   );
 
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// ⚙️ SETTINGS KI PANEL LA GENYEN
+// 📂 PUBLIC FILES
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-const SETTING_NAMES = [
-  "publicMode",
-  "privateMode",
-
-  "alwaysOnline",
-  "fakeTyping",
-  "fakeRecording",
-  "autoReact",
-
-  "autoStatus",
-  "statusReply",
-  "statusLike",
-  "statusReact",
-
-  "antiCall",
-  "antiDelete",
-  "antiSpam",
-
-  "aiChat",
-
-  "groupAntiSpam",
-  "groupAntiLink",
-  "groupAntiDelete",
-
-  "adminGroup",
-
-  "groupClose",
-  "groupOpen"
-];
+app.use(
+  express.static(
+    publicDir
+  )
+);
 
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🧱 DEFAULT SETTINGS
+// 🖼️ ASSETS ROUTE
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-function createDefaultSettings() {
-
-  const settings = {};
-
-  for (
-    const name of SETTING_NAMES
-  ) {
-    settings[name] = false;
-  }
-
-  return settings;
-}
+app.use(
+  "/assets",
+  express.static(
+    assetsDir
+  )
+);
 
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 📁 CREATE DATA DIRECTORY
+// 🖼️ LOGO ROUTE
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-function ensureDataDirectory() {
-
-  if (
-    !fs.existsSync(dataDir)
-  ) {
-    fs.mkdirSync(
-      dataDir,
-      {
-        recursive: true
-      }
-    );
-  }
-}
-
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 📖 READ SETTINGS
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-function readSettings() {
-
-  ensureDataDirectory();
-
-  if (
-    !fs.existsSync(settingsFile)
-  ) {
-
-    const data = {
-      bot: {
-        name: "TOPFEROS MD",
-        age: 24,
-        prefix: "."
-      },
-
-      settings:
-        createDefaultSettings()
-    };
-
-    fs.writeFileSync(
-      settingsFile,
-      JSON.stringify(
-        data,
-        null,
-        2
-      ),
-      "utf8"
-    );
-
-    return data;
-  }
-
-
-  try {
-
-    const raw =
-      fs.readFileSync(
-        settingsFile,
-        "utf8"
-      );
-
-    const data =
-      JSON.parse(raw);
-
-
-    if (!data.bot) {
-      data.bot = {};
-    }
-
-    if (!data.settings) {
-      data.settings = {};
-    }
-
-
-    // Asire tout settings yo toujou
-    // prezan nan fichye a.
-
-    const defaults =
-      createDefaultSettings();
-
-    for (
-      const name of SETTING_NAMES
-    ) {
-
-      if (
-        typeof data.settings[name] !==
-        "boolean"
-      ) {
-
-        data.settings[name] =
-          defaults[name];
-      }
-    }
-
+app.get(
+  "/assets/logo.png",
+  (req, res) => {
 
     if (
-      typeof data.bot.name !==
-      "string"
-    ) {
-      data.bot.name =
-        "TOPFEROS MD";
-    }
-
-    if (
-      typeof data.bot.age !==
-      "number"
-    ) {
-      data.bot.age = 24;
-    }
-
-    if (
-      typeof data.bot.prefix !==
-      "string"
-    ) {
-      data.bot.prefix = ".";
-    }
-
-
-    return data;
-
-  } catch (error) {
-
-    console.error(
-      "❌ SETTINGS READ ERROR:",
-      error
-    );
-
-    return {
-      bot: {
-        name: "TOPFEROS MD",
-        age: 24,
-        prefix: "."
-      },
-
-      settings:
-        createDefaultSettings()
-    };
-  }
-}
-
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 💾 WRITE SETTINGS
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-function writeSettings(data) {
-
-  ensureDataDirectory();
-
-  const temporaryFile =
-    settingsFile + ".tmp";
-
-  fs.writeFileSync(
-    temporaryFile,
-    JSON.stringify(
-      data,
-      null,
-      2
-    ),
-    "utf8"
-  );
-
-  fs.renameSync(
-    temporaryFile,
-    settingsFile
-  );
-}
-
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🔐 CHECK SESSION
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-function verifyPanelSession(
-  sessionId
-) {
-
-  if (!sessionId) {
-    return false;
-  }
-
-  try {
-
-    return (
-      settingsPanel.isAuthenticated(
-        sessionId
-      ) === true &&
-      settingsPanel.isBotConnected() === true
-    );
-
-  } catch (error) {
-
-    console.error(
-      "❌ PANEL SESSION ERROR:",
-      error
-    );
-
-    return false;
-  }
-}
-
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🤖 APPLY SETTINGS TO BOT
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//
-// Si settings/panel.js gen yon fonksyon
-// pou aplike settings yo, nou itilize li.
-// Sinon settings yo toujou sove nan
-// bot-settings.json pou lòt listener yo li.
-//
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-async function applySettings(
-  data
-) {
-
-  try {
-
-    if (
-      typeof settingsPanel.applySettings ===
-      "function"
-    ) {
-
-      await settingsPanel.applySettings(
-        data
-      );
-    }
-
-    return true;
-
-  } catch (error) {
-
-    console.error(
-      "❌ APPLY SETTINGS ERROR:",
-      error
-    );
-
-    return false;
-  }
-}
-
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🤖 APPLY BOT INFORMATION
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-async function applyBotInformation(
-  bot
-) {
-
-  try {
-
-    if (
-      typeof settingsPanel.updateBotInformation ===
-      "function"
-    ) {
-
-      await settingsPanel.updateBotInformation(
-        bot
-      );
-    }
-
-    return true;
-
-  } catch (error) {
-
-    console.error(
-      "❌ BOT INFORMATION ERROR:",
-      error
-    );
-
-    return false;
-  }
-}
-
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 📥 GET SETTINGS
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-async function getSettings(
-  sessionId
-) {
-
-  if (
-    !verifyPanelSession(
-      sessionId
-    )
-  ) {
-
-    return {
-      success: false,
-      status: 401,
-      message:
-        "Session la pa valid oswa bot la dekonekte."
-    };
-  }
-
-
-  const data =
-    readSettings();
-
-
-  return {
-    success: true,
-
-    bot: {
-      name:
-        data.bot.name,
-
-      age:
-        data.bot.age,
-
-      prefix:
-        data.bot.prefix
-    },
-
-    settings:
-      data.settings
-  };
-}
-
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 💾 SAVE SETTINGS
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-async function saveSettings(
-  sessionId,
-  body
-) {
-
-  if (
-    !verifyPanelSession(
-      sessionId
-    )
-  ) {
-
-    return {
-      success: false,
-      status: 401,
-      message:
-        "Session la pa valid oswa bot la dekonekte."
-    };
-  }
-
-
-  if (
-    !body ||
-    typeof body !==
-    "object"
-  ) {
-
-    return {
-      success: false,
-      status: 400,
-      message:
-        "Done settings yo pa valid."
-    };
-  }
-
-
-  const current =
-    readSettings();
-
-
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // 🤖 BOT INFORMATION
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-  const incomingBot =
-    body.bot || {};
-
-
-  const botName =
-    typeof incomingBot.name ===
-    "string"
-      ? incomingBot.name.trim()
-      : current.bot.name;
-
-
-  const botPrefix =
-    typeof incomingBot.prefix ===
-    "string"
-      ? incomingBot.prefix.trim()
-      : current.bot.prefix;
-
-
-  const botAge =
-    Number(
-      incomingBot.age
-    );
-
-
-  if (!botName) {
-
-    return {
-      success: false,
-      status: 400,
-      message:
-        "Nom Bot pa ka vid."
-    };
-  }
-
-
-  if (
-    !botPrefix
-  ) {
-
-    return {
-      success: false,
-      status: 400,
-      message:
-        "Prefix pa ka vid."
-    };
-  }
-
-
-  if (
-    !Number.isFinite(botAge) ||
-    botAge < 0
-  ) {
-
-    return {
-      success: false,
-      status: 400,
-      message:
-        "Âge Bot la pa valid."
-    };
-  }
-
-
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // ⚙️ SETTINGS
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-  const incomingSettings =
-    body.settings || {};
-
-  const newSettings = {
-    ...current.settings
-  };
-
-
-  for (
-    const name of SETTING_NAMES
-  ) {
-
-    if (
-      Object.prototype.hasOwnProperty.call(
-        incomingSettings,
-        name
+      !fs.existsSync(
+        logoPath
       )
     ) {
 
-      newSettings[name] =
-        incomingSettings[name] === true;
+      console.error(
+        "❌ TOPFEROS MD LOGO NOT FOUND"
+      );
+
+      console.error(
+        "📁 Logo path:",
+        logoPath
+      );
+
+      return res
+        .status(404)
+        .send(
+          "TOPFEROS MD logo not found"
+        );
     }
+
+    return res.sendFile(
+      logoPath,
+      error => {
+
+        if (error) {
+
+          console.error(
+            "❌ TOPFEROS MD LOGO ERROR:",
+            error.message
+          );
+
+          console.error(
+            "📁 Logo path:",
+            logoPath
+          );
+
+          if (
+            !res.headersSent
+          ) {
+
+            return res
+              .status(404)
+              .send(
+                "TOPFEROS MD logo not found"
+              );
+          }
+        }
+
+      }
+    );
+
   }
+);
 
 
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // 💾 PREPARE DATA
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🔐 PANEL STATUS
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  const updatedData = {
+app.get(
+  "/api/status",
+  (req, res) => {
 
-    bot: {
-      name:
-        botName,
+    try {
 
-      age:
-        botAge,
+      const number =
+        settingsPanel.getBotNumber();
 
-      prefix:
-        botPrefix
-    },
+      const connected =
+        settingsPanel.isBotConnected() === true;
 
-    settings:
-      newSettings
-  };
+      return res.json({
+        success: true,
+        connected,
+        number:
+          number || null
+      });
+
+    } catch (error) {
+
+      console.error(
+        "❌ STATUS ERROR:",
+        error
+      );
+
+      return res
+        .status(500)
+        .json({
+          success: false,
+          connected: false,
+          number: null,
+          message:
+            "Unable to get bot status."
+        });
+    }
+
+  }
+);
 
 
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // 💾 SAVE LOCAL DATA
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🔐 PANEL AUTH
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+app.get(
+  "/api/auth",
+  (req, res) => {
+
+    try {
+
+      const sessionId =
+        String(
+          req.query.session || ""
+        ).trim();
+
+      if (!sessionId) {
+
+        return res
+          .status(401)
+          .json({
+            success: false,
+            authenticated: false,
+            connected:
+              settingsPanel.isBotConnected() === true,
+            message:
+              "Session ID missing."
+          });
+      }
+
+      const authenticated =
+        settingsPanel.isAuthenticated(
+          sessionId
+        ) === true;
+
+      const connected =
+        settingsPanel.isBotConnected() === true;
+
+      const number =
+        settingsPanel.getBotNumber();
+
+      if (
+        !authenticated
+      ) {
+
+        return res
+          .status(401)
+          .json({
+            success: false,
+            authenticated: false,
+            connected,
+            number:
+              number || null,
+            message:
+              "Session panel la pa valide."
+          });
+      }
+
+      return res.json({
+        success: true,
+        authenticated: true,
+        connected,
+        number:
+          number || null
+      });
+
+    } catch (error) {
+
+      console.error(
+        "❌ AUTH ERROR:",
+        error
+      );
+
+      return res
+        .status(500)
+        .json({
+          success: false,
+          authenticated: false,
+          connected: false,
+          message:
+            "Auth error."
+        });
+    }
+
+  }
+);
+
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🔑 PANEL LOGIN
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+app.post(
+  "/api/login",
+  (req, res) => {
+
+    try {
+
+      const sessionId =
+        String(
+          req.body?.sessionId || ""
+        ).trim();
+
+      const number =
+        String(
+          req.body?.number || ""
+        ).trim();
+
+      const code =
+        String(
+          req.body?.code || ""
+        ).trim();
+
+
+      if (
+        !sessionId ||
+        !number ||
+        !code
+      ) {
+
+        return res
+          .status(400)
+          .json({
+            success: false,
+            message:
+              "Session ID, number ak code obligatwa."
+          });
+      }
+
+
+      const verified =
+        settingsPanel.verifySession(
+          sessionId,
+          number,
+          code
+        ) === true;
+
+
+      if (
+        !verified
+      ) {
+
+        return res
+          .status(401)
+          .json({
+            success: false,
+            message:
+              "Number, code oswa session pa valide."
+          });
+      }
+
+
+      return res.json({
+        success: true,
+        authenticated: true,
+        connected:
+          settingsPanel.isBotConnected() === true,
+        number
+      });
+
+    } catch (error) {
+
+      console.error(
+        "❌ LOGIN ERROR:",
+        error
+      );
+
+      return res
+        .status(500)
+        .json({
+          success: false,
+          message:
+            "Login failed."
+        });
+    }
+
+  }
+);
+
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🌐 LANGUAGE
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+app.post(
+  "/api/language",
+  (req, res) => {
+
+    try {
+
+      const sessionId =
+        String(
+          req.body?.sessionId || ""
+        ).trim();
+
+      const language =
+        String(
+          req.body?.language || "en"
+        ).trim();
+
+
+      if (!sessionId) {
+
+        return res
+          .status(400)
+          .json({
+            success: false,
+            message:
+              "Session panel la pa jwenn."
+          });
+      }
+
+
+      if (
+        !settingsPanel.isAuthenticated(
+          sessionId
+        )
+      ) {
+
+        return res
+          .status(401)
+          .json({
+            success: false,
+            message:
+              "Session panel la pa valide."
+          });
+      }
+
+
+      const supportedLanguages = [
+        "en",
+        "fr",
+        "es"
+      ];
+
+
+      if (
+        !supportedLanguages.includes(
+          language
+        )
+      ) {
+
+        return res
+          .status(400)
+          .json({
+            success: false,
+            message:
+              "Language not supported."
+          });
+      }
+
+
+      return res.json({
+        success: true,
+        language
+      });
+
+    } catch (error) {
+
+      console.error(
+        "❌ LANGUAGE ERROR:",
+        error
+      );
+
+      return res
+        .status(500)
+        .json({
+          success: false,
+          message:
+            "Unable to save language."
+        });
+    }
+
+  }
+);
+
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ⚙️ SETTINGS ROUTES
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//
+// settings-api.js deja gen:
+//   GET  /api/settings
+//   POST /api/settings
+//
+// Se registerSettingsRoutes(app)
+// ki dwe anrejistre yo.
+//
+// PA ajoute lòt /api/settings route isit la.
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+settingsApi.registerSettingsRoutes(
+  app
+);
+
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🔒 LOGOUT
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+app.post(
+  "/api/logout",
+  (req, res) => {
+
+    try {
+
+      const sessionId =
+        String(
+          req.body?.sessionId || ""
+        ).trim();
+
+      if (
+        sessionId
+      ) {
+
+        settingsPanel.deleteSession(
+          sessionId
+        );
+      }
+
+      return res.json({
+        success: true,
+        message:
+          "Session deleted."
+      });
+
+    } catch (error) {
+
+      console.error(
+        "❌ LOGOUT ERROR:",
+        error
+      );
+
+      return res
+        .status(500)
+        .json({
+          success: false,
+          message:
+            "Logout failed."
+        });
+    }
+
+  }
+);
+
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🏠 PANEL HOME
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+app.get(
+  "/",
+  (req, res) => {
+
+    return res.sendFile(
+      path.join(
+        publicDir,
+        "index.html"
+      )
+    );
+
+  }
+);
+
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ❌ 404
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+app.use(
+  (req, res) => {
+
+    if (
+      req.path.startsWith(
+        "/api/"
+      )
+    ) {
+
+      return res
+        .status(404)
+        .json({
+          success: false,
+          message:
+            "API route not found."
+        });
+    }
+
+
+    return res
+      .status(404)
+      .send(
+        "TOPFEROS MD Panel - Page not found."
+      );
+
+  }
+);
+
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🚨 ERROR HANDLER
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+app.use(
+  (error, req, res, next) => {
+
+    console.error(
+      "❌ PANEL SERVER ERROR:",
+      error
+    );
+
+    if (
+      res.headersSent
+    ) {
+
+      return next(
+        error
+      );
+    }
+
+    return res
+      .status(500)
+      .json({
+        success: false,
+        message:
+          "Internal server error."
+      });
+
+  }
+);
+
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🚀 START SERVER
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+const PORT =
+  Number(
+    process.env.PANEL_PORT ||
+    3000
+  );
+
+const HOST =
+  process.env.PANEL_HOST ||
+  "0.0.0.0";
+
+
+const server =
+  app.listen(
+    PORT,
+    HOST,
+    () => {
+
+      console.log("");
+      console.log(
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+      );
+
+      console.log(
+        "🤖 TOPFEROS MD V1.0.0 — PANEL SERVER"
+      );
+
+      console.log(
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+      );
+
+      console.log(
+        `🌐 Panel: http://localhost:${PORT}`
+      );
+
+      console.log(
+        `🖼️ Logo: http://localhost:${PORT}/assets/logo.png`
+      );
+
+      console.log(
+        `📁 Public: ${publicDir}`
+      );
+
+      console.log(
+        `📁 Assets: ${assetsDir}`
+      );
+
+      console.log(
+        "🚀 TOPFEROS TECH"
+      );
+
+      console.log(
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+      );
+
+      console.log("");
+
+    }
+  );
+
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🧹 GRACEFUL SHUTDOWN
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+function shutdown(
+  signal
+) {
+
+  console.log(
+    `\n🛑 ${signal} received.`
+  );
 
   try {
 
-    writeSettings(
-      updatedData
-    );
+    settingsPanel.setBotDisconnected();
 
   } catch (error) {
 
     console.error(
-      "❌ SETTINGS WRITE ERROR:",
+      "❌ BOT DISCONNECT ERROR:",
       error
     );
-
-    return {
-      success: false,
-      status: 500,
-      message:
-        "Settings yo pa kapab sove."
-    };
   }
 
 
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // 🤖 APPLY TO BOT
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  server.close(
+    () => {
 
-  const applied =
-    await applySettings(
-      updatedData
-    );
+      console.log(
+        "✅ TOPFEROS MD Panel stopped."
+      );
 
+      process.exit(0);
 
-  const botUpdated =
-    await applyBotInformation(
-      updatedData.bot
-    );
-
-
-  if (
-    !applied ||
-    !botUpdated
-  ) {
-
-    console.warn(
-      "⚠️ Settings yo sove, men kèk nan yo poko aplike nan runtime."
-    );
-  }
-
-
-  return {
-    success: true,
-
-    message:
-      "Settings yo sove avèk siksè.",
-
-    bot:
-      updatedData.bot,
-
-    settings:
-      updatedData.settings
-  };
-}
-
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🌐 REGISTER EXPRESS ROUTES
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-function registerSettingsRoutes(
-  app
-) {
-
-  if (!app) {
-    throw new Error(
-      "Express app obligatwa."
-    );
-  }
-
-
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // 📥 GET
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-  app.get(
-    "/api/settings",
-    async (
-      req,
-      res
-    ) => {
-
-      try {
-
-        const sessionId =
-          req.query.session;
-
-        const result =
-          await getSettings(
-            sessionId
-          );
-
-        return res
-          .status(
-            result.status ||
-            (result.success
-              ? 200
-              : 400)
-          )
-          .json(
-            result
-          );
-
-      } catch (error) {
-
-        console.error(
-          "❌ GET SETTINGS ERROR:",
-          error
-        );
-
-        return res
-          .status(500)
-          .json({
-            success: false,
-            message:
-              "Erè pandan chajman settings yo."
-          });
-      }
-    }
-  );
-
-
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // 💾 POST
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-  app.post(
-    "/api/settings",
-    async (
-      req,
-      res
-    ) => {
-
-      try {
-
-        const {
-          sessionId
-        } = req.body || {};
-
-        const result =
-          await saveSettings(
-            sessionId,
-            req.body
-          );
-
-        return res
-          .status(
-            result.status ||
-            (result.success
-              ? 200
-              : 400)
-          )
-          .json(
-            result
-          );
-
-      } catch (error) {
-
-        console.error(
-          "❌ POST SETTINGS ERROR:",
-          error
-        );
-
-        return res
-          .status(500)
-          .json({
-            success: false,
-            message:
-              "Erè pandan sauvegarde settings yo."
-          });
-      }
     }
   );
 
 }
 
 
+process.on(
+  "SIGINT",
+  () => {
+    shutdown("SIGINT");
+  }
+);
+
+
+process.on(
+  "SIGTERM",
+  () => {
+    shutdown("SIGTERM");
+  }
+);
+
+
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 📦 EXPORT
+// 📦 EXPORTS
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 module.exports = {
-
-  SETTING_NAMES,
-
-  createDefaultSettings,
-
-  readSettings,
-
-  writeSettings,
-
-  verifyPanelSession,
-
-  getSettings,
-
-  saveSettings,
-
-  registerSettingsRoutes
-
+  app,
+  server
 };
