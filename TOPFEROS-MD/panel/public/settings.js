@@ -11,12 +11,12 @@
 // 🖼️ LOGO
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 //
-// server.js ap sèvi assets/logo.png kòm:
-// /logo.png
+// Nouvo logo:
+// /assets/logo.png
 //
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-const LOGO_URL = "/logo.png";
+const LOGO_URL = "/assets/logo.png";
 
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -233,8 +233,14 @@ async function loadSettings() {
       );
 
 
-    const result =
-      await response.json();
+    let result = {};
+
+    try {
+      result =
+        await response.json();
+    } catch {
+      result = {};
+    }
 
 
     if (
@@ -569,25 +575,23 @@ async function saveSettings() {
 
           body:
             JSON.stringify({
-
-              // 🔐 SESSION SA A
               sessionId,
-
-              // 🤖 BOT INFORMATION
               bot,
-
-              // ⚙️ SETTINGS
               settings
-
             })
 
-          }
         }
       );
 
 
-    const result =
-      await response.json();
+    let result = {};
+
+    try {
+      result =
+        await response.json();
+    } catch {
+      result = {};
+    }
 
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -700,12 +704,6 @@ function setupLogo() {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 🦶 SETUP FOOTER
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//
-// Footer sa a ap parèt anba entèfas la.
-// HTML la dwe genyen yon element:
-// <div class="footer"></div>
-//
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 function setupFooter() {
 
@@ -715,8 +713,6 @@ function setupFooter() {
     );
 
 
-  // Si footer la pa egziste,
-  // nou kreye li otomatikman.
   if (!footer) {
 
     footer =
@@ -750,10 +746,6 @@ function setupFooter() {
   `;
 
 
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // 🎨 FOOTER STYLE
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
   footer.style.width =
     "100%";
 
@@ -777,34 +769,6 @@ function setupFooter() {
 
   footer.style.lineHeight =
     "1.8";
-
-
-  const lines =
-    footer.querySelectorAll(
-      ".footer-line"
-    );
-
-
-  lines.forEach(line => {
-
-    line.style.opacity =
-      "0.7";
-
-  });
-
-
-  const footerText =
-    footer.querySelector(
-      ".footer-text"
-    );
-
-
-  if (footerText) {
-
-    footerText.style.margin =
-      "4px 0";
-
-  }
 
 }
 
