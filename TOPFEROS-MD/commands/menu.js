@@ -6,14 +6,15 @@ const config = require("../config");
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 📋 TOPFEROS MD — MENU COMMAND
+// 🚀 TOPFEROS TECH
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 // 🖼️ Logo bot la
 const LOGO_PATH = path.join(
-__dirname,
-"..",
-"assets",
-"logo.png"
+  __dirname,
+  "..",
+  "assets",
+  "logo.png"
 );
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -21,39 +22,38 @@ __dirname,
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 function getConnectedUser(sock) {
+  const user = sock?.user;
 
-const user = sock?.user;
+  if (!user) {
+    return {
+      name: "Unknown",
+      number: "Unknown"
+    };
+  }
 
-if (!user) {
-return {
-name: "Unknown",
-number: "Unknown"
-};
-}
+  // 👤 Non kont WhatsApp la
+  const name =
+    user.name ||
+    user.verifiedName ||
+    "Unknown";
 
-// 👤 Non kont WhatsApp la
-const name =
-user.name ||
-user.verifiedName ||
-"Unknown";
+  // 📱 JID kont WhatsApp la
+  const id =
+    user.id ||
+    "";
 
-// 📱 JID kont WhatsApp la
-const id =
-user.id ||
-"";
+  // 📱 Retire :device ak @s.whatsapp.net
+  const number =
+    id
+      .split(":")[0]
+      .split("@")[0]
+      .replace(/\D/g, "") ||
+    "Unknown";
 
-// 📱 Retire :device ak @s.whatsapp.net
-const number =
-id
-.split(":")[0]
-.split("@")[0]
-.replace(/\D/g, "") ||
-"Unknown";
-
-return {
-name,
-number
-};
+  return {
+    name,
+    number
+  };
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -61,99 +61,110 @@ number
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 async function execute(context) {
+  const {
+    sock,
+    message
+  } = context;
 
-const {
-sock,
-message
-} = context;
+  const chatId =
+    message?.key?.remoteJid;
 
-const chatId =
-message?.key?.remoteJid;
+  if (!chatId) {
+    return;
+  }
 
-if (!chatId) {
-return;
-}
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // ⚙️ BOT CONFIGURATION
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// ⚙️ BOT CONFIGURATION
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  const botName =
+    config.bot?.name ||
+    "TOPFEROS MD";
 
-const botName =
-config.bot?.name ||
-"TOPFEROS MD";
+  const version =
+    config.bot?.version ||
+    "V1.0.0";
 
-const version =
-config.bot?.version ||
-"V1.0.0";
+  const prefix =
+    config.bot?.prefix ||
+    ".";
 
-const prefix =
-config.bot?.prefix ||
-".";
+  const mode =
+    String(
+      config.bot?.mode ||
+      "public"
+    ).toLowerCase();
 
-const mode =
-String(
-config.bot?.mode ||
-"public"
-).toLowerCase();
+  const developer =
+    config.bot?.developer ||
+    "TOPFEROS TECH";
 
-const developer =
-config.bot?.developer ||
-"TOPFEROS TECH";
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 👤 CONNECTED USER
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 👤 CONNECTED USER
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  const connectedUser =
+    getConnectedUser(sock);
 
-const connectedUser =
-getConnectedUser(sock);
+  const showUserName =
+    config.bot?.session?.showUserName !== false;
 
-const showUserName =
-config.bot?.session?.showUserName !== false;
+  const showUserNumber =
+    config.bot?.session?.showUserNumber !== false;
 
-const showUserNumber =
-config.bot?.session?.showUserNumber !== false;
+  const userName =
+    showUserName
+      ? connectedUser.name
+      : "Hidden";
 
-const userName =
-showUserName
-? connectedUser.name
-: "Hidden";
+  const userNumber =
+    showUserNumber
+      ? connectedUser.number
+      : "Hidden";
 
-const userNumber =
-showUserNumber
-? connectedUser.number
-: "Hidden";
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 👑 OWNER
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 👑 OWNER
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  const ownerName =
+    config.owner?.name ||
+    "TOPFEROS MD";
 
-const ownerName =
-config.owner?.name ||
-"TOPFEROS MD";
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 🔗 LINKS
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🔗 LINKS
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  const channel =
+    config.links?.channel ||
+    "Not configured";
 
-const channel =
-config.links?.channel ||
-"Not configured";
+  const group =
+    config.links?.group ||
+    "Not configured";
 
-const group =
-config.links?.group ||
-"Not configured";
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 🦁 SESSION HEADER
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🦁 SESSION HEADER
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  const sessionHeader = `
+╔════════════════════════════════════════════════════╗
+║                  🦁 SESSION                       ║
+╠════════════════════════════════════════════════════╣
+║ 🤖 Name       : ${botName}
+║ 📦 Version    : ${version}
+║ 📡 Status     : ONLINE
+║ 🔑 Prefix     : ${prefix}
+║ ⚙️ Mode       : ${mode}
+║ 👤 User Name  : ${userName}
+║ 📱 User No.   : ${userNumber}
+╚════════════════════════════════════════════════════╝
+`;
 
-const sessionHeader = "======= 🦁 Session ======== ║ ║ Name: ${botName} ${version} ║ STATUT : ONLINE ║ PREFIX : (${prefix}) ║ Mode : ${mode} ║ Name user : ${userName} ║ Number user : ${userNumber} ║ ╚════════════════════════════";
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 📋 MENU
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 📋 MENU
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-const menu = `${sessionHeader}
+  const menu = `${sessionHeader}
 
 ╭━━━━━━━━━━━━━━━━━━━━━━━━━━━━╮
 ┃       🤖 ${botName}
@@ -273,56 +284,49 @@ const menu = `${sessionHeader}
 ╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯
 
 ╔════════════════════════════════════════════════════╗
-║                    By TOPFEROS MD                  ║
+║              🚀 By TOPFEROS TECH                 ║
 ╚════════════════════════════════════════════════════╝`;
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 📤 SEND MENU WITH LOGO
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-try {
+  try {
+    if (fs.existsSync(LOGO_PATH)) {
+      const logo =
+        fs.readFileSync(LOGO_PATH);
 
-if (fs.existsSync(LOGO_PATH)) {
+      await sock.sendMessage(
+        chatId,
+        {
+          image: logo,
+          caption: menu
+        },
+        {
+          quoted: message
+        }
+      );
+    } else {
+      console.warn(
+        `⚠️ Logo pa jwenn: ${LOGO_PATH}`
+      );
 
-  const logo =
-    fs.readFileSync(LOGO_PATH);
-
-  await sock.sendMessage(
-    chatId,
-    {
-      image: logo,
-      caption: menu
-    },
-    {
-      quoted: message
+      await sock.sendMessage(
+        chatId,
+        {
+          text: menu
+        },
+        {
+          quoted: message
+        }
+      );
     }
-  );
-
-} else {
-
-  console.warn(
-    `⚠️ Logo pa jwenn: ${LOGO_PATH}`
-  );
-
-  await sock.sendMessage(
-    chatId,
-    {
-      text: menu
-    },
-    {
-      quoted: message
-    }
-  );
-}
-
-} catch (error) {
-
-console.error(
-  "❌ MENU ERROR:",
-  error?.message || error
-);
-
-}
+  } catch (error) {
+    console.error(
+      "❌ MENU ERROR:",
+      error?.message || error
+    );
+  }
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -330,24 +334,23 @@ console.error(
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 module.exports = {
+  name: "menu",
 
-name: "menu",
+  aliases: [
+    "commands",
+    "cmds",
+    "list"
+  ],
 
-aliases: [
-"commands",
-"cmds",
-"list"
-],
+  description:
+    "Montre tout command TOPFEROS MD yo.",
 
-description:
-"Montre tout command TOPFEROS MD yo.",
+  usage:
+    ".menu",
 
-usage:
-".menu",
-
-execute
+  execute
 };
 
 // ╔════════════════════════════════════════════════════╗
-// ║                    by TOPFEROS MD                  ║
+// ║                 🚀 BY TOPFEROS TECH              ║
 // ╚════════════════════════════════════════════════════╝
