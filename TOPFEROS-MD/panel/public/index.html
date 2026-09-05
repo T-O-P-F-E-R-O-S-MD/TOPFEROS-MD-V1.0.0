@@ -67,15 +67,10 @@
       padding: 13px 8px;
       font-size: 14px;
       cursor: pointer;
-      transition: 0.2s;
     }
 
     .language-btn:hover {
       background: #222;
-    }
-
-    .language-btn:active {
-      transform: scale(0.97);
     }
 
     .field {
@@ -114,7 +109,7 @@
       margin-bottom: 20px;
     }
 
-    #generateButton {
+    .main-button {
       width: 100%;
       padding: 14px;
       border: none;
@@ -126,7 +121,7 @@
       cursor: pointer;
     }
 
-    #generateButton:disabled {
+    .main-button:disabled {
       opacity: 0.5;
       cursor: not-allowed;
     }
@@ -220,8 +215,9 @@
       src="/assets/logo.png"
       alt="TOPFEROS MD Logo"
       class="logo"
-      onerror="console.error('Logo TOPFEROS MD pa jwenn: /assets/logo.png');"
     >
+
+    <!-- LANGUAGE -->
 
     <section id="languageScreen">
 
@@ -275,16 +271,23 @@
 
     </section>
 
+
+    <!-- LOGIN / PARRAIN CODE -->
+
     <section id="loginScreen">
 
       <div id="loginTitle" class="title">
         Générer le Code Parrain
       </div>
 
+      <div id="loginSubtitle" class="subtitle">
+        Entrez le numéro WhatsApp du bot
+      </div>
+
       <div class="field">
 
         <label id="numberLabel" for="number">
-          Numéro
+          Numéro WhatsApp
         </label>
 
         <input
@@ -298,15 +301,19 @@
       </div>
 
       <div id="numberHelp" class="number-help">
-        Entrez le numéro sans mettre le +
+        Entrez le numéro avec l'indicatif pays, sans le signe +
       </div>
 
       <button
         type="button"
         id="generateButton"
+        class="main-button"
       >
         Générer le Code Parrain
       </button>
+
+
+      <!-- PARRAIN CODE -->
 
       <div id="codeSection">
 
@@ -329,9 +336,19 @@
 
         </div>
 
+        <button
+          type="button"
+          id="nextButton"
+          class="main-button"
+          style="margin-top: 12px;"
+        >
+          NEXT
+        </button>
+
         <div id="successMessage"></div>
 
       </div>
+
 
       <div id="message"></div>
 
@@ -351,7 +368,7 @@
 
   </main>
 
-  <script src="/app.js"></script>
+  <script src="/app.js?v=2"></script>
 
 </body>
 </html>
