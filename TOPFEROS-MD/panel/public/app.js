@@ -6,1141 +6,1162 @@
 // ║              🚀 TOPFEROS TECH                    ║
 // ╚════════════════════════════════════════════════════╝
 
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   🔗 URL PARAMETERS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
 const params = new URLSearchParams(
-  window.location.search
+    window.location.search
 );
 
-const sessionId = params.get("session");
-const urlLanguage = params.get("language");
+let sessionId =
+    params.get("session") || "";
 
-const LANGUAGE_KEY = "topferos_language";
+const urlLanguage =
+    params.get("language") || "";
+
+const LANGUAGE_KEY =
+    "topferos_language";
+
 
 const SUPPORTED_LANGUAGES = [
-  "en",
-  "fr",
-  "es"
+    "en",
+    "fr",
+    "es"
 ];
 
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🌍 TRANSLATIONS
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   🌍 TRANSLATIONS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 
 const translations = {
 
-  en: {
-    languageTitle: "• Main Language",
-    languageSubtitle:
-      "Choose a language to deploy the bot",
+    en: {
 
-    loginTitle:
-      "Generate Parrain Code",
+        languageTitle:
+            "Main Language",
 
-    loginSubtitle:
-      "Enter the WhatsApp number of the bot",
+        languageSubtitle:
+            "Choose your preferred language",
 
-    number:
-      "WhatsApp Number",
+        panelCodeTitle:
+            "Panel Code",
 
-    numberPlaceholder:
-      "Enter WhatsApp number",
+        panelCodeSubtitle:
+            "Enter your WhatsApp number and Panel Code",
 
-    numberHelp:
-      "Enter the country code and number without the + sign",
+        number:
+            "Number User",
 
-    generate:
-      "Generate Parrain Code",
+        numberPlaceholder:
+            "509XXXXXXXX",
 
-    generating:
-      "Generating...",
+        panelCode:
+            "Panel Code",
 
-    code:
-      "Parrain Code",
+        panelCodePlaceholder:
+            "Enter Panel Code",
 
-    copy:
-      "📋 Copy",
+        login:
+            "LOGIN",
 
-    copied:
-      "✅ Copied",
+        parrainTitle:
+            "Parrain Code",
 
-    next:
-      "NEXT",
+        parrainSubtitle:
+            "Generate your Parrain Code",
 
-    sessionMissing:
-      "❌ Panel link has no session.",
+        parrainNumber:
+            "Parrain number",
 
-    numberMissing:
-      "❌ Enter the WhatsApp number.",
+        generate:
+            "GENERATE PARRAIN CODE",
 
-    invalidNumber:
-      "❌ Enter a valid WhatsApp number.",
+        generating:
+            "GENERATING...",
 
-    generateFailed:
-      "❌ Unable to generate Parrain Code.",
+        code:
+            "PARRAIN CODE",
 
-    serverError:
-      "❌ Unable to contact the panel server.",
+        copy:
+            "📋 COPY",
 
-    loginFailed:
-      "❌ Login failed.",
+        copied:
+            "✅ COPIED",
 
-    connecting:
-      "Connecting...",
+        next:
+            "NEXT →",
 
-    made:
-      "Made in TOPFEROS TECH"
-  },
+        connecting:
+            "CONNECTING...",
 
-  fr: {
-    languageTitle:
-      "• Langue principale",
+        numberMissing:
+            "❌ Enter the WhatsApp number.",
 
-    languageSubtitle:
-      "Choisissez une langue pour déployer le bot",
+        invalidNumber:
+            "❌ Enter a valid WhatsApp number.",
 
-    loginTitle:
-      "Générer le Code Parrain",
+        panelCodeMissing:
+            "❌ Enter the Panel Code.",
 
-    loginSubtitle:
-      "Entrez le numéro WhatsApp du bot",
+        loginFailed:
+            "❌ Invalid Panel Code or login failed.",
 
-    number:
-      "Numéro WhatsApp",
+        generateFailed:
+            "❌ Unable to generate Parrain Code.",
 
-    numberPlaceholder:
-      "Entrez le numéro WhatsApp",
+        serverError:
+            "❌ Unable to contact the panel server.",
 
-    numberHelp:
-      "Entrez l'indicatif pays et le numéro sans le signe +",
+        parrainMissing:
+            "❌ Generate the Parrain Code first.",
 
-    generate:
-      "Générer le Code Parrain",
+        copyFailed:
+            "❌ Unable to copy the code.",
 
-    generating:
-      "Génération...",
+        success:
+            "✅ Parrain Code generated successfully.",
 
-    code:
-      "Code Parrain",
+        made:
+            "Made in TOPFEROS TECH"
 
-    copy:
-      "📋 Copier",
+    },
 
-    copied:
-      "✅ Copié",
 
-    next:
-      "SUIVANT",
+    fr: {
 
-    sessionMissing:
-      "❌ Le lien du panneau ne contient aucune session.",
+        languageTitle:
+            "Langue principale",
 
-    numberMissing:
-      "❌ Entrez le numéro WhatsApp.",
+        languageSubtitle:
+            "Choisissez votre langue préférée",
 
-    invalidNumber:
-      "❌ Entrez un numéro WhatsApp valide.",
+        panelCodeTitle:
+            "Code Panel",
 
-    generateFailed:
-      "❌ Impossible de générer le Code Parrain.",
+        panelCodeSubtitle:
+            "Entrez votre numéro WhatsApp et le Code Panel",
 
-    serverError:
-      "❌ Impossible de contacter le serveur du panneau.",
+        number:
+            "Numéro User",
 
-    loginFailed:
-      "❌ Échec de la connexion.",
+        numberPlaceholder:
+            "509XXXXXXXX",
 
-    connecting:
-      "Connexion...",
+        panelCode:
+            "Code Panel",
 
-    made:
-      "Made in TOPFEROS TECH"
-  },
+        panelCodePlaceholder:
+            "Entrez le Code Panel",
 
-  es: {
-    languageTitle:
-      "• Idioma principal",
+        login:
+            "CONNEXION",
 
-    languageSubtitle:
-      "Elige un idioma para desplegar el bot",
+        parrainTitle:
+            "Code Parrain",
 
-    loginTitle:
-      "Generar Código Parrain",
+        parrainSubtitle:
+            "Générez votre Code Parrain",
 
-    loginSubtitle:
-      "Introduce el número de WhatsApp del bot",
+        parrainNumber:
+            "Numéro Parrain",
 
-    number:
-      "Número de WhatsApp",
+        generate:
+            "GÉNÉRER LE CODE PARRAIN",
 
-    numberPlaceholder:
-      "Introduce el número de WhatsApp",
+        generating:
+            "GÉNÉRATION...",
 
-    numberHelp:
-      "Introduce el código de país y el número sin el signo +",
+        code:
+            "CODE PARRAIN",
 
-    generate:
-      "Generar Código Parrain",
+        copy:
+            "📋 COPIER",
 
-    generating:
-      "Generando...",
+        copied:
+            "✅ COPIÉ",
 
-    code:
-      "Código Parrain",
+        next:
+            "SUIVANT →",
 
-    copy:
-      "📋 Copiar",
+        connecting:
+            "CONNEXION...",
 
-    copied:
-      "✅ Copiado",
+        numberMissing:
+            "❌ Entrez le numéro WhatsApp.",
 
-    next:
-      "SIGUIENTE",
+        invalidNumber:
+            "❌ Entrez un numéro WhatsApp valide.",
 
-    sessionMissing:
-      "❌ El enlace del panel no contiene ninguna sesión.",
+        panelCodeMissing:
+            "❌ Entrez le Code Panel.",
 
-    numberMissing:
-      "❌ Introduce el número de WhatsApp.",
+        loginFailed:
+            "❌ Code Panel invalide ou échec de connexion.",
 
-    invalidNumber:
-      "❌ Introduce un número de WhatsApp válido.",
+        generateFailed:
+            "❌ Impossible de générer le Code Parrain.",
 
-    generateFailed:
-      "❌ No se pudo generar el Código Parrain.",
+        serverError:
+            "❌ Impossible de contacter le serveur du panneau.",
 
-    serverError:
-      "❌ No se puede contactar con el servidor del panel.",
+        parrainMissing:
+            "❌ Générez d'abord le Code Parrain.",
 
-    loginFailed:
-      "❌ Error de inicio de sesión.",
+        copyFailed:
+            "❌ Impossible de copier le code.",
 
-    connecting:
-      "Conectando...",
+        success:
+            "✅ Code Parrain généré avec succès.",
 
-    made:
-      "Made in TOPFEROS TECH"
-  }
+        made:
+            "Made in TOPFEROS TECH"
+
+    },
+
+
+    es: {
+
+        languageTitle:
+            "Idioma principal",
+
+        languageSubtitle:
+            "Elige tu idioma preferido",
+
+        panelCodeTitle:
+            "Código del Panel",
+
+        panelCodeSubtitle:
+            "Introduce tu número de WhatsApp y el Código del Panel",
+
+        number:
+            "Número User",
+
+        numberPlaceholder:
+            "509XXXXXXXX",
+
+        panelCode:
+            "Código del Panel",
+
+        panelCodePlaceholder:
+            "Introduce el Código del Panel",
+
+        login:
+            "INICIAR SESIÓN",
+
+        parrainTitle:
+            "Código Parrain",
+
+        parrainSubtitle:
+            "Genera tu Código Parrain",
+
+        parrainNumber:
+            "Número Parrain",
+
+        generate:
+            "GENERAR CÓDIGO PARRAIN",
+
+        generating:
+            "GENERANDO...",
+
+        code:
+            "CÓDIGO PARRAIN",
+
+        copy:
+            "📋 COPIAR",
+
+        copied:
+            "✅ COPIADO",
+
+        next:
+            "SIGUIENTE →",
+
+        connecting:
+            "CONECTANDO...",
+
+        numberMissing:
+            "❌ Introduce el número de WhatsApp.",
+
+        invalidNumber:
+            "❌ Introduce un número de WhatsApp válido.",
+
+        panelCodeMissing:
+            "❌ Introduce el Código del Panel.",
+
+        loginFailed:
+            "❌ Código del Panel inválido o error de conexión.",
+
+        generateFailed:
+            "❌ No se pudo generar el Código Parrain.",
+
+        serverError:
+            "❌ No se puede contactar con el servidor del panel.",
+
+        parrainMissing:
+            "❌ Genera primero el Código Parrain.",
+
+        copyFailed:
+            "❌ No se pudo copiar el código.",
+
+        success:
+            "✅ Código Parrain generado correctamente.",
+
+        made:
+            "Made in TOPFEROS TECH"
+
+    }
 
 };
 
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🌍 GET LANGUAGE
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   🌍 GET LANGUAGE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 
 function getLanguage() {
 
-  const saved =
-    localStorage.getItem(
-      LANGUAGE_KEY
-    );
+    const saved =
+        localStorage.getItem(
+            LANGUAGE_KEY
+        );
 
-  if (
-    SUPPORTED_LANGUAGES.includes(saved)
-  ) {
-    return saved;
-  }
 
-  if (
-    SUPPORTED_LANGUAGES.includes(urlLanguage)
-  ) {
-    return urlLanguage;
-  }
+    if (
+        SUPPORTED_LANGUAGES.includes(
+            saved
+        )
+    ) {
+        return saved;
+    }
 
-  return "en";
+
+    if (
+        SUPPORTED_LANGUAGES.includes(
+            urlLanguage
+        )
+    ) {
+        return urlLanguage;
+    }
+
+
+    return "en";
 }
 
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 💾 SAVE LANGUAGE
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   💾 SAVE LANGUAGE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 
 function saveLanguage(language) {
 
-  if (
-    !SUPPORTED_LANGUAGES.includes(language)
-  ) {
-    return false;
-  }
+    if (
+        !SUPPORTED_LANGUAGES.includes(
+            language
+        )
+    ) {
+        return false;
+    }
 
-  localStorage.setItem(
-    LANGUAGE_KEY,
-    language
-  );
 
-  return true;
+    localStorage.setItem(
+        LANGUAGE_KEY,
+        language
+    );
+
+
+    return true;
 }
 
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🌐 APPLY LANGUAGE
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   🌐 APPLY LANGUAGE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 
 function applyLanguage(
-  language = getLanguage()
+    language = getLanguage()
 ) {
 
-  if (!translations[language]) {
-    language = "en";
-  }
-
-  const t =
-    translations[language];
-
-  document.documentElement.lang =
-    language;
+    if (
+        !translations[language]
+    ) {
+        language = "en";
+    }
 
 
-  const languageTitle =
-    document.getElementById(
-      "languageTitle"
-    );
-
-  if (languageTitle) {
-    languageTitle.textContent =
-      t.languageTitle;
-  }
+    const t =
+        translations[language];
 
 
-  const languageSubtitle =
-    document.getElementById(
-      "languageSubtitle"
-    );
-
-  if (languageSubtitle) {
-    languageSubtitle.textContent =
-      t.languageSubtitle;
-  }
+    document.documentElement.lang =
+        language;
 
 
-  const loginTitle =
-    document.getElementById(
-      "loginTitle"
-    );
+    /* LANGUAGE */
 
-  if (loginTitle) {
-    loginTitle.textContent =
-      t.loginTitle;
-  }
+    const languageTitle =
+        document.querySelector(
+            "#languageScreen h2"
+        );
 
+    if (languageTitle) {
 
-  const loginSubtitle =
-    document.getElementById(
-      "loginSubtitle"
-    );
-
-  if (loginSubtitle) {
-    loginSubtitle.textContent =
-      t.loginSubtitle;
-  }
+        languageTitle.textContent =
+            t.languageTitle;
+    }
 
 
-  const numberLabel =
-    document.getElementById(
-      "numberLabel"
-    );
+    const languageSubtitle =
+        document.querySelector(
+            "#languageScreen .subtitle"
+        );
 
-  if (numberLabel) {
-    numberLabel.textContent =
-      t.number;
-  }
+    if (languageSubtitle) {
 
-
-  const numberInput =
-    document.getElementById(
-      "number"
-    );
-
-  if (numberInput) {
-    numberInput.placeholder =
-      t.numberPlaceholder;
-  }
+        languageSubtitle.textContent =
+            t.languageSubtitle;
+    }
 
 
-  const numberHelp =
-    document.getElementById(
-      "numberHelp"
-    );
+    /* PANEL CODE */
 
-  if (numberHelp) {
-    numberHelp.textContent =
-      t.numberHelp;
-  }
+    const panelCodeTitle =
+        document.getElementById(
+            "panelCodeTitle"
+        );
 
+    if (panelCodeTitle) {
 
-  const generateButton =
-    document.getElementById(
-      "generateButton"
-    );
-
-  if (
-    generateButton &&
-    !generateButton.disabled
-  ) {
-    generateButton.textContent =
-      t.generate;
-  }
+        panelCodeTitle.textContent =
+            t.panelCodeTitle;
+    }
 
 
-  const codeTitle =
-    document.getElementById(
-      "codeTitle"
-    );
+    const panelCodeSubtitle =
+        document.getElementById(
+            "panelCodeSubtitle"
+        );
 
-  if (codeTitle) {
-    codeTitle.textContent =
-      t.code;
-  }
+    if (panelCodeSubtitle) {
 
-
-  const copyButton =
-    document.getElementById(
-      "copyButton"
-    );
-
-  if (copyButton) {
-    copyButton.textContent =
-      t.copy;
-  }
+        panelCodeSubtitle.textContent =
+            t.panelCodeSubtitle;
+    }
 
 
-  const nextButton =
-    document.getElementById(
-      "nextButton"
-    );
+    const numberLabel =
+        document.getElementById(
+            "numberLabel"
+        );
 
-  if (
-    nextButton &&
-    !nextButton.disabled
-  ) {
-    nextButton.textContent =
-      t.next;
-  }
+    if (numberLabel) {
+
+        numberLabel.textContent =
+            t.number;
+    }
 
 
-  document
-    .querySelectorAll(".footer")
-    .forEach(footer => {
+    const numberInput =
+        document.getElementById(
+            "number"
+        );
 
-      footer.innerHTML =
-        t.made;
+    if (numberInput) {
 
-    });
+        numberInput.placeholder =
+            t.numberPlaceholder;
+    }
+
+
+    const panelCodeLabel =
+        document.getElementById(
+            "panelCodeLabel"
+        );
+
+    if (panelCodeLabel) {
+
+        panelCodeLabel.textContent =
+            t.panelCode;
+    }
+
+
+    const panelCodeInput =
+        document.getElementById(
+            "panelCode"
+        );
+
+    if (panelCodeInput) {
+
+        panelCodeInput.placeholder =
+            t.panelCodePlaceholder;
+    }
+
+
+    const panelLoginButton =
+        document.getElementById(
+            "panelLoginButton"
+        );
+
+    if (
+        panelLoginButton &&
+        !panelLoginButton.disabled
+    ) {
+
+        panelLoginButton.textContent =
+            t.login;
+    }
+
+
+    /* PARRAIN */
+
+    const parrainTitle =
+        document.getElementById(
+            "parrainTitle"
+        );
+
+    if (parrainTitle) {
+
+        parrainTitle.textContent =
+            t.parrainTitle;
+    }
+
+
+    const parrainSubtitle =
+        document.getElementById(
+            "parrainSubtitle"
+        );
+
+    if (parrainSubtitle) {
+
+        parrainSubtitle.textContent =
+            t.parrainSubtitle;
+    }
+
+
+    const parrainNumberLabel =
+        document.getElementById(
+            "parrainNumberLabel"
+        );
+
+    if (parrainNumberLabel) {
+
+        parrainNumberLabel.textContent =
+            t.parrainNumber;
+    }
+
+
+    const generateParrainButton =
+        document.getElementById(
+            "generateParrainButton"
+        );
+
+    if (
+        generateParrainButton &&
+        !generateParrainButton.disabled
+    ) {
+
+        generateParrainButton.textContent =
+            t.generate;
+    }
+
+
+    const parrainCodeLabel =
+        document.getElementById(
+            "parrainCodeLabel"
+        );
+
+    if (parrainCodeLabel) {
+
+        parrainCodeLabel.textContent =
+            t.code;
+    }
+
+
+    const copyParrainButton =
+        document.getElementById(
+            "copyParrainButton"
+        );
+
+    if (
+        copyParrainButton &&
+        !copyParrainButton.disabled
+    ) {
+
+        copyParrainButton.textContent =
+            t.copy;
+    }
+
+
+    const nextButton =
+        document.getElementById(
+            "nextButton"
+        );
+
+    if (
+        nextButton &&
+        !nextButton.disabled
+    ) {
+
+        nextButton.textContent =
+            t.next;
+    }
+
+
+    /* FOOTER */
+
+    document
+        .querySelectorAll(
+            ".panel-footer"
+        )
+        .forEach(
+            footer => {
+
+                footer.innerHTML =
+                    `<span>By</span> <strong>${t.made.replace(
+                        "Made in ",
+                        ""
+                    )}</strong>`;
+
+            }
+        );
 }
 
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🌍 LANGUAGE SELECTOR
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   🌍 LANGUAGE SELECTOR
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 
 function setupLanguageSelector() {
 
-  const buttons =
-    document.querySelectorAll(
-      "[data-language]"
-    );
-
-  buttons.forEach(button => {
-
-    button.addEventListener(
-      "click",
-      () => {
-
-        const language =
-          button.dataset.language;
-
-        if (
-          !SUPPORTED_LANGUAGES.includes(
-            language
-          )
-        ) {
-          return;
-        }
-
-        saveLanguage(language);
-
-        const currentUrl =
-          new URL(
-            window.location.href
-          );
-
-        currentUrl.searchParams.set(
-          "language",
-          language
+    const buttons =
+        document.querySelectorAll(
+            "[data-language]"
         );
 
-        window.location.href =
-          currentUrl.toString();
 
-      }
-    );
+    buttons.forEach(
+        button => {
 
-  });
-}
+            button.addEventListener(
+                "click",
+                () => {
 
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 📢 MESSAGE
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-function showMessage(text) {
-
-  const message =
-    document.getElementById(
-      "message"
-    );
-
-  if (!message) {
-    return;
-  }
-
-  message.textContent =
-    text || "";
-}
+                    const language =
+                        button.dataset.language;
 
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🔢 CLEAN NUMBER
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-function cleanNumber(number) {
-
-  return String(number || "")
-    .replace(/\D/g, "");
-}
+                    if (
+                        !SUPPORTED_LANGUAGES.includes(
+                            language
+                        )
+                    ) {
+                        return;
+                    }
 
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🔍 VALIDATE NUMBER
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-function isValidNumber(number) {
-
-  return (
-    number.length >= 8 &&
-    number.length <= 15
-  );
-}
+                    saveLanguage(
+                        language
+                    );
 
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🔑 GENERATE PARRAIN CODE
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-async function generateParrainCode() {
-
-  const language =
-    getLanguage();
-
-  const t =
-    translations[language];
-
-  const numberInput =
-    document.getElementById(
-      "number"
-    );
-
-  const generateButton =
-    document.getElementById(
-      "generateButton"
-    );
-
-  const codeSection =
-    document.getElementById(
-      "codeSection"
-    );
-
-  const parrainCode =
-    document.getElementById(
-      "parrainCode"
-    );
-
-  showMessage("");
-
-  if (!sessionId) {
-
-    showMessage(
-      t.sessionMissing
-    );
-
-    return;
-  }
+                    applyLanguage(
+                        language
+                    );
 
 
-  const number =
-    cleanNumber(
-      numberInput?.value
-    );
+                    showScreen(
+                        "panelCodeScreen"
+                    );
 
 
-  if (!number) {
-
-    showMessage(
-      t.numberMissing
-    );
-
-    numberInput?.focus();
-
-    return;
-  }
+                    const url =
+                        new URL(
+                            window.location.href
+                        );
 
 
-  if (!isValidNumber(number)) {
-
-    showMessage(
-      t.invalidNumber
-    );
-
-    numberInput?.focus();
-
-    return;
-  }
+                    url.searchParams.set(
+                        "language",
+                        language
+                    );
 
 
-  if (generateButton) {
+                    if (sessionId) {
 
-    generateButton.disabled =
-      true;
+                        url.searchParams.set(
+                            "session",
+                            sessionId
+                        );
+                    }
 
-    generateButton.textContent =
-      t.generating;
-  }
 
+                    window.history.replaceState(
+                        {},
+                        "",
+                        url.toString()
+                    );
 
-  try {
+                }
+            );
 
-    /*
-     * API sa dwe resevwa:
-     *
-     * {
-     *   sessionId,
-     *   number
-     * }
-     *
-     * epi li dwe retounen:
-     *
-     * {
-     *   success: true,
-     *   code: "XXXXXX"
-     * }
-     */
-
-    const response =
-      await fetch(
-        "/api/auth",
-        {
-          method: "POST",
-
-          headers: {
-            "Content-Type":
-              "application/json"
-          },
-
-          body:
-            JSON.stringify({
-              sessionId,
-              number
-            })
         }
-      );
+    );
+}
 
 
-    const result =
-      await response.json();
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   📺 SHOW SCREEN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+function showScreen(
+    screenId
+) {
+
+    const screens =
+        document.querySelectorAll(
+            ".screen"
+        );
 
 
-    if (
-      !response.ok ||
-      result.success !== true
-    ) {
+    screens.forEach(
+        screen => {
 
-      showMessage(
-        result.message ||
-        t.generateFailed
-      );
+            screen.classList.remove(
+                "active"
+            );
 
-      return;
+            screen.style.display =
+                "none";
+        }
+    );
+
+
+    const screen =
+        document.getElementById(
+            screenId
+        );
+
+
+    if (!screen) {
+        return;
     }
 
 
-    const code =
-      String(
-        result.code ||
-        result.parrainCode ||
-        result.panelCode ||
-        ""
-      )
-      .trim()
-      .toUpperCase();
+    screen.classList.add(
+        "active"
+    );
 
-
-    if (!code) {
-
-      showMessage(
-        t.generateFailed
-      );
-
-      return;
-    }
-
-
-    if (parrainCode) {
-
-      parrainCode.textContent =
-        code;
-    }
-
-
-    if (codeSection) {
-
-      codeSection.style.display =
+    screen.style.display =
         "block";
-    }
-
-
-    showMessage("");
-
-    const successMessage =
-      document.getElementById(
-        "successMessage"
-      );
-
-    if (successMessage) {
-
-      successMessage.textContent =
-        "✓ Code Parrain généré";
-
-    }
-
-  } catch (error) {
-
-    console.error(
-      "❌ PARRAIN CODE ERROR:",
-      error
-    );
-
-    showMessage(
-      t.serverError
-    );
-
-  } finally {
-
-    if (generateButton) {
-
-      generateButton.disabled =
-        false;
-
-      generateButton.textContent =
-        t.generate;
-
-    }
-  }
 }
 
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 📋 COPY PARRAIN CODE
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   📢 SHOW MESSAGE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 
-async function copyParrainCode() {
+function showPanelMessage(
+    text
+) {
 
-  const language =
-    getLanguage();
-
-  const t =
-    translations[language];
-
-  const parrainCode =
-    document.getElementById(
-      "parrainCode"
-    );
-
-  if (!parrainCode) {
-    return;
-  }
-
-  const code =
-    parrainCode.textContent
-      .trim();
-
-  if (
-    !code ||
-    code === "—"
-  ) {
-    return;
-  }
+    const message =
+        document.getElementById(
+            "panelMessage"
+        );
 
 
-  try {
+    if (message) {
 
-    await navigator.clipboard.writeText(
-      code
-    );
-
-    const copyButton =
-      document.getElementById(
-        "copyButton"
-      );
-
-    if (copyButton) {
-
-      copyButton.textContent =
-        t.copied;
-
-      setTimeout(
-        () => {
-
-          copyButton.textContent =
-            t.copy;
-
-        },
-        1500
-      );
+        message.textContent =
+            text || "";
     }
-
-  } catch (error) {
-
-    console.error(
-      "❌ COPY ERROR:",
-      error
-    );
-
-    showMessage(
-      "❌ Copy failed"
-    );
-  }
 }
 
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// ➡️ NEXT
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function showParrainMessage(
+    text
+) {
 
-async function goNext() {
+    const message =
+        document.getElementById(
+            "parrainMessage"
+        );
 
-  const language =
-    getLanguage();
 
-  const t =
-    translations[language];
+    if (message) {
 
-  const numberInput =
-    document.getElementById(
-      "number"
+        message.textContent =
+            text || "";
+    }
+}
+
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   🔢 CLEAN NUMBER
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+function cleanNumber(
+    number
+) {
+
+    return String(
+        number || ""
+    ).replace(
+        /\D/g,
+        ""
     );
+}
 
-  const parrainCode =
-    document.getElementById(
-      "parrainCode"
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   🔍 VALIDATE NUMBER
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+function isValidNumber(
+    number
+) {
+
+    return (
+        number.length >= 8 &&
+        number.length <= 15
     );
-
-  const nextButton =
-    document.getElementById(
-      "nextButton"
-    );
-
-  const number =
-    cleanNumber(
-      numberInput?.value
-    );
-
-  const code =
-    String(
-      parrainCode?.textContent ||
-      ""
-    )
-    .trim()
-    .toUpperCase();
+}
 
 
-  if (!number) {
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   🔐 PANEL CODE LOGIN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 
-    showMessage(
-      t.numberMissing
-    );
+async function loginWithPanelCode(
+    event
+) {
 
-    return;
-  }
+    if (event) {
 
-
-  if (!code || code === "—") {
-
-    showMessage(
-      t.generateFailed
-    );
-
-    return;
-  }
+        event.preventDefault();
+    }
 
 
-  if (nextButton) {
+    const language =
+        getLanguage();
 
-    nextButton.disabled =
-      true;
-
-    nextButton.textContent =
-      t.connecting;
-  }
+    const t =
+        translations[language];
 
 
-  try {
-
-    /*
-     * Login verify:
-     *
-     * sessionId
-     * number
-     * code
-     */
-
-    const response =
-      await fetch(
-        "/api/login",
-        {
-          method: "POST",
-
-          headers: {
-            "Content-Type":
-              "application/json"
-          },
-
-          body:
-            JSON.stringify({
-              sessionId,
-              number,
-              code
-            })
-        }
-      );
+    const numberInput =
+        document.getElementById(
+            "number"
+        );
 
 
-    const result =
-      await response.json();
+    const panelCodeInput =
+        document.getElementById(
+            "panelCode"
+        );
+
+
+    const loginButton =
+        document.getElementById(
+            "panelLoginButton"
+        );
+
+
+    showPanelMessage("");
+
+
+    const number =
+        cleanNumber(
+            numberInput?.value
+        );
+
+
+    const panelCode =
+        String(
+            panelCodeInput?.value ||
+            ""
+        )
+        .trim()
+        .toUpperCase();
+
+
+    if (!number) {
+
+        showPanelMessage(
+            t.numberMissing
+        );
+
+        numberInput?.focus();
+
+        return;
+    }
 
 
     if (
-      !response.ok ||
-      result.success !== true
+        !isValidNumber(
+            number
+        )
     ) {
 
-      showMessage(
-        result.message ||
-        t.loginFailed
-      );
+        showPanelMessage(
+            t.invalidNumber
+        );
 
-      return;
+        numberInput?.focus();
+
+        return;
     }
 
 
-    saveLanguage(language);
+    if (!panelCode) {
+
+        showPanelMessage(
+            t.panelCodeMissing
+        );
+
+        panelCodeInput?.focus();
+
+        return;
+    }
 
 
-    // Save language pou session lan
+    if (loginButton) {
+
+        loginButton.disabled =
+            true;
+
+        loginButton.textContent =
+            t.connecting;
+    }
+
+
     try {
 
-      await fetch(
-        "/api/language",
-        {
-          method: "POST",
+        const response =
+            await fetch(
+                "/api/login",
+                {
+                    method:
+                        "POST",
 
-          headers: {
-            "Content-Type":
-              "application/json"
-          },
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
 
-          body:
-            JSON.stringify({
-              sessionId,
-              language
-            })
-          }
-      );
+                    body:
+                        JSON.stringify({
+
+                            sessionId,
+
+                            number,
+
+                            code:
+                                panelCode
+
+                        })
+                }
+            );
+
+
+        const result =
+            await response.json();
+
+
+        if (
+            !response.ok ||
+            result.success !== true
+        ) {
+
+            showPanelMessage(
+                result.message ||
+                t.loginFailed
+            );
+
+            return;
+        }
+
+
+        /*
+         * Backend ka ka retounen
+         * yon nouvo sessionId.
+         */
+
+        if (
+            result.sessionId
+        ) {
+
+            sessionId =
+                result.sessionId;
+
+
+            const url =
+                new URL(
+                    window.location.href
+                );
+
+
+            url.searchParams.set(
+                "session",
+                sessionId
+            );
+
+
+            url.searchParams.set(
+                "language",
+                language
+            );
+
+
+            window.history.replaceState(
+                {},
+                "",
+                url.toString()
+            );
+        }
+
+
+        /*
+         * Apre Panel Code la valide,
+         * nou ale dirèkteman sou
+         * Parrain Code.
+         */
+
+        const parrainNumber =
+            document.getElementById(
+                "parrainNumber"
+            );
+
+
+        if (parrainNumber) {
+
+            parrainNumber.textContent =
+                number;
+        }
+
+
+        showPanelMessage("");
+
+
+        showScreen(
+            "parrainCodeScreen"
+        );
+
 
     } catch (error) {
 
-      console.warn(
-        "⚠️ LANGUAGE SAVE WARNING:",
-        error
-      );
+        console.error(
+            "❌ PANEL LOGIN ERROR:",
+            error
+        );
 
+
+        showPanelMessage(
+            t.serverError
+        );
+
+    } finally {
+
+        if (loginButton) {
+
+            loginButton.disabled =
+                false;
+
+            loginButton.textContent =
+                t.login;
+        }
     }
-
-
-    // Ale nan Settings
-    window.location.href =
-      `/settings.html?session=${encodeURIComponent(
-        sessionId
-      )}&language=${encodeURIComponent(
-        language
-      )}`;
-
-  } catch (error) {
-
-    console.error(
-      "❌ NEXT ERROR:",
-      error
-    );
-
-    showMessage(
-      t.serverError
-    );
-
-  } finally {
-
-    if (nextButton) {
-
-      nextButton.disabled =
-        false;
-
-      nextButton.textContent =
-        t.next;
-
-    }
-  }
 }
 
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// ⌨️ ENTER KEY
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   🔑 GENERATE PARRAIN CODE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 
-function setupKeyboard() {
+async function generateParrainCode() {
 
-  const numberInput =
-    document.getElementById(
-      "number"
-    );
+    const language =
+        getLanguage();
 
-  if (!numberInput) {
-    return;
-  }
-
-  numberInput.addEventListener(
-    "keydown",
-    event => {
-
-      if (event.key === "Enter") {
-
-        generateParrainCode();
-
-      }
-
-    }
-  );
-}
+    const t =
+        translations[language];
 
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🚀 INITIALIZE
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-(function init() {
-
-  setupLanguageSelector();
-
-  setupKeyboard();
-
-  const generateButton =
-    document.getElementById(
-      "generateButton"
-    );
-
-  if (generateButton) {
-
-    generateButton.addEventListener(
-      "click",
-      generateParrainCode
-    );
-
-  }
+    const numberInput =
+        document.getElementById(
+            "number"
+        );
 
 
-  const copyButton =
-    document.getElementById(
-      "copyButton"
-    );
-
-  if (copyButton) {
-
-    copyButton.addEventListener(
-      "click",
-      copyParrainCode
-    );
-
-  }
+    const generateButton =
+        document.getElementById(
+            "generateParrainButton"
+        );
 
 
-  const nextButton =
-    document.getElementById(
-      "nextButton"
-    );
-
-  if (nextButton) {
-
-    nextButton.addEventListener(
-      "click",
-      goNext
-    );
-
-  }
+    const codeSection =
+        document.getElementById(
+            "parrainCodeSection"
+        );
 
 
-  applyLanguage(
-    getLanguage()
-  );
+    const parrainCode =
+        document.getElementById(
+            "parrainCode"
+        );
 
 
-  // Montre ekran nimewo a apre language la
-  const languageScreen =
-    document.getElementById(
-      "languageScreen"
-    );
-
-  const loginScreen =
-    document.getElementById(
-      "loginScreen"
-    );
+    const number =
+        cleanNumber(
+            numberInput?.value
+        );
 
 
-  /*
-   * Si language deja chwazi,
-   * pa oblije chwazi li ankò.
-   */
-
-  const savedLanguage =
-    localStorage.getItem(
-      LANGUAGE_KEY
-    );
+    showParrainMessage("");
 
 
-  if (
-    SUPPORTED_LANGUAGES.includes(
-      savedLanguage
-    )
-  ) {
+    if (!number) {
 
-    if (languageScreen) {
-      languageScreen.style.display =
-        "none";
+        showParrainMessage(
+            t.numberMissing
+        );
+
+        showScreen(
+            "panelCodeScreen"
+        );
+
+        return;
     }
 
-    if (loginScreen) {
-      loginScreen.style.display =
-        "block";
+
+    if (
+        !isValidNumber(
+            number
+        )
+    ) {
+
+        showParrainMessage(
+            t.invalidNumber
+        );
+
+        return;
     }
 
-  } else {
 
-    if (languageScreen) {
-      languageScreen.style.display =
-        "block";
+    if (!sessionId) {
+
+        showParrainMessage(
+            t.serverError
+        );
+
+        return;
     }
 
-    if (loginScreen) {
-      loginScreen.style.display =
-        "none";
-    }
 
-  }
+    if (generateButton) {
 
-})();
+        generateButton.disabled =
+            true;
+
+        generateButton.textConte
