@@ -3,18 +3,15 @@
 // ╔════════════════════════════════════════════════════╗
 // ║              🤖 TOPFEROS MD V1.0.0               ║
 // ║             🌐 PANEL APPLICATION JS              ║
-// ║          ⚙️ MULTI-SESSION + LANGUAGE              ║
-// ║              🚀 TOPFEROS TECH                     ║
+// ║              🚀 TOPFEROS TECH                    ║
 // ╚════════════════════════════════════════════════════╝
 
-const params = new URLSearchParams(window.location.search);
+const params = new URLSearchParams(
+  window.location.search
+);
 
 const sessionId = params.get("session");
 const urlLanguage = params.get("language");
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🌍 LANGUAGE
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 const LANGUAGE_KEY = "topferos_language";
 
@@ -24,112 +21,201 @@ const SUPPORTED_LANGUAGES = [
   "es"
 ];
 
+
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🌐 TRANSLATIONS
+// 🌍 TRANSLATIONS
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 const translations = {
 
   en: {
-    title: "TOPFEROS MD",
-    subtitle: "⚙️ Settings Panel",
+    languageTitle: "• Main Language",
+    languageSubtitle:
+      "Choose a language to deploy the bot",
 
-    number: "Number:",
-    numberPlaceholder: "Enter bot number",
+    loginTitle:
+      "Generate Parrain Code",
 
-    code: "Code:",
-    codePlaceholder: "Enter panel code",
+    loginSubtitle:
+      "Enter the WhatsApp number of the bot",
 
-    next: "NEXT",
-    checking: "Checking...",
+    number:
+      "WhatsApp Number",
+
+    numberPlaceholder:
+      "Enter WhatsApp number",
+
+    numberHelp:
+      "Enter the country code and number without the + sign",
+
+    generate:
+      "Generate Parrain Code",
+
+    generating:
+      "Generating...",
+
+    code:
+      "Parrain Code",
+
+    copy:
+      "📋 Copy",
+
+    copied:
+      "✅ Copied",
+
+    next:
+      "NEXT",
 
     sessionMissing:
       "❌ Panel link has no session.",
 
     numberMissing:
-      "❌ Enter the bot number.",
+      "❌ Enter the WhatsApp number.",
 
-    codeMissing:
-      "❌ Enter the panel code.",
+    invalidNumber:
+      "❌ Enter a valid WhatsApp number.",
 
-    disconnected:
-      "❌ Bot is disconnected. This code is no longer valid.",
+    generateFailed:
+      "❌ Unable to generate Parrain Code.",
+
+    serverError:
+      "❌ Unable to contact the panel server.",
 
     loginFailed:
       "❌ Login failed.",
 
-    serverError:
-      "❌ Unable to contact the panel server.",
+    connecting:
+      "Connecting...",
 
     made:
       "Made in TOPFEROS TECH"
   },
 
   fr: {
-    title: "TOPFEROS MD",
-    subtitle: "⚙️ Panneau de configuration",
+    languageTitle:
+      "• Langue principale",
 
-    number: "Numéro :",
-    numberPlaceholder: "Entrez le numéro du bot",
+    languageSubtitle:
+      "Choisissez une langue pour déployer le bot",
 
-    code: "Code :",
-    codePlaceholder: "Entrez le code du panneau",
+    loginTitle:
+      "Générer le Code Parrain",
 
-    next: "SUIVANT",
-    checking: "Vérification...",
+    loginSubtitle:
+      "Entrez le numéro WhatsApp du bot",
+
+    number:
+      "Numéro WhatsApp",
+
+    numberPlaceholder:
+      "Entrez le numéro WhatsApp",
+
+    numberHelp:
+      "Entrez l'indicatif pays et le numéro sans le signe +",
+
+    generate:
+      "Générer le Code Parrain",
+
+    generating:
+      "Génération...",
+
+    code:
+      "Code Parrain",
+
+    copy:
+      "📋 Copier",
+
+    copied:
+      "✅ Copié",
+
+    next:
+      "SUIVANT",
 
     sessionMissing:
       "❌ Le lien du panneau ne contient aucune session.",
 
     numberMissing:
-      "❌ Entrez le numéro du bot.",
+      "❌ Entrez le numéro WhatsApp.",
 
-    codeMissing:
-      "❌ Entrez le code du panneau.",
+    invalidNumber:
+      "❌ Entrez un numéro WhatsApp valide.",
 
-    disconnected:
-      "❌ Le bot est déconnecté. Ce code n'est plus valide.",
+    generateFailed:
+      "❌ Impossible de générer le Code Parrain.",
+
+    serverError:
+      "❌ Impossible de contacter le serveur du panneau.",
 
     loginFailed:
       "❌ Échec de la connexion.",
 
-    serverError:
-      "❌ Impossible de contacter le serveur du panneau.",
+    connecting:
+      "Connexion...",
 
     made:
       "Made in TOPFEROS TECH"
   },
 
   es: {
-    title: "TOPFEROS MD",
-    subtitle: "⚙️ Panel de configuración",
+    languageTitle:
+      "• Idioma principal",
 
-    number: "Número:",
-    numberPlaceholder: "Introduce el número del bot",
+    languageSubtitle:
+      "Elige un idioma para desplegar el bot",
 
-    code: "Código:",
-    codePlaceholder: "Introduce el código del panel",
+    loginTitle:
+      "Generar Código Parrain",
 
-    next: "SIGUIENTE",
-    checking: "Verificando...",
+    loginSubtitle:
+      "Introduce el número de WhatsApp del bot",
+
+    number:
+      "Número de WhatsApp",
+
+    numberPlaceholder:
+      "Introduce el número de WhatsApp",
+
+    numberHelp:
+      "Introduce el código de país y el número sin el signo +",
+
+    generate:
+      "Generar Código Parrain",
+
+    generating:
+      "Generando...",
+
+    code:
+      "Código Parrain",
+
+    copy:
+      "📋 Copiar",
+
+    copied:
+      "✅ Copiado",
+
+    next:
+      "SIGUIENTE",
 
     sessionMissing:
       "❌ El enlace del panel no contiene ninguna sesión.",
 
     numberMissing:
-      "❌ Introduce el número del bot.",
+      "❌ Introduce el número de WhatsApp.",
 
-    codeMissing:
-      "❌ Introduce el código del panel.",
+    invalidNumber:
+      "❌ Introduce un número de WhatsApp válido.",
 
-    disconnected:
-      "❌ El bot está desconectado. Este código ya no es válido.",
+    generateFailed:
+      "❌ No se pudo generar el Código Parrain.",
+
+    serverError:
+      "❌ No se puede contactar con el servidor del panel.",
 
     loginFailed:
       "❌ Error de inicio de sesión.",
 
-    serverError:
-      "❌ No se puede contactar con el servidor del panel.",
+    connecting:
+      "Conectando...",
 
     made:
       "Made in TOPFEROS TECH"
@@ -137,24 +223,33 @@ const translations = {
 
 };
 
+
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 🌍 GET LANGUAGE
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 function getLanguage() {
 
-  const saved = localStorage.getItem(LANGUAGE_KEY);
+  const saved =
+    localStorage.getItem(
+      LANGUAGE_KEY
+    );
 
-  if (SUPPORTED_LANGUAGES.includes(saved)) {
+  if (
+    SUPPORTED_LANGUAGES.includes(saved)
+  ) {
     return saved;
   }
 
-  if (SUPPORTED_LANGUAGES.includes(urlLanguage)) {
+  if (
+    SUPPORTED_LANGUAGES.includes(urlLanguage)
+  ) {
     return urlLanguage;
   }
 
   return "en";
 }
+
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 💾 SAVE LANGUAGE
@@ -162,7 +257,9 @@ function getLanguage() {
 
 function saveLanguage(language) {
 
-  if (!SUPPORTED_LANGUAGES.includes(language)) {
+  if (
+    !SUPPORTED_LANGUAGES.includes(language)
+  ) {
     return false;
   }
 
@@ -174,52 +271,9 @@ function saveLanguage(language) {
   return true;
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🌍 LANGUAGE SELECTOR
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-function setupLanguageSelector() {
-
-  const buttons = document.querySelectorAll(
-    "[data-language], .language-btn, .lang-btn"
-  );
-
-  buttons.forEach(button => {
-
-    button.addEventListener("click", () => {
-
-      const language =
-        button.dataset.language ||
-        button.dataset.lang;
-
-      if (!SUPPORTED_LANGUAGES.includes(language)) {
-        return;
-      }
-
-      saveLanguage(language);
-
-      // Kenbe lang lan nan URL tou
-      const currentUrl =
-        new URL(window.location.href);
-
-      currentUrl.searchParams.set(
-        "language",
-        language
-      );
-
-      // Si se paj login/settings lan,
-      // reload li ak nouvo lang lan.
-      window.location.href =
-        currentUrl.toString();
-
-    });
-
-  });
-
-}
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 📝 APPLY LANGUAGE
+// 🌐 APPLY LANGUAGE
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 function applyLanguage(
@@ -230,34 +284,60 @@ function applyLanguage(
     language = "en";
   }
 
-  const t = translations[language];
+  const t =
+    translations[language];
 
   document.documentElement.lang =
     language;
 
-  const title =
-    document.querySelector(
-      "#loginScreen h1"
+
+  const languageTitle =
+    document.getElementById(
+      "languageTitle"
     );
 
-  if (title) {
-    title.textContent =
-      t.title;
+  if (languageTitle) {
+    languageTitle.textContent =
+      t.languageTitle;
   }
 
-  const subtitle =
-    document.querySelector(
-      "#loginScreen .subtitle"
+
+  const languageSubtitle =
+    document.getElementById(
+      "languageSubtitle"
     );
 
-  if (subtitle) {
-    subtitle.textContent =
-      t.subtitle;
+  if (languageSubtitle) {
+    languageSubtitle.textContent =
+      t.languageSubtitle;
   }
+
+
+  const loginTitle =
+    document.getElementById(
+      "loginTitle"
+    );
+
+  if (loginTitle) {
+    loginTitle.textContent =
+      t.loginTitle;
+  }
+
+
+  const loginSubtitle =
+    document.getElementById(
+      "loginSubtitle"
+    );
+
+  if (loginSubtitle) {
+    loginSubtitle.textContent =
+      t.loginSubtitle;
+  }
+
 
   const numberLabel =
-    document.querySelector(
-      'label[for="number"]'
+    document.getElementById(
+      "numberLabel"
     );
 
   if (numberLabel) {
@@ -265,34 +345,69 @@ function applyLanguage(
       t.number;
   }
 
-  const codeLabel =
-    document.querySelector(
-      'label[for="code"]'
-    );
-
-  if (codeLabel) {
-    codeLabel.textContent =
-      t.code;
-  }
 
   const numberInput =
-    document.getElementById("number");
-
-  const codeInput =
-    document.getElementById("code");
-
-  const nextButton =
-    document.getElementById("nextButton");
+    document.getElementById(
+      "number"
+    );
 
   if (numberInput) {
     numberInput.placeholder =
       t.numberPlaceholder;
   }
 
-  if (codeInput) {
-    codeInput.placeholder =
-      t.codePlaceholder;
+
+  const numberHelp =
+    document.getElementById(
+      "numberHelp"
+    );
+
+  if (numberHelp) {
+    numberHelp.textContent =
+      t.numberHelp;
   }
+
+
+  const generateButton =
+    document.getElementById(
+      "generateButton"
+    );
+
+  if (
+    generateButton &&
+    !generateButton.disabled
+  ) {
+    generateButton.textContent =
+      t.generate;
+  }
+
+
+  const codeTitle =
+    document.getElementById(
+      "codeTitle"
+    );
+
+  if (codeTitle) {
+    codeTitle.textContent =
+      t.code;
+  }
+
+
+  const copyButton =
+    document.getElementById(
+      "copyButton"
+    );
+
+  if (copyButton) {
+    copyButton.textContent =
+      t.copy;
+  }
+
+
+  const nextButton =
+    document.getElementById(
+      "nextButton"
+    );
 
   if (
     nextButton &&
@@ -302,18 +417,67 @@ function applyLanguage(
       t.next;
   }
 
-  const footer =
-    document.querySelector(
-      "#loginScreen .footer"
+
+  document
+    .querySelectorAll(".footer")
+    .forEach(footer => {
+
+      footer.innerHTML =
+        t.made;
+
+    });
+}
+
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🌍 LANGUAGE SELECTOR
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+function setupLanguageSelector() {
+
+  const buttons =
+    document.querySelectorAll(
+      "[data-language]"
     );
 
-  if (footer) {
+  buttons.forEach(button => {
 
-    footer.innerHTML =
-      `${t.made}<br>========================`;
+    button.addEventListener(
+      "click",
+      () => {
 
-  }
+        const language =
+          button.dataset.language;
+
+        if (
+          !SUPPORTED_LANGUAGES.includes(
+            language
+          )
+        ) {
+          return;
+        }
+
+        saveLanguage(language);
+
+        const currentUrl =
+          new URL(
+            window.location.href
+          );
+
+        currentUrl.searchParams.set(
+          "language",
+          language
+        );
+
+        window.location.href =
+          currentUrl.toString();
+
+      }
+    );
+
+  });
 }
+
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 📢 MESSAGE
@@ -322,7 +486,9 @@ function applyLanguage(
 function showMessage(text) {
 
   const message =
-    document.getElementById("message");
+    document.getElementById(
+      "message"
+    );
 
   if (!message) {
     return;
@@ -331,6 +497,7 @@ function showMessage(text) {
   message.textContent =
     text || "";
 }
+
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 🔢 CLEAN NUMBER
@@ -342,51 +509,25 @@ function cleanNumber(number) {
     .replace(/\D/g, "");
 }
 
+
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🟢 CHECK BOT STATUS
+// 🔍 VALIDATE NUMBER
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-async function checkStatus() {
+function isValidNumber(number) {
 
-  try {
-
-    const response =
-      await fetch(
-        "/api/status",
-        {
-          method: "GET",
-          cache: "no-store"
-        }
-      );
-
-    if (!response.ok) {
-      return false;
-    }
-
-    const result =
-      await response.json();
-
-    return (
-      result.success === true &&
-      result.connected === true
-    );
-
-  } catch (error) {
-
-    console.error(
-      "❌ STATUS ERROR:",
-      error
-    );
-
-    return false;
-  }
+  return (
+    number.length >= 8 &&
+    number.length <= 15
+  );
 }
 
+
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🔐 LOGIN
+// 🔑 GENERATE PARRAIN CODE
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-async function login() {
+async function generateParrainCode() {
 
   const language =
     getLanguage();
@@ -395,13 +536,24 @@ async function login() {
     translations[language];
 
   const numberInput =
-    document.getElementById("number");
+    document.getElementById(
+      "number"
+    );
 
-  const codeInput =
-    document.getElementById("code");
+  const generateButton =
+    document.getElementById(
+      "generateButton"
+    );
 
-  const nextButton =
-    document.getElementById("nextButton");
+  const codeSection =
+    document.getElementById(
+      "codeSection"
+    );
+
+  const parrainCode =
+    document.getElementById(
+      "parrainCode"
+    );
 
   showMessage("");
 
@@ -414,17 +566,12 @@ async function login() {
     return;
   }
 
+
   const number =
     cleanNumber(
       numberInput?.value
     );
 
-  const code =
-    String(
-      codeInput?.value || ""
-    )
-    .trim()
-    .toUpperCase();
 
   if (!number) {
 
@@ -437,16 +584,294 @@ async function login() {
     return;
   }
 
-  if (!code) {
+
+  if (!isValidNumber(number)) {
 
     showMessage(
-      t.codeMissing
+      t.invalidNumber
     );
 
-    codeInput?.focus();
+    numberInput?.focus();
 
     return;
   }
+
+
+  if (generateButton) {
+
+    generateButton.disabled =
+      true;
+
+    generateButton.textContent =
+      t.generating;
+  }
+
+
+  try {
+
+    /*
+     * API sa dwe resevwa:
+     *
+     * {
+     *   sessionId,
+     *   number
+     * }
+     *
+     * epi li dwe retounen:
+     *
+     * {
+     *   success: true,
+     *   code: "XXXXXX"
+     * }
+     */
+
+    const response =
+      await fetch(
+        "/api/auth",
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+
+          body:
+            JSON.stringify({
+              sessionId,
+              number
+            })
+        }
+      );
+
+
+    const result =
+      await response.json();
+
+
+    if (
+      !response.ok ||
+      result.success !== true
+    ) {
+
+      showMessage(
+        result.message ||
+        t.generateFailed
+      );
+
+      return;
+    }
+
+
+    const code =
+      String(
+        result.code ||
+        result.parrainCode ||
+        result.panelCode ||
+        ""
+      )
+      .trim()
+      .toUpperCase();
+
+
+    if (!code) {
+
+      showMessage(
+        t.generateFailed
+      );
+
+      return;
+    }
+
+
+    if (parrainCode) {
+
+      parrainCode.textContent =
+        code;
+    }
+
+
+    if (codeSection) {
+
+      codeSection.style.display =
+        "block";
+    }
+
+
+    showMessage("");
+
+    const successMessage =
+      document.getElementById(
+        "successMessage"
+      );
+
+    if (successMessage) {
+
+      successMessage.textContent =
+        "✓ Code Parrain généré";
+
+    }
+
+  } catch (error) {
+
+    console.error(
+      "❌ PARRAIN CODE ERROR:",
+      error
+    );
+
+    showMessage(
+      t.serverError
+    );
+
+  } finally {
+
+    if (generateButton) {
+
+      generateButton.disabled =
+        false;
+
+      generateButton.textContent =
+        t.generate;
+
+    }
+  }
+}
+
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 📋 COPY PARRAIN CODE
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+async function copyParrainCode() {
+
+  const language =
+    getLanguage();
+
+  const t =
+    translations[language];
+
+  const parrainCode =
+    document.getElementById(
+      "parrainCode"
+    );
+
+  if (!parrainCode) {
+    return;
+  }
+
+  const code =
+    parrainCode.textContent
+      .trim();
+
+  if (
+    !code ||
+    code === "—"
+  ) {
+    return;
+  }
+
+
+  try {
+
+    await navigator.clipboard.writeText(
+      code
+    );
+
+    const copyButton =
+      document.getElementById(
+        "copyButton"
+      );
+
+    if (copyButton) {
+
+      copyButton.textContent =
+        t.copied;
+
+      setTimeout(
+        () => {
+
+          copyButton.textContent =
+            t.copy;
+
+        },
+        1500
+      );
+    }
+
+  } catch (error) {
+
+    console.error(
+      "❌ COPY ERROR:",
+      error
+    );
+
+    showMessage(
+      "❌ Copy failed"
+    );
+  }
+}
+
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ➡️ NEXT
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+async function goNext() {
+
+  const language =
+    getLanguage();
+
+  const t =
+    translations[language];
+
+  const numberInput =
+    document.getElementById(
+      "number"
+    );
+
+  const parrainCode =
+    document.getElementById(
+      "parrainCode"
+    );
+
+  const nextButton =
+    document.getElementById(
+      "nextButton"
+    );
+
+  const number =
+    cleanNumber(
+      numberInput?.value
+    );
+
+  const code =
+    String(
+      parrainCode?.textContent ||
+      ""
+    )
+    .trim()
+    .toUpperCase();
+
+
+  if (!number) {
+
+    showMessage(
+      t.numberMissing
+    );
+
+    return;
+  }
+
+
+  if (!code || code === "—") {
+
+    showMessage(
+      t.generateFailed
+    );
+
+    return;
+  }
+
 
   if (nextButton) {
 
@@ -454,22 +879,19 @@ async function login() {
       true;
 
     nextButton.textContent =
-      t.checking;
+      t.connecting;
   }
+
 
   try {
 
-    const connected =
-      await checkStatus();
-
-    if (!connected) {
-
-      showMessage(
-        t.disconnected
-      );
-
-      return;
-    }
+    /*
+     * Login verify:
+     *
+     * sessionId
+     * number
+     * code
+     */
 
     const response =
       await fetch(
@@ -491,8 +913,10 @@ async function login() {
         }
       );
 
+
     const result =
       await response.json();
+
 
     if (
       !response.ok ||
@@ -507,9 +931,11 @@ async function login() {
       return;
     }
 
+
     saveLanguage(language);
 
-    // Sove lang pou session lan
+
+    // Save language pou session lan
     try {
 
       await fetch(
@@ -527,16 +953,18 @@ async function login() {
               sessionId,
               language
             })
-        }
+          }
       );
 
-    } catch (languageError) {
+    } catch (error) {
 
       console.warn(
         "⚠️ LANGUAGE SAVE WARNING:",
-        languageError
+        error
       );
+
     }
+
 
     // Ale nan Settings
     window.location.href =
@@ -549,7 +977,7 @@ async function login() {
   } catch (error) {
 
     console.error(
-      "❌ PANEL LOGIN ERROR:",
+      "❌ NEXT ERROR:",
       error
     );
 
@@ -566,75 +994,41 @@ async function login() {
 
       nextButton.textContent =
         t.next;
+
     }
   }
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🖱️ NEXT BUTTON
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-const nextButton =
-  document.getElementById(
-    "nextButton"
-  );
-
-if (nextButton) {
-
-  nextButton.addEventListener(
-    "click",
-    login
-  );
-}
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // ⌨️ ENTER KEY
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-const codeInput =
-  document.getElementById("code");
+function setupKeyboard() {
 
-if (codeInput) {
+  const numberInput =
+    document.getElementById(
+      "number"
+    );
 
-  codeInput.addEventListener(
+  if (!numberInput) {
+    return;
+  }
+
+  numberInput.addEventListener(
     "keydown",
     event => {
 
       if (event.key === "Enter") {
-        login();
+
+        generateParrainCode();
+
       }
 
     }
   );
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🔄 CONNECTION MONITOR
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-setInterval(
-  async () => {
-
-    const connected =
-      await checkStatus();
-
-    if (
-      !connected &&
-      !document.hidden
-    ) {
-
-      const language =
-        getLanguage();
-
-      showMessage(
-        translations[language]
-          .disconnected
-      );
-    }
-
-  },
-  5000
-);
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 🚀 INITIALIZE
@@ -644,28 +1038,109 @@ setInterval(
 
   setupLanguageSelector();
 
-  const language =
-    getLanguage();
+  setupKeyboard();
 
-  applyLanguage(language);
+  const generateButton =
+    document.getElementById(
+      "generateButton"
+    );
 
-  if (!sessionId) {
+  if (generateButton) {
 
-    const message =
-      document.getElementById(
-        "message"
-      );
+    generateButton.addEventListener(
+      "click",
+      generateParrainCode
+    );
 
-    if (message) {
+  }
 
-      message.textContent =
-        translations[language]
-          .sessionMissing;
+
+  const copyButton =
+    document.getElementById(
+      "copyButton"
+    );
+
+  if (copyButton) {
+
+    copyButton.addEventListener(
+      "click",
+      copyParrainCode
+    );
+
+  }
+
+
+  const nextButton =
+    document.getElementById(
+      "nextButton"
+    );
+
+  if (nextButton) {
+
+    nextButton.addEventListener(
+      "click",
+      goNext
+    );
+
+  }
+
+
+  applyLanguage(
+    getLanguage()
+  );
+
+
+  // Montre ekran nimewo a apre language la
+  const languageScreen =
+    document.getElementById(
+      "languageScreen"
+    );
+
+  const loginScreen =
+    document.getElementById(
+      "loginScreen"
+    );
+
+
+  /*
+   * Si language deja chwazi,
+   * pa oblije chwazi li ankò.
+   */
+
+  const savedLanguage =
+    localStorage.getItem(
+      LANGUAGE_KEY
+    );
+
+
+  if (
+    SUPPORTED_LANGUAGES.includes(
+      savedLanguage
+    )
+  ) {
+
+    if (languageScreen) {
+      languageScreen.style.display =
+        "none";
     }
+
+    if (loginScreen) {
+      loginScreen.style.display =
+        "block";
+    }
+
+  } else {
+
+    if (languageScreen) {
+      languageScreen.style.display =
+        "block";
+    }
+
+    if (loginScreen) {
+      loginScreen.style.display =
+        "none";
+    }
+
   }
 
 })();
-
-// ╔════════════════════════════════════════════════════╗
-// ║                 By TOPFEROS TECH                  ║
-// ╚════════════════════════════════════════════════════╝
