@@ -3,21 +3,10 @@
 
 <head>
   <meta charset="UTF-8">
-
-  <!-- Fè paj la adapte ak telefòn ak òdinatè -->
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
-  >
-
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>TOPFEROS MD</title>
 
   <style>
-
-    /* =====================================================
-       APARANS JENERAL PAJ LA
-    ===================================================== */
-
     * {
       box-sizing: border-box;
     }
@@ -25,105 +14,59 @@
     body {
       margin: 0;
       min-height: 100vh;
-
       display: flex;
       justify-content: center;
       align-items: center;
-
       padding: 20px;
-
       background: #000;
       color: #fff;
-
-      font-family:
-        Arial,
-        Helvetica,
-        sans-serif;
+      font-family: Arial, Helvetica, sans-serif;
     }
 
-    /* Bwat prensipal panèl la */
     .panel {
       width: 100%;
       max-width: 430px;
-
       text-align: center;
-
       padding: 25px 20px;
     }
-
-
-    /* =====================================================
-       LOGO TOPFEROS MD
-       Logo a dwe parèt nan tèt panèl la.
-       Fichye a dwe nan:
-       /assets/logo.png
-    ===================================================== */
 
     .logo {
       width: 120px;
       height: 120px;
-
       display: block;
-
       object-fit: contain;
-
       margin: 0 auto 25px;
     }
-
-
-    /* =====================================================
-       TIT
-    ===================================================== */
 
     .title {
       font-size: 22px;
       font-weight: 700;
-
       margin-bottom: 12px;
     }
 
     .subtitle {
       color: #aaa;
-
       font-size: 14px;
-
       line-height: 1.6;
-
       margin-bottom: 25px;
     }
 
-
-    /* =====================================================
-       BOUTON LANG YO
-    ===================================================== */
-
     .languages {
       display: flex;
-
       justify-content: center;
-
       gap: 8px;
-
       margin-bottom: 30px;
     }
 
     .language-btn {
       flex: 1;
-
       border: 1px solid #444;
-
       border-radius: 8px;
-
       background: #111;
-
       color: #fff;
-
       padding: 13px 8px;
-
       font-size: 14px;
-
       cursor: pointer;
-
       transition: 0.2s;
     }
 
@@ -135,44 +78,27 @@
       transform: scale(0.97);
     }
 
-
-    /* =====================================================
-       INPUT NUMERO
-    ===================================================== */
-
     .field {
       width: 100%;
-
       text-align: left;
-
       margin-bottom: 10px;
     }
 
     .field label {
       display: block;
-
       margin-bottom: 7px;
-
       font-size: 14px;
-
       font-weight: 600;
     }
 
     .field input {
       width: 100%;
-
       padding: 14px;
-
       border: 1px solid #444;
-
       border-radius: 8px;
-
       outline: none;
-
       background: #111;
-
       color: #fff;
-
       font-size: 15px;
     }
 
@@ -180,130 +106,73 @@
       border-color: #777;
     }
 
-
-    /* =====================================================
-       MESAJ SOU NIMEWO A
-    ===================================================== */
-
     .number-help {
       text-align: left;
-
       color: #aaa;
-
       font-size: 12px;
-
       line-height: 1.5;
-
       margin-bottom: 20px;
     }
 
-
-    /* =====================================================
-       BOUTON GENERATE CODE
-    ===================================================== */
-
     #generateButton {
       width: 100%;
-
       padding: 14px;
-
       border: none;
-
       border-radius: 8px;
-
       background: #fff;
-
       color: #000;
-
       font-size: 15px;
-
       font-weight: 700;
-
       cursor: pointer;
     }
 
     #generateButton:disabled {
       opacity: 0.5;
-
       cursor: not-allowed;
     }
 
-
-    /* =====================================================
-       ZÒN CODE PARRAIN
-       Li kache jiskaske sistèm nan pwodwi code la.
-    ===================================================== */
-
     #codeSection {
       display: none;
-
       margin-top: 25px;
     }
 
     .code-title {
       font-size: 15px;
-
       font-weight: 700;
-
       margin-bottom: 10px;
     }
 
-    /* Bwat ki kenbe code la ak bouton Copier */
     .code-box {
       display: flex;
-
       align-items: center;
-
       gap: 8px;
-
       width: 100%;
     }
 
-    /* Code la */
     #parrainCode {
       flex: 1;
-
       min-width: 0;
-
       padding: 13px 10px;
-
       border: 1px solid #444;
-
       border-radius: 8px;
-
       background: #111;
-
       color: #fff;
-
       font-size: 14px;
-
       font-weight: 700;
-
       text-align: center;
-
       overflow: hidden;
-
       text-overflow: ellipsis;
-
       white-space: nowrap;
     }
 
-    /* Bouton Copier */
     #copyButton {
       flex-shrink: 0;
-
       padding: 13px 12px;
-
       border: 1px solid #444;
-
       border-radius: 8px;
-
       background: #111;
-
       color: #fff;
-
       font-size: 13px;
-
       cursor: pointer;
     }
 
@@ -311,110 +180,59 @@
       background: #222;
     }
 
-
-    /* =====================================================
-       MESAJ SÈVÈ / ERÈ
-    ===================================================== */
-
     #message {
       min-height: 22px;
-
       margin-top: 15px;
-
       font-size: 13px;
-
       color: #ff6666;
     }
 
     #successMessage {
       min-height: 22px;
-
       margin-top: 10px;
-
       font-size: 13px;
-
       color: #aaa;
     }
 
-
-    /* =====================================================
-       FOOTER
-    ===================================================== */
-
     .separator {
       margin: 20px 0;
-
       color: #777;
-
       font-size: 12px;
     }
 
     .footer {
       font-size: 13px;
-
       font-weight: 600;
-
       line-height: 1.8;
     }
-
-
-    /* =====================================================
-       EKRAN LOGIN/CODE LA
-       Premye ekran se lang.
-    ===================================================== */
 
     #loginScreen {
       display: none;
     }
-
   </style>
 </head>
-
 
 <body>
 
   <main class="panel">
 
-
-    <!-- ===================================================
-         LOGO
-         Sa a se premye bagay moun nan wè.
-    ==================================================== -->
-
-  <img
-  src="/assets/logo.png"
-  alt="TOPFEROS MD Logo"
-  class="logo"
-
-  onerror="console.error('Logo TOPFEROS MD pa jwenn: /assets/logo.png');"
->
-
-
-    <!-- ===================================================
-         EKRAN CHWA LANG
-    ==================================================== -->
+    <img
+      src="/assets/logo.png"
+      alt="TOPFEROS MD Logo"
+      class="logo"
+      onerror="console.error('Logo TOPFEROS MD pa jwenn: /assets/logo.png');"
+    >
 
     <section id="languageScreen">
 
-      <!-- Tit lang lan -->
-      <div
-        id="languageTitle"
-        class="title"
-      >
+      <div id="languageTitle" class="title">
         • Langue principale
       </div>
 
-
-      <!-- Eksplikasyon -->
-      <div
-        id="languageSubtitle"
-        class="subtitle"
-      >
+      <div id="languageSubtitle" class="subtitle">
         Choisissez une langue pour pouvoir déployer le bot
       </div>
 
-
-      <!-- Bouton pou chwazi lang -->
       <div class="languages">
 
         <button
@@ -443,18 +261,13 @@
 
       </div>
 
-
-      <!-- Liy separasyon -->
       <div class="separator">
         ==========================
       </div>
 
-
-      <!-- Footer -->
       <div class="footer">
         Par TOPFEROS TECH
       </div>
-
 
       <div class="separator">
         ==========================
@@ -462,37 +275,17 @@
 
     </section>
 
-
-    <!-- ===================================================
-         EKRAN NUMERO + PARRAIN CODE
-         Li parèt apre moun chwazi lang.
-    ==================================================== -->
-
     <section id="loginScreen">
 
-
-      <!-- Tit -->
-      <div
-        id="loginTitle"
-        class="title"
-      >
-        Générer Parrain Code
+      <div id="loginTitle" class="title">
+        Générer le Code Parrain
       </div>
-
-
-      <!-- =================================================
-           NIMEWO BOT LA
-      ================================================== -->
 
       <div class="field">
 
-        <label
-          id="numberLabel"
-          for="number"
-        >
+        <label id="numberLabel" for="number">
           Numéro
         </label>
-
 
         <input
           type="tel"
@@ -504,54 +297,29 @@
 
       </div>
 
-
-      <!-- Eksplikasyon pou nimewo -->
-      <div
-        id="numberHelp"
-        class="number-help"
-      >
+      <div id="numberHelp" class="number-help">
         Entrez le numéro sans mettre le +
       </div>
-
-
-      <!-- =================================================
-           BOUTON KI MANDE SISTÈM NAN PWODUI CODE LA
-      ================================================== -->
 
       <button
         type="button"
         id="generateButton"
       >
-        Généré Parrain Code
+        Générer le Code Parrain
       </button>
-
-
-      <!-- =================================================
-           CODE PARRAIN
-           Sa ap parèt sèlman apre API a fin bay code la.
-      ================================================== -->
 
       <div id="codeSection">
 
-        <div
-          id="codeTitle"
-          class="code-title"
-        >
-          Parrain Code
+        <div id="codeTitle" class="code-title">
+          Code Parrain
         </div>
-
 
         <div class="code-box">
 
-          <!-- Code sistèm nan pwodwi -->
-          <div
-            id="parrainCode"
-          >
+          <div id="parrainCode">
             —
           </div>
 
-
-          <!-- Bouton pou kopye code la -->
           <button
             type="button"
             id="copyButton"
@@ -561,24 +329,11 @@
 
         </div>
 
-
-        <!-- Mesaj apre copier -->
-        <div
-          id="successMessage"
-        ></div>
+        <div id="successMessage"></div>
 
       </div>
 
-
-      <!-- Mesaj erè -->
-      <div
-        id="message"
-      ></div>
-
-
-      <!-- =================================================
-           FOOTER
-      ================================================== -->
+      <div id="message"></div>
 
       <div class="separator">
         ==========================
@@ -596,587 +351,7 @@
 
   </main>
 
+  <script src="/app.js"></script>
 
-  <script>
-
-    "use strict";
-
-
-    /* =====================================================
-       TRADIKSYON YO
-       Tèks sa yo chanje selon lang moun nan chwazi.
-    ===================================================== */
-
-    const translations = {
-
-      /* ---------------------------------------------------
-         ANGLÈ
-      --------------------------------------------------- */
-
-      en: {
-
-        title:
-          "• Principal Language",
-
-        subtitle:
-          "Choose a language to deploy the bot",
-
-        loginTitle:
-          "Generate Parrain Code",
-
-        number:
-          "Number",
-
-        numberHelp:
-          "Enter the number without +",
-
-        numberPlaceholder:
-          "1849xxxxxxx",
-
-        generate:
-          "Generate Parrain Code",
-
-        generating:
-          "Generating...",
-
-        codeTitle:
-          "Parrain Code",
-
-        copy:
-          "📋 Copy",
-
-        copied:
-          "✅ Code copied",
-
-        numberMissing:
-          "❌ Enter the bot number.",
-
-        invalidNumber:
-          "❌ Enter a valid WhatsApp number.",
-
-        serverError:
-          "❌ Unable to contact the panel server.",
-
-        codeError:
-          "❌ Unable to generate Parrain Code.",
-
-        footer:
-          "By TOPFEROS TECH"
-
-      },
-
-
-      /* ---------------------------------------------------
-         FRANSE
-      --------------------------------------------------- */
-
-      fr: {
-
-        title:
-          "• Langue principale",
-
-        subtitle:
-          "Choisissez une langue pour pouvoir déployer le bot",
-
-        loginTitle:
-          "Générer le Code Parrain",
-
-        number:
-          "Numéro",
-
-        numberHelp:
-          "Entrez le numéro sans mettre le +",
-
-        numberPlaceholder:
-          "1849xxxxxxx",
-
-        generate:
-          "Généré Parrain Code",
-
-        generating:
-          "Génération...",
-
-        codeTitle:
-          "Code Parrain",
-
-        copy:
-          "📋 Copier",
-
-        copied:
-          "✅ Code copié",
-
-        numberMissing:
-          "❌ Entrez le numéro du bot.",
-
-        invalidNumber:
-          "❌ Entrez un numéro WhatsApp valide.",
-
-        serverError:
-          "❌ Impossible de contacter le serveur du panneau.",
-
-        codeError:
-          "❌ Impossible de générer le Code Parrain.",
-
-        footer:
-          "Par TOPFEROS TECH"
-
-      },
-
-
-      /* ---------------------------------------------------
-         PANYÒL
-      --------------------------------------------------- */
-
-      es: {
-
-        title:
-          "• Idioma principal",
-
-        subtitle:
-          "Elige un idioma para poder desplegar el bot",
-
-        loginTitle:
-          "Generar Código Parrain",
-
-        number:
-          "Número",
-
-        numberHelp:
-          "Introduce el número sin poner +",
-
-        numberPlaceholder:
-          "1849xxxxxxx",
-
-        generate:
-          "Generar Código Parrain",
-
-        generating:
-          "Generando...",
-
-        codeTitle:
-          "Código Parrain",
-
-        copy:
-          "📋 Copiar",
-
-        copied:
-          "✅ Código copiado",
-
-        numberMissing:
-          "❌ Introduce el número del bot.",
-
-        invalidNumber:
-          "❌ Introduce un número WhatsApp válido.",
-
-        serverError:
-          "❌ No se puede contactar con el servidor del panel.",
-
-        codeError:
-          "❌ No se puede generar el Código Parrain.",
-
-        footer:
-          "Por TOPFEROS TECH"
-
-      }
-
-    };
-
-
-    /* =====================================================
-       RANMASE ELEMAN YO
-    ===================================================== */
-
-    const languageScreen =
-      document.getElementById(
-        "languageScreen"
-      );
-
-    const loginScreen =
-      document.getElementById(
-        "loginScreen"
-      );
-
-    const languageTitle =
-      document.getElementById(
-        "languageTitle"
-      );
-
-    const languageSubtitle =
-      document.getElementById(
-        "languageSubtitle"
-      );
-
-    const loginTitle =
-      document.getElementById(
-        "loginTitle"
-      );
-
-    const numberLabel =
-      document.getElementById(
-        "numberLabel"
-      );
-
-    const numberInput =
-      document.getElementById(
-        "number"
-      );
-
-    const numberHelp =
-      document.getElementById(
-        "numberHelp"
-      );
-
-    const generateButton =
-      document.getElementById(
-        "generateButton"
-      );
-
-    const codeSection =
-      document.getElementById(
-        "codeSection"
-      );
-
-    const codeTitle =
-      document.getElementById(
-        "codeTitle"
-      );
-
-    const parrainCode =
-      document.getElementById(
-        "parrainCode"
-      );
-
-    const copyButton =
-      document.getElementById(
-        "copyButton"
-      );
-
-    const message =
-      document.getElementById(
-        "message"
-      );
-
-    const successMessage =
-      document.getElementById(
-        "successMessage"
-      );
-
-
-    /* =====================================================
-       SESSION ID
-       Nou pran session ID ki nan URL la.
-
-       Egzanp:
-       /?session=SESSION-123456
-    ===================================================== */
-
-    const params =
-      new URLSearchParams(
-        window.location.search
-      );
-
-    const sessionId =
-      params.get("session");
-
-
-    /* =====================================================
-       LANGUE AKTIF
-    ===================================================== */
-
-    let currentLanguage =
-      localStorage.getItem(
-        "topferos_language"
-      );
-
-
-    /*
-     * Si pa gen lang ki sove,
-     * nou itilize Français kòm default.
-     */
-
-    if (
-      !translations[currentLanguage]
-    ) {
-
-      currentLanguage = "fr";
-
-    }
-
-
-    /* =====================================================
-       NETWAYE NIMEWO A
-       Retire +, espas, tirè elatriye.
-    ===================================================== */
-
-    function cleanNumber(number) {
-
-      return String(
-        number || ""
-      ).replace(
-        /\D/g,
-        ""
-      );
-
-    }
-
-
-    /* =====================================================
-       APLIKE LANG LA
-    ===================================================== */
-
-    function applyLanguage(language) {
-
-      const t =
-        translations[language] ||
-        translations.fr;
-
-
-      document.documentElement.lang =
-        language;
-
-
-      languageTitle.textContent =
-        t.title;
-
-
-      languageSubtitle.textContent =
-        t.subtitle;
-
-
-      loginTitle.textContent =
-        t.loginTitle;
-
-
-      numberLabel.textContent =
-        t.number;
-
-
-      numberInput.placeholder =
-        t.numberPlaceholder;
-
-
-      numberHelp.textContent =
-        t.numberHelp;
-
-
-      generateButton.textContent =
-        t.generate;
-
-
-      codeTitle.textContent =
-        t.codeTitle;
-
-
-      copyButton.textContent =
-        t.copy;
-
-    }
-
-
-    /* =====================================================
-       MONTRE EKRAN LOGIN LAN
-    ===================================================== */
-
-    function selectLanguage(language) {
-
-      /*
-       * Verifye lang lan egziste.
-       */
-
-      if (
-        !translations[language]
-      ) {
-
-        return;
-
-      }
-
-
-      /*
-       * Sove lang lan.
-       */
-
-      currentLanguage =
-        language;
-
-
-      localStorage.setItem(
-        "topferos_language",
-        language
-      );
-
-
-      /*
-       * Aplike lang lan.
-       */
-
-      applyLanguage(
-        language
-      );
-
-
-      /*
-       * Kache ekran chwa lang lan.
-       */
-
-      languageScreen.style.display =
-        "none";
-
-
-      /*
-       * Montre ekran nimewo a.
-       */
-
-      loginScreen.style.display =
-        "block";
-
-
-      /*
-       * Mete cursor sou nimewo a.
-       */
-
-      setTimeout(
-        () => {
-          numberInput.focus();
-        },
-        100
-      );
-
-    }
-
-
-    /* =====================================================
-       BOUTON LANG YO
-    ===================================================== */
-
-    document
-      .querySelectorAll(
-        ".language-btn"
-      )
-      .forEach(
-        button => {
-
-          button.addEventListener(
-            "click",
-            () => {
-
-              selectLanguage(
-                button.dataset.language
-              );
-
-            }
-          );
-
-        }
-      );
-
-
-    /* =====================================================
-       AFFICHE MESAJ
-    ===================================================== */
-
-    function showMessage(text) {
-
-      message.textContent =
-        text || "";
-
-    }
-
-
-    /* =====================================================
-       FONKSYON POU JWENN PARRAIN CODE
-    ===================================================== */
-
-    async function generateParrainCode() {
-
-      const t =
-        translations[currentLanguage];
-
-
-      /*
-       * Efase ansyen mesaj yo.
-       */
-
-      showMessage("");
-
-      successMessage.textContent =
-        "";
-
-
-      /*
-       * Verifye nimewo a.
-       */
-
-      const number =
-        cleanNumber(
-          numberInput.value
-        );
-
-
-      if (!number) {
-
-        showMessage(
-          t.numberMissing
-        );
-
-        numberInput.focus();
-
-        return;
-
-      }
-
-
-      /*
-       * Verifye longè nimewo a.
-       */
-
-      if (
-        number.length < 8
-      ) {
-
-        showMessage(
-          t.invalidNumber
-        );
-
-        numberInput.focus();
-
-        return;
-
-      }
-
-
-      /*
-       * Nou bezwen Session ID
-       * pou server la konnen ki session
-       * ki mande Parrain Code la.
-       */
-
-      if (!sessionId) {
-
-        showMessage(
-          "❌ Session ID pa jwenn nan link panel la."
-        );
-
-        return;
-
-      }
-
-
-      /*
-       * Dezaktive bouton an
-       * pandan request la ap fèt.
-       */
-
-      generateButton.disabled =
-        true;
-
-
-      generateButton.textContent =
-        t.generating;
-
-
-      try {
-
-        /*
-         * Mande server panel la
-     
+</body>
+</html>
