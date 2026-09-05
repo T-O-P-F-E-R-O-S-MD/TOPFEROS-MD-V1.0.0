@@ -1,374 +1,350 @@
 <!DOCTYPE html>
-<html lang="fr">
-
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TOPFEROS MD</title>
+    <meta charset="UTF-8">
 
-  <style>
-    * {
-      box-sizing: border-box;
-    }
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
-    body {
-      margin: 0;
-      min-height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      padding: 20px;
-      background: #000;
-      color: #fff;
-      font-family: Arial, Helvetica, sans-serif;
-    }
+    <meta
+        name="theme-color"
+        content="#000000"
+    >
 
-    .panel {
-      width: 100%;
-      max-width: 430px;
-      text-align: center;
-      padding: 25px 20px;
-    }
+    <title>TOPFEROS MD — Panel</title>
 
-    .logo {
-      width: 120px;
-      height: 120px;
-      display: block;
-      object-fit: contain;
-      margin: 0 auto 25px;
-    }
-
-    .title {
-      font-size: 22px;
-      font-weight: 700;
-      margin-bottom: 12px;
-    }
-
-    .subtitle {
-      color: #aaa;
-      font-size: 14px;
-      line-height: 1.6;
-      margin-bottom: 25px;
-    }
-
-    .languages {
-      display: flex;
-      justify-content: center;
-      gap: 8px;
-      margin-bottom: 30px;
-    }
-
-    .language-btn {
-      flex: 1;
-      border: 1px solid #444;
-      border-radius: 8px;
-      background: #111;
-      color: #fff;
-      padding: 13px 8px;
-      font-size: 14px;
-      cursor: pointer;
-    }
-
-    .language-btn:hover {
-      background: #222;
-    }
-
-    .field {
-      width: 100%;
-      text-align: left;
-      margin-bottom: 10px;
-    }
-
-    .field label {
-      display: block;
-      margin-bottom: 7px;
-      font-size: 14px;
-      font-weight: 600;
-    }
-
-    .field input {
-      width: 100%;
-      padding: 14px;
-      border: 1px solid #444;
-      border-radius: 8px;
-      outline: none;
-      background: #111;
-      color: #fff;
-      font-size: 15px;
-    }
-
-    .field input:focus {
-      border-color: #777;
-    }
-
-    .number-help {
-      text-align: left;
-      color: #aaa;
-      font-size: 12px;
-      line-height: 1.5;
-      margin-bottom: 20px;
-    }
-
-    .main-button {
-      width: 100%;
-      padding: 14px;
-      border: none;
-      border-radius: 8px;
-      background: #fff;
-      color: #000;
-      font-size: 15px;
-      font-weight: 700;
-      cursor: pointer;
-    }
-
-    .main-button:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-
-    #codeSection {
-      display: none;
-      margin-top: 25px;
-    }
-
-    .code-title {
-      font-size: 15px;
-      font-weight: 700;
-      margin-bottom: 10px;
-    }
-
-    .code-box {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      width: 100%;
-    }
-
-    #parrainCode {
-      flex: 1;
-      min-width: 0;
-      padding: 13px 10px;
-      border: 1px solid #444;
-      border-radius: 8px;
-      background: #111;
-      color: #fff;
-      font-size: 14px;
-      font-weight: 700;
-      text-align: center;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    #copyButton {
-      flex-shrink: 0;
-      padding: 13px 12px;
-      border: 1px solid #444;
-      border-radius: 8px;
-      background: #111;
-      color: #fff;
-      font-size: 13px;
-      cursor: pointer;
-    }
-
-    #copyButton:hover {
-      background: #222;
-    }
-
-    #message {
-      min-height: 22px;
-      margin-top: 15px;
-      font-size: 13px;
-      color: #ff6666;
-    }
-
-    #successMessage {
-      min-height: 22px;
-      margin-top: 10px;
-      font-size: 13px;
-      color: #aaa;
-    }
-
-    .separator {
-      margin: 20px 0;
-      color: #777;
-      font-size: 12px;
-    }
-
-    .footer {
-      font-size: 13px;
-      font-weight: 600;
-      line-height: 1.8;
-    }
-
-    #loginScreen {
-      display: none;
-    }
-  </style>
+    <link
+        rel="stylesheet"
+        href="/style.css?v=3"
+    >
 </head>
 
 <body>
 
-  <main class="panel">
+    <main class="panel-container">
 
-    <img
-      src="/assets/logo.png"
-      alt="TOPFEROS MD Logo"
-      class="logo"
-    >
+        <!-- ═══════════════════════════════════════ -->
+        <!-- LOGO                                    -->
+        <!-- ═══════════════════════════════════════ -->
 
-    <!-- LANGUAGE -->
-
-    <section id="languageScreen">
-
-      <div id="languageTitle" class="title">
-        • Langue principale
-      </div>
-
-      <div id="languageSubtitle" class="subtitle">
-        Choisissez une langue pour pouvoir déployer le bot
-      </div>
-
-      <div class="languages">
-
-        <button
-          type="button"
-          class="language-btn"
-          data-language="en"
-        >
-          Anglais
-        </button>
-
-        <button
-          type="button"
-          class="language-btn"
-          data-language="fr"
-        >
-          Français
-        </button>
-
-        <button
-          type="button"
-          class="language-btn"
-          data-language="es"
-        >
-          Espagnol
-        </button>
-
-      </div>
-
-      <div class="separator">
-        ==========================
-      </div>
-
-      <div class="footer">
-        Par TOPFEROS TECH
-      </div>
-
-      <div class="separator">
-        ==========================
-      </div>
-
-    </section>
-
-
-    <!-- LOGIN / PARRAIN CODE -->
-
-    <section id="loginScreen">
-
-      <div id="loginTitle" class="title">
-        Générer le Code Parrain
-      </div>
-
-      <div id="loginSubtitle" class="subtitle">
-        Entrez le numéro WhatsApp du bot
-      </div>
-
-      <div class="field">
-
-        <label id="numberLabel" for="number">
-          Numéro WhatsApp
-        </label>
-
-        <input
-          type="tel"
-          id="number"
-          inputmode="numeric"
-          autocomplete="tel"
-          placeholder="1849xxxxxxx"
-        >
-
-      </div>
-
-      <div id="numberHelp" class="number-help">
-        Entrez le numéro avec l'indicatif pays, sans le signe +
-      </div>
-
-      <button
-        type="button"
-        id="generateButton"
-        class="main-button"
-      >
-        Générer le Code Parrain
-      </button>
-
-
-      <!-- PARRAIN CODE -->
-
-      <div id="codeSection">
-
-        <div id="codeTitle" class="code-title">
-          Code Parrain
+        <div class="logo-container">
+            <img
+                src="/assets/logo.png"
+                alt="TOPFEROS MD"
+                class="bot-logo"
+            >
         </div>
 
-        <div class="code-box">
 
-          <div id="parrainCode">
-            —
-          </div>
+        <!-- ═══════════════════════════════════════ -->
+        <!-- BOT NAME                                -->
+        <!-- ═══════════════════════════════════════ -->
 
-          <button
-            type="button"
-            id="copyButton"
-          >
-            📋 Copier
-          </button>
+        <h1 class="bot-name">
+            TOPFEROS MD
+        </h1>
 
-        </div>
+        <p class="bot-version">
+            V1.0.0
+        </p>
 
-        <button
-          type="button"
-          id="nextButton"
-          class="main-button"
-          style="margin-top: 12px;"
+
+        <!-- ═══════════════════════════════════════ -->
+        <!-- STEP 1 — LANGUAGE                       -->
+        <!-- ═══════════════════════════════════════ -->
+
+        <section
+            id="languageScreen"
+            class="screen active"
         >
-          NEXT
-        </button>
 
-        <div id="successMessage"></div>
+            <h2>
+                Select Language
+            </h2>
 
-      </div>
+            <p class="subtitle">
+                Choose your preferred language
+            </p>
 
 
-      <div id="message"></div>
+            <div class="language-buttons">
 
-      <div class="separator">
-        ==========================
-      </div>
+                <button
+                    type="button"
+                    class="language-button"
+                    data-language="en"
+                >
+                    🇺🇸 English
+                </button>
 
-      <div class="footer">
-        Par TOPFEROS TECH
-      </div>
 
-      <div class="separator">
-        ==========================
-      </div>
+                <button
+                    type="button"
+                    class="language-button"
+                    data-language="fr"
+                >
+                    🇫🇷 Français
+                </button>
 
-    </section>
 
-  </main>
+                <button
+                    type="button"
+                    class="language-button"
+                    data-language="es"
+                >
+                    🇪🇸 Español
+                </button>
 
-  <script src="/app.js?v=2"></script>
+            </div>
+
+        </section>
+
+
+        <!-- ═══════════════════════════════════════ -->
+        <!-- STEP 2 — PANEL CODE                    -->
+        <!-- ═══════════════════════════════════════ -->
+
+        <section
+            id="panelCodeScreen"
+            class="screen"
+        >
+
+            <h2 id="panelCodeTitle">
+                Panel Code
+            </h2>
+
+            <p
+                id="panelCodeSubtitle"
+                class="subtitle"
+            >
+                Enter your number and Panel Code
+            </p>
+
+
+            <form
+                id="panelCodeForm"
+                autocomplete="off"
+            >
+
+                <!-- NUMBER USER -->
+
+                <div class="form-group">
+
+                    <label
+                        for="number"
+                        id="numberLabel"
+                    >
+                        Number User
+                    </label>
+
+                    <input
+                        type="tel"
+                        id="number"
+                        name="number"
+                        placeholder="509XXXXXXXX"
+                        autocomplete="tel"
+                        inputmode="tel"
+                        required
+                    >
+
+                </div>
+
+
+                <!-- PANEL CODE -->
+
+                <div class="form-group">
+
+                    <label
+                        for="panelCode"
+                        id="panelCodeLabel"
+                    >
+                        Panel Code
+                    </label>
+
+                    <input
+                        type="text"
+                        id="panelCode"
+                        name="panelCode"
+                        placeholder="Enter Panel Code"
+                        autocomplete="off"
+                        autocapitalize="characters"
+                        spellcheck="false"
+                        required
+                    >
+
+                </div>
+
+
+                <!-- LOGIN -->
+
+                <button
+                    type="submit"
+                    id="panelLoginButton"
+                    class="primary-button"
+                >
+                    LOGIN
+                </button>
+
+            </form>
+
+
+            <p
+                id="panelMessage"
+                class="message"
+                aria-live="polite"
+            ></p>
+
+        </section>
+
+
+        <!-- ═══════════════════════════════════════ -->
+        <!-- STEP 3 — PARRAIN CODE                  -->
+        <!-- ═══════════════════════════════════════ -->
+
+        <section
+            id="parrainCodeScreen"
+            class="screen"
+        >
+
+            <h2 id="parrainTitle">
+                Parrain Code
+            </h2>
+
+            <p
+                id="parrainSubtitle"
+                class="subtitle"
+            >
+                Generate your Parrain Code
+            </p>
+
+
+            <!-- PARRAIN NUMBER -->
+
+            <div class="parrain-number-box">
+
+                <span
+                    id="parrainNumberLabel"
+                    class="info-label"
+                >
+                    Parrain numéro
+                </span>
+
+                <strong
+                    id="parrainNumber"
+                    class="parrain-number"
+                >
+                    ---
+                </strong>
+
+            </div>
+
+
+            <!-- GENERATE BUTTON -->
+
+            <button
+                type="button"
+                id="generateParrainButton"
+                class="primary-button"
+            >
+                GENERER PARRAIN CODE
+            </button>
+
+
+            <!-- CODE RESULT -->
+
+            <div
+                id="parrainCodeSection"
+                class="parrain-code-section"
+                hidden
+            >
+
+                <span
+                    id="parrainCodeLabel"
+                    class="info-label"
+                >
+                    PARRAIN CODE
+                </span>
+
+
+                <div class="code-display">
+
+                    <span
+                        id="parrainCode"
+                        class="generated-code"
+                    >
+                        ------
+                    </span>
+
+                </div>
+
+
+                <!-- COPY -->
+
+                <button
+                    type="button"
+                    id="copyParrainButton"
+                    class="secondary-button"
+                >
+                    📋 COPY
+                </button>
+
+
+                <p
+                    id="parrainExpiry"
+                    class="expiry-text"
+                    aria-live="polite"
+                ></p>
+
+            </div>
+
+
+            <!-- NEXT -->
+
+            <button
+                type="button"
+                id="nextButton"
+                class="next-button"
+                hidden
+            >
+                NEXT →
+            </button>
+
+
+            <p
+                id="parrainMessage"
+                class="message"
+                aria-live="polite"
+            ></p>
+
+        </section>
+
+
+        <!-- ═══════════════════════════════════════ -->
+        <!-- FOOTER                                  -->
+        <!-- ═══════════════════════════════════════ -->
+
+        <footer class="panel-footer">
+
+            <span>
+                By
+            </span>
+
+            <strong>
+                TOPFEROS TECH
+            </strong>
+
+        </footer>
+
+    </main>
+
+
+    <!-- ═══════════════════════════════════════ -->
+    <!-- JAVASCRIPT                             -->
+    <!-- ═══════════════════════════════════════ -->
+
+    <script src="/app.js?v=3"></script>
 
 </body>
 </html>
