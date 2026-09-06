@@ -1,553 +1,682 @@
-'use strict';
+"use strict";
 
-/*
- * ==========================================
- * TOPFEROS MD V1.0.0
- * Parrain Code Panel
- * ==========================================
- */
+const path = require("path");
+const express = require("express");
 
-document.addEventListener('DOMContentLoaded', () => {
+const settingsPanel = require("../settings/panel");
+const connection = require("../src/connection");
 
-  // ==========================================
-  // ELEMENTS
-  // ==========================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🤖 TOPFEROS MD — PANEL SERVER
+// 🚀 TOPFEROS TECH
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  const languageScreen = document.getElementById('languageScreen');
-  const parrainScreen = document.getElementById('parrainScreen');
+const app = express();
 
-  const languageTitle = document.getElementById('languageTitle');
-  const parrainTitle = document.getElementById('parrainTitle');
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ⚙️ SERVER CONFIG
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  const numberLabel = document.getElementById('numberLabel');
-  const numberInput = document.getElementById('parrainNumberInput');
-  const numberHint = document.getElementById('numberHint');
-
-  const generateButton = document.getElementById(
-    'generateParrainButton'
+const PORT =
+  Number(
+    process.env.PORT ||
+    process.env.PANEL_PORT ||
+    3000
   );
 
-  const message = document.getElementById(
-    'parrainMessage'
+const HOST =
+  "0.0.0.0";
+
+const PUBLIC_DIR =
+  path.join(
+    __dirname,
+    "public"
   );
 
-  const codeSection = document.getElementById(
-    'parrainCodeSection'
+const ASSETS_DIR =
+  path.join(
+    PUBLIC_DIR,
+    "assets"
   );
 
-  const codeTitle = document.getElementById(
-    'parrainCodeTitle'
-  );
-
-  const codeInput = document.getElementById(
-    'parrainCode'
-  );
-
-  const copyButton = document.getElementById(
-    'copyParrainButton'
-  );
-
-  const footerText = document.getElementById(
-    'footerText'
-  );
-
-
-  // ==========================================
-  // LANGUAGE
-  // ==========================================
-
-  const translations = {
-
-    en: {
-      language: 'Language',
-      parrainNumber: 'Parrain Number',
-      whatsappNumber: 'WhatsApp Number',
-      numberHint: 'Do not use +, spaces or -',
-      generate: 'Generate Parrain Code',
-      parrainCode: 'Parrain Code',
-      copy: 'Copy',
-      copied: 'Copied!',
-      enterNumber: 'Please enter your WhatsApp number.',
-      invalidNumber: 'Please enter a valid WhatsApp number.',
-      generating: 'Generating Parrain Code...',
-      generated: 'Parrain Code generated successfully.',
-      serverError: 'Unable to generate Parrain Code.',
-      connectionError: 'Connection error. Please try again.',
-      footer: 'By TOPFEROS TECH'
-    },
-
-    fr: {
-      language: 'Langue',
-      parrainNumber: 'Numéro Parrain',
-      whatsappNumber: 'Numéro WhatsApp',
-      numberHint: "N'utilisez pas +, espaces ou -",
-      generate: 'Générer le code Parrain',
-      parrainCode: 'Code Parrain',
-      copy: 'Copier',
-      copied: 'Copié !',
-      enterNumber: 'Veuillez entrer votre numéro WhatsApp.',
-      invalidNumber: 'Veuillez entrer un numéro WhatsApp valide.',
-      generating: 'Génération du code Parrain...',
-      generated: 'Code Parrain généré avec succès.',
-      serverError: 'Impossible de générer le code Parrain.',
-      connectionError: 'Erreur de connexion. Veuillez réessayer.',
-      footer: 'By TOPFEROS TECH'
-    },
-
-    es: {
-      language: 'Idioma',
-      parrainNumber: 'Número Parrain',
-      whatsappNumber: 'Número de WhatsApp',
-      numberHint: 'No utilice +, espacios ni -',
-      generate: 'Generar código Parrain',
-      parrainCode: 'Código Parrain',
-      copy: 'Copiar',
-      copied: '¡Copiado!',
-      enterNumber: 'Por favor, introduzca su número de WhatsApp.',
-      invalidNumber: 'Introduzca un número de WhatsApp válido.',
-      generating: 'Generando código Parrain...',
-      generated: 'Código Parrain generado correctamente.',
-      serverError: 'No se pudo generar el código Parrain.',
-      connectionError: 'Error de conexión. Inténtalo de nuevo.',
-      footer: 'By TOPFEROS TECH'
-    }
-
-  };
-
-
-  // ==========================================
-  // CURRENT LANGUAGE
-  // ==========================================
-
-  let currentLanguage =
-    localStorage.getItem('topferos_language') || 'en';
-
-  if (!translations[currentLanguage]) {
-    currentLanguage = 'en';
-  }
-
-
-  // ==========================================
-  // SESSION
-  // ==========================================
-
-  let sessionId =
-    localStorage.getItem('topferos_session_id') || '';
-
-
-  // ==========================================
-  // HELPERS
-  // ==========================================
-
-  function t(key) {
-    return translations[currentLanguage][key] || key;
-  }
-
-
-  function showMessage(text, type = '') {
-
-    message.textContent = text;
-
-    message.className = 'message';
-
-    if (type) {
-      message.classList.add(type);
-    }
-  }
-
-
-  function cleanNumber(value) {
-
-    return String(value || '')
-      .replace(/\D/g, '');
-
-  }
-
-
-  function setLoading(loading) {
-
-    generateButton.disabled = loading;
-
-    generateButton.textContent =
-      loading ? t('generating') : t('generate');
-
-  }
-
-
-  // ==========================================
-  // APPLY LANGUAGE
-  // ==========================================
-
-  function applyLanguage() {
-
-    languageTitle.textContent = t('language');
-
-    parrainTitle.textContent = t('parrainNumber');
-
-    numberLabel.textContent = t('whatsappNumber');
-
-    numberHint.textContent = t('numberHint');
-
-    generateButton.textContent = t('generate');
-
-    codeTitle.textContent = t('parrainCode');
-
-    copyButton.textContent = t('copy');
-
-    footerText.textContent = t('footer');
-
-  }
-
-
-  // ==========================================
-  // SHOW PARRAIN SCREEN
-  // ==========================================
-
-  function showParrainScreen() {
-
-    languageScreen.hidden = true;
-
-    parrainScreen.hidden = false;
-
-    numberInput.focus();
-
-  }
-
-
-  // ==========================================
-  // LANGUAGE BUTTONS
-  // ==========================================
-
-  const languageButtons =
-    document.querySelectorAll('.language-button');
-
-
-  languageButtons.forEach(button => {
-
-    button.addEventListener('click', () => {
-
-      const selectedLanguage =
-        button.dataset.language;
-
-      if (!translations[selectedLanguage]) {
-        return;
-      }
-
-      currentLanguage =
-        selectedLanguage;
-
-      localStorage.setItem(
-        'topferos_language',
-        currentLanguage
-      );
-
-      applyLanguage();
-
-      showParrainScreen();
-
-    });
-
-  });
-
-
-  // ==========================================
-  // NUMBER INPUT
-  // ==========================================
-
-  numberInput.addEventListener('input', () => {
-
-    const cleaned =
-      cleanNumber(numberInput.value);
-
-    numberInput.value = cleaned;
-
-  });
-
-
-  numberInput.addEventListener('paste', () => {
-
-    setTimeout(() => {
-
-      numberInput.value =
-        cleanNumber(numberInput.value);
-
-    }, 0);
-
-  });
-
-
-  // ==========================================
-  // GENERATE PARRAIN CODE
-  // ==========================================
-
-  generateButton.addEventListener('click', async () => {
-
-    const number =
-      cleanNumber(numberInput.value);
-
-
-    // ------------------------------------------
-    // VALIDATE NUMBER
-    // ------------------------------------------
-
-    if (!number) {
-
-      showMessage(
-        t('enterNumber'),
-        'error'
-      );
-
-      numberInput.focus();
-
-      return;
-    }
-
-
-    if (number.length < 8) {
-
-      showMessage(
-        t('invalidNumber'),
-        'error'
-      );
-
-      numberInput.focus();
-
-      return;
-    }
-
-
-    // ------------------------------------------
-    // RESET OLD CODE
-    // ------------------------------------------
-
-    codeSection.hidden = true;
-
-    codeInput.value = '';
-
-    showMessage(
-      t('generating')
-    );
-
-    setLoading(true);
-
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🔐 PANEL SESSIONS
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//
+// Nou pa kreye fake Parrain Code ankò.
+//
+// Code ki nan Map sa a se vrè code
+// WhatsApp/Baileys te retounen.
+//
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+const pairingSessions =
+  new Map();
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🧩 MIDDLEWARE
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+app.use(
+  express.json()
+);
+
+app.use(
+  express.urlencoded({
+    extended: true
+  })
+);
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 📁 STATIC FILES
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+app.use(
+  express.static(
+    PUBLIC_DIR
+  )
+);
+
+app.use(
+  "/assets",
+  express.static(
+    ASSETS_DIR
+  )
+);
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ❤️ HEALTH CHECK
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+app.get(
+  "/api/status",
+  (req, res) => {
 
     try {
 
-      // ----------------------------------------
-      // SEND NUMBER TO SERVER
-      // ----------------------------------------
+      return res.json({
+        success: true,
 
-      const response =
-        await fetch('/api/auth', {
+        connected:
+          connection.isConnected(),
 
-          method: 'POST',
+        botConnected:
+          connection.isConnected(),
 
-          headers: {
-            'Content-Type': 'application/json'
-          },
+        phoneNumber:
+          connection.getPhoneNumber() || null
 
-          body: JSON.stringify({
+      });
 
-            sessionId: sessionId || '',
+    } catch (error) {
 
-            number: number
+      console.error(
+        "❌ STATUS ERROR:",
+        error?.message || error
+      );
 
-          })
+      return res.status(500).json({
+        success: false,
+        connected: false,
+        error:
+          "Unable to get bot status."
+      });
 
+    }
+
+  }
+);
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🔐 REAL WHATSAPP PAIRING CODE
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//
+// POST /api/auth
+//
+// Body:
+// {
+//   "sessionId": "...",
+//   "number": "509XXXXXXXX"
+// }
+//
+// Li pral rele:
+//
+// connection.requestPairingCode(number)
+//
+// Sa ap retounen vrè WhatsApp Pairing Code la.
+//
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+app.post(
+  "/api/auth",
+  async (req, res) => {
+
+    try {
+
+      const sessionId =
+        String(
+          req.body?.sessionId ||
+          ""
+        ).trim();
+
+      const number =
+        String(
+          req.body?.number ||
+          ""
+        ).trim();
+
+      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      // 🔎 VERIFY SESSION ID
+      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+      if (!sessionId) {
+
+        return res.status(400).json({
+          success: false,
+          error:
+            "Session ID obligatwa."
         });
 
+      }
 
-      let data = null;
+      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      // 📱 VERIFY NUMBER
+      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-      try {
+      if (!number) {
 
-        data = await response.json();
-
-      } catch (jsonError) {
-
-        data = null;
+        return res.status(400).json({
+          success: false,
+          error:
+            "WhatsApp phone number obligatwa."
+        });
 
       }
 
+      console.log("");
 
-      // ----------------------------------------
-      // SERVER ERROR
-      // ----------------------------------------
+      console.log(
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+      );
 
-      if (!response.ok || !data || !data.success) {
+      console.log(
+        "📱 TOPFEROS MD — NEW PAIRING REQUEST"
+      );
 
-        const serverMessage =
-          data && data.message
-            ? data.message
-            : t('serverError');
+      console.log(
+        `🆔 Session: ${sessionId}`
+      );
 
-        throw new Error(serverMessage);
+      console.log(
+        `📞 Number: ${number}`
+      );
+
+      console.log(
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+      );
+
+      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      // 🔐 REQUEST REAL WHATSAPP CODE
+      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+      const pairingCode =
+        await connection.requestPairingCode(
+          number
+        );
+
+      if (!pairingCode) {
+
+        return res.status(500).json({
+          success: false,
+          error:
+            "WhatsApp pa retounen pairing code."
+        });
 
       }
 
+      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      // 💾 SAVE PAIRING SESSION
+      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-      // ----------------------------------------
-      // SAVE SESSION ID
-      // ----------------------------------------
+      pairingSessions.set(
+        sessionId,
+        {
+          number:
+            number.replace(/\D/g, ""),
 
-      if (data.sessionId) {
+          code:
+            pairingCode,
 
-        sessionId =
-          data.sessionId;
+          createdAt:
+            Date.now()
+        }
+      );
 
-        localStorage.setItem(
-          'topferos_session_id',
+      console.log("");
+
+      console.log(
+        "✅ REAL WHATSAPP PAIRING CODE GENERATED"
+      );
+
+      console.log(
+        `🔐 Code: ${pairingCode}`
+      );
+
+      console.log(
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+      );
+
+      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      // 📤 SEND CODE TO PANEL
+      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+      return res.json({
+
+        success: true,
+
+        sessionId,
+
+        number:
+          number.replace(/\D/g, ""),
+
+        // Frontend aktyèl la ap chèche sa
+        parrainCode:
+          pairingCode,
+
+        // Backup pou frontend
+        code:
+          pairingCode
+
+      });
+
+    } catch (error) {
+
+      console.error("");
+
+      console.error(
+        "❌ PAIRING REQUEST ERROR:",
+        error?.message || error
+      );
+
+      console.error("");
+
+      return res.status(500).json({
+
+        success: false,
+
+        error:
+          error?.message ||
+          "Unable to generate WhatsApp pairing code."
+
+      });
+
+    }
+
+  }
+);
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🔎 GET PAIRING SESSION
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+app.get(
+  "/api/auth/:sessionId",
+  (req, res) => {
+
+    try {
+
+      const sessionId =
+        String(
+          req.params.sessionId ||
+          ""
+        ).trim();
+
+      if (!sessionId) {
+
+        return res.status(400).json({
+          success: false,
+          error:
+            "Session ID obligatwa."
+        });
+
+      }
+
+      const session =
+        pairingSessions.get(
           sessionId
         );
 
-      }
+      if (!session) {
 
-
-      // ----------------------------------------
-      // GET PARRAIN CODE
-      // ----------------------------------------
-
-      const parrainCode =
-        data.parrainCode || data.code;
-
-
-      if (!parrainCode) {
-
-        throw new Error(
-          t('serverError')
-        );
+        return res.status(404).json({
+          success: false,
+          error:
+            "Pairing session pa jwenn."
+        });
 
       }
 
+      return res.json({
 
-      // ----------------------------------------
-      // DISPLAY CODE
-      // ----------------------------------------
+        success: true,
 
-      codeInput.value =
-        String(parrainCode);
+        sessionId,
 
+        number:
+          session.number,
 
-      codeSection.hidden = false;
+        parrainCode:
+          session.code,
 
+        code:
+          session.code,
 
-      showMessage(
-        t('generated'),
-        'success'
-      );
+        createdAt:
+          session.createdAt
 
+      });
 
     } catch (error) {
 
       console.error(
-        'TOPFEROS MD Parrain Error:',
-        error
+        "❌ GET PAIRING SESSION ERROR:",
+        error?.message || error
       );
 
-
-      showMessage(
-        error.message || t('connectionError'),
-        'error'
-      );
-
-
-    } finally {
-
-      setLoading(false);
+      return res.status(500).json({
+        success: false,
+        error:
+          "Unable to get pairing session."
+      });
 
     }
 
-  });
+  }
+);
 
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ❤️ BOT LOGIN / STATUS
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//
+// Pa gen Panel Code ankò.
+//
+// WhatsApp Pairing Code la se WhatsApp li menm
+// ki itilize pou konekte account lan.
+//
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  // ==========================================
-  // COPY PARRAIN CODE
-  // ==========================================
+app.post(
+  "/api/login",
+  (req, res) => {
 
-  copyButton.addEventListener('click', async () => {
+    return res.json({
 
-    const code =
-      codeInput.value.trim();
+      success:
+        connection.isConnected(),
 
+      connected:
+        connection.isConnected(),
 
-    if (!code) {
-      return;
+      message:
+        connection.isConnected()
+          ? "WhatsApp bot connected."
+          : "WhatsApp bot not connected."
+
+    });
+
+  }
+);
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🌍 LANGUAGE
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+app.post(
+  "/api/language",
+  (req, res) => {
+
+    const language =
+      String(
+        req.body?.language ||
+        "en"
+      ).toLowerCase();
+
+    const allowedLanguages =
+      [
+        "en",
+        "fr",
+        "es"
+      ];
+
+    if (
+      !allowedLanguages.includes(
+        language
+      )
+    ) {
+
+      return res.status(400).json({
+        success: false,
+        error:
+          "Unsupported language."
+      });
+
     }
 
+    return res.json({
+
+      success: true,
+
+      language
+
+    });
+
+  }
+);
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🚪 LOGOUT
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+app.post(
+  "/api/logout",
+  async (req, res) => {
 
     try {
 
-      if (
-        navigator.clipboard &&
-        navigator.clipboard.writeText
-      ) {
+      await connection.stop();
 
-        await navigator.clipboard.writeText(code);
+      return res.json({
 
-      } else {
+        success: true,
 
-        codeInput.select();
+        message:
+          "WhatsApp connection stopped."
 
-        codeInput.setSelectionRange(
-          0,
-          codeInput.value.length
-        );
-
-        document.execCommand('copy');
-
-      }
-
-
-      const oldText =
-        copyButton.textContent;
-
-      copyButton.textContent =
-        t('copied');
-
-
-      setTimeout(() => {
-
-        copyButton.textContent =
-          oldText || t('copy');
-
-      }, 1500);
-
+      });
 
     } catch (error) {
 
       console.error(
-        'Copy error:',
-        error
+        "❌ LOGOUT ERROR:",
+        error?.message || error
       );
 
-      codeInput.select();
+      return res.status(500).json({
+
+        success: false,
+
+        error:
+          error?.message ||
+          "Unable to logout."
+
+      });
 
     }
 
-  });
+  }
+);
 
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🏠 MAIN PAGE
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  // ==========================================
-  // ENTER KEY
-  // ==========================================
+app.get(
+  "/",
+  (req, res) => {
 
-  numberInput.addEventListener('keydown', event => {
+    res.sendFile(
+      path.join(
+        PUBLIC_DIR,
+        "index.html"
+      )
+    );
 
-    if (event.key === 'Enter') {
+  }
+);
 
-      event.preventDefault();
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🤖 START WHATSAPP CONNECTION
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//
+// Render ap kouri panel/server.js dirèkteman.
+// Se poutèt sa nou bezwen lanse connection.js isit la.
+//
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-      generateButton.click();
+async function startWhatsApp() {
 
-    }
+  try {
 
-  });
+    console.log("");
 
+    console.log(
+      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    );
 
-  // ==========================================
-  // INITIALIZE
-  // ==========================================
+    console.log(
+      "🤖 TOPFEROS MD — STARTING WHATSAPP"
+    );
 
-  applyLanguage();
+    console.log(
+      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    );
 
-});
+    await connection.start();
+
+    console.log(
+      "✅ WhatsApp connection initialized."
+    );
+
+  } catch (error) {
+
+    console.error(
+      "❌ WHATSAPP START ERROR:",
+      error?.message || error
+    );
+
+  }
+
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🚀 START PANEL SERVER
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+app.listen(
+  PORT,
+  HOST,
+  () => {
+
+    console.log("");
+
+    console.log(
+      "╔══════════════════════════════════════════════╗"
+    );
+
+    console.log(
+      "║             🤖 TOPFEROS MD                 ║"
+    );
+
+    console.log(
+      "║                 V1.0.0                     ║"
+    );
+
+    console.log(
+      "║                                            ║"
+    );
+
+    console.log(
+      "║             🚀 TOPFEROS TECH               ║"
+    );
+
+    console.log(
+      "╚══════════════════════════════════════════════╝"
+    );
+
+    console.log("");
+
+    console.log(
+      `🌐 Panel running on port ${PORT}`
+    );
+
+    console.log(
+      `📡 Host: ${HOST}`
+    );
+
+    console.log("");
+
+  }
+);
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🤖 START WHATSAPP AFTER PANEL
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+startWhatsApp();
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🛑 PROCESS SHUTDOWN
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+async function shutdown(
+  signal
+) {
+
+  console.log("");
+
+  console.log(
+    `🛑 TOPFEROS MD: Received ${signal}`
+  );
+
+  try {
+
+    await connection.stop();
+
+  } catch (error) {
+
+    console.error(
+      "❌ SHUTDOWN ERROR:",
+      error?.message || error
+    );
+
+  }
+
+  process.exit(0);
+
+}
+
+process.on(
+  "SIGTERM",
+  () => shutdown("SIGTERM")
+);
+
+process.on(
+  "SIGINT",
+  () => shutdown("SIGINT")
+);
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 📦 EXPORT
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+module.exports = app;
