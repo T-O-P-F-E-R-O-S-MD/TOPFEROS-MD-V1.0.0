@@ -58,18 +58,11 @@ const DEFAULT_PHONE_NUMBER =
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 function prepareAuthDirectory() {
-
   if (!fs.existsSync(AUTH_DIR)) {
-
-    fs.mkdirSync(
-      AUTH_DIR,
-      {
-        recursive: true
-      }
-    );
-
+    fs.mkdirSync(AUTH_DIR, {
+      recursive: true
+    });
   }
-
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -77,10 +70,8 @@ function prepareAuthDirectory() {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 function cleanPhoneNumber(number) {
-
   return String(number || "")
     .replace(/\D/g, "");
-
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -88,30 +79,24 @@ function cleanPhoneNumber(number) {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 function validatePhoneNumber(number) {
-
-  const cleaned =
-    cleanPhoneNumber(number);
+  const cleaned = cleanPhoneNumber(number);
 
   if (!cleaned) {
-
     return {
       valid: false,
       number: "",
       message:
         "WhatsApp phone number obligatwa."
     };
-
   }
 
   if (cleaned.length < 8) {
-
     return {
       valid: false,
       number: cleaned,
       message:
         "WhatsApp phone number lan pa sanble valid."
     };
-
   }
 
   return {
@@ -119,179 +104,40 @@ function validatePhoneNumber(number) {
     number: cleaned,
     message: ""
   };
-
-}
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// ⏳ WAIT FOR SOCKET
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-function waitForSocketReady(timeout = 15000) {
-
-  return new Promise(
-    (resolve, reject) => {
-
-      if (!sock) {
-
-        reject(
-          new Error(
-            "WhatsApp socket pa disponib."
-          )
-        );
-
-        return;
-
-      }
-
-      let finished = false;
-      let timer = null;
-
-      const finish = (
-        callback,
-        value
-      ) => {
-
-        if (finished) {
-          return;
-        }
-
-        finished = true;
-
-        if (timer) {
-
-          clearTimeout(timer);
-          timer = null;
-
-        }
-
-        if (
-          sock &&
-          sock.ev &&
-          typeof sock.ev.off === "function"
-        ) {
-
-          sock.ev.off(
-            "connection.update",
-            onUpdate
-          );
-
-        }
-
-        callback(value);
-
-      };
-
-      const onUpdate = (
-        update
-      ) => {
-
-        const state =
-          update?.connection;
-
-        if (state === "open") {
-
-          finish(
-            resolve,
-            true
-          );
-
-          return;
-
-        }
-
-        if (state === "close") {
-
-          finish(
-            reject,
-            new Error(
-              "WhatsApp connection closed before pairing code was generated."
-            )
-          );
-
-        }
-
-      };
-
-      if (
-        sock.ev &&
-        typeof sock.ev.on === "function"
-      ) {
-
-        sock.ev.on(
-          "connection.update",
-          onUpdate
-        );
-
-      }
-
-      timer =
-        setTimeout(
-          () => {
-
-            finish(
-              reject,
-              new Error(
-                "WhatsApp connection pa pare nan tan li te bay la."
-              )
-            );
-
-          },
-          timeout
-        );
-
-    }
-  );
-
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 📨 MESSAGE HANDLER
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-async function handleMessages(
-  messages
-) {
-
+async function handleMessages(messages) {
   if (
     !messages ||
     !Array.isArray(messages) ||
     messages.length === 0
   ) {
-
     return;
-
   }
 
-  for (
-    const message of messages
-  ) {
-
+  for (const message of messages) {
     try {
-
       if (
         messageHandler &&
         typeof messageHandler.handleMessage ===
           "function"
       ) {
-
         await messageHandler.handleMessage(
           sock,
           message
         );
-
       }
-
     } catch (error) {
-
       console.error(
         "❌ MESSAGE HANDLER ERROR:",
         error?.message || error
       );
-
     }
-
   }
-
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -299,44 +145,31 @@ async function handleMessages(
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 function scheduleReconnect() {
-
   if (stopped) {
-
     return;
-
   }
 
   if (reconnectTimer) {
-
     return;
-
   }
 
-  reconnectTimer =
-    setTimeout(
-      async () => {
+  reconnectTimer = setTimeout(
+    async () => {
+      reconnectTimer = null;
 
-        reconnectTimer = null;
+      try {
+        await start();
+      } catch (error) {
+        console.error(
+          "❌ RECONNECT ERROR:",
+          error?.message || error
+        );
 
-        try {
-
-          await start();
-
-        } catch (error) {
-
-          console.error(
-            "❌ RECONNECT ERROR:",
-            error?.message || error
-          );
-
-          scheduleReconnect();
-
-        }
-
-      },
-      5000
-    );
-
+        scheduleReconnect();
+      }
+    },
+    5000
+  );
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -344,27 +177,18 @@ function scheduleReconnect() {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 async function start() {
-
   if (starting) {
-
     return sock;
-
   }
 
-  if (
-    sock &&
-    sock.user
-  ) {
-
+  if (sock && sock.user) {
     return sock;
-
   }
 
   starting = true;
   stopped = false;
 
   try {
-
     prepareAuthDirectory();
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -374,10 +198,9 @@ async function start() {
     const {
       state,
       saveCreds
-    } =
-      await useMultiFileAuthState(
-        AUTH_DIR
-      );
+    } = await useMultiFileAuthState(
+      AUTH_DIR
+    );
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // 📡 BAILEYS VERSION
@@ -386,19 +209,14 @@ async function start() {
     let version;
 
     try {
-
       const latest =
         await fetchLatestBaileysVersion();
 
-      version =
-        latest.version;
-
+      version = latest.version;
     } catch (error) {
-
       console.log(
         "⚠️ Could not fetch latest Baileys version."
       );
-
     }
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -406,7 +224,6 @@ async function start() {
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     const socketOptions = {
-
       auth: state,
 
       logger:
@@ -429,24 +246,19 @@ async function start() {
       syncFullHistory: false,
 
       generateHighQualityLinkPreview: false
-
     };
 
     if (version) {
-
-      socketOptions.version =
-        version;
-
+      socketOptions.version = version;
     }
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // 🔌 CREATE SOCKET
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-    sock =
-      makeWASocket(
-        socketOptions
-      );
+    sock = makeWASocket(
+      socketOptions
+    );
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // 💾 SAVE CREDENTIALS
@@ -464,7 +276,6 @@ async function start() {
     sock.ev.on(
       "connection.update",
       async (update) => {
-
         const {
           connection,
           lastDisconnect
@@ -474,24 +285,17 @@ async function start() {
         // 🟡 CONNECTING
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-        if (
-          connection === "connecting"
-        ) {
-
+        if (connection === "connecting") {
           console.log(
             "🟡 TOPFEROS MD: Connecting to WhatsApp..."
           );
-
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         // 🟢 OPEN
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-        if (
-          connection === "open"
-        ) {
-
+        if (connection === "open") {
           console.log("");
 
           console.log(
@@ -506,14 +310,10 @@ async function start() {
             "📱 WhatsApp: ONLINE"
           );
 
-          if (
-            sock.user?.id
-          ) {
-
+          if (sock?.user?.id) {
             console.log(
               `📞 Connected account: ${sock.user.id}`
             );
-
           }
 
           console.log(
@@ -526,6 +326,8 @@ async function start() {
 
           console.log("");
 
+          // Kreye oswa retabli Settings Session
+          // pou kont WhatsApp sa a.
           settingsPanel.setBotConnected(
             sock
           );
@@ -534,17 +336,13 @@ async function start() {
           pairingRequested = false;
 
           return;
-
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         // 🔴 CLOSE
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-        if (
-          connection === "close"
-        ) {
-
+        if (connection === "close") {
           const statusCode =
             lastDisconnect
               ?.error
@@ -555,7 +353,7 @@ async function start() {
             statusCode ===
             DisconnectReason.loggedOut;
 
-          settingsPanel.setBotDisconnected();
+          console.log("");
 
           console.log(
             "🔴 TOPFEROS MD: WhatsApp disconnected."
@@ -567,25 +365,31 @@ async function start() {
             }`
           );
 
+          /*
+           * Pa retire Settings Session nan yon
+           * reconnect nòmal.
+           *
+           * Sa pèmèt Settings Code la rete menm
+           * lè WhatsApp ap reconnect.
+           */
+          if (sock) {
+            settingsPanel.setBotDisconnected(
+              sock,
+              loggedOut
+            );
+          }
+
           sock = null;
           starting = false;
           pairingRequested = false;
 
-          if (
-            !loggedOut &&
-            !stopped
-          ) {
-
+          if (!loggedOut && !stopped) {
             console.log(
               "🔄 TOPFEROS MD: Reconnecting in 5 seconds..."
             );
 
             scheduleReconnect();
-
-          } else if (
-            loggedOut
-          ) {
-
+          } else if (loggedOut) {
             console.log(
               "❌ TOPFEROS MD: WhatsApp session logged out."
             );
@@ -593,11 +397,8 @@ async function start() {
             console.log(
               "⚠️ Auth session lan bezwen rekonekte."
             );
-
           }
-
         }
-
       }
     );
 
@@ -608,43 +409,30 @@ async function start() {
     sock.ev.on(
       "messages.upsert",
       async (data) => {
-
         try {
-
           if (
             !data ||
-            !Array.isArray(
-              data.messages
-            )
+            !Array.isArray(data.messages)
           ) {
-
             return;
-
           }
 
           await handleMessages(
             data.messages
           );
-
         } catch (error) {
-
           console.error(
             "❌ MESSAGES UPSERT ERROR:",
             error?.message || error
           );
-
         }
-
       }
     );
 
   } catch (error) {
-
     starting = false;
     sock = null;
     pairingRequested = false;
-
-    settingsPanel.setBotDisconnected();
 
     console.error(
       "❌ WHATSAPP CONNECTION ERROR:",
@@ -652,40 +440,29 @@ async function start() {
     );
 
     if (!stopped) {
-
       scheduleReconnect();
-
     }
 
     throw error;
-
   }
 
   starting = false;
 
   return sock;
-
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 🔐 REQUEST REAL WHATSAPP PAIRING CODE
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-async function requestPairingCode(
-  number
-) {
-
+async function requestPairingCode(number) {
   const validation =
-    validatePhoneNumber(
-      number
-    );
+    validatePhoneNumber(number);
 
   if (!validation.valid) {
-
     throw new Error(
       validation.message
     );
-
   }
 
   const phoneNumber =
@@ -696,11 +473,9 @@ async function requestPairingCode(
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   if (pairingRequested) {
-
     throw new Error(
       "Yon pairing code request deja an pwogrè. Tanpri tann li fini."
     );
-
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -708,31 +483,23 @@ async function requestPairingCode(
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   if (!sock) {
-
     await start();
-
   }
 
   if (!sock) {
-
     throw new Error(
       "WhatsApp socket pa disponib."
     );
-
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   // 📱 SESSION DEJA REGISTERED
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  if (
-    sock.user
-  ) {
-
+  if (sock.user) {
     throw new Error(
       "WhatsApp session lan deja konekte. Pairing Code pa disponib sou session sa a."
     );
-
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -743,11 +510,9 @@ async function requestPairingCode(
     typeof sock.requestPairingCode !==
     "function"
   ) {
-
     throw new Error(
       "Baileys version sa a pa sipòte requestPairingCode()."
     );
-
   }
 
   console.log("");
@@ -765,7 +530,7 @@ async function requestPairingCode(
   );
 
   console.log(
-    "⏳ Waiting for WhatsApp socket..."
+    "⏳ Generating real WhatsApp pairing code..."
   );
 
   console.log(
@@ -773,7 +538,6 @@ async function requestPairingCode(
   );
 
   try {
-
     pairingRequested = true;
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -781,15 +545,26 @@ async function requestPairingCode(
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     await new Promise(
-      (resolve) => {
-
+      resolve => {
         setTimeout(
           resolve,
           1500
         );
-
       }
     );
+
+    // Verify socket toujou disponib
+    if (!sock) {
+      throw new Error(
+        "WhatsApp socket la disparèt pandan pairing."
+      );
+    }
+
+    if (sock.user) {
+      throw new Error(
+        "WhatsApp session lan deja konekte."
+      );
+    }
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // 🔐 REQUEST REAL CODE
@@ -801,28 +576,20 @@ async function requestPairingCode(
       );
 
     if (!pairingCode) {
-
       throw new Error(
         "WhatsApp pa retounen pairing code."
       );
-
     }
 
     const normalizedCode =
-      String(
-        pairingCode
-      )
+      String(pairingCode)
         .replace(/\s/g, "")
         .trim();
 
-    if (
-      !normalizedCode
-    ) {
-
+    if (!normalizedCode) {
       throw new Error(
         "WhatsApp retounen yon pairing code vid."
       );
-
     }
 
     console.log("");
@@ -866,7 +633,6 @@ async function requestPairingCode(
     return normalizedCode;
 
   } catch (error) {
-
     console.error(
       "❌ PAIRING CODE ERROR:",
       error?.message || error
@@ -875,11 +641,8 @@ async function requestPairingCode(
     throw error;
 
   } finally {
-
     pairingRequested = false;
-
   }
-
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -887,42 +650,42 @@ async function requestPairingCode(
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 async function stop() {
-
   stopped = true;
 
   if (reconnectTimer) {
-
     clearTimeout(
       reconnectTimer
     );
 
     reconnectTimer = null;
-
   }
 
-  settingsPanel.setBotDisconnected();
+  /*
+   * true = retire Settings Session nan yon
+   * stop reyèl/volontè.
+   */
+  if (sock) {
+    settingsPanel.setBotDisconnected(
+      sock,
+      true
+    );
+  }
 
   try {
-
     if (
       sock &&
       typeof sock.end ===
         "function"
     ) {
-
       sock.end(
         undefined
       );
-
     }
-
   } catch (error) {
-
     console.error(
       "❌ SOCKET STOP ERROR:",
       error?.message || error
     );
-
   }
 
   sock = null;
@@ -932,7 +695,6 @@ async function stop() {
   console.log(
     "🛑 TOPFEROS MD: WhatsApp connection stopped."
   );
-
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -940,9 +702,7 @@ async function stop() {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 function getSocket() {
-
   return sock;
-
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -950,12 +710,10 @@ function getSocket() {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 function isConnected() {
-
   return !!(
     sock &&
     sock.user
   );
-
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -963,9 +721,19 @@ function isConnected() {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 function getPhoneNumber() {
+  if (
+    sock &&
+    sock.user &&
+    sock.user.id
+  ) {
+    return cleanPhoneNumber(
+      sock.user.id
+        .split(":")[0]
+        .split("@")[0]
+    );
+  }
 
   return DEFAULT_PHONE_NUMBER;
-
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -973,17 +741,10 @@ function getPhoneNumber() {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 module.exports = {
-
   start,
-
   stop,
-
   getSocket,
-
   isConnected,
-
   getPhoneNumber,
-
   requestPairingCode
-
 };
