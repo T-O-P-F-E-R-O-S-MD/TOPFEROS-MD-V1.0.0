@@ -6,7 +6,8 @@ const languageScreen = $("#languageScreen");
 const panelCodeScreen = $("#panelCodeScreen");
 const parrainCodeScreen = $("#parrainCodeScreen");
 
-const languageButtons = document.querySelectorAll(".language-btn");
+const languageButtons =
+    document.querySelectorAll(".language-button");
 
 let currentLanguage = "fr";
 let currentSessionId = null;
