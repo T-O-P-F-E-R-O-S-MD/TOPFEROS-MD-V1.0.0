@@ -1,17 +1,30 @@
 "use strict";
 
-// ╔════════════════════════════════════════════════════╗
-// ║              🤖 TOPFEROS MD V1.0.0                ║
-// ║                 💬 MESSAGE HANDLER                 ║
-// ║              🚀 TOPFEROS TECH                     ║
-// ╚════════════════════════════════════════════════════╝
-
 const fs = require("fs");
 const path = require("path");
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🖼️ BOT LOGO
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+const settingsPanel = require("../settings/panel");
+
+// ============================================================
+// CONFIG
+// ============================================================
+
+let config = {};
+
+try {
+  config = require("../config");
+} catch (error) {
+  console.warn("⚠️ config.js pa jwenn, prefix default = .");
+}
+
+const PREFIX =
+  config?.PREFIX ||
+  config?.prefix ||
+  ".";
+
+// ============================================================
+// PATHS
+// ============================================================
 
 const logoPath = path.join(
   __dirname,
@@ -20,26 +33,9 @@ const logoPath = path.join(
   "logo.png"
 );
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// ⚙️ CONFIG
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-let config = {};
-
-try {
-  config = require("../config");
-} catch (error) {
-  config = {};
-}
-
-const PREFIX =
-  config?.PREFIX ||
-  config?.prefix ||
-  ".";
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🔗 TOPFEROS LINKS
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ============================================================
+// LINKS
+// ============================================================
 
 const LINKS = {
   group:
@@ -52,9 +48,9 @@ const LINKS = {
     "https://topferos-md-v1-0-0.onrender.com/"
 };
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🌸 ACTIVATION MESSAGE
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ============================================================
+// ACTIVATION MESSAGE
+// ============================================================
 
 const activationMessage = `
 🦁 *TOPFEROS MD V1.0.0*
@@ -108,9 +104,9 @@ nouvo paramèt yo aplike.
 🚀 *TOPFEROS TECH*
 `;
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🧹 GET MESSAGE TEXT
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ============================================================
+// GET MESSAGE TEXT
+// ============================================================
 
 function getMessageText(message) {
   return (
@@ -119,44 +115,332 @@ function getMessageText(message) {
     message?.message?.imageMessage?.caption ||
     message?.message?.videoMessage?.caption ||
     message?.message?.documentMessage?.caption ||
+    message?.message?.buttonsResponseMessage?.selectedButtonId ||
+    message?.message?.listResponseMessage?.singleSelectReply
+      ?.selectedRowId ||
     ""
   );
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 📨 HANDLE MESSAGE
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ============================================================
+// SEND LOGO + TEXT
+// ============================================================
 
-async function handleMessage(sock, message) {
+async function sendLogoMessage(
+  sock,
+  jid,
+  caption,
+  quoted
+) {
+  try {
+    if (fs.existsSync(logoPath)) {
+      await sock.sendMessage(
+        jid,
+        {
+          image: {
+            url: logoPath
+          },
+          caption
+        },
+        {
+          quoted
+        }
+      );
+
+      return true;
+    }
+
+    console.warn(
+      "⚠️ Logo pa jwenn:",
+      logoPath
+    );
+
+    await sock.sendMessage(
+      jid,
+      {
+        text: caption
+      },
+      {
+        quoted
+      }
+    );
+
+    return true;
+  } catch (error) {
+    console.error(
+      "❌ SEND LOGO ERROR:",
+      error?.message || error
+    );
+
+    try {
+      await sock.sendMessage(
+        jid,
+        {
+          text: caption
+        },
+        {
+          quoted
+        }
+      );
+
+      return true;
+    } catch (fallbackError) {
+      console.error(
+        "❌ FALLBACK MESSAGE ERROR:",
+        fallbackError?.message || fallbackError
+      );
+
+      return false;
+    }
+  }
+}
+
+// ============================================================
+// ALIVE MESSAGE
+// ============================================================
+
+async function sendAliveMessage(
+  sock,
+  jid,
+  quoted
+) {
+  const text = `
+🦁 *TOPFEROS MD V1.0.0*
+
+🟢 *BOT LA AKTIF*
+
+✅ Bot la konekte e li pare pou itilize.
+
+🚀 *TOPFEROS TECH*
+`;
+
+  await sock.sendMessage(
+    jid,
+    {
+      text
+    },
+    {
+      quoted
+    }
+  );
+}
+
+// ============================================================
+// SETTINGS INFORMATION
+// ============================================================
+
+function getStatus(
+  settings,
+  key
+) {
+  return settings?.[key] === true
+    ? "✅ Aktif"
+    : "❌ Dezaktive";
+}
+
+// ============================================================
+// SETTINGS DETAILS MESSAGE
+// ============================================================
+
+function buildSettingsInformation(
+  sessionId
+) {
+  const bot =
+    settingsPanel.getBotInformation(
+      sessionId
+    ) || {};
+
+  const settings =
+    settingsPanel.getSettings(
+      sessionId
+    ) || {};
+
+  const prefix =
+    bot.prefix || PREFIX;
+
+  const name =
+    bot.name || "TOPFEROS MD";
+
+  const age =
+    bot.age ?? 24;
+
+  return `
+╭━━━━━━━━━━━❀━━━━━━━━━━━╮
+🦁 *PARAMÈT BOT LA* 🐑
+╰━━━━━━━━━━━❀━━━━━━━━━━━╯
+
+┌─────── ⋆⋅☆⋅⋆ ──────────┐
+💗 *ENFÒMASYON BOT LA* 💗
+└────────── ⋆⋅☆⋅⋆ ──────────┘
+
+🎀 Non       » ${name}
+🎂 Laj       » ${age}
+🔤 Prefiks   » ${prefix}
+🌐 Mòd       » ${getStatus(settings, "publicMode")}
+
+┌─────── ⋆⋅☆⋅⋆ ──────────┐
+🛡️ *PROTECTION* 🛡️
+└────────── ⋆⋅☆⋅⋆ ──────────┘
+
+📞 Anti Call       » ${getStatus(settings, "antiCall")}
+🗑️ Anti Delete     » ${getStatus(settings, "antiDelete")}
+🚫 Anti Spam       » ${getStatus(settings, "antiSpam")}
+🔗 Anti Link       » ${getStatus(settings, "groupAntiLink")}
+
+┌─────── ⋆⋅☆⋅⋆ ──────────┐
+⚙️ *AUTOMATIK* ⚙️
+└────────── ⋆⋅☆⋅⋆ ──────────┘
+
+📡 Always Online   » ${getStatus(settings, "alwaysOnline")}
+⌨️ Fake Typing     » ${getStatus(settings, "fakeTyping")}
+🎙️ Fake Recording  » ${getStatus(settings, "fakeRecording")}
+❤️ Auto React      » ${getStatus(settings, "autoReact")}
+📱 Auto Status     » ${getStatus(settings, "autoStatus")}
+💬 Status Reply    » ${getStatus(settings, "statusReply")}
+👍 Status Like     » ${getStatus(settings, "statusLike")}
+❤️ Status React    » ${getStatus(settings, "statusReact")}
+
+┌─────── ⋆⋅☆⋅⋆ ──────────┐
+👥 *GROUP SETTINGS* 👥
+└────────── ⋆⋅☆⋅⋆ ──────────┘
+
+🚫 Group Anti Spam   » ${getStatus(settings, "groupAntiSpam")}
+🗑️ Group Anti Delete » ${getStatus(settings, "groupAntiDelete")}
+👑 Admin Group       » ${getStatus(settings, "adminGroup")}
+🔒 Group Close       » ${getStatus(settings, "groupClose")}
+🔓 Group Open        » ${getStatus(settings, "groupOpen")}
+
+┌─────── ⋆⋅☆⋅⋆ ──────────┐
+🤖 *AI & SYSTEM* 🤖
+└────────── ⋆⋅☆⋅⋆ ──────────┘
+
+🤖 AI Chat » ${getStatus(settings, "aiChat")}
+
+╭━━━━━━━━━━━❀━━━━━━━━━━━╮
+✨ *Aksè Pwopriyetè Sèlman* ✨
+🌸 *Chat Pèsonèl* 🌸
+╰━━━━━━━━━━━❀━━━━━━━━━━━╯
+
+*ɢᴏʟᴅᴇɴ Qᴜᴇᴇɴ ᴛᴇᴄʜ*
+`;
+}
+
+// ============================================================
+// SETTINGS COMMAND
+// ============================================================
+
+async function handleSettings(
+  sock,
+  jid,
+  quoted
+) {
+  try {
+    // Make sure the session exists.
+    const panel =
+      settingsPanel.createSession(sock);
+
+    // --------------------------------------------------------
+    // FIRST MESSAGE
+    // Detailed settings
+    // --------------------------------------------------------
+
+    const settingsText =
+      buildSettingsInformation(
+        panel.sessionId
+      );
+
+    await sock.sendMessage(
+      jid,
+      {
+        text: settingsText
+      },
+      {
+        quoted
+      }
+    );
+
+    // --------------------------------------------------------
+    // SECOND MESSAGE
+    // Code + Settings Link + COPY BUTTON
+    // --------------------------------------------------------
+
+    await settingsPanel.sendPanelLink(
+      sock,
+      jid,
+      quoted
+    );
+
+  } catch (error) {
+    console.error(
+      "❌ SETTINGS COMMAND ERROR:",
+      error?.message || error
+    );
+
+    await sock.sendMessage(
+      jid,
+      {
+        text:
+`❌ *ERÈ SETTINGS*
+
+Mwen pa kapab kreye Settings Session lan kounya.
+
+Tanpri eseye:
+➜ *.settings*
+
+🚀 *TOPFEROS TECH*`
+      },
+      {
+        quoted
+      }
+    );
+  }
+}
+
+// ============================================================
+// HANDLE MESSAGE
+// ============================================================
+
+async function handleMessage(
+  sock,
+  message
+) {
   try {
     if (!sock || !message) {
       return;
     }
 
-    // Pa reponn pwòp mesaj bot la
+    // Ignore messages sent by the bot itself.
     if (message?.key?.fromMe) {
       return;
     }
 
-    const remoteJid =
+    const jid =
       message?.key?.remoteJid;
 
-    if (!remoteJid) {
+    if (!jid) {
       return;
     }
 
+    // Ignore status broadcasts.
+    if (
+      jid === "status@broadcast"
+    ) {
+      return;
+    }
+
+    const rawText =
+      getMessageText(message);
+
     const text =
-      String(
-        getMessageText(message)
-      ).trim();
+      String(rawText || "").trim();
 
     if (!text) {
       return;
     }
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 🔎 COMMAND
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // --------------------------------------------------------
+    // PREFIX CHECK
+    // --------------------------------------------------------
 
     if (!text.startsWith(PREFIX)) {
       return;
@@ -179,19 +463,18 @@ async function handleMessage(sock, message) {
         parts.shift() || ""
       ).toLowerCase();
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 🏠 MENU / START / HELP
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // ========================================================
+    // MENU / START / HELP
+    // ========================================================
 
     if (
       command === "menu" ||
       command === "start" ||
       command === "help"
     ) {
-
       await sendLogoMessage(
         sock,
-        remoteJid,
+        jid,
         activationMessage,
         message
       );
@@ -199,18 +482,17 @@ async function handleMessage(sock, message) {
       return;
     }
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 🌸 WELCOME
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // ========================================================
+    // WELCOME
+    // ========================================================
 
     if (
       command === "welcome" ||
       command === "byenvini"
     ) {
-
       await sendLogoMessage(
         sock,
-        remoteJid,
+        jid,
         activationMessage,
         message
       );
@@ -218,46 +500,52 @@ async function handleMessage(sock, message) {
       return;
     }
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 🏓 ALIVE
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // ========================================================
+    // ALIVE
+    // ========================================================
 
-    if (command === "alive") {
-
-      await sock.sendMessage(
-        remoteJid,
-        {
-          text:
-`🟢 *TOPFEROS MD V1.0.0*
-
-✅ Bot la aktif e li konekte.
-
-🚀 *TOPFEROS TECH*`
-        },
-        {
-          quoted: message
-        }
+    if (
+      command === "alive"
+    ) {
+      await sendAliveMessage(
+        sock,
+        jid,
+        message
       );
 
       return;
     }
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // ⚙️ SETTINGS
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // ========================================================
+    // SETTINGS
+    // ========================================================
 
-    if (command === "settings") {
+    if (
+      command === "settings"
+    ) {
+      await handleSettings(
+        sock,
+        jid,
+        message
+      );
 
+      return;
+    }
+
+    // ========================================================
+    // CONNECT
+    // ========================================================
+
+    if (
+      command === "connect"
+    ) {
       await sock.sendMessage(
-        remoteJid,
+        jid,
         {
           text:
-`⚙️ *TOPFEROS MD SETTINGS*
+`🔗 *CONNECT TOPFEROS MD*
 
-Pou chanje paramèt bot la,
-itilize panel la:
-
-🔗 ${LINKS.connect}
+🌐 ${LINKS.connect}
 
 🚀 *TOPFEROS TECH*`
         },
@@ -270,106 +558,17 @@ itilize panel la:
     }
 
   } catch (error) {
-
     console.error(
       "❌ HANDLE MESSAGE ERROR:",
       error?.message || error
     );
-
   }
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🖼️ SEND LOGO + MESSAGE
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-async function sendLogoMessage(
-  sock,
-  remoteJid,
-  caption,
-  quoted
-) {
-
-  try {
-
-    if (
-      fs.existsSync(logoPath)
-    ) {
-
-      await sock.sendMessage(
-        remoteJid,
-        {
-          image: {
-            url: logoPath
-          },
-          caption
-        },
-        {
-          quoted
-        }
-      );
-
-      return;
-
-    }
-
-    console.warn(
-      "⚠️ Logo pa jwenn:",
-      logoPath
-    );
-
-    // Si logo pa jwenn, voye tèks la toujou
-    await sock.sendMessage(
-      remoteJid,
-      {
-        text: caption
-      },
-      {
-        quoted
-      }
-    );
-
-  } catch (error) {
-
-    console.error(
-      "❌ LOGO MESSAGE ERROR:",
-      error?.message || error
-    );
-
-    // Fallback: voye mesaj la san logo
-    try {
-
-      await sock.sendMessage(
-        remoteJid,
-        {
-          text: caption
-        },
-        {
-          quoted
-        }
-      );
-
-    } catch (sendError) {
-
-      console.error(
-        "❌ FALLBACK MESSAGE ERROR:",
-        sendError?.message || sendError
-      );
-
-    }
-
-  }
-
-}
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 📦 EXPORT
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ============================================================
+// EXPORTS
+// ============================================================
 
 module.exports = {
   handleMessage
 };
-
-// ╔════════════════════════════════════════════════════╗
-// ║                 By TOPFEROS TECH                  ║
-// ╚════════════════════════════════════════════════════╝
