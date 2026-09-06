@@ -45,14 +45,6 @@ let pairingRequested = false;
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 📱 DEFAULT PHONE NUMBER
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//
-// Nimewo sa a sèvi sèlman si bot la deja
-// configured ak WHATSAPP_NUMBER/config.js.
-//
-// Panel la kapab voye yon lòt nimewo atravè:
-// requestPairingCode(number)
-//
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 const DEFAULT_PHONE_NUMBER =
   String(
@@ -131,10 +123,134 @@ function validatePhoneNumber(number) {
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 📩 MESSAGE HANDLER
+// ⏳ WAIT FOR SOCKET
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-async function handleMessages(messages) {
+function waitForSocketReady(timeout = 15000) {
+
+  return new Promise(
+    (resolve, reject) => {
+
+      if (!sock) {
+
+        reject(
+          new Error(
+            "WhatsApp socket pa disponib."
+          )
+        );
+
+        return;
+
+      }
+
+      let finished = false;
+      let timer = null;
+
+      const finish = (
+        callback,
+        value
+      ) => {
+
+        if (finished) {
+          return;
+        }
+
+        finished = true;
+
+        if (timer) {
+
+          clearTimeout(timer);
+          timer = null;
+
+        }
+
+        if (
+          sock &&
+          sock.ev &&
+          typeof sock.ev.off === "function"
+        ) {
+
+          sock.ev.off(
+            "connection.update",
+            onUpdate
+          );
+
+        }
+
+        callback(value);
+
+      };
+
+      const onUpdate = (
+        update
+      ) => {
+
+        const state =
+          update?.connection;
+
+        if (state === "open") {
+
+          finish(
+            resolve,
+            true
+          );
+
+          return;
+
+        }
+
+        if (state === "close") {
+
+          finish(
+            reject,
+            new Error(
+              "WhatsApp connection closed before pairing code was generated."
+            )
+          );
+
+        }
+
+      };
+
+      if (
+        sock.ev &&
+        typeof sock.ev.on === "function"
+      ) {
+
+        sock.ev.on(
+          "connection.update",
+          onUpdate
+        );
+
+      }
+
+      timer =
+        setTimeout(
+          () => {
+
+            finish(
+              reject,
+              new Error(
+                "WhatsApp connection pa pare nan tan li te bay la."
+              )
+            );
+
+          },
+          timeout
+        );
+
+    }
+  );
+
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 📨 MESSAGE HANDLER
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+async function handleMessages(
+  messages
+) {
 
   if (
     !messages ||
@@ -146,7 +262,9 @@ async function handleMessages(messages) {
 
   }
 
-  for (const message of messages) {
+  for (
+    const message of messages
+  ) {
 
     try {
 
@@ -388,7 +506,9 @@ async function start() {
             "📱 WhatsApp: ONLINE"
           );
 
-          if (sock.user?.id) {
+          if (
+            sock.user?.id
+          ) {
 
             console.log(
               `📞 Connected account: ${sock.user.id}`
@@ -462,7 +582,9 @@ async function start() {
 
             scheduleReconnect();
 
-          } else if (loggedOut) {
+          } else if (
+            loggedOut
+          ) {
 
             console.log(
               "❌ TOPFEROS MD: WhatsApp session logged out."
@@ -491,7 +613,9 @@ async function start() {
 
           if (
             !data ||
-            !Array.isArray(data.messages)
+            !Array.isArray(
+              data.messages
+            )
           ) {
 
             return;
@@ -546,17 +670,10 @@ async function start() {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 🔐 REQUEST REAL WHATSAPP PAIRING CODE
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//
-// Se fonksyon sa a panel/server.js ap itilize.
-//
-// number = nimewo moun nan antre nan panel la.
-//
-// Li pa kreye yon kòd pa nou.
-// Li mande WhatsApp/Baileys bay vrè Pairing Code la.
-//
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-async function requestPairingCode(number) {
+async function requestPairingCode(
+  number
+) {
 
   const validation =
     validatePhoneNumber(
@@ -575,7 +692,19 @@ async function requestPairingCode(number) {
     validation.number;
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // START SOCKET SI LI PA EXISTE
+  // 🔒 PAIRING ALREADY REQUESTED
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  if (pairingRequested) {
+
+    throw new Error(
+      "Yon pairing code request deja an pwogrè. Tanpri tann li fini."
+    );
+
+  }
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 🔌 START SOCKET SI LI PA EXISTE
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   if (!sock) {
@@ -593,19 +722,21 @@ async function requestPairingCode(number) {
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // SI DEJA CONNECTED
+  // 📱 SESSION DEJA REGISTERED
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  if (sock.user) {
+  if (
+    sock.user
+  ) {
 
     throw new Error(
-      "WhatsApp session lan deja konekte."
+      "WhatsApp session lan deja konekte. Pairing Code pa disponib sou session sa a."
     );
 
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // VERIFY SOCKET METHOD
+  // 🔎 VERIFY METHOD
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   if (
@@ -634,7 +765,7 @@ async function requestPairingCode(number) {
   );
 
   console.log(
-    "⏳ Generating real WhatsApp pairing code..."
+    "⏳ Waiting for WhatsApp socket..."
   );
 
   console.log(
@@ -645,14 +776,31 @@ async function requestPairingCode(number) {
 
     pairingRequested = true;
 
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // ⏳ BAY SOCKET LA TAN POU LI PREPARE
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    await new Promise(
+      (resolve) => {
+
+        setTimeout(
+          resolve,
+          1500
+        );
+
+      }
+    );
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // 🔐 REQUEST REAL CODE
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
     const pairingCode =
       await sock.requestPairingCode(
         phoneNumber
       );
 
     if (!pairingCode) {
-
-      pairingRequested = false;
 
       throw new Error(
         "WhatsApp pa retounen pairing code."
@@ -666,6 +814,16 @@ async function requestPairingCode(number) {
       )
         .replace(/\s/g, "")
         .trim();
+
+    if (
+      !normalizedCode
+    ) {
+
+      throw new Error(
+        "WhatsApp retounen yon pairing code vid."
+      );
+
+    }
 
     console.log("");
 
@@ -709,14 +867,16 @@ async function requestPairingCode(number) {
 
   } catch (error) {
 
-    pairingRequested = false;
-
     console.error(
       "❌ PAIRING CODE ERROR:",
       error?.message || error
     );
 
     throw error;
+
+  } finally {
+
+    pairingRequested = false;
 
   }
 
@@ -800,11 +960,6 @@ function isConnected() {
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 📱 GET PHONE NUMBER
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//
-// Sa retounen nimewo default config la.
-// Li pa itilize pou pairing ki soti nan panel la.
-//
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 function getPhoneNumber() {
