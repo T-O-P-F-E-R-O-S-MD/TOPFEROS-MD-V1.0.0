@@ -1,780 +1,359 @@
-/* =========================================================
-   🎨 TOPFEROS MD V1.0.0 — MAIN PANEL STYLE
-   ========================================================= */
-
 * {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
+  box-sizing: border-box;
 }
 
-:root {
-    --background: #050505;
-    --background-2: #101010;
-    --card: rgba(18, 18, 18, 0.96);
-
-    --input: #0b0b0b;
-
-    --text: #ffffff;
-    --muted: #a8a8a8;
-
-    --border: rgba(255, 255, 255, 0.12);
-    --border-light: rgba(255, 255, 255, 0.07);
-
-    --button: #ffffff;
-    --button-text: #000000;
-
-    --danger: #ff7070;
-    --success: #72ffad;
-
-    --radius: 16px;
-}
-
-
-/* =========================================================
-   🌐 HTML / BODY
-   ========================================================= */
-
-html {
-    min-height: 100%;
+html,
+body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  min-height: 100%;
 }
 
 body {
-    min-height: 100vh;
+  background: #000;
+  color: #fff;
+  font-family: Arial, Helvetica, sans-serif;
 
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 
-    padding: 20px;
-
-    font-family:
-        Arial,
-        Helvetica,
-        sans-serif;
-
-    background:
-        radial-gradient(
-            circle at top,
-            #181818 0%,
-            #0a0a0a 42%,
-            #030303 100%
-        );
-
-    color: var(--text);
-
-    -webkit-font-smoothing: antialiased;
-    text-rendering: optimizeLegibility;
+  min-height: 100vh;
 }
-
-
-/* =========================================================
-   📦 MAIN CONTAINER
-   ========================================================= */
 
 .container {
-    width: 100%;
-    max-width: 430px;
+  width: 100%;
+  max-width: 560px;
 
-    margin: 0 auto;
+  margin: 0 auto;
+  padding: 35px 20px 20px;
+
+  text-align: center;
 }
 
 
-/* =========================================================
-   🤖 LOGO
-   ========================================================= */
+/* =========================
+   LOGO
+========================= */
 
 .logo-container {
-    width: 100%;
+  width: 100%;
 
-    display: flex;
-    justify-content: center;
-    align-items: center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 
-    margin-bottom: 24px;
+  margin: 0 auto 35px;
 }
 
 .logo {
-    width: 105px;
-    height: 105px;
+  width: 150px;
+  height: 150px;
 
-    display: block;
+  object-fit: cover;
 
-    object-fit: cover;
+  border-radius: 50%;
 
-    border-radius: 50%;
+  display: block;
 
-    border: 3px solid
-        rgba(255, 255, 255, 0.18);
-
-    background: #151515;
-
-    box-shadow:
-        0 0 0 6px rgba(255, 255, 255, 0.025),
-        0 15px 45px rgba(0, 0, 0, 0.65);
+  margin: 0 auto;
 }
 
 
-/* =========================================================
-   🪟 SCREENS
-   ========================================================= */
+/* =========================
+   SCREEN
+========================= */
 
 .screen {
-    width: 100%;
+  width: 100%;
 
-    padding: 28px 24px;
-
-    background:
-        var(--card);
-
-    border:
-        1px solid var(--border);
-
-    border-radius:
-        22px;
-
-    box-shadow:
-        0 20px 60px
-        rgba(0, 0, 0, 0.55);
-
-    text-align: center;
-
-    animation:
-        screenAppear 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
-@keyframes screenAppear {
-    from {
-        opacity: 0;
-        transform: translateY(8px);
-    }
+.screen[hidden] {
+  display: none;
+}
 
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+.screen h1 {
+  margin: 10px 0 30px;
+
+  font-size: 30px;
+  font-weight: 700;
+
+  text-align: center;
 }
 
 
-/* =========================================================
-   📝 TITLES
-   ========================================================= */
-
-h1 {
-    font-size: 25px;
-
-    font-weight: 800;
-
-    letter-spacing: 0.5px;
-
-    margin-bottom: 8px;
-}
-
-h2 {
-    font-size: 21px;
-
-    font-weight: 800;
-
-    letter-spacing: 0.5px;
-
-    margin-bottom: 24px;
-}
-
-.subtitle {
-    color: var(--muted);
-
-    font-size: 14px;
-
-    line-height: 1.5;
-
-    margin-bottom: 25px;
-}
-
-
-/* =========================================================
-   🌐 LANGUAGE SCREEN
-   ========================================================= */
-
-.language-screen {
-    padding-top: 30px;
-    padding-bottom: 30px;
-}
+/* =========================
+   LANGUAGE
+========================= */
 
 .language-buttons {
-    width: 100%;
+  width: 100%;
 
-    display: flex;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 
-    flex-direction: column;
+  gap: 12px;
 
-    gap: 12px;
+  flex-wrap: wrap;
 }
-
-
-/* =========================================================
-   🔘 LANGUAGE BUTTONS
-   ========================================================= */
 
 .language-button {
-    width: 100%;
+  min-width: 130px;
 
-    min-height: 52px;
+  padding: 16px 20px;
 
-    padding: 14px 18px;
+  background: #111;
+  color: #fff;
 
-    border:
-        1px solid
-        var(--border);
+  border: 1px solid #555;
+  border-radius: 14px;
 
-    border-radius:
-        var(--radius);
+  font-size: 17px;
 
-    outline: none;
-
-    background:
-        #0d0d0d;
-
-    color:
-        var(--text);
-
-    font-size: 16px;
-
-    font-weight: 700;
-
-    letter-spacing: 0.2px;
-
-    cursor: pointer;
-
-    transition:
-        background 0.2s ease,
-        border-color 0.2s ease,
-        transform 0.15s ease,
-        box-shadow 0.2s ease;
-}
-
-.language-button:hover {
-    background: #191919;
-
-    border-color:
-        rgba(255, 255, 255, 0.28);
-
-    box-shadow:
-        0 8px 25px
-        rgba(0, 0, 0, 0.35);
+  cursor: pointer;
 }
 
 .language-button:active {
-    transform:
-        scale(0.97);
+  transform: scale(0.97);
 }
 
 
-/* =========================================================
-   📝 INPUT GROUP
-   ========================================================= */
+/* =========================
+   INPUT
+========================= */
 
 .input-group {
-    width: 100%;
+  width: 100%;
+  max-width: 420px;
 
-    text-align: left;
+  display: flex;
+  flex-direction: column;
 
-    margin-bottom: 17px;
+  text-align: left;
+
+  margin-bottom: 22px;
 }
 
 .input-group label {
-    display: block;
+  margin-bottom: 9px;
 
-    margin-bottom: 8px;
-
-    color: #dddddd;
-
-    font-size: 14px;
-
-    font-weight: 700;
+  font-size: 17px;
+  font-weight: 600;
 }
 
-.input-group input {
-    width: 100%;
+.number-input {
+  width: 100%;
 
-    min-height: 50px;
+  padding: 16px;
 
-    padding:
-        13px 15px;
+  background: #111;
+  color: #fff;
 
-    border:
-        1px solid var(--border);
+  border: 1px solid #555;
+  border-radius: 12px;
 
-    border-radius:
-        13px;
+  font-size: 19px;
 
-    outline: none;
-
-    background:
-        var(--input);
-
-    color:
-        var(--text);
-
-    font-size: 16px;
-
-    transition:
-        border-color 0.2s ease,
-        box-shadow 0.2s ease,
-        background 0.2s ease;
+  outline: none;
 }
 
-.input-group input::placeholder {
-    color: #5f5f5f;
+.number-input:focus {
+  border-color: #aaa;
 }
 
-.input-group input:focus {
-    background:
-        #0f0f0f;
+.input-group small {
+  margin-top: 8px;
 
-    border-color:
-        rgba(255, 255, 255, 0.38);
+  color: #aaa;
 
-    box-shadow:
-        0 0 0 3px
-        rgba(255, 255, 255, 0.05);
+  font-size: 13px;
 }
 
 
-/* =========================================================
-   🔘 PRIMARY BUTTON
-   ========================================================= */
+/* =========================
+   BUTTON
+========================= */
 
 .primary-button {
-    width: 100%;
+  width: 100%;
+  max-width: 300px;
 
-    min-height: 52px;
+  padding: 16px 20px;
 
-    padding:
-        14px 18px;
+  background: #fff;
+  color: #000;
 
-    margin-top: 5px;
+  border: none;
+  border-radius: 14px;
 
-    border:
-        none;
+  font-size: 18px;
+  font-weight: 700;
 
-    border-radius:
-        13px;
-
-    outline: none;
-
-    background:
-        var(--button);
-
-    color:
-        var(--button-text);
-
-    font-size: 15px;
-
-    font-weight: 800;
-
-    letter-spacing: 0.3px;
-
-    cursor: pointer;
-
-    box-shadow:
-        0 8px 25px
-        rgba(0, 0, 0, 0.35);
-
-    transition:
-        transform 0.15s ease,
-        opacity 0.2s ease,
-        box-shadow 0.2s ease;
-}
-
-.primary-button:hover {
-    opacity: 0.9;
-
-    box-shadow:
-        0 10px 30px
-        rgba(0, 0, 0, 0.45);
-}
-
-.primary-button:active {
-    transform:
-        scale(0.97);
+  cursor: pointer;
 }
 
 .primary-button:disabled {
-    opacity: 0.45;
-
-    cursor:
-        not-allowed;
-
-    transform:
-        none;
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 
-/* =========================================================
-   🔘 SECONDARY BUTTON
-   ========================================================= */
-
-.secondary-button {
-    width: 100%;
-
-    min-height: 48px;
-
-    padding:
-        12px 18px;
-
-    margin-top: 15px;
-
-    border:
-        1px solid var(--border);
-
-    border-radius:
-        13px;
-
-    outline: none;
-
-    background:
-        #101010;
-
-    color:
-        var(--text);
-
-    font-size: 14px;
-
-    font-weight: 800;
-
-    cursor: pointer;
-
-    transition:
-        background 0.2s ease,
-        border-color 0.2s ease,
-        transform 0.15s ease;
-}
-
-.secondary-button:hover {
-    background:
-        #191919;
-
-    border-color:
-        rgba(255, 255, 255, 0.25);
-}
-
-.secondary-button:active {
-    transform:
-        scale(0.97);
-}
-
-
-/* =========================================================
-   📱 MESSAGE
-   ========================================================= */
+/* =========================
+   MESSAGE
+========================= */
 
 .message {
-    min-height: 22px;
+  min-height: 24px;
 
-    margin-top: 14px;
+  margin: 18px 0;
 
-    color:
-        var(--danger);
+  font-size: 16px;
+}
 
-    font-size: 13px;
+.message.error {
+  color: #ff6b6b;
+}
 
-    line-height: 1.5;
-
-    text-align: center;
+.message.success {
+  color: #7cff9b;
 }
 
 
-/* =========================================================
-   👤 PARRAIN NUMBER
-   ========================================================= */
-
-.parrain-number-container {
-    width: 100%;
-
-    margin-bottom: 22px;
-
-    text-align: center;
-}
-
-.parrain-number-label {
-    margin-top: 12px;
-
-    margin-bottom: 8px;
-
-    color:
-        #ffffff;
-
-    font-size: 15px;
-
-    font-weight: 700;
-
-    letter-spacing: 0.3px;
-}
-
-.parrain-number {
-    display: block;
-
-    color:
-        #ffffff;
-
-    font-size: 20px;
-
-    font-weight: 800;
-
-    letter-spacing: 1px;
-
-    word-break: break-word;
-}
-
-
-/* =========================================================
-   ➖ SEPARATOR
-   ========================================================= */
-
-.separator {
-    width: 100%;
-
-    overflow: hidden;
-
-    color:
-        rgba(255, 255, 255, 0.25);
-
-    font-size: 12px;
-
-    line-height: 1;
-
-    user-select: none;
-}
-
-
-/* =========================================================
-   🔐 PARRAIN CODE SECTION
-   ========================================================= */
+/* =========================
+   CODE
+========================= */
 
 .parrain-code-section {
+  width: 100%;
+  max-width: 420px;
+
+  margin-top: 15px;
+}
+
+.parrain-code-section[hidden] {
+  display: none;
+}
+
+.parrain-code-section h2 {
+  margin: 10px 0 14px;
+
+  font-size: 22px;
+}
+
+.code-container {
+  width: 100%;
+
+  display: flex;
+  gap: 10px;
+  align-items: stretch;
+}
+
+#parrainCode {
+  min-width: 0;
+  flex: 1;
+
+  padding: 15px;
+
+  background: #111;
+  color: #fff;
+
+  border: 1px solid #555;
+  border-radius: 12px;
+
+  text-align: center;
+
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.secondary-button {
+  padding: 15px 18px;
+
+  background: #222;
+  color: #fff;
+
+  border: 1px solid #555;
+  border-radius: 12px;
+
+  font-size: 16px;
+  font-weight: 600;
+
+  cursor: pointer;
+}
+
+
+/* =========================
+   FOOTER
+========================= */
+
+.footer {
+  width: 100%;
+  max-width: 560px;
+
+  margin-top: auto;
+
+  padding: 25px 20px 35px;
+
+  text-align: center;
+
+  font-weight: 700;
+}
+
+.footer-line {
+  overflow: hidden;
+
+  margin: 12px 0;
+
+  color: #888;
+
+  white-space: nowrap;
+}
+
+#footerText {
+  font-size: 18px;
+}
+
+
+/* =========================
+   MOBILE
+========================= */
+
+@media (max-width: 600px) {
+
+  .container {
+    padding-top: 25px;
+  }
+
+  .logo {
+    width: 140px;
+    height: 140px;
+  }
+
+  .screen h1 {
+    font-size: 27px;
+  }
+
+  .language-buttons {
+    flex-direction: column;
+  }
+
+  .language-button {
     width: 100%;
-
-    margin-top: 22px;
-
-    text-align: center;
-
-    animation:
-        codeAppear 0.3s ease;
-}
-
-@keyframes codeAppear {
-    from {
-        opacity: 0;
-        transform: translateY(7px);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.parrain-code-label {
-    margin-top: 12px;
-
-    margin-bottom: 8px;
-
-    color:
-        #ffffff;
-
-    font-size: 15px;
-
-    font-weight: 700;
-
-    letter-spacing: 0.3px;
-}
-
-.parrain-code {
-    display: block;
-
-    min-height: 25px;
-
-    padding:
-        4px 8px;
-
-    color:
-        var(--success);
-
-    font-size: 19px;
-
-    font-weight: 800;
-
-    letter-spacing: 1px;
-
-    word-break: break-all;
-}
-
-
-/* =========================================================
-   ⏳ BUTTON LOADING STATE
-   ========================================================= */
-
-button.loading {
-    opacity: 0.65;
-
-    pointer-events: none;
-}
-
-
-/* =========================================================
-   👆 FOCUS ACCESSIBILITY
-   ========================================================= */
-
-button:focus-visible,
-input:focus-visible {
-    outline:
-        2px solid
-        rgba(255, 255, 255, 0.5);
-
-    outline-offset:
-        2px;
-}
-
-
-/* =========================================================
-   📱 MOBILE
-   ========================================================= */
-
-@media (max-width: 480px) {
-
-    body {
-        padding: 14px;
-    }
-
-    .container {
-        max-width: 100%;
-    }
-
-    .logo-container {
-        margin-bottom: 20px;
-    }
-
-    .logo {
-        width: 90px;
-        height: 90px;
-    }
-
-    .screen {
-        padding:
-            25px 19px;
-
-        border-radius:
-            19px;
-    }
-
-    h1 {
-        font-size: 22px;
-    }
-
-    h2 {
-        font-size: 19px;
-
-        margin-bottom: 21px;
-    }
-
-    .subtitle {
-        font-size: 13px;
-
-        margin-bottom: 22px;
-    }
-
-    .language-button {
-        min-height: 50px;
-
-        font-size: 15px;
-    }
-
-    .input-group input {
-        min-height: 48px;
-
-        font-size: 16px;
-    }
-
-    .primary-button {
-        min-height: 50px;
-    }
-
-    .parrain-number {
-        font-size: 18px;
-    }
-
-    .parrain-code {
-        font-size: 18px;
-    }
-}
-
-
-/* =========================================================
-   📱 SMALL DEVICES
-   ========================================================= */
-
-@media (max-width: 360px) {
-
-    body {
-        padding: 10px;
-    }
-
-    .logo {
-        width: 80px;
-        height: 80px;
-    }
-
-    .screen {
-        padding:
-            22px 15px;
-
-        border-radius:
-            17px;
-    }
-
-    h1 {
-        font-size: 20px;
-    }
-
-    h2 {
-        font-size: 18px;
-    }
-
-    .language-button {
-        min-height: 47px;
-
-        padding:
-            12px 14px;
-
-        font-size: 14px;
-    }
-
-    .parrain-number {
-        font-size: 17px;
-    }
-
-    .parrain-code {
-        font-size: 17px;
-    }
-}
-
-
-/* =========================================================
-   🌙 REDUCE MOTION
-   ========================================================= */
-
-@media (prefers-reduced-motion: reduce) {
-
-    *,
-    *::before,
-    *::after {
-        animation-duration:
-            0.01ms !important;
-
-        animation-iteration-count:
-            1 !important;
-
-        transition-duration:
-            0.01ms !important;
-    }
+    max-width: 300px;
+  }
+
+  .code-container {
+    flex-direction: column;
+  }
+
+  #parrainCode,
+  .secondary-button {
+    width: 100%;
+  }
 }
