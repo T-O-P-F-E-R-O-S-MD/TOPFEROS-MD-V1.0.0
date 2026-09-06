@@ -1,1121 +1,272 @@
 "use strict";
 
-// ╔════════════════════════════════════════════════════╗
-// ║              🤖 TOPFEROS MD V1.0.0               ║
-// ║                 ⚙️ PANEL SERVER                  ║
-// ║                 🚀 TOPFEROS TECH                 ║
-// ╚════════════════════════════════════════════════════╝
-
 const path = require("path");
-const fs = require("fs");
 const express = require("express");
-const crypto = require("crypto");
 
 const settingsPanel = require("../settings/panel");
+const connection = require("../src/connection");
 
 const app = express();
 
-app.disable("x-powered-by");
+const PORT = process.env.PORT || 10000;
+const HOST = process.env.HOST || "0.0.0.0";
 
-app.use(
-  express.json({
-    limit: "1mb"
-  })
-);
+const publicDir = path.resolve(__dirname, "public");
+const assetsDir = path.resolve(__dirname, "..", "assets");
 
-app.use(
-  express.urlencoded({
-    extended: true,
-    limit: "1mb"
-  })
-);
+app.use(express.json({ limit: "100kb" }));
+app.use(express.urlencoded({ extended: true }));
 
+app.use(express.static(publicDir));
+app.use("/assets", express.static(assetsDir));
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 📁 PATHS
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+app.get("/assets/logo.png", (req, res) => {
+  res.sendFile(path.join(assetsDir, "logo.png"));
+});
 
-const publicDir = path.resolve(
-  __dirname,
-  "public"
-);
+/* =========================
+   BOT STATUS
+========================= */
 
-const assetsDir = path.resolve(
-  __dirname,
-  "..",
-  "assets"
-);
+app.get("/api/status", (req, res) => {
+  try {
+    const connected = connection.isConnected();
 
-const logoPath = path.resolve(
-  assetsDir,
-  "logo.png"
-);
-
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 📂 PUBLIC FILES
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-app.use(
-  express.static(publicDir)
-);
-
-app.use(
-  "/assets",
-  express.static(assetsDir)
-);
-
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🖼️ LOGO
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-app.get(
-  "/assets/logo.png",
-  (req, res) => {
-
-    if (!fs.existsSync(logoPath)) {
-
-      console.error(
-        "❌ TOPFEROS MD LOGO NOT FOUND:",
-        logoPath
-      );
-
-      return res
-        .status(404)
-        .send("TOPFEROS MD logo not found");
-    }
-
-    return res.sendFile(logoPath);
+    res.json({
+      success: true,
+      connected,
+      number: connection.getPhoneNumber?.() || ""
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      connected: false
+    });
   }
-);
+});
 
+/* =========================
+   SESSION INFORMATION
+========================= */
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 📡 BOT STATUS
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-app.get(
-  "/api/status",
-  (req, res) => {
-
-    try {
-
-      const connected =
-        settingsPanel.isBotConnected() === true;
-
-      const number =
-        settingsPanel.getBotNumber();
-
-      return res.json({
-        success: true,
-        connected,
-        number: number || null
-      });
-
-    } catch (error) {
-
-      console.error(
-        "❌ STATUS ERROR:",
-        error
-      );
-
-      return res.status(500).json({
-        success: false,
-        connected: false,
-        number: null,
-        message: "Unable to get bot status."
-      });
-    }
-  }
-);
-
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🔐 PARRAIN CODE STORAGE
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//
-// Parrain Code = kòd otantifikasyon PANEL la.
-// Li pa menm bagay ak WhatsApp Pairing Code.
-//
-// sessionId -> {
-//   number,
-//   code,
-//   expiresAt
-// }
-//
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-const parrainCodes = new Map();
-
-const PARRAIN_CODE_LENGTH = 6;
-const PARRAIN_CODE_TTL = 10 * 60 * 1000;
-
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🔑 GENERATE PARRAIN CODE
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-function generateParrainCode() {
-
-  const bytes =
-    crypto.randomBytes(4);
-
-  const value =
-    bytes.readUInt32BE(0) % 1000000;
-
-  return String(value)
-    .padStart(
-      PARRAIN_CODE_LENGTH,
-      "0"
-    );
-}
-
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🆔 GENERATE SESSION ID
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-function generateSessionId() {
-
-  return crypto
-    .randomBytes(24)
-    .toString("hex");
-}
-
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🧹 CLEAN EXPIRED CODES
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-function cleanupExpiredParrainCodes() {
-
-  const now = Date.now();
-
-  for (
-    const [
-      sessionId,
-      session
-    ] of parrainCodes.entries()
-  ) {
-
-    if (
-      !session ||
-      session.expiresAt <= now
-    ) {
-
-      parrainCodes.delete(
-        sessionId
-      );
-    }
-  }
-}
-
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🔐 CREATE / REFRESH PARRAIN CODE
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-function createParrainCode(
-  sessionId,
-  number
-) {
-
-  cleanupExpiredParrainCodes();
-
-  let code;
-
-  do {
-
-    code =
-      generateParrainCode();
-
-  } while (
-    Array.from(
-      parrainCodes.values()
-    ).some(
-      session =>
-        session.code === code
-    )
+app.get("/api/session/:sessionId", (req, res) => {
+  const session = settingsPanel.getSession(
+    req.params.sessionId
   );
-
-
-  const expiresAt =
-    Date.now() +
-    PARRAIN_CODE_TTL;
-
-
-  parrainCodes.set(
-    sessionId,
-    {
-      number,
-      code,
-      expiresAt,
-      authenticated: false
-    }
-  );
-
-
-  return {
-    code,
-    expiresAt
-  };
-}
-
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🔎 VERIFY PARRAIN CODE
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-function verifyParrainCode(
-  sessionId,
-  number,
-  code
-) {
-
-  cleanupExpiredParrainCodes();
-
-  const session =
-    parrainCodes.get(
-      sessionId
-    );
-
 
   if (!session) {
-    return false;
+    return res.status(404).json({
+      success: false,
+      error: "SESSION_NOT_FOUND"
+    });
   }
 
+  res.json({
+    success: true,
+    exists: true,
+    authenticated: !!session.authenticated,
+    number: session.number
+  });
+});
 
-  if (
-    session.number !== number
-  ) {
-    return false;
+/* =========================
+   VERIFY SETTINGS CODE
+========================= */
+
+app.post("/api/verify", (req, res) => {
+  const { sessionId, code } = req.body || {};
+
+  if (!sessionId || !code) {
+    return res.status(400).json({
+      success: false,
+      error: "SESSION_AND_CODE_REQUIRED"
+    });
   }
 
+  const result = settingsPanel.verifySession(
+    sessionId,
+    code
+  );
 
-  if (
-    session.code !== code
-  ) {
-    return false;
+  if (!result.success) {
+    return res.status(401).json(result);
   }
 
+  res.json({
+    success: true,
+    message: "Settings Code verified",
+    settings: result.session.settings,
+    botInformation: result.session.botInformation
+  });
+});
 
-  if (
-    session.expiresAt <= Date.now()
-  ) {
+/* =========================
+   GET SETTINGS
+========================= */
 
-    parrainCodes.delete(
-      sessionId
+app.get("/api/settings", (req, res) => {
+  const sessionId = req.query.sessionId;
+
+  if (!settingsPanel.isAuthenticated(sessionId)) {
+    return res.status(401).json({
+      success: false,
+      error: "UNAUTHORIZED"
+    });
+  }
+
+  const data = settingsPanel.loadSettings(sessionId);
+
+  res.json({
+    success: true,
+    ...data
+  });
+});
+
+/* =========================
+   SAVE SETTINGS
+========================= */
+
+app.post("/api/settings", (req, res) => {
+  const {
+    sessionId,
+    settings,
+    botInformation
+  } = req.body || {};
+
+  if (!settingsPanel.isAuthenticated(sessionId)) {
+    return res.status(401).json({
+      success: false,
+      error: "UNAUTHORIZED"
+    });
+  }
+
+  const savedSettings =
+    settingsPanel.applySettings(
+      sessionId,
+      settings || {}
     );
 
-    return false;
-  }
-
-
-  session.authenticated = true;
-
-  return true;
-}
-
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🧹 DELETE PARRAIN SESSION
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-function deleteParrainSession(
-  sessionId
-) {
-
-  if (sessionId) {
-
-    parrainCodes.delete(
-      sessionId
+  const savedBotInformation =
+    settingsPanel.updateBotInformation(
+      sessionId,
+      botInformation || {}
     );
+
+  if (!savedSettings || !savedBotInformation) {
+    return res.status(400).json({
+      success: false,
+      error: "SAVE_FAILED"
+    });
   }
-}
 
+  res.json({
+    success: true,
+    message: "Settings saved successfully",
+    settings: savedSettings,
+    botInformation: savedBotInformation
+  });
+});
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🔐 PARRAIN CODE AUTH
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//
-// POST /api/auth
-//
-// Body:
-//
-// {
-//   sessionId: "...",
-//   number: "509xxxxxxxx"
-// }
-//
-// Response:
-//
-// {
-//   success: true,
-//   sessionId: "...",
-//   number: "...",
-//   code: "123456",
-//   parrainCode: "123456",
-//   panelCode: "123456",
-//   expiresAt: 123456789
-// }
-//
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+/* =========================
+   LANGUAGE
+========================= */
 
-app.post(
-  "/api/auth",
-  (req, res) => {
+app.post("/api/language", (req, res) => {
+  const { sessionId, language } = req.body || {};
 
-    try {
+  const allowed = ["en", "fr", "es"];
 
-      let sessionId =
-        String(
-          req.body?.sessionId || ""
-        ).trim();
-
-
-      const number =
-        String(
-          req.body?.number || ""
-        )
-        .replace(
-          /[^\d+]/g,
-          ""
-        );
-
-
-      if (!number) {
-
-        return res
-          .status(400)
-          .json({
-            success: false,
-            message:
-              "Number User obligatwa."
-          });
-      }
-
-
-      /*
-       * Si frontend lan pa voye sessionId,
-       * server la kreye youn.
-       */
-      if (!sessionId) {
-
-        sessionId =
-          generateSessionId();
-      }
-
-
-      const result =
-        createParrainCode(
-          sessionId,
-          number
-        );
-
-
-      console.log(
-        `🔐 Parrain Code created for ${number}: ${result.code}`
-      );
-
-
-      return res.json({
-
-        success: true,
-
-        authenticated: false,
-
-        sessionId,
-
-        number,
-
-        code:
-          result.code,
-
-        parrainCode:
-          result.code,
-
-        panelCode:
-          result.code,
-
-        expiresAt:
-          result.expiresAt
-
-      });
-
-    } catch (error) {
-
-      console.error(
-        "❌ PARRAIN AUTH ERROR:",
-        error
-      );
-
-      return res
-        .status(500)
-        .json({
-
-          success: false,
-
-          message:
-            "Unable to generate Parrain Code."
-
-        });
-    }
+  if (!allowed.includes(language)) {
+    return res.status(400).json({
+      success: false,
+      error: "INVALID_LANGUAGE"
+    });
   }
-);
 
+  res.json({
+    success: true,
+    language
+  });
+});
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🔎 CHECK AUTHENTICATION
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+/* =========================
+   LOGOUT PANEL
+========================= */
 
-app.get(
-  "/api/auth",
-  (req, res) => {
+app.post("/api/logout", (req, res) => {
+  const { sessionId } = req.body || {};
 
-    try {
+  const session = settingsPanel.getSession(sessionId);
 
-      cleanupExpiredParrainCodes();
-
-      const sessionId =
-        String(
-          req.query.session ||
-          req.query.sessionId ||
-          ""
-        ).trim();
-
-
-      if (!sessionId) {
-
-        return res
-          .status(401)
-          .json({
-
-            success: false,
-
-            authenticated: false,
-
-            connected:
-              settingsPanel.isBotConnected() === true,
-
-            message:
-              "Session ID missing."
-
-          });
-      }
-
-
-      const session =
-        parrainCodes.get(
-          sessionId
-        );
-
-
-      if (
-        !session ||
-        !session.authenticated
-      ) {
-
-        return res
-          .status(401)
-          .json({
-
-            success: false,
-
-            authenticated: false,
-
-            connected:
-              settingsPanel.isBotConnected() === true,
-
-            message:
-              "Session panel la pa valide."
-
-          });
-      }
-
-
-      return res.json({
-
-        success: true,
-
-        authenticated: true,
-
-        connected:
-          settingsPanel.isBotConnected() === true,
-
-        number:
-          session.number
-
-      });
-
-    } catch (error) {
-
-      console.error(
-        "❌ AUTH CHECK ERROR:",
-        error
-      );
-
-      return res
-        .status(500)
-        .json({
-
-          success: false,
-
-          authenticated: false,
-
-          message:
-            "Auth error."
-
-        });
-    }
+  if (session) {
+    session.authenticated = false;
   }
-);
 
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🔑 PANEL LOGIN
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//
-// POST /api/login
-//
-// Verifikasyon an fèt kont Parrain Code
-// nou te kreye nan /api/auth.
-//
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-app.post(
-  "/api/login",
-  (req, res) => {
-
-    try {
-
-      const sessionId =
-        String(
-          req.body?.sessionId || ""
-        ).trim();
-
-
-      const number =
-        String(
-          req.body?.number || ""
-        )
-        .replace(
-          /[^\d+]/g,
-          ""
-        );
-
-
-      const code =
-        String(
-          req.body?.code ||
-          req.body?.parrainCode ||
-          req.body?.panelCode ||
-          ""
-        ).trim();
-
-
-      if (
-        !sessionId ||
-        !number ||
-        !code
-      ) {
-
-        return res
-          .status(400)
-          .json({
-
-            success: false,
-
-            authenticated: false,
-
-            message:
-              "Session ID, number ak Parrain Code obligatwa."
-
-          });
-      }
-
-
-      const verified =
-        verifyParrainCode(
-          sessionId,
-          number,
-          code
-        );
-
-
-      if (!verified) {
-
-        return res
-          .status(401)
-          .json({
-
-            success: false,
-
-            authenticated: false,
-
-            message:
-              "Parrain Code la pa valide oswa li ekspire."
-
-          });
-      }
-
-
-      /*
-       * Si settingsPanel gen verifySession(),
-       * nou ka kenbe ansyen session system lan tou.
-       *
-       * Men Parrain Code panel la deja verifye
-       * anlè a, kidonk login lan pa depann de
-       * WhatsApp Pairing Code.
-       */
-
-      return res.json({
-
-        success: true,
-
-        authenticated: true,
-
-        connected:
-          settingsPanel.isBotConnected() === true,
-
-        sessionId,
-
-        number
-
-      });
-
-    } catch (error) {
-
-      console.error(
-        "❌ LOGIN ERROR:",
-        error
-      );
-
-      return res
-        .status(500)
-        .json({
-
-          success: false,
-
-          authenticated: false,
-
-          message:
-            "Login failed."
-
-        });
-    }
-  }
-);
-
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🌐 LANGUAGE
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-app.post(
-  "/api/language",
-  (req, res) => {
-
-    try {
-
-      const sessionId =
-        String(
-          req.body?.sessionId || ""
-        ).trim();
-
-
-      const language =
-        String(
-          req.body?.language || "en"
-        ).trim();
-
-
-      if (!sessionId) {
-
-        return res
-          .status(400)
-          .json({
-
-            success: false,
-
-            message:
-              "Session panel la pa jwenn."
-
-          });
-      }
-
-
-      const session =
-        parrainCodes.get(
-          sessionId
-        );
-
-
-      if (
-        !session ||
-        !session.authenticated
-      ) {
-
-        return res
-          .status(401)
-          .json({
-
-            success: false,
-
-            message:
-              "Session panel la pa valide."
-
-          });
-      }
-
-
-      const supportedLanguages = [
-        "en",
-        "fr",
-        "es"
-      ];
-
-
-      if (
-        !supportedLanguages.includes(
-          language
-        )
-      ) {
-
-        return res
-          .status(400)
-          .json({
-
-            success: false,
-
-            message:
-              "Language not supported."
-
-          });
-      }
-
-
-      return res.json({
-
-        success: true,
-
-        language
-
-      });
-
-    } catch (error) {
-
-      console.error(
-        "❌ LANGUAGE ERROR:",
-        error
-      );
-
-      return res
-        .status(500)
-        .json({
-
-          success: false,
-
-          message:
-            "Unable to save language."
-
-        });
-    }
-  }
-);
-
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// ⚙️ SETTINGS API
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//
-// Pa rele registerSettingsRoutes() isit la.
-// settings-api.js separe li.
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🔒 LOGOUT
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-app.post(
-  "/api/logout",
-  (req, res) => {
-
-    try {
-
-      const sessionId =
-        String(
-          req.body?.sessionId || ""
-        ).trim();
-
-
-      deleteParrainSession(
-        sessionId
-      );
-
-
-      return res.json({
-
-        success: true,
-
-        message:
-          "Session deleted."
-
-      });
-
-    } catch (error) {
-
-      console.error(
-        "❌ LOGOUT ERROR:",
-        error
-      );
-
-      return res
-        .status(500)
-        .json({
-
-          success: false,
-
-          message:
-            "Logout failed."
-
-        });
-    }
-  }
-);
-
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🏠 HOME
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-app.get(
-  "/",
-  (req, res) => {
-
-    return res.sendFile(
-      path.join(
-        publicDir,
-        "index.html"
-      )
-    );
-  }
-);
-
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// ❌ 404
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-app.use(
-  (req, res) => {
-
-    if (
-      req.path.startsWith(
-        "/api/"
-      )
-    ) {
-
-      return res
-        .status(404)
-        .json({
-
-          success: false,
-
-          message:
-            "API route not found."
-
-        });
-    }
-
-
-    return res
-      .status(404)
-      .send(
-        "TOPFEROS MD Panel - Page not found."
-      );
-  }
-);
-
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🚨 ERROR HANDLER
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-app.use(
-  (error, req, res, next) => {
-
+  res.json({
+    success: true
+  });
+});
+
+/* =========================
+   HOME
+========================= */
+
+app.get("/", (req, res) => {
+  res.sendFile(
+    path.join(publicDir, "index.html")
+  );
+});
+
+/* =========================
+   START SERVER
+========================= */
+
+const server = app.listen(PORT, HOST, () => {
+  console.log(
+    `🌐 TOPFEROS SETTINGS PANEL running on ${HOST}:${PORT}`
+  );
+});
+
+/* =========================
+   START WHATSAPP
+========================= */
+
+async function startWhatsApp() {
+  try {
+    await connection.start();
+    console.log("🤖 TOPFEROS MD WhatsApp started");
+  } catch (error) {
     console.error(
-      "❌ PANEL SERVER ERROR:",
+      "❌ WhatsApp start error:",
       error
     );
 
-
-    if (
-      res.headersSent
-    ) {
-
-      return next(error);
-    }
-
-
-    return res
-      .status(500)
-      .json({
-
-        success: false,
-
-        message:
-          "Internal server error."
-
-      });
+    setTimeout(startWhatsApp, 5000);
   }
-);
+}
 
+startWhatsApp();
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🚀 START SERVER
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+/* =========================
+   SHUTDOWN
+========================= */
 
-const PORT =
-  Number(
-    process.env.PORT ||
-    process.env.PANEL_PORT ||
-    3000
-  );
-
-
-const HOST =
-  process.env.PANEL_HOST ||
-  "0.0.0.0";
-
-
-const server =
-  app.listen(
-    PORT,
-    HOST,
-    () => {
-
-      console.log("");
-
-      console.log(
-        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-      );
-
-      console.log(
-        "🤖 TOPFEROS MD V1.0.0 — PANEL SERVER"
-      );
-
-      console.log(
-        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-      );
-
-      console.log(
-        `🌐 Panel: http://${HOST}:${PORT}`
-      );
-
-      console.log(
-        `🖼️ Logo: http://${HOST}:${PORT}/assets/logo.png`
-      );
-
-      console.log(
-        `🔐 Parrain Code TTL: ${PARRAIN_CODE_TTL / 60000} minutes`
-      );
-
-      console.log(
-        `📁 Public: ${publicDir}`
-      );
-
-      console.log(
-        `📁 Assets: ${assetsDir}`
-      );
-
-      console.log(
-        "🚀 TOPFEROS TECH"
-      );
-
-      console.log(
-        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-      );
-
-      console.log("");
-    }
-  );
-
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🧹 GRACEFUL SHUTDOWN
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-function shutdown(signal) {
-
-  console.log(
-    `\n🛑 ${signal} received.`
-  );
-
+async function shutdown(signal) {
+  console.log(`\n🛑 ${signal} received`);
 
   try {
-
-    settingsPanel.setBotDisconnected();
-
+    await connection.stop();
   } catch (error) {
-
-    console.error(
-      "❌ BOT DISCONNECT ERROR:",
-      error
-    );
+    console.error(error);
   }
 
-
-  clearInterval(
-    cleanupInterval
-  );
-
-
-  server.close(
-    () => {
-
-      console.log(
-        "✅ TOPFEROS MD Panel stopped."
-      );
-
-      process.exit(0);
-    }
-  );
+  server.close(() => {
+    process.exit(0);
+  });
 }
 
-
-process.on(
-  "SIGINT",
-  () => {
-    shutdown("SIGINT");
-  }
-);
-
-
-process.on(
-  "SIGTERM",
-  () => {
-    shutdown("SIGTERM");
-  }
-);
-
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🧹 PERIODIC CLEANUP
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-const cleanupInterval =
-  setInterval(
-    cleanupExpiredParrainCodes,
-    60 * 1000
-  );
-
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 📦 EXPORT
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+process.on("SIGINT", () => shutdown("SIGINT"));
+process.on("SIGTERM", () => shutdown("SIGTERM"));
 
 module.exports = {
   app,
