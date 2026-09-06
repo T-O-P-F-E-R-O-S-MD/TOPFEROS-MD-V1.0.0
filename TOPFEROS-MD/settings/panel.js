@@ -3,126 +3,89 @@
 const crypto = require("crypto");
 
 const PANEL_URL =
+  process.env.SETTINGS_PANEL_URL ||
   process.env.PANEL_URL ||
   "https://topferos-md-v1-0-0.onrender.com";
 
-// ============================================================
-// SESSION STORAGE
-// ============================================================
-
 const sessions = new Map();
-
-// ============================================================
-// DEFAULT SETTINGS
-// ============================================================
 
 const defaultSettings = {
   publicMode: true,
   privateMode: false,
-
   alwaysOnline: true,
   fakeTyping: false,
   fakeRecording: false,
 
-  autoReact: false,
+  antiCall: false,
+  antiDelete: false,
+  antiSpam: false,
+  antiLink: false,
+  antiRobot: false,
+
   autoStatus: false,
   statusReply: false,
   statusLike: false,
   statusReact: false,
 
-  antiCall: false,
-  antiDelete: false,
-  antiSpam: false,
-
-  aiChat: false,
-
   groupAntiSpam: false,
   groupAntiLink: false,
   groupAntiDelete: false,
-
-  adminGroup: false,
   groupClose: false,
-  groupOpen: false
-};
+  groupOpen: false,
 
-// ============================================================
-// BOT INFORMATION
-// ============================================================
+  aiChat: false
+};
 
 const defaultBotInformation = {
   name: "TOPFEROS MD",
-  age: 24,
-  prefix: "."
+  number: "",
+  prefix: ".",
+  mode: "Public"
 };
 
-// ============================================================
-// GENERATE 6 CHARACTER SETTINGS CODE
-// LETTERS + NUMBERS
-// ============================================================
-
-const CODE_CHARS =
-  "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-
 function generateCode() {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
   let code = "";
 
   for (let i = 0; i < 6; i++) {
-    const index = crypto.randomInt(0, CODE_CHARS.length);
-    code += CODE_CHARS[index];
+    code += chars[crypto.randomInt(0, chars.length)];
   }
 
   return code;
 }
 
-// ============================================================
-// GET BOT NUMBER
-// ============================================================
+function normalizeNumber(number) {
+  return String(number || "").replace(/\D/g, "");
+}
 
-function getBotNumber(sock) {
+function getPhoneFromSocket(sock) {
   try {
-    const id = sock?.user?.id;
-
-    if (!id) {
-      return "";
-    }
-
-    return String(id)
-      .split(":")[0]
-      .split("@")[0];
+    const jid = sock?.user?.id || "";
+    return normalizeNumber(jid.split(":")[0].split("@")[0]);
   } catch {
     return "";
   }
 }
 
-// ============================================================
-// CREATE NEW SESSION
-// ============================================================
+function createNewSession(sock, number = "") {
+  const phoneNumber =
+    normalizeNumber(number) ||
+    getPhoneFromSocket(sock);
 
-function createNewSession(sock, number) {
-  const sessionId = crypto.randomBytes(16).toString("hex");
+  const sessionId = crypto.randomBytes(18).toString("hex");
 
   const session = {
     sessionId,
-
-    number,
-
-    // IMPORTANT:
-    // This code is generated ONLY once for this session.
+    number: phoneNumber,
     code: generateCode(),
-
     authenticated: false,
-
-    sock,
-
     createdAt: Date.now(),
-
-    settings: {
-      ...defaultSettings
+    settings: { ...defaultSettings },
+    botInformation: {
+      ...defaultBotInformation,
+      number: phoneNumber
     },
-
-    bot: {
-      ...defaultBotInformation
-    }
+    socket: sock || null
   };
 
   sessions.set(sessionId, session);
@@ -130,129 +93,114 @@ function createNewSession(sock, number) {
   return session;
 }
 
-// ============================================================
-// BOT CONNECTED
-// ============================================================
+function findSessionByNumber(number) {
+  const phoneNumber = normalizeNumber(number);
 
-function setBotConnected(sock) {
-  const number = getBotNumber(sock);
+  if (!phoneNumber) return null;
 
-  if (!number) {
-    console.warn(
-      "⚠️ Impossible pou kreye Settings Session: nimewo bot la pa disponib."
-    );
-
-    return null;
-  }
-
-  // Check if this bot already has a session.
   for (const session of sessions.values()) {
-    if (session.number === number) {
-      // Update socket only.
-      session.sock = sock;
-
+    if (session.number === phoneNumber) {
       return session;
     }
   }
 
-  // New connection = new session = new code.
-  return createNewSession(sock, number);
+  return null;
 }
 
-// ============================================================
-// BOT DISCONNECTED
-// ============================================================
-
-function setBotDisconnected(sock) {
-  const number = getBotNumber(sock);
-
-  if (!number) {
-    return;
-  }
-
-  for (const [sessionId, session] of sessions.entries()) {
-    if (
-      session.number === number ||
-      session.sock === sock
-    ) {
-      sessions.delete(sessionId);
-
-      console.log(
-        `🗑️ Settings session deleted: ${sessionId}`
-      );
-    }
-  }
-}
-
-// ============================================================
-// CREATE / GET PANEL SESSION
-// ============================================================
-
-function createSession(sock) {
-  const number = getBotNumber(sock);
-
-  if (!number) {
-    throw new Error(
-      "Bot la poko gen nimewo WhatsApp li."
-    );
-  }
-
-  let session = null;
-
-  // Reuse existing session for same connected bot.
-  for (const current of sessions.values()) {
-    if (current.number === number) {
-      session = current;
-      session.sock = sock;
-      break;
+function findSessionBySocket(sock) {
+  for (const session of sessions.values()) {
+    if (session.socket === sock) {
+      return session;
     }
   }
 
-  // Create new session only if none exists.
+  return null;
+}
+
+function setBotConnected(sock) {
+  const number = getPhoneFromSocket(sock);
+
+  let session = findSessionByNumber(number);
+
   if (!session) {
     session = createNewSession(sock, number);
+  } else {
+    session.socket = sock;
+
+    if (number) {
+      session.number = number;
+      session.botInformation.number = number;
+    }
+  }
+
+  return session;
+}
+
+function setBotDisconnected(sock, remove = false) {
+  if (!sock) return;
+
+  const session = findSessionBySocket(sock);
+
+  if (!session) return;
+
+  session.socket = null;
+
+  if (remove) {
+    sessions.delete(session.sessionId);
+  }
+}
+
+function createSession(sock) {
+  let session = findSessionBySocket(sock);
+
+  if (session) {
+    return {
+      sessionId: session.sessionId,
+      number: session.number,
+      code: session.code,
+      link: `${PANEL_URL}/?session=${session.sessionId}`
+    };
+  }
+
+  const number = getPhoneFromSocket(sock);
+
+  session = findSessionByNumber(number);
+
+  if (!session) {
+    session = createNewSession(sock, number);
+  } else {
+    session.socket = sock;
   }
 
   return {
     sessionId: session.sessionId,
     number: session.number,
     code: session.code,
-    link:
-      `${PANEL_URL}/?session=` +
-      encodeURIComponent(session.sessionId)
+    link: `${PANEL_URL}/?session=${session.sessionId}`
   };
 }
 
-// ============================================================
-// VERIFY SETTINGS SESSION
-// ============================================================
+function getSession(sessionId) {
+  return sessions.get(String(sessionId || "")) || null;
+}
 
-function verifySession(sessionId, number, code) {
-  const session = sessions.get(sessionId);
+function verifySession(sessionId, code) {
+  const session = getSession(sessionId);
 
   if (!session) {
     return {
       success: false,
-      message: "Session pa jwenn."
+      error: "SESSION_NOT_FOUND"
     };
   }
 
   if (
-    String(session.number) !== String(number)
+    String(code || "").trim().toUpperCase() !==
+    session.code
   ) {
     return {
       success: false,
-      message: "Nimewo a pa kòrèk."
-    };
-  }
-
-  if (
-    String(session.code).toUpperCase() !==
-    String(code).toUpperCase()
-  ) {
-    return {
-      success: false,
-      message: "Code Settings la pa kòrèk."
+      error: "INVALID_SETTINGS_CODE"
     };
   }
 
@@ -264,282 +212,188 @@ function verifySession(sessionId, number, code) {
   };
 }
 
-// ============================================================
-// GET SESSION
-// ============================================================
+function isAuthenticated(sessionId) {
+  const session = getSession(sessionId);
 
-function getSession(sessionId) {
-  return sessions.get(sessionId) || null;
+  return !!(session && session.authenticated);
 }
-
-// ============================================================
-// GET SETTINGS
-// ============================================================
 
 function getSettings(sessionId) {
-  const session = sessions.get(sessionId);
+  const session = getSession(sessionId);
 
-  if (!session) {
-    return null;
-  }
+  if (!session) return null;
 
-  return {
-    ...session.settings
-  };
+  return { ...session.settings };
 }
 
-// ============================================================
-// GET ONE SETTING
-// ============================================================
+function getBotInformation(sessionId) {
+  const session = getSession(sessionId);
 
-function getSetting(sessionId, key) {
-  const session = sessions.get(sessionId);
+  if (!session) return null;
 
-  if (!session) {
-    return undefined;
-  }
-
-  return session.settings[key];
+  return { ...session.botInformation };
 }
-
-// ============================================================
-// CHECK IF SETTING IS ENABLED
-// ============================================================
-
-function isEnabled(sessionId, key) {
-  const value = getSetting(sessionId, key);
-
-  return value === true;
-}
-
-// ============================================================
-// SET ONE SETTING
-// ============================================================
 
 function setSetting(sessionId, key, value) {
-  const session = sessions.get(sessionId);
+  const session = getSession(sessionId);
 
-  if (!session) {
-    return false;
-  }
+  if (!session) return false;
 
-  if (!(key in session.settings)) {
+  if (!Object.prototype.hasOwnProperty.call(defaultSettings, key)) {
     return false;
   }
 
   session.settings[key] = Boolean(value);
 
+  if (key === "publicMode" && value) {
+    session.settings.privateMode = false;
+  }
+
+  if (key === "privateMode" && value) {
+    session.settings.publicMode = false;
+  }
+
+  if (key === "groupClose" && value) {
+    session.settings.groupOpen = false;
+  }
+
+  if (key === "groupOpen" && value) {
+    session.settings.groupClose = false;
+  }
+
   return true;
 }
-
-// ============================================================
-// APPLY MULTIPLE SETTINGS
-// ============================================================
 
 function applySettings(sessionId, newSettings = {}) {
-  const session = sessions.get(sessionId);
+  const session = getSession(sessionId);
 
-  if (!session) {
-    return false;
-  }
+  if (!session) return null;
 
-  for (const [key, value] of Object.entries(newSettings)) {
-    if (key in session.settings) {
-      session.settings[key] = Boolean(value);
+  for (const key of Object.keys(defaultSettings)) {
+    if (Object.prototype.hasOwnProperty.call(newSettings, key)) {
+      session.settings[key] = Boolean(newSettings[key]);
     }
   }
 
-  return true;
-}
-
-// ============================================================
-// BOT INFORMATION
-// ============================================================
-
-function getBotInformation(sessionId) {
-  const session = sessions.get(sessionId);
-
-  if (!session) {
-    return null;
+  if (session.settings.publicMode) {
+    session.settings.privateMode = false;
   }
 
-  return {
-    ...session.bot
-  };
-}
+  if (session.settings.privateMode) {
+    session.settings.publicMode = false;
+  }
 
-// ============================================================
-// UPDATE BOT INFORMATION
-// ============================================================
+  if (session.settings.groupClose) {
+    session.settings.groupOpen = false;
+  }
+
+  if (session.settings.groupOpen) {
+    session.settings.groupClose = false;
+  }
+
+  return { ...session.settings };
+}
 
 function updateBotInformation(sessionId, information = {}) {
-  const session = sessions.get(sessionId);
+  const session = getSession(sessionId);
 
-  if (!session) {
-    return false;
+  if (!session) return null;
+
+  if (typeof information.name === "string") {
+    session.botInformation.name =
+      information.name.trim() || "TOPFEROS MD";
   }
 
-  if (
-    typeof information.name === "string" &&
-    information.name.trim()
-  ) {
-    session.bot.name = information.name.trim();
+  if (typeof information.prefix === "string") {
+    session.botInformation.prefix =
+      information.prefix.trim() || ".";
   }
 
-  if (
-    information.age !== undefined &&
-    information.age !== null
-  ) {
-    session.bot.age = information.age;
-  }
+  session.botInformation.number = session.number;
 
-  if (
-    typeof information.prefix === "string" &&
-    information.prefix.trim()
-  ) {
-    session.bot.prefix = information.prefix.trim();
-  }
+  session.botInformation.mode =
+    session.settings.privateMode
+      ? "Private"
+      : "Public";
 
-  return true;
+  return { ...session.botInformation };
 }
 
-// ============================================================
-// LOAD SETTINGS
-// ============================================================
+function isEnabled(sessionId, key) {
+  const session = getSession(sessionId);
+
+  if (!session) return false;
+
+  return Boolean(session.settings[key]);
+}
 
 function loadSettings(sessionId) {
-  const session = sessions.get(sessionId);
+  const session = getSession(sessionId);
 
-  if (!session) {
-    return null;
-  }
+  if (!session) return null;
 
   return {
-    settings: {
-      ...session.settings
-    },
-
-    bot: {
-      ...session.bot
-    }
+    settings: { ...session.settings },
+    botInformation: { ...session.botInformation }
   };
 }
 
-// ============================================================
-// SEND SETTINGS MESSAGE
-// ============================================================
-//
-// Menm WhatsApp message la gen:
-// - Nimewo
-// - Code Settings
-// - Settings Link
-// - Bouton KOPYE CODE
-//
-// Bouton an itilize native flow "cta_copy".
-// ============================================================
-
 async function sendPanelLink(sock, jid, quoted) {
+  if (!sock || !jid) return false;
+
+  const session = createSession(sock);
+
+  const text =
+`🦁 *TOPFEROS MD SETTINGS*
+
+🔐 *Settings Code:* ${session.code}
+
+🌐 *Settings Panel:*
+${session.link}
+
+⚠️ Pa pataje Settings Code ou ak lòt moun.`;
+
   try {
-    const panel = createSession(sock);
-
-    const messageText =
-`✧･ﾟ: ✧･ﾟ: 🔐 KONEKSYON TOPFEROS MD 🔐 :･ﾟ✧:･ﾟ✧
-
-🌸 Nimewo Pwopriyetè a
-╰┈➤ ${panel.number}
-
-🌸 Code Settings
-╰┈➤ ${panel.code}
-
-🌐 Paramèt sou Entènèt
-╰┈➤ ${panel.link}
-
-╰┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈╯
-💖 Kenbe enfòmasyon sa yo an sekirite epi pa pataje yo 💖`;
-
     await sock.sendMessage(
       jid,
       {
-        interactiveMessage: {
-          header: {
-            title: "🔐 TOPFEROS MD SETTINGS",
-            hasMediaAttachment: false
-          },
-
-          body: {
-            text: messageText
-          },
-
-          footer: {
-            text: "🚀 TOPFEROS TECH"
-          },
-
-          nativeFlowMessage: {
-            messageParamsJson: "",
-
-            buttons: [
-              {
-                name: "cta_copy",
-
-                buttonParamsJson: JSON.stringify({
-                  display_text: "📋 KOPYE CODE",
-                  id: "copy_settings_code",
-                  copy_code: panel.code
-                })
-              }
-            ]
-          }
-        }
+        text
       },
-      {
-        quoted
-      }
+      { quoted }
     );
 
-    return panel;
+    return true;
   } catch (error) {
-    console.error(
-      "❌ SEND SETTINGS ERROR:",
-      error?.message || error
-    );
-
-    return null;
+    console.error("sendPanelLink error:", error);
+    return false;
   }
 }
 
-// ============================================================
-// EXPORTS
-// ============================================================
-
 module.exports = {
   PANEL_URL,
-
   sessions,
-
   defaultSettings,
   defaultBotInformation,
 
   generateCode,
-
-  getBotNumber,
+  createNewSession,
+  createSession,
 
   setBotConnected,
   setBotDisconnected,
 
-  createSession,
   getSession,
   verifySession,
+  isAuthenticated,
 
   getSettings,
-  getSetting,
-  isEnabled,
+  getBotInformation,
+
   setSetting,
   applySettings,
-
-  getBotInformation,
   updateBotInformation,
 
+  isEnabled,
   loadSettings,
-
   sendPanelLink
 };
