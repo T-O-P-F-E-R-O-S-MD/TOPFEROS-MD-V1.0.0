@@ -1,17 +1,38 @@
 "use strict";
 
+/* =========================================================
+   TOPFEROS MD V1.0.0
+   PANEL - LANGUAGE / PANEL CODE / PARRAIN CODE
+   ========================================================= */
+
 const $ = (selector) => document.querySelector(selector);
+
+/* =========================
+   SCREENS
+   ========================= */
 
 const languageScreen = $("#languageScreen");
 const panelCodeScreen = $("#panelCodeScreen");
 const parrainCodeScreen = $("#parrainCodeScreen");
 
+/* =========================
+   LANGUAGE BUTTONS
+   ========================= */
+
 const languageButtons =
     document.querySelectorAll(".language-button");
+
+/* =========================
+   SESSION
+   ========================= */
 
 let currentLanguage = "fr";
 let currentSessionId = null;
 let currentNumber = null;
+
+/* =========================
+   TRANSLATIONS
+   ========================= */
 
 const translations = {
     fr: {
@@ -21,10 +42,14 @@ const translations = {
         code: "Code",
         login: "CONNEXION",
         generate: "GÉNÉRER CODE PARRAIN",
-        next: "SUIVANT",
         copy: "COPIER",
         copied: "COPIÉ",
-        error: "Une erreur est survenue."
+        error: "Une erreur est survenue.",
+        numberRequired: "Veuillez entrer votre numéro.",
+        codeRequired: "Veuillez entrer le code panel.",
+        numberNotFound: "Numéro introuvable.",
+        sessionNotFound: "Session introuvable.",
+        codeNotFound: "Code Parrain introuvable."
     },
 
     en: {
@@ -34,29 +59,49 @@ const translations = {
         code: "Code",
         login: "LOGIN",
         generate: "GENERATE PARRAIN CODE",
-        next: "NEXT",
         copy: "COPY",
         copied: "COPIED",
-        error: "An error occurred."
+        error: "An error occurred.",
+        numberRequired: "Please enter your number.",
+        codeRequired: "Please enter the panel code.",
+        numberNotFound: "Number not found.",
+        sessionNotFound: "Session not found.",
+        codeNotFound: "Parrain Code not found."
     },
 
-    ht: {
-        panelCode: "KÒD PANEL",
-        parrainCode: "KÒD PARRAIN",
-        number: "Nimewo",
-        code: "Kòd",
-        login: "KONEKSYON",
-        generate: "JENERE KÒD PARRAIN",
-        next: "PI LÈ",
-        copy: "KOPYE",
-        copied: "KOPYE",
-        error: "Gen yon erè ki rive."
+    es: {
+        panelCode: "CÓDIGO DEL PANEL",
+        parrainCode: "CÓDIGO PARRAIN",
+        number: "Número",
+        code: "Código",
+        login: "INICIAR SESIÓN",
+        generate: "GENERAR CÓDIGO PARRAIN",
+        copy: "COPIAR",
+        copied: "COPIADO",
+        error: "Ocurrió un error.",
+        numberRequired: "Ingrese su número.",
+        codeRequired: "Ingrese el código del panel.",
+        numberNotFound: "Número no encontrado.",
+        sessionNotFound: "Sesión no encontrada.",
+        codeNotFound: "Código Parrain no encontrado."
     }
 };
 
+/* =========================
+   TRANSLATION HELPER
+   ========================= */
+
 function t(key) {
-    return translations[currentLanguage]?.[key] || translations.fr[key] || key;
+    return (
+        translations[currentLanguage]?.[key] ||
+        translations.fr[key] ||
+        key
+    );
 }
+
+/* =========================
+   CLEAN NUMBER
+   ========================= */
 
 function cleanNumber(number) {
     return String(number || "")
@@ -64,8 +109,16 @@ function cleanNumber(number) {
         .trim();
 }
 
+/* =========================
+   SCREEN MANAGEMENT
+   ========================= */
+
 function showScreen(screen) {
-    [languageScreen, panelCodeScreen, parrainCodeScreen].forEach((element) => {
+    [
+        languageScreen,
+        panelCodeScreen,
+        parrainCodeScreen
+    ].forEach((element) => {
         if (element) {
             element.style.display = "none";
         }
@@ -76,69 +129,112 @@ function showScreen(screen) {
     }
 }
 
-function setMessage(element, message, type = "error") {
+/* =========================
+   MESSAGE
+   ========================= */
+
+function setMessage(
+    element,
+    message,
+    type = "error"
+) {
     if (!element) return;
 
     element.textContent = message;
     element.className = `message ${type}`;
 }
 
+/* =========================
+   SESSION STORAGE
+   ========================= */
+
 function saveSession(sessionId, number) {
     currentSessionId = sessionId || null;
-    currentNumber = number || null;
+    currentNumber = cleanNumber(number);
 
     if (currentSessionId) {
-        localStorage.setItem("topferos_session_id", currentSessionId);
+        localStorage.setItem(
+            "topferos_session_id",
+            currentSessionId
+        );
     }
 
     if (currentNumber) {
-        localStorage.setItem("topferos_number", currentNumber);
+        localStorage.setItem(
+            "topferos_number",
+            currentNumber
+        );
     }
 }
 
 function getSavedSession() {
     return {
-        sessionId: localStorage.getItem("topferos_session_id"),
-        number: localStorage.getItem("topferos_number")
+        sessionId:
+            localStorage.getItem(
+                "topferos_session_id"
+            ),
+
+        number:
+            localStorage.getItem(
+                "topferos_number"
+            )
     };
 }
 
+/* =========================
+   APPLY LANGUAGE
+   ========================= */
+
 function applyLanguage() {
-    const lang = translations[currentLanguage];
+    const lang =
+        translations[currentLanguage];
 
     if (!lang) return;
 
-    const panelTitle = $("#panelCodeTitle");
-    const parrainTitle = $("#parrainCodeTitle");
-    const loginButton = $("#panelLoginButton");
-    const generateButton = $("#generateParrainButton");
-    const nextButton = $("#nextButton");
-    const copyButton = $("#copyParrainButton");
+    const panelTitle =
+        $("#panelCodeTitle");
+
+    const parrainTitle =
+        $("#parrainCodeTitle");
+
+    const loginButton =
+        $("#panelLoginButton");
+
+    const generateButton =
+        $("#generateParrainButton");
+
+    const copyButton =
+        $("#copyParrainButton");
 
     if (panelTitle) {
-        panelTitle.textContent = lang.panelCode;
+        panelTitle.textContent =
+            lang.panelCode;
     }
 
     if (parrainTitle) {
-        parrainTitle.textContent = lang.parrainCode;
+        parrainTitle.textContent =
+            lang.parrainCode;
     }
 
     if (loginButton) {
-        loginButton.textContent = lang.login;
+        loginButton.textContent =
+            lang.login;
     }
 
     if (generateButton) {
-        generateButton.textContent = lang.generate;
-    }
-
-    if (nextButton) {
-        nextButton.textContent = lang.next;
+        generateButton.textContent =
+            lang.generate;
     }
 
     if (copyButton) {
-        copyButton.textContent = lang.copy;
+        copyButton.textContent =
+            lang.copy;
     }
 }
+
+/* =========================
+   SELECT LANGUAGE
+   ========================= */
 
 function selectLanguage(language) {
     if (!translations[language]) {
@@ -147,62 +243,115 @@ function selectLanguage(language) {
 
     currentLanguage = language;
 
-    localStorage.setItem("topferos_language", currentLanguage);
+    localStorage.setItem(
+        "topferos_language",
+        currentLanguage
+    );
 
     applyLanguage();
+
     showScreen(panelCodeScreen);
 }
 
+/* =========================
+   INITIALIZE LANGUAGE
+   ========================= */
+
 function initializeLanguage() {
     const savedLanguage =
-        localStorage.getItem("topferos_language");
+        localStorage.getItem(
+            "topferos_language"
+        );
 
-    if (savedLanguage && translations[savedLanguage]) {
-        currentLanguage = savedLanguage;
+    if (
+        savedLanguage &&
+        translations[savedLanguage]
+    ) {
+        currentLanguage =
+            savedLanguage;
     }
 
     languageButtons.forEach((button) => {
-        button.addEventListener("click", () => {
-            const language =
-                button.dataset.language ||
-                button.getAttribute("data-lang");
+        button.addEventListener(
+            "click",
+            () => {
+                const language =
+                    button.dataset.language ||
+                    button.getAttribute(
+                        "data-lang"
+                    );
 
-            selectLanguage(language);
-        });
+                selectLanguage(language);
+            }
+        );
     });
 
     applyLanguage();
 }
-async function panelLogin() {
-    const numberInput = $("#number");
-    const codeInput = $("#panelCode");
-    const loginButton = $("#panelLoginButton");
-    const message = $("#panelMessage");
 
-    if (!numberInput || !codeInput) {
+/* =========================
+   PANEL LOGIN
+   ========================= */
+
+async function panelLogin(event) {
+    if (event) {
+        event.preventDefault();
+    }
+
+    const numberInput =
+        $("#number");
+
+    const codeInput =
+        $("#panelCode");
+
+    const loginButton =
+        $("#panelLoginButton");
+
+    const message =
+        $("#panelMessage");
+
+    if (
+        !numberInput ||
+        !codeInput
+    ) {
         return;
     }
 
-    const number = cleanNumber(numberInput.value);
-    const code = String(codeInput.value || "").trim();
+    const number =
+        cleanNumber(
+            numberInput.value
+        );
+
+    const code =
+        String(
+            codeInput.value || ""
+        ).trim();
+
+    /* NUMBER VALIDATION */
 
     if (!number) {
         setMessage(
             message,
-            "Veuillez entrer votre numéro.",
+            t("numberRequired"),
             "error"
         );
+
         return;
     }
+
+    /* CODE VALIDATION */
 
     if (!code) {
         setMessage(
             message,
-            "Veuillez entrer le code panel.",
+            t("codeRequired"),
             "error"
         );
+
         return;
     }
+
+    /* LOADING */
 
     if (loginButton) {
         loginButton.disabled = true;
@@ -210,146 +359,23 @@ async function panelLogin() {
     }
 
     try {
-        const response = await fetch("/api/login", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                number,
-                code
-            })
-        });
+        const response =
+            await fetch(
+                "/api/login",
+                {
+                    method: "POST",
 
-        const data = await response.json().catch(() => ({}));
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
 
-        if (!response.ok || !data.success) {
-            throw new Error(
-                data.message || t("error")
+                    body: JSON.stringify({
+                        number,
+                        code
+                    })
+                }
             );
-        }
-
-        currentSessionId =
-            data.sessionId ||
-            data.session ||
-            null;
-
-        currentNumber =
-            data.number ||
-            number;
-
-        saveSession(
-            currentSessionId,
-            currentNumber
-        );
-
-        const parrainNumber = $("#parrainNumber");
-
-        if (parrainNumber) {
-            parrainNumber.value =
-                currentNumber;
-        }
-
-        setMessage(
-            message,
-            "",
-            "success"
-        );
-
-        showScreen(parrainCodeScreen);
-        applyLanguage();
-
-    } catch (error) {
-        console.error(
-            "Panel login error:",
-            error
-        );
-
-        setMessage(
-            message,
-            error.message || t("error"),
-            "error"
-        );
-    } finally {
-        if (loginButton) {
-            loginButton.disabled = false;
-            loginButton.textContent = t("login");
-        }
-    }
-}
-
-async function generateParrainCode() {
-    const numberInput = $("#parrainNumber");
-    const generateButton =
-        $("#generateParrainButton");
-    const codeSection =
-        $("#parrainCodeSection");
-    const codeElement =
-        $("#parrainCode");
-    const message =
-        $("#parrainMessage");
-
-    let number =
-        numberInput
-            ? cleanNumber(numberInput.value)
-            : "";
-
-    if (!number) {
-        number =
-            cleanNumber(
-                currentNumber ||
-                localStorage.getItem(
-                    "topferos_number"
-                )
-            );
-    }
-
-    if (!number) {
-        setMessage(
-            message,
-            "Numéro introuvable.",
-            "error"
-        );
-        return;
-    }
-
-    if (!currentSessionId) {
-        currentSessionId =
-            localStorage.getItem(
-                "topferos_session_id"
-            );
-    }
-
-    if (!currentSessionId) {
-        setMessage(
-            message,
-            "Session introuvable. Veuillez vous reconnecter.",
-            "error"
-        );
-        return;
-    }
-
-    if (generateButton) {
-        generateButton.disabled = true;
-        generateButton.textContent = "•••";
-    }
-
-    try {
-        const response = await fetch(
-            "/api/auth",
-            {
-                method: "POST",
-                headers: {
-                    "Content-Type":
-                        "application/json"
-                },
-                body: JSON.stringify({
-                    sessionId:
-                        currentSessionId,
-                    number
-                })
-            }
-        );
 
         const data =
             await response
@@ -366,16 +392,221 @@ async function generateParrainCode() {
             );
         }
 
+        /* SESSION */
+
+        currentSessionId =
+            data.sessionId ||
+            data.session ||
+            null;
+
+        /* NUMBER */
+
+        currentNumber =
+            cleanNumber(
+                data.number ||
+                number
+            );
+
+        saveSession(
+            currentSessionId,
+            currentNumber
+        );
+
+        /* CLEAR ERROR */
+
+        setMessage(
+            message,
+            "",
+            "success"
+        );
+
+        /* DISPLAY PARRAIN SCREEN */
+
+        const parrainNumber =
+            $("#parrainNumber");
+
+        if (parrainNumber) {
+            /*
+             * IMPORTANT:
+             * #parrainNumber is <strong>
+             * not an input.
+             */
+            parrainNumber.textContent =
+                currentNumber;
+        }
+
+        /* HIDE OLD PARRAIN CODE */
+
+        const codeSection =
+            $("#parrainCodeSection");
+
+        if (codeSection) {
+            codeSection.style.display =
+                "none";
+        }
+
+        const codeElement =
+            $("#parrainCode");
+
+        if (codeElement) {
+            codeElement.textContent = "";
+        }
+
+        showScreen(
+            parrainCodeScreen
+        );
+
+        applyLanguage();
+
+    } catch (error) {
+        console.error(
+            "Panel login error:",
+            error
+        );
+
+        setMessage(
+            message,
+            error.message ||
+                t("error"),
+            "error"
+        );
+
+    } finally {
+        if (loginButton) {
+            loginButton.disabled =
+                false;
+
+            loginButton.textContent =
+                t("login");
+        }
+    }
+}
+
+/* =========================
+   GENERATE PARRAIN CODE
+   ========================= */
+
+async function generateParrainCode() {
+    const generateButton =
+        $("#generateParrainButton");
+
+    const codeSection =
+        $("#parrainCodeSection");
+
+    const codeElement =
+        $("#parrainCode");
+
+    const message =
+        $("#parrainMessage");
+
+    /*
+     * #parrainNumber is a <strong>,
+     * therefore we use currentNumber
+     * instead of .value.
+     */
+
+    let number =
+        cleanNumber(
+            currentNumber ||
+            localStorage.getItem(
+                "topferos_number"
+            )
+        );
+
+    /* NUMBER CHECK */
+
+    if (!number) {
+        setMessage(
+            message,
+            t("numberNotFound"),
+            "error"
+        );
+
+        return;
+    }
+
+    /* SESSION RECOVERY */
+
+    if (!currentSessionId) {
+        currentSessionId =
+            localStorage.getItem(
+                "topferos_session_id"
+            );
+    }
+
+    /* SESSION CHECK */
+
+    if (!currentSessionId) {
+        setMessage(
+            message,
+            t("sessionNotFound"),
+            "error"
+        );
+
+        return;
+    }
+
+    /* LOADING */
+
+    if (generateButton) {
+        generateButton.disabled =
+            true;
+
+        generateButton.textContent =
+            "•••";
+    }
+
+    try {
+        const response =
+            await fetch(
+                "/api/auth",
+                {
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body: JSON.stringify({
+                        sessionId:
+                            currentSessionId,
+
+                        number
+                    })
+                }
+            );
+
+        const data =
+            await response
+                .json()
+                .catch(() => ({}));
+
+        if (
+            !response.ok ||
+            !data.success
+        ) {
+            throw new Error(
+                data.message ||
+                t("error")
+            );
+        }
+
+        /* GET PARRAIN CODE */
+
         const parrainCode =
             data.code ||
             data.parrainCode ||
+            data.parrain ||
             "";
 
         if (!parrainCode) {
             throw new Error(
-                "Code Parrain introuvable."
+                t("codeNotFound")
             );
         }
+
+        /* DISPLAY CODE */
 
         if (codeElement) {
             codeElement.textContent =
@@ -401,9 +632,11 @@ async function generateParrainCode() {
 
         setMessage(
             message,
-            error.message || t("error"),
+            error.message ||
+                t("error"),
             "error"
         );
+
     } finally {
         if (generateButton) {
             generateButton.disabled =
@@ -415,88 +648,78 @@ async function generateParrainCode() {
     }
 }
 
-function copyParrainCode() {
-    const codeElement = $("#parrainCode");
-    const copyButton = $("#copyParrainButton");
+/* =========================
+   COPY PARRAIN CODE
+   ========================= */
 
-    if (!codeElement) return;
+async function copyParrainCode() {
+    const codeElement =
+        $("#parrainCode");
+
+    const copyButton =
+        $("#copyParrainButton");
+
+    if (!codeElement) {
+        return;
+    }
 
     const code =
         codeElement.textContent.trim();
 
-    if (!code) return;
-
-    navigator.clipboard
-        .writeText(code)
-        .then(() => {
-            if (copyButton) {
-                copyButton.textContent =
-                    t("copied");
-
-                setTimeout(() => {
-                    copyButton.textContent =
-                        t("copy");
-                }, 1500);
-            }
-        })
-        .catch((error) => {
-            console.error(
-                "Copy error:",
-                error
-            );
-
-            const textarea =
-                document.createElement(
-                    "textarea"
-                );
-
-            textarea.value = code;
-            document.body.appendChild(
-                textarea
-            );
-
-            textarea.select();
-            document.execCommand("copy");
-            textarea.remove();
-
-            if (copyButton) {
-                copyButton.textContent =
-                    t("copied");
-
-                setTimeout(() => {
-                    copyButton.textContent =
-                        t("copy");
-                }, 1500);
-            }
-        });
-}
-
-function goToSettings() {
-    if (!currentSessionId) {
-        currentSessionId =
-            localStorage.getItem(
-                "topferos_session_id"
-            );
-    }
-
-    if (!currentSessionId) {
-        setMessage(
-            $("#parrainMessage"),
-            "Session introuvable.",
-            "error"
-        );
+    if (!code) {
         return;
     }
 
-    const params =
-        new URLSearchParams({
-            session: currentSessionId,
-            language: currentLanguage
-        });
+    try {
+        await navigator.clipboard.writeText(
+            code
+        );
 
-    window.location.href =
-        `/settings.html?${params.toString()}`;
+    } catch (error) {
+        console.warn(
+            "Clipboard API unavailable:",
+            error
+        );
+
+        const textarea =
+            document.createElement(
+                "textarea"
+            );
+
+        textarea.value = code;
+
+        textarea.style.position =
+            "fixed";
+
+        textarea.style.opacity = "0";
+
+        document.body.appendChild(
+            textarea
+        );
+
+        textarea.select();
+
+        document.execCommand(
+            "copy"
+        );
+
+        textarea.remove();
+    }
+
+    if (copyButton) {
+        copyButton.textContent =
+            t("copied");
+
+        setTimeout(() => {
+            copyButton.textContent =
+                t("copy");
+        }, 1500);
+    }
 }
+
+/* =========================
+   RESTORE SESSION
+   ========================= */
 
 function restoreSession() {
     const saved =
@@ -510,19 +733,30 @@ function restoreSession() {
             saved.sessionId;
 
         currentNumber =
-            saved.number;
+            cleanNumber(
+                saved.number
+            );
 
         const parrainNumber =
             $("#parrainNumber");
 
         if (parrainNumber) {
-            parrainNumber.value =
+            parrainNumber.textContent =
                 currentNumber;
         }
     }
-}function setupEvents() {
+}
+
+/* =========================
+   EVENTS
+   ========================= */
+
+function setupEvents() {
     const loginButton =
         $("#panelLoginButton");
+
+    const loginForm =
+        $("#panelCodeForm");
 
     const generateButton =
         $("#generateParrainButton");
@@ -530,15 +764,25 @@ function restoreSession() {
     const copyButton =
         $("#copyParrainButton");
 
-    const nextButton =
-        $("#nextButton");
+    /* LOGIN FORM */
 
-    if (loginButton) {
+    if (loginForm) {
+        loginForm.addEventListener(
+            "submit",
+            panelLogin
+        );
+    } else if (loginButton) {
+        /*
+         * Fallback if the form
+         * does not exist.
+         */
         loginButton.addEventListener(
             "click",
             panelLogin
         );
     }
+
+    /* GENERATE */
 
     if (generateButton) {
         generateButton.addEventListener(
@@ -547,28 +791,33 @@ function restoreSession() {
         );
     }
 
+    /* COPY */
+
     if (copyButton) {
         copyButton.addEventListener(
             "click",
             copyParrainCode
         );
     }
-
-    if (nextButton) {
-        nextButton.addEventListener(
-            "click",
-            goToSettings
-        );
-    }
 }
+
+/* =========================
+   START APP
+   ========================= */
 
 document.addEventListener(
     "DOMContentLoaded",
     () => {
         restoreSession();
+
         initializeLanguage();
+
         setupEvents();
 
+        /*
+         * If a previous session exists,
+         * keep the number displayed.
+         */
         const parrainNumber =
             $("#parrainNumber");
 
@@ -576,7 +825,7 @@ document.addEventListener(
             parrainNumber &&
             currentNumber
         ) {
-            parrainNumber.value =
+            parrainNumber.textContent =
                 currentNumber;
         }
     }
