@@ -1,19 +1,18 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <meta
-    name="description"
-    content="TOPFEROS MD V1.0.0"
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
   >
 
-  <title>TOPFEROS MD</title>
+  <title>TOPFEROS MD SETTINGS</title>
 
   <link
     rel="stylesheet"
-    href="/style.css?v=10"
+    href="/style.css?v=20"
   >
 </head>
 
@@ -21,202 +20,227 @@
 
   <main class="container">
 
-    <!-- =========================
-         LOGO
-    ========================== -->
-
-    <div class="logo-container">
-
-      <img
-        src="/assets/logo.png"
-        alt="TOPFEROS MD"
-        class="logo"
-      >
-
-    </div>
-
-
-    <!-- =========================
-         LANGUAGE SCREEN
-    ========================== -->
-
-    <section
-      id="languageScreen"
-      class="screen active"
+    <img
+      src="/assets/logo.png"
+      class="logo"
+      alt="TOPFEROS MD"
     >
 
-      <h1 id="languageTitle">
-        Language
-      </h1>
+    <h1>🦁 TOPFEROS MD SETTINGS</h1>
 
-      <div class="language-buttons">
+    <!-- LANGUAGE -->
 
-        <button
-          type="button"
-          class="language-button"
-          data-language="en"
-        >
-          English
-        </button>
+    <section id="languageScreen" class="screen">
 
-        <button
-          type="button"
-          class="language-button"
-          data-language="fr"
-        >
-          Français
-        </button>
+      <h2>🌐 Select Language</h2>
 
-        <button
-          type="button"
-          class="language-button"
-          data-language="es"
-        >
-          Español
-        </button>
+      <button onclick="selectLanguage('en')">
+        🇬🇧 English
+      </button>
 
-      </div>
+      <button onclick="selectLanguage('fr')">
+        🇫🇷 Français
+      </button>
+
+      <button onclick="selectLanguage('es')">
+        🇪🇸 Español
+      </button>
 
     </section>
 
 
-    <!-- =========================
-         PARRAIN SCREEN
-    ========================== -->
+    <!-- SETTINGS LOGIN -->
 
     <section
-      id="parrainScreen"
-      class="screen"
-      hidden
+      id="loginScreen"
+      class="screen hidden"
     >
 
-      <h1 id="parrainTitle">
-        Parrain Number
-      </h1>
+      <h2>🔐 Settings Login</h2>
+
+      <p class="description">
+        Enter your 6-character Settings Code.
+      </p>
+
+      <input
+        id="settingsCode"
+        type="text"
+        maxlength="6"
+        autocomplete="off"
+        placeholder="G7K2P9"
+      >
+
+      <button
+        id="verifyButton"
+        onclick="verifySettings()"
+      >
+        🔓 VERIFY / CONNECT
+      </button>
+
+      <p
+        id="loginMessage"
+        class="message"
+      ></p>
+
+    </section>
 
 
-      <!-- =========================
-           WHATSAPP NUMBER
-      ========================== -->
+    <!-- DASHBOARD -->
 
-      <div class="input-group">
+    <section
+      id="dashboard"
+      class="hidden"
+    >
 
-        <label
-          id="numberLabel"
-          for="parrainNumberInput"
+      <div class="dashboardHeader">
+
+        <img
+          src="/assets/logo.png"
+          class="dashboardLogo"
+          alt="TOPFEROS MD"
         >
-          WhatsApp Number
-        </label>
 
-        <input
-          type="tel"
-          id="parrainNumberInput"
-          class="number-input"
-          inputmode="numeric"
-          autocomplete="tel"
-          placeholder="509XXXXXXXX"
-        >
+        <h2>⚙️ BOT SETTINGS</h2>
 
-        <small id="numberHint">
-          Pa mete +, espas oswa -
-        </small>
+        <p id="connectionState">
+          🟢 Connected
+        </p>
 
       </div>
 
 
-      <!-- =========================
-           GENERATE BUTTON
-      ========================== -->
+      <!-- BOT INFORMATION -->
 
-      <button
-        type="button"
-        id="generateParrainButton"
-        class="primary-button"
-      >
-        Générer Parrain Code
-      </button>
+      <div class="card">
 
+        <h3>🤖 BOT INFORMATION</h3>
 
-      <!-- =========================
-           MESSAGE
-      ========================== -->
+        <div class="infoGrid">
 
-      <p
-        id="parrainMessage"
-        class="message"
-        aria-live="polite"
-      ></p>
+          <label>
+            Name
+            <input
+              id="botName"
+              type="text"
+              value="TOPFEROS MD"
+            >
+          </label>
 
+          <label>
+            Number
+            <input
+              id="botNumber"
+              type="text"
+              readonly
+            >
+          </label>
 
-      <!-- =========================
-           PARRAIN CODE
-      ========================== -->
+          <label>
+            Prefix
+            <input
+              id="botPrefix"
+              type="text"
+              value="."
+              maxlength="5"
+            >
+          </label>
 
-      <div
-        id="parrainCodeSection"
-        class="parrain-code-section"
-        hidden
-      >
-
-        <h2 id="parrainCodeTitle">
-          Parrain Code
-        </h2>
-
-        <div class="code-container">
-
-          <input
-            type="text"
-            id="parrainCode"
-            readonly
-            aria-label="Parrain Code"
-          >
-
-          <button
-            type="button"
-            id="copyParrainButton"
-            class="secondary-button"
-          >
-            Copier
-          </button>
+          <label>
+            Mode
+            <input
+              id="botMode"
+              type="text"
+              readonly
+            >
+          </label>
 
         </div>
 
       </div>
 
+
+      <!-- GENERAL -->
+
+      <div class="card">
+
+        <h3>⚙️ GENERAL</h3>
+
+        <div id="generalSettings"></div>
+
+      </div>
+
+
+      <!-- PROTECTION -->
+
+      <div class="card">
+
+        <h3>🛡️ PROTECTION</h3>
+
+        <div id="protectionSettings"></div>
+
+      </div>
+
+
+      <!-- STATUS -->
+
+      <div class="card">
+
+        <h3>📱 STATUS</h3>
+
+        <div id="statusSettings"></div>
+
+      </div>
+
+
+      <!-- GROUP -->
+
+      <div class="card">
+
+        <h3>👥 GROUP</h3>
+
+        <div id="groupSettings"></div>
+
+      </div>
+
+
+      <!-- AI -->
+
+      <div class="card">
+
+        <h3>🤖 AI</h3>
+
+        <div id="aiSettings"></div>
+
+      </div>
+
+
+      <!-- SAVE -->
+
+      <button
+        id="saveButton"
+        class="saveButton"
+        onclick="saveSettings()"
+      >
+        💾 APP SOVE
+      </button>
+
+      <p
+        id="saveMessage"
+        class="message"
+      ></p>
+
+
+      <footer>
+        ==========================<br>
+        By TOPFEROS Tech<br>
+        ==========================
+      </footer>
+
     </section>
 
   </main>
 
-
-  <!-- =========================
-       FOOTER
-  ========================== -->
-
-  <footer class="footer">
-
-    <div class="footer-line">
-      ==========================
-    </div>
-
-    <div id="footerText">
-      By TOPFEROS TECH
-    </div>
-
-    <div class="footer-line">
-      ==========================
-    </div>
-
-  </footer>
-
-
-  <!-- =========================
-       JAVASCRIPT
-  ========================== -->
-
-  <script
-    src="/app.js?v=10"
-    defer
-  ></script>
+  <script src="/app.js?v=20"></script>
 
 </body>
 </html>
