@@ -1,436 +1,780 @@
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   🎨 TOPFEROS MD — SETTINGS PANEL STYLE
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+/* =========================================================
+   🎨 TOPFEROS MD V1.0.0 — MAIN PANEL STYLE
+   ========================================================= */
 
 * {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
 }
 
 :root {
-  --background: #050505;
-  --card: #141414;
-  --input: #0b0b0b;
-  --text: #ffffff;
-  --muted: #aaaaaa;
-  --border: rgba(255, 255, 255, 0.12);
-  --border-light: rgba(255, 255, 255, 0.08);
-  --button: #ffffff;
-  --button-text: #000000;
-  --danger: #ff7777;
-  --success: #72ffad;
+    --background: #050505;
+    --background-2: #101010;
+    --card: rgba(18, 18, 18, 0.96);
+
+    --input: #0b0b0b;
+
+    --text: #ffffff;
+    --muted: #a8a8a8;
+
+    --border: rgba(255, 255, 255, 0.12);
+    --border-light: rgba(255, 255, 255, 0.07);
+
+    --button: #ffffff;
+    --button-text: #000000;
+
+    --danger: #ff7070;
+    --success: #72ffad;
+
+    --radius: 16px;
 }
 
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   🌐 BODY
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+/* =========================================================
+   🌐 HTML / BODY
+   ========================================================= */
 
 html {
-  min-height: 100%;
+    min-height: 100%;
 }
 
 body {
-  min-height: 100vh;
+    min-height: 100vh;
 
-  display: flex;
-  align-items: center;
-  justify-content: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 
-  padding: 20px;
+    padding: 20px;
 
-  font-family:
-    Arial,
-    Helvetica,
-    sans-serif;
+    font-family:
+        Arial,
+        Helvetica,
+        sans-serif;
 
-  background:
-    linear-gradient(
-      135deg,
-      #050505,
-      #111111,
-      #050505
-    );
+    background:
+        radial-gradient(
+            circle at top,
+            #181818 0%,
+            #0a0a0a 42%,
+            #030303 100%
+        );
 
-  color: var(--text);
+    color: var(--text);
+
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
 }
 
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   📦 CONTAINER
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+/* =========================================================
+   📦 MAIN CONTAINER
+   ========================================================= */
 
 .container {
-  width: 100%;
-  max-width: 430px;
+    width: 100%;
+    max-width: 430px;
+
+    margin: 0 auto;
 }
 
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   🪟 CARD
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 
-.card {
-  width: 100%;
-
-  padding: 32px 25px;
-
-  background:
-    rgba(20, 20, 20, 0.96);
-
-  border: 1px solid var(--border);
-
-  border-radius: 22px;
-
-  box-shadow:
-    0 20px 60px
-    rgba(0, 0, 0, 0.55);
-
-  text-align: center;
-}
-
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+/* =========================================================
    🤖 LOGO
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+   ========================================================= */
+
+.logo-container {
+    width: 100%;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    margin-bottom: 24px;
+}
 
 .logo {
-  width: 105px;
-  height: 105px;
+    width: 105px;
+    height: 105px;
 
-  display: block;
+    display: block;
 
-  margin:
-    0 auto 20px;
+    object-fit: cover;
 
-  object-fit: cover;
+    border-radius: 50%;
 
-  border-radius: 50%;
+    border: 3px solid
+        rgba(255, 255, 255, 0.18);
 
-  border:
-    3px solid
-    rgba(255, 255, 255, 0.18);
+    background: #151515;
 
-  background: #222;
+    box-shadow:
+        0 0 0 6px rgba(255, 255, 255, 0.025),
+        0 15px 45px rgba(0, 0, 0, 0.65);
 }
 
-.logo-placeholder {
-  width: 105px;
-  height: 105px;
 
-  margin:
-    0 auto 20px;
+/* =========================================================
+   🪟 SCREENS
+   ========================================================= */
 
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.screen {
+    width: 100%;
 
-  border-radius: 50%;
+    padding: 28px 24px;
 
-  background: #222;
+    background:
+        var(--card);
 
-  border:
-    3px solid
-    rgba(255, 255, 255, 0.18);
+    border:
+        1px solid var(--border);
 
-  font-size: 42px;
+    border-radius:
+        22px;
+
+    box-shadow:
+        0 20px 60px
+        rgba(0, 0, 0, 0.55);
+
+    text-align: center;
+
+    animation:
+        screenAppear 0.3s ease;
 }
 
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+@keyframes screenAppear {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+
+/* =========================================================
    📝 TITLES
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+   ========================================================= */
 
 h1 {
-  font-size: 24px;
+    font-size: 25px;
 
-  margin-bottom: 8px;
+    font-weight: 800;
+
+    letter-spacing: 0.5px;
+
+    margin-bottom: 8px;
+}
+
+h2 {
+    font-size: 21px;
+
+    font-weight: 800;
+
+    letter-spacing: 0.5px;
+
+    margin-bottom: 24px;
 }
 
 .subtitle {
-  color: var(--muted);
+    color: var(--muted);
 
-  font-size: 14px;
+    font-size: 14px;
 
-  margin-bottom: 28px;
+    line-height: 1.5;
+
+    margin-bottom: 25px;
 }
 
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   🏷️ FORM
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 
-.field {
-  text-align: left;
+/* =========================================================
+   🌐 LANGUAGE SCREEN
+   ========================================================= */
 
-  margin-bottom: 18px;
+.language-screen {
+    padding-top: 30px;
+    padding-bottom: 30px;
 }
 
-.field label {
-  display: block;
+.language-buttons {
+    width: 100%;
 
-  color: #dddddd;
+    display: flex;
 
-  font-size: 14px;
+    flex-direction: column;
 
-  font-weight: bold;
-
-  margin-bottom: 8px;
+    gap: 12px;
 }
 
-.field input {
-  width: 100%;
 
-  padding: 14px 15px;
+/* =========================================================
+   🔘 LANGUAGE BUTTONS
+   ========================================================= */
 
-  border-radius: 12px;
+.language-button {
+    width: 100%;
 
-  border:
-    1px solid
-    var(--border);
+    min-height: 52px;
 
-  outline: none;
+    padding: 14px 18px;
 
-  background: var(--input);
+    border:
+        1px solid
+        var(--border);
 
-  color: var(--text);
+    border-radius:
+        var(--radius);
 
-  font-size: 16px;
+    outline: none;
 
-  transition:
-    border-color 0.2s,
-    box-shadow 0.2s;
+    background:
+        #0d0d0d;
+
+    color:
+        var(--text);
+
+    font-size: 16px;
+
+    font-weight: 700;
+
+    letter-spacing: 0.2px;
+
+    cursor: pointer;
+
+    transition:
+        background 0.2s ease,
+        border-color 0.2s ease,
+        transform 0.15s ease,
+        box-shadow 0.2s ease;
 }
 
-.field input::placeholder {
-  color: #666666;
+.language-button:hover {
+    background: #191919;
+
+    border-color:
+        rgba(255, 255, 255, 0.28);
+
+    box-shadow:
+        0 8px 25px
+        rgba(0, 0, 0, 0.35);
 }
 
-.field input:focus {
-  border-color:
-    rgba(255, 255, 255, 0.45);
-
-  box-shadow:
-    0 0 0 3px
-    rgba(255, 255, 255, 0.04);
+.language-button:active {
+    transform:
+        scale(0.97);
 }
 
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   ➡️ NEXT BUTTON
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 
-.next-button {
-  width: 100%;
+/* =========================================================
+   📝 INPUT GROUP
+   ========================================================= */
 
-  padding: 14px;
+.input-group {
+    width: 100%;
 
-  margin-top: 8px;
+    text-align: left;
 
-  border: none;
-
-  outline: none;
-
-  border-radius: 12px;
-
-  background: var(--button);
-
-  color: var(--button-text);
-
-  font-size: 16px;
-
-  font-weight: bold;
-
-  cursor: pointer;
-
-  transition:
-    transform 0.2s,
-    opacity 0.2s;
+    margin-bottom: 17px;
 }
 
-.next-button:hover {
-  opacity: 0.9;
+.input-group label {
+    display: block;
+
+    margin-bottom: 8px;
+
+    color: #dddddd;
+
+    font-size: 14px;
+
+    font-weight: 700;
 }
 
-.next-button:active {
-  transform: scale(0.98);
+.input-group input {
+    width: 100%;
+
+    min-height: 50px;
+
+    padding:
+        13px 15px;
+
+    border:
+        1px solid var(--border);
+
+    border-radius:
+        13px;
+
+    outline: none;
+
+    background:
+        var(--input);
+
+    color:
+        var(--text);
+
+    font-size: 16px;
+
+    transition:
+        border-color 0.2s ease,
+        box-shadow 0.2s ease,
+        background 0.2s ease;
 }
 
-.next-button:disabled {
-  opacity: 0.5;
-
-  cursor: not-allowed;
+.input-group input::placeholder {
+    color: #5f5f5f;
 }
 
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   ❌ MESSAGE
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.input-group input:focus {
+    background:
+        #0f0f0f;
+
+    border-color:
+        rgba(255, 255, 255, 0.38);
+
+    box-shadow:
+        0 0 0 3px
+        rgba(255, 255, 255, 0.05);
+}
+
+
+/* =========================================================
+   🔘 PRIMARY BUTTON
+   ========================================================= */
+
+.primary-button {
+    width: 100%;
+
+    min-height: 52px;
+
+    padding:
+        14px 18px;
+
+    margin-top: 5px;
+
+    border:
+        none;
+
+    border-radius:
+        13px;
+
+    outline: none;
+
+    background:
+        var(--button);
+
+    color:
+        var(--button-text);
+
+    font-size: 15px;
+
+    font-weight: 800;
+
+    letter-spacing: 0.3px;
+
+    cursor: pointer;
+
+    box-shadow:
+        0 8px 25px
+        rgba(0, 0, 0, 0.35);
+
+    transition:
+        transform 0.15s ease,
+        opacity 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+.primary-button:hover {
+    opacity: 0.9;
+
+    box-shadow:
+        0 10px 30px
+        rgba(0, 0, 0, 0.45);
+}
+
+.primary-button:active {
+    transform:
+        scale(0.97);
+}
+
+.primary-button:disabled {
+    opacity: 0.45;
+
+    cursor:
+        not-allowed;
+
+    transform:
+        none;
+}
+
+
+/* =========================================================
+   🔘 SECONDARY BUTTON
+   ========================================================= */
+
+.secondary-button {
+    width: 100%;
+
+    min-height: 48px;
+
+    padding:
+        12px 18px;
+
+    margin-top: 15px;
+
+    border:
+        1px solid var(--border);
+
+    border-radius:
+        13px;
+
+    outline: none;
+
+    background:
+        #101010;
+
+    color:
+        var(--text);
+
+    font-size: 14px;
+
+    font-weight: 800;
+
+    cursor: pointer;
+
+    transition:
+        background 0.2s ease,
+        border-color 0.2s ease,
+        transform 0.15s ease;
+}
+
+.secondary-button:hover {
+    background:
+        #191919;
+
+    border-color:
+        rgba(255, 255, 255, 0.25);
+}
+
+.secondary-button:active {
+    transform:
+        scale(0.97);
+}
+
+
+/* =========================================================
+   📱 MESSAGE
+   ========================================================= */
 
 .message {
-  min-height: 22px;
+    min-height: 22px;
 
-  margin-top: 16px;
+    margin-top: 14px;
 
-  color: var(--danger);
+    color:
+        var(--danger);
 
-  font-size: 13px;
+    font-size: 13px;
 
-  line-height: 1.5;
+    line-height: 1.5;
+
+    text-align: center;
 }
 
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   🦶 FOOTER
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 
-.footer {
-  margin-top: 28px;
+/* =========================================================
+   👤 PARRAIN NUMBER
+   ========================================================= */
 
-  padding-top: 18px;
+.parrain-number-container {
+    width: 100%;
 
-  border-top:
-    1px solid
-    var(--border-light);
+    margin-bottom: 22px;
 
-  color: var(--muted);
-
-  font-size: 12px;
-
-  line-height: 1.7;
+    text-align: center;
 }
 
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   ⚙️ SETTINGS SCREEN
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.parrain-number-label {
+    margin-top: 12px;
 
-.settings-screen {
-  text-align: left;
+    margin-bottom: 8px;
+
+    color:
+        #ffffff;
+
+    font-size: 15px;
+
+    font-weight: 700;
+
+    letter-spacing: 0.3px;
 }
 
-.settings-title {
-  text-align: center;
+.parrain-number {
+    display: block;
 
-  margin-bottom: 22px;
+    color:
+        #ffffff;
+
+    font-size: 20px;
+
+    font-weight: 800;
+
+    letter-spacing: 1px;
+
+    word-break: break-word;
 }
 
-.settings-title .logo {
-  margin-bottom: 15px;
+
+/* =========================================================
+   ➖ SEPARATOR
+   ========================================================= */
+
+.separator {
+    width: 100%;
+
+    overflow: hidden;
+
+    color:
+        rgba(255, 255, 255, 0.25);
+
+    font-size: 12px;
+
+    line-height: 1;
+
+    user-select: none;
 }
 
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   🟢 CONNECTION STATUS
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 
-.connection {
-  text-align: center;
+/* =========================================================
+   🔐 PARRAIN CODE SECTION
+   ========================================================= */
 
-  padding: 10px;
+.parrain-code-section {
+    width: 100%;
 
-  margin-bottom: 20px;
+    margin-top: 22px;
 
-  border-radius: 10px;
+    text-align: center;
 
-  background:
-    rgba(0, 180, 90, 0.10);
-
-  color: var(--success);
-
-  font-size: 13px;
+    animation:
+        codeAppear 0.3s ease;
 }
 
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   📦 SETTINGS BOX
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+@keyframes codeAppear {
+    from {
+        opacity: 0;
+        transform: translateY(7px);
+    }
 
-.settings-box {
-  padding: 15px;
-
-  margin-bottom: 12px;
-
-  border-radius: 14px;
-
-  background: var(--input);
-
-  border:
-    1px solid
-    var(--border-light);
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
-.settings-box h3 {
-  font-size: 15px;
+.parrain-code-label {
+    margin-top: 12px;
 
-  margin-bottom: 5px;
+    margin-bottom: 8px;
+
+    color:
+        #ffffff;
+
+    font-size: 15px;
+
+    font-weight: 700;
+
+    letter-spacing: 0.3px;
 }
 
-.settings-box p {
-  color: #999999;
+.parrain-code {
+    display: block;
 
-  font-size: 12px;
+    min-height: 25px;
 
-  line-height: 1.5;
+    padding:
+        4px 8px;
+
+    color:
+        var(--success);
+
+    font-size: 19px;
+
+    font-weight: 800;
+
+    letter-spacing: 1px;
+
+    word-break: break-all;
 }
 
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   👁️ HIDDEN
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 
-.hidden {
-  display: none !important;
+/* =========================================================
+   ⏳ BUTTON LOADING STATE
+   ========================================================= */
+
+button.loading {
+    opacity: 0.65;
+
+    pointer-events: none;
 }
 
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+/* =========================================================
+   👆 FOCUS ACCESSIBILITY
+   ========================================================= */
+
+button:focus-visible,
+input:focus-visible {
+    outline:
+        2px solid
+        rgba(255, 255, 255, 0.5);
+
+    outline-offset:
+        2px;
+}
+
+
+/* =========================================================
    📱 MOBILE
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+   ========================================================= */
 
 @media (max-width: 480px) {
 
-  body {
-    padding: 14px;
-  }
+    body {
+        padding: 14px;
+    }
 
-  .card {
-    padding: 28px 20px;
+    .container {
+        max-width: 100%;
+    }
 
-    border-radius: 18px;
-  }
+    .logo-container {
+        margin-bottom: 20px;
+    }
 
-  .logo,
-  .logo-placeholder {
-    width: 90px;
-    height: 90px;
-  }
+    .logo {
+        width: 90px;
+        height: 90px;
+    }
 
-  .logo-placeholder {
-    font-size: 36px;
-  }
+    .screen {
+        padding:
+            25px 19px;
 
-  h1 {
-    font-size: 21px;
-  }
+        border-radius:
+            19px;
+    }
 
-  .field input {
-    padding: 13px 14px;
-  }
+    h1 {
+        font-size: 22px;
+    }
 
-  .next-button {
-    padding: 13px;
-  }
+    h2 {
+        font-size: 19px;
+
+        margin-bottom: 21px;
+    }
+
+    .subtitle {
+        font-size: 13px;
+
+        margin-bottom: 22px;
+    }
+
+    .language-button {
+        min-height: 50px;
+
+        font-size: 15px;
+    }
+
+    .input-group input {
+        min-height: 48px;
+
+        font-size: 16px;
+    }
+
+    .primary-button {
+        min-height: 50px;
+    }
+
+    .parrain-number {
+        font-size: 18px;
+    }
+
+    .parrain-code {
+        font-size: 18px;
+    }
 }
 
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+/* =========================================================
    📱 SMALL DEVICES
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+   ========================================================= */
 
 @media (max-width: 360px) {
 
-  body {
-    padding: 10px;
-  }
+    body {
+        padding: 10px;
+    }
 
-  .card {
-    padding: 24px 16px;
-  }
+    .logo {
+        width: 80px;
+        height: 80px;
+    }
 
-  .logo,
-  .logo-placeholder {
-    width: 80px;
-    height: 80px;
-  }
+    .screen {
+        padding:
+            22px 15px;
 
-  h1 {
-    font-size: 19px;
-  }
+        border-radius:
+            17px;
+    }
+
+    h1 {
+        font-size: 20px;
+    }
+
+    h2 {
+        font-size: 18px;
+    }
+
+    .language-button {
+        min-height: 47px;
+
+        padding:
+            12px 14px;
+
+        font-size: 14px;
+    }
+
+    .parrain-number {
+        font-size: 17px;
+    }
+
+    .parrain-code {
+        font-size: 17px;
+    }
+}
+
+
+/* =========================================================
+   🌙 REDUCE MOTION
+   ========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+
+    *,
+    *::before,
+    *::after {
+        animation-duration:
+            0.01ms !important;
+
+        animation-iteration-count:
+            1 !important;
+
+        transition-duration:
+            0.01ms !important;
+    }
 }
