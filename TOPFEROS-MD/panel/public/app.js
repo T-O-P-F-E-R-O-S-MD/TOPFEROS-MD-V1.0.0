@@ -1,682 +1,422 @@
 "use strict";
 
-const path = require("path");
-const express = require("express");
-
-const settingsPanel = require("../settings/panel");
-const connection = require("../src/connection");
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🤖 TOPFEROS MD — PANEL SERVER
-// 🚀 TOPFEROS TECH
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-const app = express();
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// ⚙️ SERVER CONFIG
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-const PORT =
-  Number(
-    process.env.PORT ||
-    process.env.PANEL_PORT ||
-    3000
-  );
-
-const HOST =
-  "0.0.0.0";
-
-const PUBLIC_DIR =
-  path.join(
-    __dirname,
-    "public"
-  );
-
-const ASSETS_DIR =
-  path.join(
-    PUBLIC_DIR,
-    "assets"
-  );
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🔐 PANEL SESSIONS
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//
-// Nou pa kreye fake Parrain Code ankò.
-//
-// Code ki nan Map sa a se vrè code
-// WhatsApp/Baileys te retounen.
-//
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-const pairingSessions =
-  new Map();
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🧩 MIDDLEWARE
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-app.use(
-  express.json()
+const params = new URLSearchParams(
+  window.location.search
 );
 
-app.use(
-  express.urlencoded({
-    extended: true
-  })
-);
+const sessionId = params.get("session");
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 📁 STATIC FILES
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+let currentLanguage = "en";
+let settings = {};
+let botInformation = {};
 
-app.use(
-  express.static(
-    PUBLIC_DIR
-  )
-);
+const groups = {
+  general: [
+    ["publicMode", "Public Mode"],
+    ["privateMode", "Private Mode"],
+    ["alwaysOnline", "Always Online"],
+    ["fakeTyping", "Fake Typing"],
+    ["fakeRecording", "Fake Recording"]
+  ],
 
-app.use(
-  "/assets",
-  express.static(
-    ASSETS_DIR
-  )
-);
+  protection: [
+    ["antiCall", "Anti Call"],
+    ["antiDelete", "Anti Delete"],
+    ["antiSpam", "Anti Spam"],
+    ["antiLink", "Anti Link"],
+    ["antiRobot", "Anti Robot"]
+  ],
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// ❤️ HEALTH CHECK
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  status: [
+    ["autoStatus", "Auto Status"],
+    ["statusReply", "Status Reply"],
+    ["statusLike", "Status Like"],
+    ["statusReact", "Status React"]
+  ],
 
-app.get(
-  "/api/status",
-  (req, res) => {
+  group: [
+    ["groupAntiSpam", "Group Anti Spam"],
+    ["groupAntiLink", "Group Anti Link"],
+    ["groupAntiDelete", "Group Anti Delete"],
+    ["groupClose", "Group Close"],
+    ["groupOpen", "Group Open"]
+  ],
 
-    try {
+  ai: [
+    ["aiChat", "AI Chat"]
+  ]
+};
 
-      return res.json({
-        success: true,
+document.addEventListener("DOMContentLoaded", () => {
+  if (!sessionId) {
+    showLanguage();
+    return;
+  }
 
-        connected:
-          connection.isConnected(),
+  showLanguage();
+});
 
-        botConnected:
-          connection.isConnected(),
+function $(id) {
+  return document.getElementById(id);
+}
 
-        phoneNumber:
-          connection.getPhoneNumber() || null
+function showLanguage() {
+  $("languageScreen").classList.remove("hidden");
+  $("loginScreen").classList.add("hidden");
+  $("dashboard").classList.add("hidden");
+}
 
-      });
+async function selectLanguage(language) {
+  currentLanguage = language;
 
-    } catch (error) {
+  $("languageScreen").classList.add("hidden");
+  $("loginScreen").classList.remove("hidden");
 
-      console.error(
-        "❌ STATUS ERROR:",
-        error?.message || error
+  if (!sessionId) {
+    showLoginMessage(
+      "Settings link la pa gen Session ID.",
+      true
+    );
+    return;
+  }
+
+  try {
+    const response = await fetch(
+      `/api/session/${encodeURIComponent(sessionId)}`
+    );
+
+    const data = await response.json();
+
+    if (!data.success) {
+      showLoginMessage(
+        "Settings session sa a pa egziste.",
+        true
       );
+      return;
+    }
+  } catch (error) {
+    showLoginMessage(
+      "Pa kapab kontakte server la.",
+      true
+    );
+  }
+}
 
-      return res.status(500).json({
-        success: false,
-        connected: false,
-        error:
-          "Unable to get bot status."
-      });
+function showLoginMessage(message, error = false) {
+  const el = $("loginMessage");
 
+  el.textContent = message;
+  el.className =
+    "message " + (error ? "error" : "success");
+}
+
+async function verifySettings() {
+  const code = $("settingsCode")
+    .value
+    .trim()
+    .toUpperCase();
+
+  if (!sessionId) {
+    showLoginMessage(
+      "Session ID pa jwenn.",
+      true
+    );
+    return;
+  }
+
+  if (!/^[A-Z0-9]{6}$/.test(code)) {
+    showLoginMessage(
+      "Settings Code la dwe gen 6 karaktè.",
+      true
+    );
+    return;
+  }
+
+  const button = $("verifyButton");
+
+  button.disabled = true;
+  button.textContent = "⏳ VERIFYING...";
+
+  try {
+    const response = await fetch("/api/verify", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        sessionId,
+        code
+      })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || !data.success) {
+      showLoginMessage(
+        "❌ Settings Code pa kòrèk.",
+        true
+      );
+      return;
     }
 
+    settings = data.settings || {};
+    botInformation =
+      data.botInformation || {};
+
+    openDashboard();
+
+  } catch (error) {
+    showLoginMessage(
+      "❌ Erè koneksyon ak server la.",
+      true
+    );
+  } finally {
+    button.disabled = false;
+    button.textContent = "🔓 VERIFY / CONNECT";
   }
-);
+}
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🔐 REAL WHATSAPP PAIRING CODE
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//
-// POST /api/auth
-//
-// Body:
-// {
-//   "sessionId": "...",
-//   "number": "509XXXXXXXX"
-// }
-//
-// Li pral rele:
-//
-// connection.requestPairingCode(number)
-//
-// Sa ap retounen vrè WhatsApp Pairing Code la.
-//
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function openDashboard() {
+  $("languageScreen").classList.add("hidden");
+  $("loginScreen").classList.add("hidden");
+  $("dashboard").classList.remove("hidden");
 
-app.post(
-  "/api/auth",
-  async (req, res) => {
+  renderBotInformation();
 
-    try {
+  renderSettings(
+    "generalSettings",
+    groups.general
+  );
 
-      const sessionId =
-        String(
-          req.body?.sessionId ||
-          ""
-        ).trim();
+  renderSettings(
+    "protectionSettings",
+    groups.protection
+  );
 
-      const number =
-        String(
-          req.body?.number ||
-          ""
-        ).trim();
+  renderSettings(
+    "statusSettings",
+    groups.status
+  );
 
-      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-      // 🔎 VERIFY SESSION ID
-      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  renderSettings(
+    "groupSettings",
+    groups.group
+  );
 
-      if (!sessionId) {
+  renderSettings(
+    "aiSettings",
+    groups.ai
+  );
+}
 
-        return res.status(400).json({
-          success: false,
-          error:
-            "Session ID obligatwa."
-        });
+function renderBotInformation() {
+  $("botName").value =
+    botInformation.name ||
+    "TOPFEROS MD";
 
-      }
+  $("botNumber").value =
+    botInformation.number || "";
 
-      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-      // 📱 VERIFY NUMBER
-      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  $("botPrefix").value =
+    botInformation.prefix || ".";
 
-      if (!number) {
+  updateModeDisplay();
+}
 
-        return res.status(400).json({
-          success: false,
-          error:
-            "WhatsApp phone number obligatwa."
-        });
+function updateModeDisplay() {
+  $("botMode").value =
+    settings.privateMode
+      ? "Private"
+      : "Public";
+}
 
-      }
+function renderSettings(containerId, list) {
+  const container = $(containerId);
 
-      console.log("");
+  container.innerHTML = "";
 
-      console.log(
-        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-      );
+  for (const [key, label] of list) {
+    const row = document.createElement("div");
 
-      console.log(
-        "📱 TOPFEROS MD — NEW PAIRING REQUEST"
-      );
+    row.className = "setting";
 
-      console.log(
-        `🆔 Session: ${sessionId}`
-      );
+    row.innerHTML = `
+      <span>${label}</span>
 
-      console.log(
-        `📞 Number: ${number}`
-      );
+      <label class="switch">
+        <input
+          type="checkbox"
+          data-setting="${key}"
+          ${settings[key] ? "checked" : ""}
+        >
 
-      console.log(
-        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-      );
+        <span class="slider"></span>
+      </label>
+    `;
 
-      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-      // 🔐 REQUEST REAL WHATSAPP CODE
-      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    container.appendChild(row);
+  }
 
-      const pairingCode =
-        await connection.requestPairingCode(
-          number
-        );
+  container
+    .querySelectorAll("input[data-setting]")
+    .forEach(input => {
+      input.addEventListener(
+        "change",
+        () => {
+          const key =
+            input.dataset.setting;
 
-      if (!pairingCode) {
+          settings[key] =
+            input.checked;
 
-        return res.status(500).json({
-          success: false,
-          error:
-            "WhatsApp pa retounen pairing code."
-        });
+          if (
+            key === "publicMode" &&
+            input.checked
+          ) {
+            settings.privateMode = false;
+            refreshSwitch("privateMode");
+          }
 
-      }
+          if (
+            key === "privateMode" &&
+            input.checked
+          ) {
+            settings.publicMode = false;
+            refreshSwitch("publicMode");
+          }
 
-      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-      // 💾 SAVE PAIRING SESSION
-      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+          if (
+            key === "groupClose" &&
+            input.checked
+          ) {
+            settings.groupOpen = false;
+            refreshSwitch("groupOpen");
+          }
 
-      pairingSessions.set(
-        sessionId,
-        {
-          number:
-            number.replace(/\D/g, ""),
+          if (
+            key === "groupOpen" &&
+            input.checked
+          ) {
+            settings.groupClose = false;
+            refreshSwitch("groupClose");
+          }
 
-          code:
-            pairingCode,
-
-          createdAt:
-            Date.now()
+          updateModeDisplay();
         }
       );
-
-      console.log("");
-
-      console.log(
-        "✅ REAL WHATSAPP PAIRING CODE GENERATED"
-      );
-
-      console.log(
-        `🔐 Code: ${pairingCode}`
-      );
-
-      console.log(
-        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-      );
-
-      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-      // 📤 SEND CODE TO PANEL
-      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-      return res.json({
-
-        success: true,
-
-        sessionId,
-
-        number:
-          number.replace(/\D/g, ""),
-
-        // Frontend aktyèl la ap chèche sa
-        parrainCode:
-          pairingCode,
-
-        // Backup pou frontend
-        code:
-          pairingCode
-
-      });
-
-    } catch (error) {
-
-      console.error("");
-
-      console.error(
-        "❌ PAIRING REQUEST ERROR:",
-        error?.message || error
-      );
-
-      console.error("");
-
-      return res.status(500).json({
-
-        success: false,
-
-        error:
-          error?.message ||
-          "Unable to generate WhatsApp pairing code."
-
-      });
-
-    }
-
-  }
-);
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🔎 GET PAIRING SESSION
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-app.get(
-  "/api/auth/:sessionId",
-  (req, res) => {
-
-    try {
-
-      const sessionId =
-        String(
-          req.params.sessionId ||
-          ""
-        ).trim();
-
-      if (!sessionId) {
-
-        return res.status(400).json({
-          success: false,
-          error:
-            "Session ID obligatwa."
-        });
-
-      }
-
-      const session =
-        pairingSessions.get(
-          sessionId
-        );
-
-      if (!session) {
-
-        return res.status(404).json({
-          success: false,
-          error:
-            "Pairing session pa jwenn."
-        });
-
-      }
-
-      return res.json({
-
-        success: true,
-
-        sessionId,
-
-        number:
-          session.number,
-
-        parrainCode:
-          session.code,
-
-        code:
-          session.code,
-
-        createdAt:
-          session.createdAt
-
-      });
-
-    } catch (error) {
-
-      console.error(
-        "❌ GET PAIRING SESSION ERROR:",
-        error?.message || error
-      );
-
-      return res.status(500).json({
-        success: false,
-        error:
-          "Unable to get pairing session."
-      });
-
-    }
-
-  }
-);
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// ❤️ BOT LOGIN / STATUS
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//
-// Pa gen Panel Code ankò.
-//
-// WhatsApp Pairing Code la se WhatsApp li menm
-// ki itilize pou konekte account lan.
-//
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-app.post(
-  "/api/login",
-  (req, res) => {
-
-    return res.json({
-
-      success:
-        connection.isConnected(),
-
-      connected:
-        connection.isConnected(),
-
-      message:
-        connection.isConnected()
-          ? "WhatsApp bot connected."
-          : "WhatsApp bot not connected."
-
     });
+}
 
+function refreshSwitch(key) {
+  const input =
+    document.querySelector(
+      `input[data-setting="${key}"]`
+    );
+
+  if (input) {
+    input.checked =
+      !!settings[key];
   }
-);
+}
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🌍 LANGUAGE
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+async function saveSettings() {
+  const saveButton = $("saveButton");
+  const saveMessage = $("saveMessage");
 
-app.post(
-  "/api/language",
-  (req, res) => {
+  const name =
+    $("botName").value.trim() ||
+    "TOPFEROS MD";
 
-    const language =
-      String(
-        req.body?.language ||
-        "en"
-      ).toLowerCase();
+  const prefix =
+    $("botPrefix").value.trim() || ".";
 
-    const allowedLanguages =
-      [
-        "en",
-        "fr",
-        "es"
-      ];
+  botInformation.name = name;
+  botInformation.prefix = prefix;
+
+  saveButton.disabled = true;
+  saveButton.textContent =
+    "⏳ SAVING...";
+
+  saveMessage.textContent = "";
+
+  try {
+    const response = await fetch(
+      "/api/settings",
+      {
+        method: "POST",
+
+        headers: {
+          "Content-Type": "application/json"
+        },
+
+        body: JSON.stringify({
+          sessionId,
+          settings,
+          botInformation
+        })
+      }
+    );
+
+    const data =
+      await response.json();
 
     if (
-      !allowedLanguages.includes(
-        language
-      )
+      !response.ok ||
+      !data.success
     ) {
-
-      return res.status(400).json({
-        success: false,
-        error:
-          "Unsupported language."
-      });
-
-    }
-
-    return res.json({
-
-      success: true,
-
-      language
-
-    });
-
-  }
-);
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🚪 LOGOUT
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-app.post(
-  "/api/logout",
-  async (req, res) => {
-
-    try {
-
-      await connection.stop();
-
-      return res.json({
-
-        success: true,
-
-        message:
-          "WhatsApp connection stopped."
-
-      });
-
-    } catch (error) {
-
-      console.error(
-        "❌ LOGOUT ERROR:",
-        error?.message || error
+      throw new Error(
+        data.error ||
+        "SAVE_FAILED"
       );
-
-      return res.status(500).json({
-
-        success: false,
-
-        error:
-          error?.message ||
-          "Unable to logout."
-
-      });
-
     }
 
-  }
-);
+    settings =
+      data.settings || settings;
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🏠 MAIN PAGE
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    botInformation =
+      data.botInformation ||
+      botInformation;
 
-app.get(
-  "/",
-  (req, res) => {
+    renderBotInformation();
 
-    res.sendFile(
-      path.join(
-        PUBLIC_DIR,
-        "index.html"
-      )
-    );
+    saveMessage.textContent =
+      "✅ Settings yo sove avèk siksè.";
 
-  }
-);
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🤖 START WHATSAPP CONNECTION
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//
-// Render ap kouri panel/server.js dirèkteman.
-// Se poutèt sa nou bezwen lanse connection.js isit la.
-//
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-async function startWhatsApp() {
-
-  try {
-
-    console.log("");
-
-    console.log(
-      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    );
-
-    console.log(
-      "🤖 TOPFEROS MD — STARTING WHATSAPP"
-    );
-
-    console.log(
-      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    );
-
-    await connection.start();
-
-    console.log(
-      "✅ WhatsApp connection initialized."
-    );
+    saveMessage.className =
+      "message success";
 
   } catch (error) {
+    saveMessage.textContent =
+      "❌ Pa kapab sove settings yo.";
 
-    console.error(
-      "❌ WHATSAPP START ERROR:",
-      error?.message || error
-    );
+    saveMessage.className =
+      "message error";
 
+    console.error(error);
+
+  } finally {
+    saveButton.disabled = false;
+    saveButton.textContent =
+      "💾 APP SOVE";
   }
-
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🚀 START PANEL SERVER
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-app.listen(
-  PORT,
-  HOST,
-  () => {
-
-    console.log("");
-
-    console.log(
-      "╔══════════════════════════════════════════════╗"
-    );
-
-    console.log(
-      "║             🤖 TOPFEROS MD                 ║"
-    );
-
-    console.log(
-      "║                 V1.0.0                     ║"
-    );
-
-    console.log(
-      "║                                            ║"
-    );
-
-    console.log(
-      "║             🚀 TOPFEROS TECH               ║"
-    );
-
-    console.log(
-      "╚══════════════════════════════════════════════╝"
-    );
-
-    console.log("");
-
-    console.log(
-      `🌐 Panel running on port ${PORT}`
-    );
-
-    console.log(
-      `📡 Host: ${HOST}`
-    );
-
-    console.log("");
-
+$("settingsCode")?.addEventListener(
+  "input",
+  event => {
+    event.target.value =
+      event.target.value
+        .toUpperCase()
+        .replace(/[^A-Z0-9]/g, "")
+        .slice(0, 6);
   }
 );
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🤖 START WHATSAPP AFTER PANEL
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-startWhatsApp();
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🛑 PROCESS SHUTDOWN
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-async function shutdown(
-  signal
-) {
-
-  console.log("");
-
-  console.log(
-    `🛑 TOPFEROS MD: Received ${signal}`
-  );
-
-  try {
-
-    await connection.stop();
-
-  } catch (error) {
-
-    console.error(
-      "❌ SHUTDOWN ERROR:",
-      error?.message || error
-    );
-
+$("settingsCode")?.addEventListener(
+  "keydown",
+  event => {
+    if (event.key === "Enter") {
+      verifySettings();
+    }
   }
-
-  process.exit(0);
-
-}
-
-process.on(
-  "SIGTERM",
-  () => shutdown("SIGTERM")
 );
-
-process.on(
-  "SIGINT",
-  () => shutdown("SIGINT")
-);
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 📦 EXPORT
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-module.exports = app;
