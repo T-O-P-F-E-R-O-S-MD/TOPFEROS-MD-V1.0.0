@@ -1,12 +1,8 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
   <meta charset="UTF-8">
-
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
-  >
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <meta
     name="description"
@@ -15,24 +11,35 @@
 
   <title>TOPFEROS MD</title>
 
-  <link rel="stylesheet" href="/style.css?v=6">
+  <link
+    rel="stylesheet"
+    href="/style.css?v=10"
+  >
 </head>
 
 <body>
 
   <main class="container">
 
-    <!-- LOGO -->
+    <!-- =========================
+         LOGO
+    ========================== -->
+
     <div class="logo-container">
+
       <img
         src="/assets/logo.png"
         alt="TOPFEROS MD"
         class="logo"
       >
+
     </div>
 
 
-    <!-- LANGUAGE SCREEN -->
+    <!-- =========================
+         LANGUAGE SCREEN
+    ========================== -->
+
     <section
       id="languageScreen"
       class="screen active"
@@ -49,7 +56,7 @@
           class="language-button"
           data-language="en"
         >
-          Anglais
+          English
         </button>
 
         <button
@@ -65,7 +72,7 @@
           class="language-button"
           data-language="es"
         >
-          Espagnol
+          Español
         </button>
 
       </div>
@@ -73,7 +80,10 @@
     </section>
 
 
-    <!-- PARRAIN SCREEN -->
+    <!-- =========================
+         PARRAIN SCREEN
+    ========================== -->
+
     <section
       id="parrainScreen"
       class="screen"
@@ -85,30 +95,52 @@
       </h1>
 
 
-      <!-- PARRAIN NUMBER -->
-      <div class="parrain-number-container">
+      <!-- =========================
+           WHATSAPP NUMBER
+      ========================== -->
 
-        <strong
-          id="parrainNumber"
-          class="parrain-number"
+      <div class="input-group">
+
+        <label
+          id="numberLabel"
+          for="parrainNumberInput"
         >
-          ---
-        </strong>
+          WhatsApp Number
+        </label>
+
+        <input
+          type="tel"
+          id="parrainNumberInput"
+          class="number-input"
+          inputmode="numeric"
+          autocomplete="tel"
+          placeholder="509XXXXXXXX"
+        >
+
+        <small id="numberHint">
+          Pa mete +, espas oswa -
+        </small>
 
       </div>
 
 
-      <!-- GENERATE PARRAIN CODE -->
+      <!-- =========================
+           GENERATE BUTTON
+      ========================== -->
+
       <button
         type="button"
         id="generateParrainButton"
         class="primary-button"
       >
-        Généré Parrain Code
+        Générer Parrain Code
       </button>
 
 
-      <!-- MESSAGE -->
+      <!-- =========================
+           MESSAGE
+      ========================== -->
+
       <p
         id="parrainMessage"
         class="message"
@@ -116,19 +148,19 @@
       ></p>
 
 
-      <!-- PARRAIN CODE -->
+      <!-- =========================
+           PARRAIN CODE
+      ========================== -->
+
       <div
         id="parrainCodeSection"
         class="parrain-code-section"
         hidden
       >
 
-        <div class="parrain-code-label">
-          <span id="parrainCodeTitle">
-            Parrain Code
-          </span>
-        </div>
-
+        <h2 id="parrainCodeTitle">
+          Parrain Code
+        </h2>
 
         <div class="code-container">
 
@@ -156,7 +188,10 @@
   </main>
 
 
-  <!-- FOOTER -->
+  <!-- =========================
+       FOOTER
+  ========================== -->
+
   <footer class="footer">
 
     <div class="footer-line">
@@ -174,8 +209,12 @@
   </footer>
 
 
+  <!-- =========================
+       JAVASCRIPT
+  ========================== -->
+
   <script
-    src="/app.js?v=6"
+    src="/app.js?v=10"
     defer
   ></script>
 
