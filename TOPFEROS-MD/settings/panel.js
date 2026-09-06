@@ -2,43 +2,29 @@
 
 const crypto = require("crypto");
 
-// ╔════════════════════════════════════════════════════╗
-// ║              🤖 TOPFEROS MD V1.0.0               ║
-// ║          ⚙️ MULTI-SESSION SETTINGS PANEL         ║
-// ║              🚀 TOPFEROS TECH                     ║
-// ╚════════════════════════════════════════════════════╝
-
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🌐 PANEL URL
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
 const PANEL_URL =
   process.env.PANEL_URL ||
-  "http://localhost:3000";
+  "https://topferos-md-v1-0-0.onrender.com";
 
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 📦 MULTI-SESSION STORAGE
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ============================================================
+// SESSION STORAGE
+// ============================================================
 
 const sessions = new Map();
 
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// ⚙️ DEFAULT SETTINGS
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ============================================================
+// DEFAULT SETTINGS
+// ============================================================
 
 const defaultSettings = {
-
-  publicMode: false,
+  publicMode: true,
   privateMode: false,
 
-  alwaysOnline: false,
+  alwaysOnline: true,
   fakeTyping: false,
   fakeRecording: false,
-  autoReact: false,
 
+  autoReact: false,
   autoStatus: false,
   statusReply: false,
   statusLike: false,
@@ -55,212 +41,80 @@ const defaultSettings = {
   groupAntiDelete: false,
 
   adminGroup: false,
-
   groupClose: false,
   groupOpen: false
 };
 
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🤖 DEFAULT BOT INFORMATION
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ============================================================
+// BOT INFORMATION
+// ============================================================
 
 const defaultBotInformation = {
-
   name: "TOPFEROS MD",
   age: 24,
   prefix: "."
 };
 
+// ============================================================
+// GENERATE 6 CHARACTER SETTINGS CODE
+// LETTERS + NUMBERS
+// ============================================================
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🔢 GET BOT NUMBER
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-function getBotNumber(sock) {
-
-  if (!sock?.user?.id) {
-    return null;
-  }
-
-  return String(sock.user.id)
-    .split(":")[0]
-    .split("@")[0]
-    .replace(/\D/g, "");
-}
-
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🔐 GENERATE REAL PARRAIN CODE
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//
-// Code la kreye ak crypto.randomBytes.
-// Li fèt pou session bot la sèlman.
-// Li pa chanje pandan session lan rete konekte.
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+const CODE_CHARS =
+  "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
 function generateCode() {
+  let code = "";
 
-  return crypto
-    .randomBytes(6)
-    .toString("hex")
-    .toUpperCase();
+  for (let i = 0; i < 6; i++) {
+    const index = crypto.randomInt(0, CODE_CHARS.length);
+    code += CODE_CHARS[index];
+  }
+
+  return code;
 }
 
+// ============================================================
+// GET BOT NUMBER
+// ============================================================
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🧹 NORMALIZE SETTINGS
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function getBotNumber(sock) {
+  try {
+    const id = sock?.user?.id;
 
-function normalizeSettings(settings = {}) {
-
-  const result = {
-    ...defaultSettings
-  };
-
-  for (
-    const key of Object.keys(defaultSettings)
-  ) {
-
-    if (
-      Object.prototype.hasOwnProperty.call(
-        settings,
-        key
-      )
-    ) {
-
-      result[key] =
-        settings[key] === true;
+    if (!id) {
+      return "";
     }
-  }
 
-  return result;
+    return String(id)
+      .split(":")[0]
+      .split("@")[0];
+  } catch {
+    return "";
+  }
 }
 
+// ============================================================
+// CREATE NEW SESSION
+// ============================================================
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🤖 NORMALIZE BOT INFORMATION
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-function normalizeBotInformation(bot = {}) {
-
-  const result = {
-    ...defaultBotInformation
-  };
-
-  if (
-    typeof bot.name === "string" &&
-    bot.name.trim()
-  ) {
-
-    result.name =
-      bot.name.trim();
-  }
-
-  if (
-    Number.isFinite(
-      Number(bot.age)
-    ) &&
-    Number(bot.age) >= 0
-  ) {
-
-    result.age =
-      Number(bot.age);
-  }
-
-  if (
-    typeof bot.prefix === "string" &&
-    bot.prefix.trim()
-  ) {
-
-    result.prefix =
-      bot.prefix.trim();
-  }
-
-  return result;
-}
-
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🟢 REGISTER / CONNECT BOT SESSION
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-function setBotConnected(sock) {
-
-  if (!sock) {
-    return null;
-  }
-
-  const number =
-    getBotNumber(sock);
-
-  if (!number) {
-
-    console.error(
-      "❌ SETTINGS: Bot number pa disponib."
-    );
-
-    return null;
-  }
-
-
-  // Chèche si nimewo sa a deja gen yon session.
-
-  for (
-    const session of sessions.values()
-  ) {
-
-    if (
-      session.number === number
-    ) {
-
-      session.sock =
-        sock;
-
-      // Pa chanje Parrain Code la.
-
-      if (!session.code) {
-        session.code =
-          generateCode();
-      }
-
-      session.authenticated =
-        false;
-
-      console.log(
-        `🟢 SETTINGS: Session refreshed for ${number}`
-      );
-
-      return session;
-    }
-  }
-
-
-  // Nouvo session.
-
-  const sessionId =
-    crypto
-      .randomBytes(32)
-      .toString("hex");
-
+function createNewSession(sock, number) {
+  const sessionId = crypto.randomBytes(16).toString("hex");
 
   const session = {
-
     sessionId,
 
     number,
 
-    // Yon sèl Parrain Code pou session sa a.
-    code:
-      generateCode(),
+    // IMPORTANT:
+    // This code is generated ONLY once for this session.
+    code: generateCode(),
 
-    authenticated:
-      false,
+    authenticated: false,
 
     sock,
 
-    createdAt:
-      Date.now(),
+    createdAt: Date.now(),
 
     settings: {
       ...defaultSettings
@@ -271,948 +125,421 @@ function setBotConnected(sock) {
     }
   };
 
-
-  sessions.set(
-    sessionId,
-    session
-  );
-
-
-  console.log(
-    `🟢 SETTINGS: New bot session connected: ${number}`
-  );
-
-  console.log(
-    `🔐 SETTINGS: Parrain Code generated for ${number}: ${session.code}`
-  );
-
+  sessions.set(sessionId, session);
 
   return session;
 }
 
+// ============================================================
+// BOT CONNECTED
+// ============================================================
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🔴 DISCONNECT BOT SESSION
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function setBotConnected(sock) {
+  const number = getBotNumber(sock);
 
-function setBotDisconnected(
-  sockOrSessionId
-) {
-
-  let targetSessionId = null;
-
-
-  if (
-    typeof sockOrSessionId ===
-    "string"
-  ) {
-
-    targetSessionId =
-      sockOrSessionId;
-  }
-
-  else if (sockOrSessionId) {
-
-    for (
-      const [sessionId, session]
-      of sessions.entries()
-    ) {
-
-      if (
-        session.sock ===
-        sockOrSessionId
-      ) {
-
-        targetSessionId =
-          sessionId;
-
-        break;
-      }
-    }
-  }
-
-
-  if (!targetSessionId) {
-    return false;
-  }
-
-
-  const session =
-    sessions.get(
-      targetSessionId
+  if (!number) {
+    console.warn(
+      "⚠️ Impossible pou kreye Settings Session: nimewo bot la pa disponib."
     );
 
-
-  if (!session) {
-    return false;
-  }
-
-
-  // Lè session WhatsApp la dekonekte,
-  // Parrain Code la pa rete valid.
-
-  session.authenticated =
-    false;
-
-  session.sock =
-    null;
-
-
-  sessions.delete(
-    targetSessionId
-  );
-
-
-  console.log(
-    `🔴 SETTINGS: Session disconnected: ${session.number}`
-  );
-
-  console.log(
-    `🔐 SETTINGS: Parrain Code invalidated for ${session.number}`
-  );
-
-
-  return true;
-}
-
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🟢 CHECK ANY BOT CONNECTED
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-function isBotConnected() {
-
-  return sessions.size > 0;
-}
-
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🟢 CHECK SPECIFIC SESSION CONNECTED
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-function isSessionConnected(
-  sessionId
-) {
-
-  const session =
-    sessions.get(
-      sessionId
-    );
-
-  return !!(
-    session &&
-    session.sock
-  );
-}
-
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🔌 GET ACTIVE SOCKET BY SESSION
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-function getActiveSocket(
-  sessionId
-) {
-
-  const session =
-    sessions.get(
-      sessionId
-    );
-
-  if (!session) {
     return null;
   }
 
-  return session.sock || null;
-}
-
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 📱 GET SESSION BY NUMBER
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-function getSessionByNumber(
-  number
-) {
-
-  const cleanNumber =
-    String(number || "")
-      .replace(/\D/g, "");
-
-
-  if (!cleanNumber) {
-    return null;
-  }
-
-
-  for (
-    const session
-    of sessions.values()
-  ) {
-
-    if (
-      session.number ===
-      cleanNumber
-    ) {
+  // Check if this bot already has a session.
+  for (const session of sessions.values()) {
+    if (session.number === number) {
+      // Update socket only.
+      session.sock = sock;
 
       return session;
     }
   }
 
-
-  return null;
+  // New connection = new session = new code.
+  return createNewSession(sock, number);
 }
 
+// ============================================================
+// BOT DISCONNECTED
+// ============================================================
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🪪 CREATE PANEL SESSION
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-function createSession(
-  sock
-) {
-
-  if (!sock) {
-
-    throw new Error(
-      "Socket bot la obligatwa."
-    );
-  }
-
-
-  const number =
-    getBotNumber(sock);
-
+function setBotDisconnected(sock) {
+  const number = getBotNumber(sock);
 
   if (!number) {
-
-    throw new Error(
-      "Bot number pa disponib."
-    );
+    return;
   }
 
+  for (const [sessionId, session] of sessions.entries()) {
+    if (
+      session.number === number ||
+      session.sock === sock
+    ) {
+      sessions.delete(sessionId);
 
-  let session =
-    getSessionByNumber(
-      number
-    );
-
-
-  if (!session) {
-
-    session =
-      setBotConnected(
-        sock
+      console.log(
+        `🗑️ Settings session deleted: ${sessionId}`
       );
-  }
-
-
-  if (!session) {
-
-    throw new Error(
-      "Pa kapab kreye session bot la."
-    );
-  }
-
-
-  // Toujou mete socket aktyèl la.
-
-  session.sock =
-    sock;
-
-
-  // Code la pa janm chanje
-  // pandan menm session lan egziste.
-
-  if (!session.code) {
-
-    session.code =
-      generateCode();
-  }
-
-
-  return {
-
-    sessionId:
-      session.sessionId,
-
-    number:
-      session.number,
-
-    code:
-      session.code,
-
-    link:
-      `${PANEL_URL}/?session=${encodeURIComponent(
-        session.sessionId
-      )}`
-  };
-}
-
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🔎 VERIFY NUMBER + PARRAIN CODE
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-function verifySession(
-  sessionId,
-  number,
-  code
-) {
-
-  if (
-    !sessionId ||
-    !number ||
-    !code
-  ) {
-
-    return {
-
-      success: false,
-
-      message:
-        "❌ Number ak Code obligatwa."
-    };
-  }
-
-
-  const session =
-    sessions.get(
-      sessionId
-    );
-
-
-  if (!session) {
-
-    return {
-
-      success: false,
-
-      message:
-        "❌ Session la pa valid ankò."
-    };
-  }
-
-
-  // Session dwe gen vrè socket WhatsApp la.
-
-  if (!session.sock) {
-
-    return {
-
-      success: false,
-
-      message:
-        "❌ Bot sa a pa konekte."
-    };
-  }
-
-
-  const cleanNumber =
-    String(number)
-      .replace(/\D/g, "");
-
-
-  const cleanCode =
-    String(code)
-      .trim()
-      .toUpperCase();
-
-
-  if (
-    cleanNumber !==
-    session.number
-  ) {
-
-    return {
-
-      success: false,
-
-      message:
-        "❌ Number lan pa koresponn ak session sa a."
-    };
-  }
-
-
-  if (
-    cleanCode !==
-    session.code
-  ) {
-
-    return {
-
-      success: false,
-
-      message:
-        "❌ Parrain Code la pa kòrèk."
-    };
-  }
-
-
-  session.authenticated =
-    true;
-
-
-  return {
-
-    success: true,
-
-    session: {
-
-      sessionId:
-        session.sessionId,
-
-      number:
-        session.number,
-
-      authenticated:
-        true
     }
+  }
+}
+
+// ============================================================
+// CREATE / GET PANEL SESSION
+// ============================================================
+
+function createSession(sock) {
+  const number = getBotNumber(sock);
+
+  if (!number) {
+    throw new Error(
+      "Bot la poko gen nimewo WhatsApp li."
+    );
+  }
+
+  let session = null;
+
+  // Reuse existing session for same connected bot.
+  for (const current of sessions.values()) {
+    if (current.number === number) {
+      session = current;
+      session.sock = sock;
+      break;
+    }
+  }
+
+  // Create new session only if none exists.
+  if (!session) {
+    session = createNewSession(sock, number);
+  }
+
+  return {
+    sessionId: session.sessionId,
+    number: session.number,
+    code: session.code,
+    link:
+      `${PANEL_URL}/?session=` +
+      encodeURIComponent(session.sessionId)
   };
 }
 
+// ============================================================
+// VERIFY SETTINGS SESSION
+// ============================================================
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🔐 CHECK AUTHENTICATED SESSION
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-function isAuthenticated(
-  sessionId
-) {
-
-  const session =
-    sessions.get(
-      sessionId
-    );
-
+function verifySession(sessionId, number, code) {
+  const session = sessions.get(sessionId);
 
   if (!session) {
-    return false;
-  }
-
-
-  if (!session.sock) {
-    return false;
-  }
-
-
-  return (
-    session.authenticated ===
-    true
-  );
-}
-
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🗑️ DELETE SESSION
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-function deleteSession(
-  sessionId
-) {
-
-  if (!sessionId) {
-    return false;
-  }
-
-
-  const session =
-    sessions.get(
-      sessionId
-    );
-
-
-  if (session) {
-
-    session.authenticated =
-      false;
-
-    session.sock =
-      null;
-  }
-
-
-  return sessions.delete(
-    sessionId
-  );
-}
-
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 📤 SEND PANEL LINK + PARRAIN CODE
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-async function sendPanelLink(
-  sock,
-  jid,
-  quoted
-) {
-
-  if (
-    !sock ||
-    !jid
-  ) {
-
-    return false;
-  }
-
-
-  try {
-
-    const panel =
-      createSession(
-        sock
-      );
-
-
-    const text =
-
-      "╭━━━━━━━━━━━━━━━━━━━━━━━━━━━━╮\n" +
-      "┃\n" +
-      "┃       ⚙️ SETTINGS PANEL\n" +
-      "┃\n" +
-      "╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯\n\n" +
-
-      "🤖 *BOT:* TOPFEROS MD V1.0.0\n\n" +
-
-      "🔗 *Link:*\n" +
-      `${panel.link}\n\n` +
-
-      "🔐 *PARRAIN CODE:*\n" +
-      `${panel.code}\n\n` +
-
-      "📱 *NUMBER:*\n" +
-      `${panel.number}\n\n` +
-
-      "🟢 Parrain Code sa a mare ak session WhatsApp sa a.\n" +
-      "🔴 Li vin invalid lè session WhatsApp la dekonekte.\n\n" +
-
-      "Louvri link lan epi antre:\n" +
-      "• Number\n" +
-      "• Parrain Code\n\n" +
-
-      "=========================\n" +
-      "        By TOPFEROS TECH\n" +
-      "=========================";
-
-
-    await sock.sendMessage(
-      jid,
-      {
-        text
-      },
-      {
-        quoted
-      }
-    );
-
-
-    return true;
-
-  } catch (error) {
-
-    console.error(
-      "❌ SETTINGS LINK ERROR:",
-      error?.message || error
-    );
-
-    return false;
-  }
-}
-
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// ⚙️ GET SETTINGS FOR SESSION
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-function getSettings(
-  sessionId
-) {
-
-  const session =
-    sessions.get(
-      sessionId
-    );
-
-
-  if (!session) {
-
     return {
-      ...defaultSettings
+      success: false,
+      message: "Session pa jwenn."
     };
   }
 
+  if (
+    String(session.number) !== String(number)
+  ) {
+    return {
+      success: false,
+      message: "Nimewo a pa kòrèk."
+    };
+  }
+
+  if (
+    String(session.code).toUpperCase() !==
+    String(code).toUpperCase()
+  ) {
+    return {
+      success: false,
+      message: "Code Settings la pa kòrèk."
+    };
+  }
+
+  session.authenticated = true;
+
+  return {
+    success: true,
+    session
+  };
+}
+
+// ============================================================
+// GET SESSION
+// ============================================================
+
+function getSession(sessionId) {
+  return sessions.get(sessionId) || null;
+}
+
+// ============================================================
+// GET SETTINGS
+// ============================================================
+
+function getSettings(sessionId) {
+  const session = sessions.get(sessionId);
+
+  if (!session) {
+    return null;
+  }
 
   return {
     ...session.settings
   };
 }
 
+// ============================================================
+// GET ONE SETTING
+// ============================================================
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// ⚙️ GET ONE SETTING
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function getSetting(sessionId, key) {
+  const session = sessions.get(sessionId);
 
-function getSetting(
-  sessionId,
-  name
-) {
-
-  if (
-    !Object.prototype.hasOwnProperty.call(
-      defaultSettings,
-      name
-    )
-  ) {
-
+  if (!session) {
     return undefined;
   }
 
-
-  const session =
-    sessions.get(
-      sessionId
-    );
-
-
-  if (!session) {
-    return defaultSettings[name];
-  }
-
-
-  return session.settings[name];
+  return session.settings[key];
 }
 
+// ============================================================
+// CHECK IF SETTING IS ENABLED
+// ============================================================
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🔘 CHECK SETTING
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function isEnabled(sessionId, key) {
+  const value = getSetting(sessionId, key);
 
-function isEnabled(
-  sessionId,
-  name
-) {
-
-  return (
-    getSetting(
-      sessionId,
-      name
-    ) === true
-  );
+  return value === true;
 }
 
+// ============================================================
+// SET ONE SETTING
+// ============================================================
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 💾 APPLY SETTINGS
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-async function applySettings(
-  sessionId,
-  data = {}
-) {
-
-  const session =
-    sessions.get(
-      sessionId
-    );
-
+function setSetting(sessionId, key, value) {
+  const session = sessions.get(sessionId);
 
   if (!session) {
     return false;
   }
 
-
-  if (!session.sock) {
+  if (!(key in session.settings)) {
     return false;
   }
 
-
-  const incoming =
-    data.settings ||
-    data;
-
-
-  session.settings =
-    normalizeSettings(
-      incoming
-    );
-
-
-  console.log(
-    `⚙️ SETTINGS: Runtime settings updated for ${session.number}`
-  );
-
+  session.settings[key] = Boolean(value);
 
   return true;
 }
 
+// ============================================================
+// APPLY MULTIPLE SETTINGS
+// ============================================================
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🤖 UPDATE BOT INFORMATION
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-async function updateBotInformation(
-  sessionId,
-  bot = {}
-) {
-
-  const session =
-    sessions.get(
-      sessionId
-    );
-
+function applySettings(sessionId, newSettings = {}) {
+  const session = sessions.get(sessionId);
 
   if (!session) {
     return false;
   }
 
-
-  if (!session.sock) {
-    return false;
+  for (const [key, value] of Object.entries(newSettings)) {
+    if (key in session.settings) {
+      session.settings[key] = Boolean(value);
+    }
   }
-
-
-  session.bot =
-    normalizeBotInformation(
-      {
-        ...session.bot,
-        ...bot
-      }
-    );
-
 
   return true;
 }
 
+// ============================================================
+// BOT INFORMATION
+// ============================================================
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🤖 GET BOT INFORMATION
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-function getBotInformation(
-  sessionId
-) {
-
-  const session =
-    sessions.get(
-      sessionId
-    );
-
+function getBotInformation(sessionId) {
+  const session = sessions.get(sessionId);
 
   if (!session) {
-
-    return {
-      ...defaultBotInformation
-    };
+    return null;
   }
-
 
   return {
     ...session.bot
   };
 }
 
+// ============================================================
+// UPDATE BOT INFORMATION
+// ============================================================
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🔄 UPDATE ONE SETTING
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-async function setSetting(
-  sessionId,
-  name,
-  value
-) {
-
-  const session =
-    sessions.get(
-      sessionId
-    );
-
+function updateBotInformation(sessionId, information = {}) {
+  const session = sessions.get(sessionId);
 
   if (!session) {
     return false;
   }
 
-
-  if (!session.sock) {
-    return false;
+  if (
+    typeof information.name === "string" &&
+    information.name.trim()
+  ) {
+    session.bot.name = information.name.trim();
   }
-
 
   if (
-    !Object.prototype.hasOwnProperty.call(
-      defaultSettings,
-      name
-    )
+    information.age !== undefined &&
+    information.age !== null
   ) {
-
-    return false;
+    session.bot.age = information.age;
   }
 
-
-  session.settings[name] =
-    value === true;
-
+  if (
+    typeof information.prefix === "string" &&
+    information.prefix.trim()
+  ) {
+    session.bot.prefix = information.prefix.trim();
+  }
 
   return true;
 }
 
+// ============================================================
+// LOAD SETTINGS
+// ============================================================
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🔄 LOAD SETTINGS
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-function loadSettings(
-  sessionId,
-  settings = {}
-) {
-
-  const session =
-    sessions.get(
-      sessionId
-    );
-
+function loadSettings(sessionId) {
+  const session = sessions.get(sessionId);
 
   if (!session) {
     return null;
   }
-
-
-  session.settings =
-    normalizeSettings(
-      settings
-    );
-
-
-  return getSettings(
-    sessionId
-  );
-}
-
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 📋 GET ALL SESSIONS
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-function getSessions() {
-
-  return Array.from(
-    sessions.values()
-  ).map(session => ({
-
-    sessionId:
-      session.sessionId,
-
-    number:
-      session.number,
-
-    authenticated:
-      session.authenticated,
-
-    connected:
-      !!session.sock,
-
-    createdAt:
-      session.createdAt
-  }));
-}
-
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🔎 GET SESSION
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-function getSession(
-  sessionId
-) {
-
-  const session =
-    sessions.get(
-      sessionId
-    );
-
-
-  if (!session) {
-    return null;
-  }
-
 
   return {
+    settings: {
+      ...session.settings
+    },
 
-    sessionId:
-      session.sessionId,
-
-    number:
-      session.number,
-
-    authenticated:
-      session.authenticated,
-
-    connected:
-      !!session.sock,
-
-    createdAt:
-      session.createdAt
+    bot: {
+      ...session.bot
+    }
   };
 }
 
+// ============================================================
+// SEND SETTINGS MESSAGE
+// ============================================================
+//
+// Menm WhatsApp message la gen:
+// - Nimewo
+// - Code Settings
+// - Settings Link
+// - Bouton KOPYE CODE
+//
+// Bouton an itilize native flow "cta_copy".
+// ============================================================
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 📊 GET SESSION COUNT
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+async function sendPanelLink(sock, jid, quoted) {
+  try {
+    const panel = createSession(sock);
 
-function getSessionCount() {
+    const messageText =
+`✧･ﾟ: ✧･ﾟ: 🔐 KONEKSYON TOPFEROS MD 🔐 :･ﾟ✧:･ﾟ✧
 
-  return sessions.size;
+🌸 Nimewo Pwopriyetè a
+╰┈➤ ${panel.number}
+
+🌸 Code Settings
+╰┈➤ ${panel.code}
+
+🌐 Paramèt sou Entènèt
+╰┈➤ ${panel.link}
+
+╰┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈╯
+💖 Kenbe enfòmasyon sa yo an sekirite epi pa pataje yo 💖`;
+
+    await sock.sendMessage(
+      jid,
+      {
+        interactiveMessage: {
+          header: {
+            title: "🔐 TOPFEROS MD SETTINGS",
+            hasMediaAttachment: false
+          },
+
+          body: {
+            text: messageText
+          },
+
+          footer: {
+            text: "🚀 TOPFEROS TECH"
+          },
+
+          nativeFlowMessage: {
+            messageParamsJson: "",
+
+            buttons: [
+              {
+                name: "cta_copy",
+
+                buttonParamsJson: JSON.stringify({
+                  display_text: "📋 KOPYE CODE",
+                  id: "copy_settings_code",
+                  copy_code: panel.code
+                })
+              }
+            ]
+          }
+        }
+      },
+      {
+        quoted
+      }
+    );
+
+    return panel;
+  } catch (error) {
+    console.error(
+      "❌ SEND SETTINGS ERROR:",
+      error?.message || error
+    );
+
+    return null;
+  }
 }
 
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 📦 EXPORTS
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ============================================================
+// EXPORTS
+// ============================================================
 
 module.exports = {
-
   PANEL_URL,
 
-  // Connection
+  sessions,
+
+  defaultSettings,
+  defaultBotInformation,
+
+  generateCode,
+
+  getBotNumber,
+
   setBotConnected,
   setBotDisconnected,
-  isBotConnected,
-  isSessionConnected,
-  getActiveSocket,
 
-  // Session
   createSession,
-  verifySession,
-  isAuthenticated,
-  deleteSession,
   getSession,
-  getSessionByNumber,
-  getSessions,
-  getSessionCount,
+  verifySession,
 
-  // Panel
-  sendPanelLink,
-
-  // Runtime settings
   getSettings,
   getSetting,
   isEnabled,
   setSetting,
   applySettings,
+
+  getBotInformation,
+  updateBotInformation,
+
   loadSettings,
 
-  // Bot information
-  updateBotInformation,
-  getBotInformation,
-
-  // Default settings
-  defaultSettings,
-  defaultBotInformation
+  sendPanelLink
 };
-
-
-// ╔════════════════════════════════════════════════════╗
-// ║                    By TOPFEROS TECH               ║
-// ╚════════════════════════════════════════════════════╝
