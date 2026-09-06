@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
 
@@ -13,61 +13,51 @@
         content="#000000"
     >
 
-    <title>TOPFEROS MD — Panel</title>
+    <title>TOPFEROS MD V1.0.0</title>
 
     <link
         rel="stylesheet"
-        href="/style.css?v=3"
+        href="/style.css?v=4"
     >
 </head>
 
 <body>
 
-    <main class="panel-container">
+    <!-- =====================================================
+         MAIN CONTAINER
+         ===================================================== -->
 
-        <!-- ═══════════════════════════════════════ -->
-        <!-- LOGO                                    -->
-        <!-- ═══════════════════════════════════════ -->
+    <main class="container">
+
+        <!-- =================================================
+             LOGO
+             ================================================= -->
 
         <div class="logo-container">
             <img
                 src="/assets/logo.png"
                 alt="TOPFEROS MD"
-                class="bot-logo"
+                class="logo"
             >
         </div>
 
 
-        <!-- ═══════════════════════════════════════ -->
-        <!-- BOT NAME                                -->
-        <!-- ═══════════════════════════════════════ -->
-
-        <h1 class="bot-name">
-            TOPFEROS MD
-        </h1>
-
-        <p class="bot-version">
-            V1.0.0
-        </p>
-
-
-        <!-- ═══════════════════════════════════════ -->
-        <!-- STEP 1 — LANGUAGE                       -->
-        <!-- ═══════════════════════════════════════ -->
+        <!-- =================================================
+             LANGUAGE SCREEN
+             ================================================= -->
 
         <section
             id="languageScreen"
-            class="screen active"
+            class="screen language-screen"
         >
 
-            <h2>
-                Select Language
-            </h2>
+            <h1>
+                TOPFEROS MD
+            </h1>
 
             <p class="subtitle">
-                Choose your preferred language
+                Select your language
             </p>
-
 
             <div class="language-buttons">
 
@@ -79,7 +69,6 @@
                     🇺🇸 English
                 </button>
 
-
                 <button
                     type="button"
                     class="language-button"
@@ -87,7 +76,6 @@
                 >
                     🇫🇷 Français
                 </button>
-
 
                 <button
                     type="button"
@@ -102,41 +90,33 @@
         </section>
 
 
-        <!-- ═══════════════════════════════════════ -->
-        <!-- STEP 2 — PANEL CODE                    -->
-        <!-- ═══════════════════════════════════════ -->
+        <!-- =================================================
+             PANEL CODE SCREEN
+             ================================================= -->
 
         <section
             id="panelCodeScreen"
             class="screen"
+            style="display: none;"
         >
 
             <h2 id="panelCodeTitle">
-                Panel Code
+                CODE PANEL
             </h2>
-
-            <p
-                id="panelCodeSubtitle"
-                class="subtitle"
-            >
-                Enter your number and Panel Code
-            </p>
-
 
             <form
                 id="panelCodeForm"
                 autocomplete="off"
             >
 
-                <!-- NUMBER USER -->
+                <!-- NUMBER -->
 
-                <div class="form-group">
+                <div class="input-group">
 
                     <label
                         for="number"
-                        id="numberLabel"
                     >
-                        Number User
+                        Numéro
                     </label>
 
                     <input
@@ -144,8 +124,8 @@
                         id="number"
                         name="number"
                         placeholder="509XXXXXXXX"
+                        inputmode="numeric"
                         autocomplete="tel"
-                        inputmode="tel"
                         required
                     >
 
@@ -154,27 +134,33 @@
 
                 <!-- PANEL CODE -->
 
-                <div class="form-group">
+                <div class="input-group">
 
                     <label
                         for="panelCode"
-                        id="panelCodeLabel"
                     >
-                        Panel Code
+                        Code
                     </label>
 
                     <input
                         type="text"
                         id="panelCode"
                         name="panelCode"
-                        placeholder="Enter Panel Code"
+                        placeholder="Code Panel"
                         autocomplete="off"
-                        autocapitalize="characters"
-                        spellcheck="false"
                         required
                     >
 
                 </div>
+
+
+                <!-- MESSAGE -->
+
+                <div
+                    id="panelMessage"
+                    class="message"
+                    aria-live="polite"
+                ></div>
 
 
                 <!-- LOGIN -->
@@ -184,52 +170,42 @@
                     id="panelLoginButton"
                     class="primary-button"
                 >
-                    LOGIN
+                    CONNEXION
                 </button>
 
             </form>
 
-
-            <p
-                id="panelMessage"
-                class="message"
-                aria-live="polite"
-            ></p>
-
         </section>
 
 
-        <!-- ═══════════════════════════════════════ -->
-        <!-- STEP 3 — PARRAIN CODE                  -->
-        <!-- ═══════════════════════════════════════ -->
+        <!-- =================================================
+             PARRAIN CODE SCREEN
+             ================================================= -->
 
         <section
             id="parrainCodeScreen"
             class="screen"
+            style="display: none;"
         >
 
-            <h2 id="parrainTitle">
-                Parrain Code
+            <h2 id="parrainCodeTitle">
+                CODE PARRAIN
             </h2>
 
-            <p
-                id="parrainSubtitle"
-                class="subtitle"
-            >
-                Generate your Parrain Code
-            </p>
 
+            <!-- =============================================
+                 PARRAIN NUMBER
+                 ============================================= -->
 
-            <!-- PARRAIN NUMBER -->
+            <div class="parrain-number-container">
 
-            <div class="parrain-number-box">
+                <div class="separator">
+                    ____________________________
+                </div>
 
-                <span
-                    id="parrainNumberLabel"
-                    class="info-label"
-                >
-                    Parrain numéro
-                </span>
+                <p class="parrain-number-label">
+                    𝐏𝐚𝐫𝐫𝐚𝐢𝐧 𝐧𝐮𝐦𝐛𝐞𝐫 :
+                </p>
 
                 <strong
                     id="parrainNumber"
@@ -238,45 +214,62 @@
                     ---
                 </strong>
 
+                <div class="separator">
+                    ____________________________
+                </div>
+
             </div>
 
 
-            <!-- GENERATE BUTTON -->
+            <!-- =============================================
+                 GENERATE BUTTON
+                 ============================================= -->
 
             <button
                 type="button"
                 id="generateParrainButton"
                 class="primary-button"
             >
-                GENERER PARRAIN CODE
+                GÉNÉRER CODE PARRAIN
             </button>
 
 
-            <!-- CODE RESULT -->
+            <!-- =============================================
+                 MESSAGE
+                 ============================================= -->
+
+            <div
+                id="parrainMessage"
+                class="message"
+                aria-live="polite"
+            ></div>
+
+
+            <!-- =============================================
+                 PARRAIN CODE
+                 ============================================= -->
 
             <div
                 id="parrainCodeSection"
                 class="parrain-code-section"
-                hidden
+                style="display: none;"
             >
 
-                <span
-                    id="parrainCodeLabel"
-                    class="info-label"
-                >
-                    PARRAIN CODE
-                </span>
+                <div class="separator">
+                    ____________________________
+                </div>
 
+                <p class="parrain-code-label">
+                    𝐏𝐚𝐫𝐫𝐚𝐢𝐧 𝐜𝐨𝐝𝐞 :
+                </p>
 
-                <div class="code-display">
+                <strong
+                    id="parrainCode"
+                    class="parrain-code"
+                ></strong>
 
-                    <span
-                        id="parrainCode"
-                        class="generated-code"
-                    >
-                        ------
-                    </span>
-
+                <div class="separator">
+                    ____________________________
                 </div>
 
 
@@ -287,64 +280,24 @@
                     id="copyParrainButton"
                     class="secondary-button"
                 >
-                    📋 COPY
+                    COPIER
                 </button>
-
-
-                <p
-                    id="parrainExpiry"
-                    class="expiry-text"
-                    aria-live="polite"
-                ></p>
 
             </div>
 
-
-            <!-- NEXT -->
-
-            <button
-                type="button"
-                id="nextButton"
-                class="next-button"
-                hidden
-            >
-                NEXT →
-            </button>
-
-
-            <p
-                id="parrainMessage"
-                class="message"
-                aria-live="polite"
-            ></p>
-
         </section>
-
-
-        <!-- ═══════════════════════════════════════ -->
-        <!-- FOOTER                                  -->
-        <!-- ═══════════════════════════════════════ -->
-
-        <footer class="panel-footer">
-
-            <span>
-                By
-            </span>
-
-            <strong>
-                TOPFEROS TECH
-            </strong>
-
-        </footer>
 
     </main>
 
 
-    <!-- ═══════════════════════════════════════ -->
-    <!-- JAVASCRIPT                             -->
-    <!-- ═══════════════════════════════════════ -->
+    <!-- =====================================================
+         JAVASCRIPT
+         ===================================================== -->
 
-    <script src="/app.js?v=3"></script>
+    <script
+        src="/app.js?v=4"
+        defer
+    ></script>
 
 </body>
 </html>
