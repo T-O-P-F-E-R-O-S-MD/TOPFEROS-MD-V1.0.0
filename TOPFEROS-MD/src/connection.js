@@ -13,18 +13,14 @@ const {
 
 const pino = require("pino");
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🤖 TOPFEROS MD — WHATSAPP CONNECTION
-// 🚀 TOPFEROS TECH
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
 const settingsPanel = require("../settings/panel");
 const messageHandler = require("./messageHandler");
 const config = require("../config");
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🔐 AUTH DIRECTORY
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ======================================================
+// TOPFEROS MD — WHATSAPP CONNECTION
+// Stable Pairing Code System
+// ======================================================
 
 const AUTH_DIR = path.join(
   __dirname,
@@ -32,19 +28,44 @@ const AUTH_DIR = path.join(
   "auth"
 );
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// ⚙️ CONNECTION STATE
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ------------------------------------------------------
+// SOCKET STATE
+// ------------------------------------------------------
 
 let sock = null;
-let starting = false;
-let reconnectTimer = null;
-let stopped = false;
-let pairingRequested = false;
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 📱 DEFAULT PHONE NUMBER
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+let starting = false;
+let stopped = false;
+
+let reconnectTimer = null;
+
+// ------------------------------------------------------
+// PAIRING STATE
+// ------------------------------------------------------
+
+// Anpeche plizyè pairing request an menm tan.
+let pairingInProgress = false;
+
+// Nimewo ki gen pairing request aktif la.
+let pairingNumber = "";
+
+// Dènye pairing code ki te pwodwi.
+let activePairingCode = "";
+
+// Lè active pairing code la te pwodwi.
+let pairingCreatedAt = 0;
+
+// Cooldown apre yon code fin pwodwi.
+// 90 segonn pou evite spam/repeated requests.
+const PAIRING_COOLDOWN = 90 * 1000;
+
+// Code la pa dwe konsidere aktif pou tout tan.
+// Apre 2 minit, yon nouvo request ka fèt.
+const PAIRING_CACHE_TIME = 2 * 60 * 1000;
+
+// ------------------------------------------------------
+// DEFAULT PHONE NUMBER
+// ------------------------------------------------------
 
 const DEFAULT_PHONE_NUMBER =
   String(
@@ -53,9 +74,9 @@ const DEFAULT_PHONE_NUMBER =
     ""
   ).replace(/\D/g, "");
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 📁 PREPARE AUTH DIRECTORY
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ======================================================
+// AUTH DIRECTORY
+// ======================================================
 
 function prepareAuthDirectory() {
   if (!fs.existsSync(AUTH_DIR)) {
@@ -65,18 +86,14 @@ function prepareAuthDirectory() {
   }
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🔎 CLEAN PHONE NUMBER
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ======================================================
+// PHONE NUMBER HELPERS
+// ======================================================
 
 function cleanPhoneNumber(number) {
   return String(number || "")
     .replace(/\D/g, "");
 }
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🔎 VALIDATE PHONE NUMBER
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 function validatePhoneNumber(number) {
   const cleaned = cleanPhoneNumber(number);
@@ -99,6 +116,15 @@ function validatePhoneNumber(number) {
     };
   }
 
+  if (cleaned.length > 15) {
+    return {
+      valid: false,
+      number: cleaned,
+      message:
+        "WhatsApp phone number lan twò long."
+    };
+  }
+
   return {
     valid: true,
     number: cleaned,
@@ -106,9 +132,93 @@ function validatePhoneNumber(number) {
   };
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 📨 MESSAGE HANDLER
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ======================================================
+// PAIRING STATE RESET
+// ======================================================
+
+function clearPairingState(options = {}) {
+  const {
+    clearCache = false
+  } = options;
+
+  pairingInProgress = false;
+  pairingNumber = "";
+
+  if (clearCache) {
+    activePairingCode = "";
+    pairingCreatedAt = 0;
+  }
+}
+
+// ======================================================
+// PAIRING CACHE CHECK
+// ======================================================
+
+function getCachedPairingCode(number) {
+  const phoneNumber =
+    cleanPhoneNumber(number);
+
+  if (
+    !activePairingCode ||
+    !pairingCreatedAt ||
+    !pairingNumber
+  ) {
+    return null;
+  }
+
+  const age =
+    Date.now() - pairingCreatedAt;
+
+  // Cache expired.
+  if (age >= PAIRING_CACHE_TIME) {
+    clearPairingState({
+      clearCache: true
+    });
+
+    return null;
+  }
+
+  // Pa sèvi ak code yon lòt nimewo.
+  if (
+    pairingNumber !== phoneNumber
+  ) {
+    return null;
+  }
+
+  return activePairingCode;
+}
+
+// ======================================================
+// PAIRING COOLDOWN
+// ======================================================
+
+function getPairingCooldownRemaining(number) {
+  const phoneNumber =
+    cleanPhoneNumber(number);
+
+  if (
+    !pairingCreatedAt ||
+    !pairingNumber ||
+    pairingNumber !== phoneNumber
+  ) {
+    return 0;
+  }
+
+  const elapsed =
+    Date.now() - pairingCreatedAt;
+
+  const remaining =
+    PAIRING_COOLDOWN - elapsed;
+
+  return Math.max(
+    0,
+    remaining
+  );
+}
+
+// ======================================================
+// MESSAGE HANDLER
+// ======================================================
 
 async function handleMessages(messages) {
   if (
@@ -140,9 +250,9 @@ async function handleMessages(messages) {
   }
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🔄 RECONNECT
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ======================================================
+// RECONNECT
+// ======================================================
 
 function scheduleReconnect() {
   if (stopped) {
@@ -157,6 +267,10 @@ function scheduleReconnect() {
     async () => {
       reconnectTimer = null;
 
+      if (stopped) {
+        return;
+      }
+
       try {
         await start();
       } catch (error) {
@@ -165,22 +279,26 @@ function scheduleReconnect() {
           error?.message || error
         );
 
-        scheduleReconnect();
+        if (!stopped) {
+          scheduleReconnect();
+        }
       }
     },
     5000
   );
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🚀 START CONNECTION
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ======================================================
+// START WHATSAPP
+// ======================================================
 
 async function start() {
+  // Pa kreye plizyè socket.
   if (starting) {
     return sock;
   }
 
+  // Si deja konekte, pa rekonekte.
   if (sock && sock.user) {
     return sock;
   }
@@ -191,10 +309,6 @@ async function start() {
   try {
     prepareAuthDirectory();
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 🔐 LOAD AUTH SESSION
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
     const {
       state,
       saveCreds
@@ -202,9 +316,9 @@ async function start() {
       AUTH_DIR
     );
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 📡 BAILEYS VERSION
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // --------------------------------------------------
+    // GET BAILEYS VERSION
+    // --------------------------------------------------
 
     let version;
 
@@ -212,16 +326,21 @@ async function start() {
       const latest =
         await fetchLatestBaileysVersion();
 
-      version = latest.version;
+      if (
+        latest &&
+        Array.isArray(latest.version)
+      ) {
+        version = latest.version;
+      }
     } catch (error) {
       console.log(
-        "⚠️ Could not fetch latest Baileys version."
+        "⚠️ Could not fetch latest Baileys version. Using default version."
       );
     }
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 🤖 SOCKET OPTIONS
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // --------------------------------------------------
+    // SOCKET OPTIONS
+    // --------------------------------------------------
 
     const socketOptions = {
       auth: state,
@@ -252,159 +371,219 @@ async function start() {
       socketOptions.version = version;
     }
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 🔌 CREATE SOCKET
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // --------------------------------------------------
+    // CREATE SOCKET
+    // --------------------------------------------------
 
     sock = makeWASocket(
       socketOptions
     );
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 💾 SAVE CREDENTIALS
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // --------------------------------------------------
+    // SAVE CREDENTIALS
+    // --------------------------------------------------
 
     sock.ev.on(
       "creds.update",
       saveCreds
     );
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 📡 CONNECTION UPDATE
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // ==================================================
+    // CONNECTION UPDATE
+    // ==================================================
 
     sock.ev.on(
       "connection.update",
       async (update) => {
-        const {
-          connection,
-          lastDisconnect
-        } = update;
-
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // 🟡 CONNECTING
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-        if (connection === "connecting") {
-          console.log(
-            "🟡 TOPFEROS MD: Connecting to WhatsApp..."
-          );
-        }
-
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // 🟢 OPEN
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-        if (connection === "open") {
-          console.log("");
-
-          console.log(
-            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          );
-
-          console.log(
-            "🟢 TOPFEROS MD: WhatsApp connected."
-          );
-
-          console.log(
-            "📱 WhatsApp: ONLINE"
-          );
-
-          if (sock?.user?.id) {
-            console.log(
-              `📞 Connected account: ${sock.user.id}`
-            );
-          }
-
-          console.log(
-            "👥 TOPFEROS MD: Session active."
-          );
-
-          console.log(
-            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          );
-
-          console.log("");
-
-          // Kreye oswa retabli Settings Session
-          // pou kont WhatsApp sa a.
-          settingsPanel.setBotConnected(
-            sock
-          );
-
-          starting = false;
-          pairingRequested = false;
-
-          return;
-        }
-
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // 🔴 CLOSE
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-        if (connection === "close") {
-          const statusCode =
+        try {
+          const {
+            connection,
             lastDisconnect
-              ?.error
-              ?.output
-              ?.statusCode;
+          } = update;
 
-          const loggedOut =
-            statusCode ===
-            DisconnectReason.loggedOut;
+          // --------------------------------------------
+          // CONNECTING
+          // --------------------------------------------
 
-          console.log("");
-
-          console.log(
-            "🔴 TOPFEROS MD: WhatsApp disconnected."
-          );
-
-          console.log(
-            `📌 Status code: ${
-              statusCode || "unknown"
-            }`
-          );
-
-          /*
-           * Pa retire Settings Session nan yon
-           * reconnect nòmal.
-           *
-           * Sa pèmèt Settings Code la rete menm
-           * lè WhatsApp ap reconnect.
-           */
-          if (sock) {
-            settingsPanel.setBotDisconnected(
-              sock,
-              loggedOut
+          if (
+            connection === "connecting"
+          ) {
+            console.log(
+              "🟡 TOPFEROS MD: Connecting to WhatsApp..."
             );
           }
 
-          sock = null;
-          starting = false;
-          pairingRequested = false;
+          // --------------------------------------------
+          // OPEN
+          // --------------------------------------------
 
-          if (!loggedOut && !stopped) {
-            console.log(
-              "🔄 TOPFEROS MD: Reconnecting in 5 seconds..."
-            );
+          if (
+            connection === "open"
+          ) {
+            console.log("");
 
-            scheduleReconnect();
-          } else if (loggedOut) {
             console.log(
-              "❌ TOPFEROS MD: WhatsApp session logged out."
+              "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
             );
 
             console.log(
-              "⚠️ Auth session lan bezwen rekonekte."
+              "🟢 TOPFEROS MD: WhatsApp connected."
             );
+
+            console.log(
+              "📱 WhatsApp: ONLINE"
+            );
+
+            if (
+              sock?.user?.id
+            ) {
+              console.log(
+                `📞 Connected account: ${sock.user.id}`
+              );
+            }
+
+            console.log(
+              "👥 TOPFEROS MD: Session active."
+            );
+
+            console.log(
+              "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            );
+
+            console.log("");
+
+            // ------------------------------------------
+            // SETTINGS PANEL
+            // ------------------------------------------
+
+            try {
+              settingsPanel.setBotConnected(
+                sock
+              );
+            } catch (error) {
+              console.error(
+                "❌ SETTINGS PANEL CONNECTION ERROR:",
+                error?.message || error
+              );
+            }
+
+            // ------------------------------------------
+            // CLEAR PAIRING STATE
+            // ------------------------------------------
+
+            clearPairingState({
+              clearCache: true
+            });
+
+            starting = false;
+            stopped = false;
+
+            return;
           }
+
+          // --------------------------------------------
+          // CLOSE
+          // --------------------------------------------
+
+          if (
+            connection === "close"
+          ) {
+            const statusCode =
+              lastDisconnect
+                ?.error
+                ?.output
+                ?.statusCode;
+
+            const loggedOut =
+              statusCode ===
+              DisconnectReason.loggedOut;
+
+            console.log("");
+
+            console.log(
+              "🔴 TOPFEROS MD: WhatsApp disconnected."
+            );
+
+            console.log(
+              `📌 Status code: ${
+                statusCode || "unknown"
+              }`
+            );
+
+            // ------------------------------------------
+            // SETTINGS PANEL DISCONNECT
+            // ------------------------------------------
+
+            if (sock) {
+              try {
+                settingsPanel.setBotDisconnected(
+                  sock,
+                  loggedOut
+                );
+              } catch (error) {
+                console.error(
+                  "❌ SETTINGS PANEL DISCONNECT ERROR:",
+                  error?.message || error
+                );
+              }
+            }
+
+            // ------------------------------------------
+            // REMOVE SOCKET
+            // ------------------------------------------
+
+            sock = null;
+
+            starting = false;
+
+            // Pairing request la pa rete aktif
+            // si socket la fèmen.
+            pairingInProgress = false;
+
+            // ------------------------------------------
+            // LOGGED OUT
+            // ------------------------------------------
+
+            if (loggedOut) {
+              clearPairingState({
+                clearCache: true
+              });
+
+              console.log(
+                "❌ TOPFEROS MD: WhatsApp session logged out."
+              );
+
+              console.log(
+                "⚠️ Auth session lan bezwen rekonekte."
+              );
+
+              return;
+            }
+
+            // ------------------------------------------
+            // NORMAL DISCONNECT
+            // ------------------------------------------
+
+            if (!stopped) {
+              console.log(
+                "🔄 TOPFEROS MD: Reconnecting in 5 seconds..."
+              );
+
+              scheduleReconnect();
+            }
+          }
+        } catch (error) {
+          console.error(
+            "❌ CONNECTION UPDATE ERROR:",
+            error?.message || error
+          );
         }
       }
     );
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 📨 INCOMING MESSAGES
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // ==================================================
+    // MESSAGES
+    // ==================================================
 
     sock.ev.on(
       "messages.upsert",
@@ -412,7 +591,9 @@ async function start() {
         try {
           if (
             !data ||
-            !Array.isArray(data.messages)
+            !Array.isArray(
+              data.messages
+            )
           ) {
             return;
           }
@@ -432,7 +613,8 @@ async function start() {
   } catch (error) {
     starting = false;
     sock = null;
-    pairingRequested = false;
+
+    pairingInProgress = false;
 
     console.error(
       "❌ WHATSAPP CONNECTION ERROR:",
@@ -451,11 +633,15 @@ async function start() {
   return sock;
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🔐 REQUEST REAL WHATSAPP PAIRING CODE
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ======================================================
+// REQUEST PAIRING CODE
+// ======================================================
 
 async function requestPairingCode(number) {
+  // ----------------------------------------------------
+  // VALIDATE NUMBER
+  // ----------------------------------------------------
+
   const validation =
     validatePhoneNumber(number);
 
@@ -468,19 +654,85 @@ async function requestPairingCode(number) {
   const phoneNumber =
     validation.number;
 
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // 🔒 PAIRING ALREADY REQUESTED
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // ----------------------------------------------------
+  // IF ALREADY CONNECTED
+  // ----------------------------------------------------
 
-  if (pairingRequested) {
+  if (
+    sock &&
+    sock.user
+  ) {
+    throw new Error(
+      "WhatsApp session lan deja konekte. Pairing Code pa disponib sou session sa a."
+    );
+  }
+
+  // ----------------------------------------------------
+  // ACTIVE REQUEST
+  // ----------------------------------------------------
+
+  if (pairingInProgress) {
+    if (
+      pairingNumber === phoneNumber &&
+      activePairingCode
+    ) {
+      return activePairingCode;
+    }
+
     throw new Error(
       "Yon pairing code request deja an pwogrè. Tanpri tann li fini."
     );
   }
 
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // 🔌 START SOCKET SI LI PA EXISTE
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // ----------------------------------------------------
+  // CHECK CACHED CODE
+  // ----------------------------------------------------
+
+  const cachedCode =
+    getCachedPairingCode(
+      phoneNumber
+    );
+
+  if (cachedCode) {
+    const remaining =
+      getPairingCooldownRemaining(
+        phoneNumber
+      );
+
+    console.log(
+      `ℹ️ TOPFEROS MD: Pairing code aktif toujou. ${Math.ceil(
+        remaining / 1000
+      )}s cooldown rete.`
+    );
+
+    return cachedCode;
+  }
+
+  // ----------------------------------------------------
+  // COOLDOWN
+  // ----------------------------------------------------
+
+  const cooldownRemaining =
+    getPairingCooldownRemaining(
+      phoneNumber
+    );
+
+  if (
+    cooldownRemaining > 0
+  ) {
+    const seconds =
+      Math.ceil(
+        cooldownRemaining / 1000
+      );
+
+    throw new Error(
+      `Tanpri tann ${seconds} segonn anvan ou mande yon nouvo pairing code.`
+    );
+  }
+
+  // ----------------------------------------------------
+  // START SOCKET IF NEEDED
+  // ----------------------------------------------------
 
   if (!sock) {
     await start();
@@ -492,19 +744,21 @@ async function requestPairingCode(number) {
     );
   }
 
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // 📱 SESSION DEJA REGISTERED
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // ----------------------------------------------------
+  // CHECK AGAIN AFTER START
+  // ----------------------------------------------------
 
-  if (sock.user) {
+  if (
+    sock.user
+  ) {
     throw new Error(
       "WhatsApp session lan deja konekte. Pairing Code pa disponib sou session sa a."
     );
   }
 
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // 🔎 VERIFY METHOD
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // ----------------------------------------------------
+  // BAILEYS SUPPORT
+  // ----------------------------------------------------
 
   if (
     typeof sock.requestPairingCode !==
@@ -514,6 +768,13 @@ async function requestPairingCode(number) {
       "Baileys version sa a pa sipòte requestPairingCode()."
     );
   }
+
+  // ----------------------------------------------------
+  // SET PAIRING STATE BEFORE REQUEST
+  // ----------------------------------------------------
+
+  pairingInProgress = true;
+  pairingNumber = phoneNumber;
 
   console.log("");
 
@@ -530,7 +791,7 @@ async function requestPairingCode(number) {
   );
 
   console.log(
-    "⏳ Generating real WhatsApp pairing code..."
+    "⏳ Preparing WhatsApp pairing request..."
   );
 
   console.log(
@@ -538,59 +799,84 @@ async function requestPairingCode(number) {
   );
 
   try {
-    pairingRequested = true;
+    // --------------------------------------------------
+    // SMALL DELAY
+    // --------------------------------------------------
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // ⏳ BAY SOCKET LA TAN POU LI PREPARE
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
+    // Bay socket la yon ti moman pou initialize.
     await new Promise(
-      resolve => {
+      resolve =>
         setTimeout(
           resolve,
           1500
-        );
-      }
+        )
     );
 
-    // Verify socket toujou disponib
     if (!sock) {
       throw new Error(
         "WhatsApp socket la disparèt pandan pairing."
       );
     }
 
-    if (sock.user) {
+    if (
+      sock.user
+    ) {
       throw new Error(
         "WhatsApp session lan deja konekte."
       );
     }
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 🔐 REQUEST REAL CODE
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // --------------------------------------------------
+    // REQUEST REAL WHATSAPP CODE
+    // --------------------------------------------------
 
     const pairingCode =
       await sock.requestPairingCode(
         phoneNumber
       );
 
-    if (!pairingCode) {
+    // --------------------------------------------------
+    // VALIDATE RESPONSE
+    // --------------------------------------------------
+
+    if (
+      pairingCode ===
+      undefined ||
+      pairingCode ===
+      null
+    ) {
       throw new Error(
         "WhatsApp pa retounen pairing code."
       );
     }
 
+    // Pa modifye code WhatsApp la.
+    // Nou sèlman retire espas ki ka vini alantou li.
     const normalizedCode =
-      String(pairingCode)
-        .replace(/\s/g, "")
-        .trim();
+      String(pairingCode).trim();
 
     if (!normalizedCode) {
       throw new Error(
         "WhatsApp retounen yon pairing code vid."
       );
     }
+
+    // --------------------------------------------------
+    // SAVE ACTIVE CODE
+    // --------------------------------------------------
+
+    activePairingCode =
+      normalizedCode;
+
+    pairingNumber =
+      phoneNumber;
+
+    pairingCreatedAt =
+      Date.now();
+
+    // --------------------------------------------------
+    // DISPLAY CODE
+    // --------------------------------------------------
 
     console.log("");
 
@@ -630,6 +916,10 @@ async function requestPairingCode(number) {
 
     console.log("");
 
+    console.log(
+      "⏳ Pairing cooldown: 90 seconds."
+    );
+
     return normalizedCode;
 
   } catch (error) {
@@ -638,19 +928,28 @@ async function requestPairingCode(number) {
       error?.message || error
     );
 
+    // Si request la echwe,
+    // pa kite yon fo code cache.
+    activePairingCode = "";
+    pairingCreatedAt = 0;
+
     throw error;
 
   } finally {
-    pairingRequested = false;
+    pairingInProgress = false;
   }
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🛑 STOP CONNECTION
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ======================================================
+// STOP
+// ======================================================
 
 async function stop() {
   stopped = true;
+
+  // ----------------------------------------------------
+  // CANCEL RECONNECT
+  // ----------------------------------------------------
 
   if (reconnectTimer) {
     clearTimeout(
@@ -660,16 +959,27 @@ async function stop() {
     reconnectTimer = null;
   }
 
-  /*
-   * true = retire Settings Session nan yon
-   * stop reyèl/volontè.
-   */
+  // ----------------------------------------------------
+  // SETTINGS DISCONNECT
+  // ----------------------------------------------------
+
   if (sock) {
-    settingsPanel.setBotDisconnected(
-      sock,
-      true
-    );
+    try {
+      settingsPanel.setBotDisconnected(
+        sock,
+        true
+      );
+    } catch (error) {
+      console.error(
+        "❌ SETTINGS PANEL STOP ERROR:",
+        error?.message || error
+      );
+    }
   }
+
+  // ----------------------------------------------------
+  // CLOSE SOCKET
+  // ----------------------------------------------------
 
   try {
     if (
@@ -688,26 +998,36 @@ async function stop() {
     );
   }
 
+  // ----------------------------------------------------
+  // RESET
+  // ----------------------------------------------------
+
   sock = null;
+
   starting = false;
-  pairingRequested = false;
+
+  pairingInProgress = false;
+
+  clearPairingState({
+    clearCache: true
+  });
 
   console.log(
     "🛑 TOPFEROS MD: WhatsApp connection stopped."
   );
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🔎 GET SOCKET
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ======================================================
+// GET SOCKET
+// ======================================================
 
 function getSocket() {
   return sock;
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 📡 CONNECTION STATUS
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ======================================================
+// CONNECTION STATUS
+// ======================================================
 
 function isConnected() {
   return !!(
@@ -716,9 +1036,9 @@ function isConnected() {
   );
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 📱 GET PHONE NUMBER
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ======================================================
+// GET PHONE NUMBER
+// ======================================================
 
 function getPhoneNumber() {
   if (
@@ -736,15 +1056,53 @@ function getPhoneNumber() {
   return DEFAULT_PHONE_NUMBER;
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 📦 EXPORT
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ======================================================
+// GET PAIRING STATUS
+// ======================================================
+
+function getPairingStatus() {
+  const cooldownRemaining =
+    pairingNumber
+      ? getPairingCooldownRemaining(
+          pairingNumber
+        )
+      : 0;
+
+  return {
+    inProgress:
+      pairingInProgress,
+
+    number:
+      pairingNumber,
+
+    hasActiveCode:
+      !!activePairingCode,
+
+    cooldownRemaining,
+
+    cooldownSeconds:
+      Math.ceil(
+        cooldownRemaining / 1000
+      )
+  };
+}
+
+// ======================================================
+// EXPORTS
+// ======================================================
 
 module.exports = {
   start,
   stop,
+
   getSocket,
+
   isConnected,
+
   getPhoneNumber,
-  requestPairingCode
+
+  requestPairingCode,
+
+  getPairingStatus
 };
+  
