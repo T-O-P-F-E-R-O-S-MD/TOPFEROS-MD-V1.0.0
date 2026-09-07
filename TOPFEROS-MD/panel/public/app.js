@@ -1,14 +1,28 @@
 "use strict";
 
+/* =========================
+   URL / SESSION
+========================= */
+
 const params = new URLSearchParams(
   window.location.search
 );
 
-const sessionId = params.get("session");
+let sessionId =
+  params.get("session") || "";
 
 let currentLanguage = "en";
+
 let settings = {};
 let botInformation = {};
+
+let statusTimer = null;
+let pairingInProgress = false;
+
+
+/* =========================
+   SETTINGS GROUPS
+========================= */
 
 const groups = {
   general: [
@@ -47,139 +61,825 @@ const groups = {
   ]
 };
 
-document.addEventListener("DOMContentLoaded", () => {
-  if (!sessionId) {
-    showLanguage();
-    return;
-  }
 
-  showLanguage();
-});
+/* =========================
+   DOM READY
+========================= */
+
+document.addEventListener(
+  "DOMContentLoaded",
+  () => {
+    showLanguage();
+    setupSettingsCodeInput();
+    setupPhoneInput();
+    checkExistingConnection();
+  }
+);
+
+
+/* =========================
+   SHORT DOM FUNCTION
+========================= */
 
 function $(id) {
   return document.getElementById(id);
 }
 
-function showLanguage() {
-  $("languageScreen").classList.remove("hidden");
-  $("loginScreen").classList.add("hidden");
-  $("dashboard").classList.add("hidden");
+
+/* =========================
+   SCREEN CONTROL
+========================= */
+
+function hideAllScreens() {
+  $("languageScreen")?.classList.add("hidden");
+  $("connectScreen")?.classList.add("hidden");
+  $("loginScreen")?.classList.add("hidden");
+  $("dashboard")?.classList.add("hidden");
 }
+
+
+function showLanguage() {
+  hideAllScreens();
+
+  $("languageScreen")?.classList.remove(
+    "hidden"
+  );
+}
+
+
+/* =========================
+   LANGUAGE
+========================= */
 
 async function selectLanguage(language) {
   currentLanguage = language;
 
-  $("languageScreen").classList.add("hidden");
-  $("loginScreen").classList.remove("hidden");
+  hideAllScreens();
 
-  if (!sessionId) {
-    showLoginMessage(
-      "Settings link la pa gen Session ID.",
-      true
+  $("connectScreen")?.classList.remove(
+    "hidden"
+  );
+
+  await sendLanguage(language);
+
+  startConnectionMonitor();
+}
+
+
+/* =========================
+   SEND LANGUAGE
+========================= */
+
+async function sendLanguage(language) {
+  try {
+    await fetch(
+      "/api/language",
+      {
+        method: "POST",
+
+        headers: {
+          "Content-Type":
+            "application/json"
+        },
+
+        body: JSON.stringify({
+          sessionId,
+          language
+        })
+      }
     );
+  } catch (error) {
+    console.error(
+      "Language error:",
+      error
+    );
+  }
+}
+
+
+/* =========================
+   PHONE INPUT
+========================= */
+
+function setupPhoneInput() {
+  const input =
+    $("phoneNumber");
+
+  if (!input) {
     return;
   }
 
-  try {
-    const response = await fetch(
-      `/api/session/${encodeURIComponent(sessionId)}`
+  input.addEventListener(
+    "input",
+    event => {
+      event.target.value =
+        event.target.value
+          .replace(/\D/g, "");
+    }
+  );
+
+  input.addEventListener(
+    "keydown",
+    event => {
+      if (event.key === "Enter") {
+        requestPairingCode();
+      }
+    }
+  );
+}
+
+
+/* =========================
+   REQUEST PAIRING CODE
+========================= */
+
+async function requestPairingCode() {
+  if (pairingInProgress) {
+    return;
+  }
+
+  const input =
+    $("phoneNumber");
+
+  const button =
+    $("pairingButton");
+
+  const message =
+    $("pairingMessage");
+
+  const pairingBox =
+    $("pairingBox");
+
+  const codeElement =
+    $("pairingCode");
+
+  const status =
+    $("connectStatus");
+
+  const number =
+    input?.value
+      .trim()
+      .replace(/\D/g, "") || "";
+
+
+  /* =========================
+     VALIDATE NUMBER
+  ========================== */
+
+  if (!number) {
+    showPairingMessage(
+      "❌ Mete nimewo WhatsApp ou an.",
+      true
     );
 
-    const data = await response.json();
+    return;
+  }
 
-    if (!data.success) {
-      showLoginMessage(
-        "Settings session sa a pa egziste.",
-        true
+
+  if (number.length < 8) {
+    showPairingMessage(
+      "❌ Nimewo WhatsApp la pa valab.",
+      true
+    );
+
+    return;
+  }
+
+
+  /* =========================
+     UI LOADING
+  ========================== */
+
+  pairingInProgress = true;
+
+  if (button) {
+    button.disabled = true;
+    button.textContent =
+      "⏳ GENERATING...";
+  }
+
+  if (pairingBox) {
+    pairingBox.classList.add(
+      "hidden"
+    );
+  }
+
+  if (codeElement) {
+    codeElement.textContent =
+      "----";
+  }
+
+  if (status) {
+    status.textContent =
+      "🟡 Generating Pairing Code...";
+  }
+
+  if (message) {
+    message.textContent = "";
+  }
+
+
+  /* =========================
+     REQUEST SERVER
+  ========================== */
+
+  try {
+    const response =
+      await fetch(
+        "/api/pairing",
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+
+          body: JSON.stringify({
+            number
+          })
+        }
       );
+
+
+    const data =
+      await response.json();
+
+
+    /* =========================
+       SERVER ERROR
+    ========================== */
+
+    if (
+      !response.ok ||
+      !data.success
+    ) {
+      throw new Error(
+        data.message ||
+        data.error ||
+        "PAIRING_FAILED"
+      );
+    }
+
+
+    /* =========================
+       SHOW CODE
+    ========================== */
+
+    if (codeElement) {
+      codeElement.textContent =
+        formatPairingCode(
+          data.code
+        );
+    }
+
+    if (pairingBox) {
+      pairingBox.classList.remove(
+        "hidden"
+      );
+    }
+
+    if (status) {
+      status.textContent =
+        "🟡 Pairing Code generated. Waiting for WhatsApp...";
+    }
+
+    showPairingMessage(
+      "✅ Pairing Code la pare. Antre li nan WhatsApp ou.",
+      false
+    );
+
+
+    /* =========================
+       MONITOR CONNECTION
+    ========================== */
+
+    startConnectionMonitor();
+
+  } catch (error) {
+    console.error(
+      "Pairing error:",
+      error
+    );
+
+    if (status) {
+      status.textContent =
+        "🔴 Connection failed.";
+    }
+
+    showPairingMessage(
+      "❌ " +
+        (
+          error.message ||
+          "Pa kapab kreye Pairing Code la."
+        ),
+      true
+    );
+
+  } finally {
+    pairingInProgress = false;
+
+    if (button) {
+      button.disabled = false;
+
+      button.textContent =
+        "🔐 GET PAIRING CODE";
+    }
+  }
+}
+
+
+/* =========================
+   FORMAT PAIRING CODE
+========================= */
+
+function formatPairingCode(code) {
+  if (!code) {
+    return "----";
+  }
+
+  const clean =
+    String(code)
+      .replace(/\s/g, "")
+      .toUpperCase();
+
+  if (clean.length <= 4) {
+    return clean;
+  }
+
+  return clean
+    .match(/.{1,4}/g)
+    .join(" ");
+}
+
+
+/* =========================
+   PAIRING MESSAGE
+========================= */
+
+function showPairingMessage(
+  message,
+  error = false
+) {
+  const element =
+    $("pairingMessage");
+
+  if (!element) {
+    return;
+  }
+
+  element.textContent =
+    message;
+
+  element.className =
+    "message " +
+    (
+      error
+        ? "error"
+        : "success"
+    );
+}
+
+
+/* =========================
+   CONNECTION MONITOR
+========================= */
+
+function startConnectionMonitor() {
+  if (statusTimer) {
+    clearInterval(
+      statusTimer
+    );
+  }
+
+  checkBotStatus();
+
+  statusTimer =
+    setInterval(
+      checkBotStatus,
+      3000
+    );
+}
+
+
+/* =========================
+   CHECK BOT STATUS
+========================= */
+
+async function checkBotStatus() {
+  try {
+    const response =
+      await fetch(
+        "/api/status",
+        {
+          cache: "no-store"
+        }
+      );
+
+    const data =
+      await response.json();
+
+
+    if (
+      !response.ok ||
+      !data.success
+    ) {
       return;
     }
+
+
+    /* =========================
+       BOT CONNECTED
+    ========================== */
+
+    if (data.connected) {
+      updateConnectionUI(
+        true,
+        data.number || ""
+      );
+
+      stopConnectionMonitor();
+
+      await findConnectedSession(
+        data.number || ""
+      );
+
+    } else {
+      updateConnectionUI(
+        false,
+        ""
+      );
+    }
+
   } catch (error) {
-    showLoginMessage(
-      "Pa kapab kontakte server la.",
-      true
+    console.error(
+      "Status check error:",
+      error
     );
   }
 }
 
-function showLoginMessage(message, error = false) {
-  const el = $("loginMessage");
 
-  el.textContent = message;
-  el.className =
-    "message " + (error ? "error" : "success");
+/* =========================
+   UPDATE CONNECTION UI
+========================= */
+
+function updateConnectionUI(
+  connected,
+  number = ""
+) {
+  const status =
+    $("connectStatus");
+
+  if (!status) {
+    return;
+  }
+
+
+  if (connected) {
+    status.textContent =
+      "🟢 WhatsApp Bot Connected";
+
+    showPairingMessage(
+      "✅ Bot la konekte avèk siksè.",
+      false
+    );
+
+
+    if ($("botNumber")) {
+      $("botNumber").value =
+        number;
+    }
+
+  } else {
+    status.textContent =
+      "⚪ Waiting for WhatsApp connection...";
+  }
 }
 
+
+/* =========================
+   STOP CONNECTION MONITOR
+========================= */
+
+function stopConnectionMonitor() {
+  if (statusTimer) {
+    clearInterval(
+      statusTimer
+    );
+
+    statusTimer = null;
+  }
+}
+
+
+/* =========================
+   FIND CONNECTED SESSION
+========================= */
+
+async function findConnectedSession(
+  number = ""
+) {
+
+  /*
+   * If URL already contains
+   * a session ID, validate it.
+   */
+
+  if (sessionId) {
+    const valid =
+      await validateSession(
+        sessionId
+      );
+
+    if (valid) {
+      showSettingsLogin();
+      return;
+    }
+  }
+
+
+  /*
+   * The current backend creates
+   * the Settings Session when
+   * WhatsApp becomes connected.
+   *
+   * If there is no session ID
+   * in the URL, we cannot invent
+   * one from the browser.
+   */
+
+  if (number) {
+    showPairingMessage(
+      "🟢 Bot la konekte. Louvri Settings Link ou a pou antre Settings Code la.",
+      false
+    );
+  }
+}
+
+
+/* =========================
+   CHECK EXISTING CONNECTION
+========================= */
+
+async function checkExistingConnection() {
+  try {
+    const response =
+      await fetch(
+        "/api/status",
+        {
+          cache: "no-store"
+        }
+      );
+
+    const data =
+      await response.json();
+
+
+    if (
+      data.success &&
+      data.connected
+    ) {
+      updateConnectionUI(
+        true,
+        data.number || ""
+      );
+    }
+
+  } catch (error) {
+    console.error(
+      "Initial status error:",
+      error
+    );
+  }
+}
+
+
+/* =========================
+   VALIDATE SESSION
+========================= */
+
+async function validateSession(id) {
+  if (!id) {
+    return false;
+  }
+
+  try {
+    const response =
+      await fetch(
+        `/api/session/${encodeURIComponent(
+          id
+        )}`,
+        {
+          cache: "no-store"
+        }
+      );
+
+    const data =
+      await response.json();
+
+    return (
+      response.ok &&
+      data.success &&
+      data.exists
+    );
+
+  } catch (error) {
+    console.error(
+      "Session validation error:",
+      error
+    );
+
+    return false;
+  }
+}
+
+
+/* =========================
+   SETTINGS LOGIN
+========================= */
+
+function showSettingsLogin() {
+  hideAllScreens();
+
+  $("loginScreen")?.classList.remove(
+    "hidden"
+  );
+}
+
+
+/* =========================
+   BACK TO CONNECT
+========================= */
+
+function backToConnect() {
+  hideAllScreens();
+
+  $("connectScreen")?.classList.remove(
+    "hidden"
+  );
+
+  startConnectionMonitor();
+}
+
+
+/* =========================
+   VERIFY SETTINGS
+========================= */
+
 async function verifySettings() {
-  const code = $("settingsCode")
-    .value
-    .trim()
-    .toUpperCase();
+  const code =
+    $("settingsCode")
+      ?.value
+      .trim()
+      .toUpperCase() || "";
+
 
   if (!sessionId) {
     showLoginMessage(
-      "Session ID pa jwenn.",
+      "❌ Session ID pa jwenn.",
       true
     );
+
     return;
   }
 
-  if (!/^[A-Z0-9]{6}$/.test(code)) {
+
+  if (
+    !/^[A-Z0-9]{6}$/.test(
+      code
+    )
+  ) {
     showLoginMessage(
-      "Settings Code la dwe gen 6 karaktè.",
+      "❌ Settings Code la dwe gen 6 karaktè.",
       true
     );
+
     return;
   }
 
-  const button = $("verifyButton");
 
-  button.disabled = true;
-  button.textContent = "⏳ VERIFYING...";
+  const button =
+    $("verifyButton");
+
+
+  if (button) {
+    button.disabled = true;
+
+    button.textContent =
+      "⏳ VERIFYING...";
+  }
+
 
   try {
-    const response = await fetch("/api/verify", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        sessionId,
-        code
-      })
-    });
+    const response =
+      await fetch(
+        "/api/verify",
+        {
+          method: "POST",
 
-    const data = await response.json();
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
 
-    if (!response.ok || !data.success) {
+          body: JSON.stringify({
+            sessionId,
+            code
+          })
+        }
+      );
+
+
+    const data =
+      await response.json();
+
+
+    if (
+      !response.ok ||
+      !data.success
+    ) {
       showLoginMessage(
         "❌ Settings Code pa kòrèk.",
         true
       );
+
       return;
     }
 
-    settings = data.settings || {};
+
+    settings =
+      data.settings || {};
+
     botInformation =
       data.botInformation || {};
+
 
     openDashboard();
 
   } catch (error) {
+    console.error(
+      "Verification error:",
+      error
+    );
+
     showLoginMessage(
       "❌ Erè koneksyon ak server la.",
       true
     );
+
   } finally {
-    button.disabled = false;
-    button.textContent = "🔓 VERIFY / CONNECT";
+    if (button) {
+      button.disabled = false;
+
+      button.textContent =
+        "🔓 VERIFY / CONNECT";
+    }
   }
 }
 
+
+/* =========================
+   LOGIN MESSAGE
+========================= */
+
+function showLoginMessage(
+  message,
+  error = false
+) {
+  const element =
+    $("loginMessage");
+
+  if (!element) {
+    return;
+  }
+
+  element.textContent =
+    message;
+
+  element.className =
+    "message " +
+    (
+      error
+        ? "error"
+        : "success"
+    );
+}
+
+
+/* =========================
+   OPEN DASHBOARD
+========================= */
+
 function openDashboard() {
-  $("languageScreen").classList.add("hidden");
-  $("loginScreen").classList.add("hidden");
-  $("dashboard").classList.remove("hidden");
+  stopConnectionMonitor();
+
+  hideAllScreens();
+
+  $("dashboard")?.classList.remove(
+    "hidden"
+  );
+
 
   renderBotInformation();
 
@@ -209,103 +909,243 @@ function openDashboard() {
   );
 }
 
+
+/* =========================
+   BOT INFORMATION
+========================= */
+
 function renderBotInformation() {
-  $("botName").value =
-    botInformation.name ||
-    "TOPFEROS MD";
+  if ($("botName")) {
+    $("botName").value =
+      botInformation.name ||
+      "TOPFEROS MD";
+  }
 
-  $("botNumber").value =
-    botInformation.number || "";
 
-  $("botPrefix").value =
-    botInformation.prefix || ".";
+  if ($("botNumber")) {
+    $("botNumber").value =
+      botInformation.number ||
+      "";
+  }
 
-  updateModeDisplay();
+
+  if ($("botPrefix")) {
+    $("botPrefix").value =
+      botInformation.prefix ||
+      ".";
+  }
+
+
+  if ($("botMode")) {
+    updateModeDisplay();
+  }
 }
 
+
+/* =========================
+   MODE DISPLAY
+========================= */
+
 function updateModeDisplay() {
+  if (!$("botMode")) {
+    return;
+  }
+
   $("botMode").value =
     settings.privateMode
       ? "Private"
       : "Public";
 }
 
-function renderSettings(containerId, list) {
-  const container = $(containerId);
+
+/* =========================
+   RENDER SETTINGS
+========================= */
+
+function renderSettings(
+  containerId,
+  list
+) {
+  const container =
+    $(containerId);
+
+  if (!container) {
+    return;
+  }
 
   container.innerHTML = "";
 
-  for (const [key, label] of list) {
-    const row = document.createElement("div");
 
-    row.className = "setting";
+  for (
+    const [key, label]
+    of list
+  ) {
 
-    row.innerHTML = `
-      <span>${label}</span>
-
-      <label class="switch">
-        <input
-          type="checkbox"
-          data-setting="${key}"
-          ${settings[key] ? "checked" : ""}
-        >
-
-        <span class="slider"></span>
-      </label>
-    `;
-
-    container.appendChild(row);
-  }
-
-  container
-    .querySelectorAll("input[data-setting]")
-    .forEach(input => {
-      input.addEventListener(
-        "change",
-        () => {
-          const key =
-            input.dataset.setting;
-
-          settings[key] =
-            input.checked;
-
-          if (
-            key === "publicMode" &&
-            input.checked
-          ) {
-            settings.privateMode = false;
-            refreshSwitch("privateMode");
-          }
-
-          if (
-            key === "privateMode" &&
-            input.checked
-          ) {
-            settings.publicMode = false;
-            refreshSwitch("publicMode");
-          }
-
-          if (
-            key === "groupClose" &&
-            input.checked
-          ) {
-            settings.groupOpen = false;
-            refreshSwitch("groupOpen");
-          }
-
-          if (
-            key === "groupOpen" &&
-            input.checked
-          ) {
-            settings.groupClose = false;
-            refreshSwitch("groupClose");
-          }
-
-          updateModeDisplay();
-        }
+    const row =
+      document.createElement(
+        "div"
       );
-    });
+
+    row.className =
+      "setting";
+
+
+    const span =
+      document.createElement(
+        "span"
+      );
+
+    span.textContent =
+      label;
+
+
+    const labelElement =
+      document.createElement(
+        "label"
+      );
+
+    labelElement.className =
+      "switch";
+
+
+    const input =
+      document.createElement(
+        "input"
+      );
+
+    input.type =
+      "checkbox";
+
+    input.dataset.setting =
+      key;
+
+    input.checked =
+      !!settings[key];
+
+
+    const slider =
+      document.createElement(
+        "span"
+      );
+
+    slider.className =
+      "slider";
+
+
+    labelElement.appendChild(
+      input
+    );
+
+    labelElement.appendChild(
+      slider
+    );
+
+
+    row.appendChild(
+      span
+    );
+
+    row.appendChild(
+      labelElement
+    );
+
+
+    container.appendChild(
+      row
+    );
+
+
+    input.addEventListener(
+      "change",
+      () => {
+
+        const settingKey =
+          input.dataset.setting;
+
+        settings[settingKey] =
+          input.checked;
+
+
+        /* =========================
+           PUBLIC / PRIVATE
+        ========================== */
+
+        if (
+          settingKey ===
+            "publicMode" &&
+          input.checked
+        ) {
+
+          settings.privateMode =
+            false;
+
+          refreshSwitch(
+            "privateMode"
+          );
+        }
+
+
+        if (
+          settingKey ===
+            "privateMode" &&
+          input.checked
+        ) {
+
+          settings.publicMode =
+            false;
+
+          refreshSwitch(
+            "publicMode"
+          );
+        }
+
+
+        /* =========================
+           GROUP OPEN / CLOSE
+        ========================== */
+
+        if (
+          settingKey ===
+            "groupClose" &&
+          input.checked
+        ) {
+
+          settings.groupOpen =
+            false;
+
+          refreshSwitch(
+            "groupOpen"
+          );
+        }
+
+
+        if (
+          settingKey ===
+            "groupOpen" &&
+          input.checked
+        ) {
+
+          settings.groupClose =
+            false;
+
+          refreshSwitch(
+            "groupClose"
+          );
+        }
+
+
+        updateModeDisplay();
+
+      }
+    );
+
+  }
 }
+
+
+/* =========================
+   REFRESH SWITCH
+========================= */
 
 function refreshSwitch(key) {
   const input =
@@ -319,46 +1159,79 @@ function refreshSwitch(key) {
   }
 }
 
+
+/* =========================
+   SAVE SETTINGS
+========================= */
+
 async function saveSettings() {
-  const saveButton = $("saveButton");
-  const saveMessage = $("saveMessage");
+  const saveButton =
+    $("saveButton");
+
+  const saveMessage =
+    $("saveMessage");
+
 
   const name =
-    $("botName").value.trim() ||
+    $("botName")
+      ?.value
+      .trim() ||
     "TOPFEROS MD";
 
+
   const prefix =
-    $("botPrefix").value.trim() || ".";
+    $("botPrefix")
+      ?.value
+      .trim() ||
+    ".";
 
-  botInformation.name = name;
-  botInformation.prefix = prefix;
 
-  saveButton.disabled = true;
-  saveButton.textContent =
-    "⏳ SAVING...";
+  botInformation.name =
+    name;
 
-  saveMessage.textContent = "";
+  botInformation.prefix =
+    prefix;
+
+
+  if (saveButton) {
+    saveButton.disabled =
+      true;
+
+    saveButton.textContent =
+      "⏳ SAVING...";
+  }
+
+
+  if (saveMessage) {
+    saveMessage.textContent =
+      "";
+  }
+
 
   try {
-    const response = await fetch(
-      "/api/settings",
-      {
-        method: "POST",
+    const response =
+      await fetch(
+        "/api/settings",
+        {
+          method: "POST",
 
-        headers: {
-          "Content-Type": "application/json"
-        },
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
 
-        body: JSON.stringify({
-          sessionId,
-          settings,
-          botInformation
-        })
-      }
-    );
+          body: JSON.stringify({
+            sessionId,
+            settings,
+            botInformation
+          })
+        }
+      );
+
 
     const data =
       await response.json();
+
 
     if (
       !response.ok ||
@@ -370,53 +1243,175 @@ async function saveSettings() {
       );
     }
 
+
     settings =
-      data.settings || settings;
+      data.settings ||
+      settings;
+
 
     botInformation =
       data.botInformation ||
       botInformation;
 
+
     renderBotInformation();
 
-    saveMessage.textContent =
-      "✅ Settings yo sove avèk siksè.";
 
-    saveMessage.className =
-      "message success";
+    if (saveMessage) {
+      saveMessage.textContent =
+        "✅ Settings yo sove avèk siksè.";
+
+      saveMessage.className =
+        "message success";
+    }
 
   } catch (error) {
-    saveMessage.textContent =
-      "❌ Pa kapab sove settings yo.";
 
-    saveMessage.className =
-      "message error";
+    console.error(
+      "Save settings error:",
+      error
+    );
 
-    console.error(error);
+
+    if (saveMessage) {
+      saveMessage.textContent =
+        "❌ Pa kapab sove settings yo.";
+
+      saveMessage.className =
+        "message error";
+    }
 
   } finally {
-    saveButton.disabled = false;
-    saveButton.textContent =
-      "💾 APP SOVE";
+
+    if (saveButton) {
+      saveButton.disabled =
+        false;
+
+      saveButton.textContent =
+        "💾 SAVE SETTINGS";
+    }
+
   }
 }
 
-$("settingsCode")?.addEventListener(
-  "input",
-  event => {
-    event.target.value =
-      event.target.value
-        .toUpperCase()
-        .replace(/[^A-Z0-9]/g, "")
-        .slice(0, 6);
-  }
-);
 
-$("settingsCode")?.addEventListener(
-  "keydown",
-  event => {
-    if (event.key === "Enter") {
-      verifySettings();
+/* =========================
+   LOGOUT
+========================= */
+
+async function logoutPanel() {
+
+  try {
+
+    if (sessionId) {
+
+      await fetch(
+        "/api/logout",
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+
+          body: JSON.stringify({
+            sessionId
+          })
+        }
+      );
+
     }
+
+  } catch (error) {
+
+    console.error(
+      "Logout error:",
+      error
+    );
+
   }
-);
+
+
+  settings = {};
+
+  botInformation = {};
+
+  sessionId = "";
+
+  window.location.href =
+    window.location.pathname;
+}
+
+
+/* =========================
+   SETTINGS CODE INPUT
+========================= */
+
+function setupSettingsCodeInput() {
+
+  const input =
+    $("settingsCode");
+
+  if (!input) {
+    return;
+  }
+
+
+  input.addEventListener(
+    "input",
+    event => {
+
+      event.target.value =
+        event.target.value
+          .toUpperCase()
+          .replace(
+            /[^A-Z0-9]/g,
+            ""
+          )
+          .slice(0, 6);
+
+    }
+  );
+
+
+  input.addEventListener(
+    "keydown",
+    event => {
+
+      if (
+        event.key ===
+        "Enter"
+      ) {
+
+        verifySettings();
+
+      }
+
+    }
+  );
+
+}
+
+
+/* =========================
+   GLOBAL FUNCTIONS
+========================= */
+
+window.selectLanguage =
+  selectLanguage;
+
+window.requestPairingCode =
+  requestPairingCode;
+
+window.verifySettings =
+  verifySettings;
+
+window.saveSettings =
+  saveSettings;
+
+window.logoutPanel =
+  logoutPanel;
+
+window.backToConnect =
+  backToConnect;
