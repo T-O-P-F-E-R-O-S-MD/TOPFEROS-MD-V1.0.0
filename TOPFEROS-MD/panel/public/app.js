@@ -17,7 +17,13 @@ let settings = {};
 let botInformation = {};
 
 let statusTimer = null;
+
 let pairingInProgress = false;
+
+let pairingCooldownTimer = null;
+let pairingCooldownSeconds = 0;
+
+const PAIRING_COOLDOWN = 90;
 
 
 /* =========================
@@ -25,6 +31,7 @@ let pairingInProgress = false;
 ========================= */
 
 const groups = {
+
   general: [
     ["publicMode", "Public Mode"],
     ["privateMode", "Private Mode"],
@@ -59,6 +66,7 @@ const groups = {
   ai: [
     ["aiChat", "AI Chat"]
   ]
+
 };
 
 
@@ -69,10 +77,15 @@ const groups = {
 document.addEventListener(
   "DOMContentLoaded",
   () => {
+
     showLanguage();
+
     setupSettingsCodeInput();
+
     setupPhoneInput();
+
     checkExistingConnection();
+
   }
 );
 
@@ -91,19 +104,34 @@ function $(id) {
 ========================= */
 
 function hideAllScreens() {
-  $("languageScreen")?.classList.add("hidden");
-  $("connectScreen")?.classList.add("hidden");
-  $("loginScreen")?.classList.add("hidden");
-  $("dashboard")?.classList.add("hidden");
+
+  $("languageScreen")?.classList.add(
+    "hidden"
+  );
+
+  $("connectScreen")?.classList.add(
+    "hidden"
+  );
+
+  $("loginScreen")?.classList.add(
+    "hidden"
+  );
+
+  $("dashboard")?.classList.add(
+    "hidden"
+  );
+
 }
 
 
 function showLanguage() {
+
   hideAllScreens();
 
   $("languageScreen")?.classList.remove(
     "hidden"
   );
+
 }
 
 
@@ -111,8 +139,12 @@ function showLanguage() {
    LANGUAGE
 ========================= */
 
-async function selectLanguage(language) {
-  currentLanguage = language;
+async function selectLanguage(
+  language
+) {
+
+  currentLanguage =
+    language;
 
   hideAllScreens();
 
@@ -120,9 +152,12 @@ async function selectLanguage(language) {
     "hidden"
   );
 
-  await sendLanguage(language);
+  await sendLanguage(
+    language
+  );
 
   startConnectionMonitor();
+
 }
 
 
@@ -130,8 +165,12 @@ async function selectLanguage(language) {
    SEND LANGUAGE
 ========================= */
 
-async function sendLanguage(language) {
+async function sendLanguage(
+  language
+) {
+
   try {
+
     await fetch(
       "/api/language",
       {
@@ -146,14 +185,19 @@ async function sendLanguage(language) {
           sessionId,
           language
         })
+
       }
     );
+
   } catch (error) {
+
     console.error(
       "Language error:",
       error
     );
+
   }
+
 }
 
 
@@ -162,6 +206,7 @@ async function sendLanguage(language) {
 ========================= */
 
 function setupPhoneInput() {
+
   const input =
     $("phoneNumber");
 
@@ -169,23 +214,35 @@ function setupPhoneInput() {
     return;
   }
 
+
   input.addEventListener(
     "input",
     event => {
+
       event.target.value =
         event.target.value
           .replace(/\D/g, "");
+
     }
   );
+
 
   input.addEventListener(
     "keydown",
     event => {
-      if (event.key === "Enter") {
+
+      if (
+        event.key ===
+        "Enter"
+      ) {
+
         requestPairingCode();
+
       }
+
     }
   );
+
 }
 
 
@@ -194,9 +251,36 @@ function setupPhoneInput() {
 ========================= */
 
 async function requestPairingCode() {
-  if (pairingInProgress) {
+
+  /*
+   * Pa gen nouvo request
+   * si youn deja ap fèt.
+   */
+
+  if (
+    pairingInProgress
+  ) {
+
     return;
+
   }
+
+
+  /*
+   * Pa kite user mande
+   * plizyè code pandan cooldown.
+   */
+
+  if (
+    pairingCooldownSeconds > 0
+  ) {
+
+    updatePairingCooldownUI();
+
+    return;
+
+  }
+
 
   const input =
     $("phoneNumber");
@@ -216,6 +300,7 @@ async function requestPairingCode() {
   const status =
     $("connectStatus");
 
+
   const number =
     input?.value
       .trim()
@@ -227,22 +312,28 @@ async function requestPairingCode() {
   ========================== */
 
   if (!number) {
+
     showPairingMessage(
       "❌ Mete nimewo WhatsApp ou an.",
       true
     );
 
     return;
+
   }
 
 
-  if (number.length < 8) {
+  if (
+    number.length < 8
+  ) {
+
     showPairingMessage(
       "❌ Nimewo WhatsApp la pa valab.",
       true
     );
 
     return;
+
   }
 
 
@@ -250,32 +341,51 @@ async function requestPairingCode() {
      UI LOADING
   ========================== */
 
-  pairingInProgress = true;
+  pairingInProgress =
+    true;
+
 
   if (button) {
-    button.disabled = true;
+
+    button.disabled =
+      true;
+
     button.textContent =
       "⏳ GENERATING...";
+
   }
 
+
   if (pairingBox) {
+
     pairingBox.classList.add(
       "hidden"
     );
+
   }
+
 
   if (codeElement) {
+
     codeElement.textContent =
       "----";
+
   }
+
 
   if (status) {
+
     status.textContent =
       "🟡 Generating Pairing Code...";
+
   }
 
+
   if (message) {
-    message.textContent = "";
+
+    message.textContent =
+      "";
+
   }
 
 
@@ -284,6 +394,7 @@ async function requestPairingCode() {
   ========================== */
 
   try {
+
     const response =
       await fetch(
         "/api/pairing",
@@ -298,12 +409,23 @@ async function requestPairingCode() {
           body: JSON.stringify({
             number
           })
+
         }
       );
 
 
-    const data =
-      await response.json();
+    let data = {};
+
+    try {
+
+      data =
+        await response.json();
+
+    } catch {
+
+      data = {};
+
+    }
 
 
     /* =========================
@@ -314,11 +436,34 @@ async function requestPairingCode() {
       !response.ok ||
       !data.success
     ) {
-      throw new Error(
-        data.message ||
-        data.error ||
-        "PAIRING_FAILED"
-      );
+
+      const error =
+        new Error(
+          data.message ||
+          data.error ||
+          "PAIRING_FAILED"
+        );
+
+      /*
+       * Si server la bay yon
+       * cooldown, pran kantite
+       * segonn li bay la.
+       */
+
+      if (
+        data.cooldownSeconds
+      ) {
+
+        startPairingCooldown(
+          Number(
+            data.cooldownSeconds
+          )
+        );
+
+      }
+
+      throw error;
+
     }
 
 
@@ -327,26 +472,48 @@ async function requestPairingCode() {
     ========================== */
 
     if (codeElement) {
+
       codeElement.textContent =
         formatPairingCode(
           data.code
         );
+
     }
 
+
     if (pairingBox) {
+
       pairingBox.classList.remove(
         "hidden"
       );
+
     }
 
+
     if (status) {
+
       status.textContent =
         "🟡 Pairing Code generated. Waiting for WhatsApp...";
+
     }
+
 
     showPairingMessage(
       "✅ Pairing Code la pare. Antre li nan WhatsApp ou.",
       false
+    );
+
+
+    /*
+     * Cooldown apre yon
+     * pairing code reyisi.
+     */
+
+    startPairingCooldown(
+      Number(
+        data.cooldownSeconds ||
+        PAIRING_COOLDOWN
+      )
     );
 
 
@@ -357,15 +524,20 @@ async function requestPairingCode() {
     startConnectionMonitor();
 
   } catch (error) {
+
     console.error(
       "Pairing error:",
       error
     );
 
+
     if (status) {
+
       status.textContent =
         "🔴 Connection failed.";
+
     }
+
 
     showPairingMessage(
       "❌ " +
@@ -377,15 +549,20 @@ async function requestPairingCode() {
     );
 
   } finally {
-    pairingInProgress = false;
 
-    if (button) {
-      button.disabled = false;
+    pairingInProgress =
+      false;
 
-      button.textContent =
-        "🔐 GET PAIRING CODE";
-    }
+
+    /*
+     * Pa reaktive bouton an
+     * si cooldown toujou aktif.
+     */
+
+    updatePairingCooldownUI();
+
   }
+
 }
 
 
@@ -393,23 +570,36 @@ async function requestPairingCode() {
    FORMAT PAIRING CODE
 ========================= */
 
-function formatPairingCode(code) {
+function formatPairingCode(
+  code
+) {
+
   if (!code) {
+
     return "----";
+
   }
+
 
   const clean =
     String(code)
       .replace(/\s/g, "")
       .toUpperCase();
 
-  if (clean.length <= 4) {
+
+  if (
+    clean.length <= 4
+  ) {
+
     return clean;
+
   }
+
 
   return clean
     .match(/.{1,4}/g)
     .join(" ");
+
 }
 
 
@@ -421,12 +611,16 @@ function showPairingMessage(
   message,
   error = false
 ) {
+
   const element =
     $("pairingMessage");
 
   if (!element) {
+
     return;
+
   }
+
 
   element.textContent =
     message;
@@ -438,6 +632,166 @@ function showPairingMessage(
         ? "error"
         : "success"
     );
+
+}
+
+
+/* =========================
+   PAIRING COOLDOWN
+========================= */
+
+function startPairingCooldown(
+  seconds
+) {
+
+  stopPairingCooldown(
+    false
+  );
+
+
+  pairingCooldownSeconds =
+    Math.max(
+      0,
+      Number(seconds) ||
+      PAIRING_COOLDOWN
+    );
+
+
+  updatePairingCooldownUI();
+
+
+  if (
+    pairingCooldownSeconds <= 0
+  ) {
+
+    return;
+
+  }
+
+
+  pairingCooldownTimer =
+    setInterval(
+      () => {
+
+        pairingCooldownSeconds--;
+
+        updatePairingCooldownUI();
+
+
+        if (
+          pairingCooldownSeconds <= 0
+        ) {
+
+          stopPairingCooldown();
+
+        }
+
+      },
+      1000
+    );
+
+}
+
+
+/* =========================
+   UPDATE COOLDOWN UI
+========================= */
+
+function updatePairingCooldownUI() {
+
+  const button =
+    $("pairingButton");
+
+  if (!button) {
+
+    return;
+
+  }
+
+
+  /*
+   * Pairing request ap fèt.
+   */
+
+  if (
+    pairingInProgress
+  ) {
+
+    button.disabled =
+      true;
+
+    button.textContent =
+      "⏳ GENERATING...";
+
+    return;
+
+  }
+
+
+  /*
+   * Cooldown aktif.
+   */
+
+  if (
+    pairingCooldownSeconds > 0
+  ) {
+
+    button.disabled =
+      true;
+
+    button.textContent =
+      `⏳ WAIT ${pairingCooldownSeconds}s`;
+
+    return;
+
+  }
+
+
+  /*
+   * Cooldown fini.
+   */
+
+  button.disabled =
+    false;
+
+  button.textContent =
+    "🔐 GET PAIRING CODE";
+
+}
+
+
+/* =========================
+   STOP COOLDOWN
+========================= */
+
+function stopPairingCooldown(
+  updateUI = true
+) {
+
+  if (
+    pairingCooldownTimer
+  ) {
+
+    clearInterval(
+      pairingCooldownTimer
+    );
+
+    pairingCooldownTimer =
+      null;
+
+  }
+
+
+  pairingCooldownSeconds =
+    0;
+
+
+  if (updateUI) {
+
+    updatePairingCooldownUI();
+
+  }
+
 }
 
 
@@ -446,19 +800,25 @@ function showPairingMessage(
 ========================= */
 
 function startConnectionMonitor() {
+
   if (statusTimer) {
+
     clearInterval(
       statusTimer
     );
+
   }
 
+
   checkBotStatus();
+
 
   statusTimer =
     setInterval(
       checkBotStatus,
       3000
     );
+
 }
 
 
@@ -467,7 +827,9 @@ function startConnectionMonitor() {
 ========================= */
 
 async function checkBotStatus() {
+
   try {
+
     const response =
       await fetch(
         "/api/status",
@@ -475,6 +837,7 @@ async function checkBotStatus() {
           cache: "no-store"
         }
       );
+
 
     const data =
       await response.json();
@@ -484,7 +847,9 @@ async function checkBotStatus() {
       !response.ok ||
       !data.success
     ) {
+
       return;
+
     }
 
 
@@ -492,31 +857,50 @@ async function checkBotStatus() {
        BOT CONNECTED
     ========================== */
 
-    if (data.connected) {
+    if (
+      data.connected
+    ) {
+
       updateConnectionUI(
         true,
         data.number || ""
       );
 
+
       stopConnectionMonitor();
+
+
+      /*
+       * Pairing cooldown pa
+       * nesesè ankò apre bot la konekte.
+       */
+
+      stopPairingCooldown();
+
 
       await findConnectedSession(
         data.number || ""
       );
 
+
     } else {
+
       updateConnectionUI(
         false,
         ""
       );
+
     }
 
   } catch (error) {
+
     console.error(
       "Status check error:",
       error
     );
+
   }
+
 }
 
 
@@ -528,17 +912,25 @@ function updateConnectionUI(
   connected,
   number = ""
 ) {
+
   const status =
     $("connectStatus");
 
+
   if (!status) {
+
     return;
+
   }
 
 
-  if (connected) {
+  if (
+    connected
+  ) {
+
     status.textContent =
       "🟢 WhatsApp Bot Connected";
+
 
     showPairingMessage(
       "✅ Bot la konekte avèk siksè.",
@@ -546,15 +938,23 @@ function updateConnectionUI(
     );
 
 
-    if ($("botNumber")) {
+    if (
+      $("botNumber")
+    ) {
+
       $("botNumber").value =
         number;
+
     }
 
+
   } else {
+
     status.textContent =
       "⚪ Waiting for WhatsApp connection...";
+
   }
+
 }
 
 
@@ -563,13 +963,18 @@ function updateConnectionUI(
 ========================= */
 
 function stopConnectionMonitor() {
+
   if (statusTimer) {
+
     clearInterval(
       statusTimer
     );
 
-    statusTimer = null;
+    statusTimer =
+      null;
+
   }
+
 }
 
 
@@ -586,35 +991,44 @@ async function findConnectedSession(
    * a session ID, validate it.
    */
 
-  if (sessionId) {
+  if (
+    sessionId
+  ) {
+
     const valid =
       await validateSession(
         sessionId
       );
 
+
     if (valid) {
+
       showSettingsLogin();
+
       return;
+
     }
+
   }
 
 
   /*
-   * The current backend creates
-   * the Settings Session when
+   * Current backend creates
+   * Settings Session when
    * WhatsApp becomes connected.
-   *
-   * If there is no session ID
-   * in the URL, we cannot invent
-   * one from the browser.
    */
 
-  if (number) {
+  if (
+    number
+  ) {
+
     showPairingMessage(
       "🟢 Bot la konekte. Louvri Settings Link ou a pou antre Settings Code la.",
       false
     );
+
   }
+
 }
 
 
@@ -623,7 +1037,9 @@ async function findConnectedSession(
 ========================= */
 
 async function checkExistingConnection() {
+
   try {
+
     const response =
       await fetch(
         "/api/status",
@@ -631,6 +1047,7 @@ async function checkExistingConnection() {
           cache: "no-store"
         }
       );
+
 
     const data =
       await response.json();
@@ -640,18 +1057,23 @@ async function checkExistingConnection() {
       data.success &&
       data.connected
     ) {
+
       updateConnectionUI(
         true,
         data.number || ""
       );
+
     }
 
   } catch (error) {
+
     console.error(
       "Initial status error:",
       error
     );
+
   }
+
 }
 
 
@@ -659,12 +1081,19 @@ async function checkExistingConnection() {
    VALIDATE SESSION
 ========================= */
 
-async function validateSession(id) {
+async function validateSession(
+  id
+) {
+
   if (!id) {
+
     return false;
+
   }
 
+
   try {
+
     const response =
       await fetch(
         `/api/session/${encodeURIComponent(
@@ -675,8 +1104,10 @@ async function validateSession(id) {
         }
       );
 
+
     const data =
       await response.json();
+
 
     return (
       response.ok &&
@@ -684,14 +1115,19 @@ async function validateSession(id) {
       data.exists
     );
 
+
   } catch (error) {
+
     console.error(
       "Session validation error:",
       error
     );
 
+
     return false;
+
   }
+
 }
 
 
@@ -700,11 +1136,14 @@ async function validateSession(id) {
 ========================= */
 
 function showSettingsLogin() {
+
   hideAllScreens();
+
 
   $("loginScreen")?.classList.remove(
     "hidden"
   );
+
 }
 
 
@@ -713,13 +1152,17 @@ function showSettingsLogin() {
 ========================= */
 
 function backToConnect() {
+
   hideAllScreens();
+
 
   $("connectScreen")?.classList.remove(
     "hidden"
   );
 
+
   startConnectionMonitor();
+
 }
 
 
@@ -728,6 +1171,7 @@ function backToConnect() {
 ========================= */
 
 async function verifySettings() {
+
   const code =
     $("settingsCode")
       ?.value
@@ -736,12 +1180,14 @@ async function verifySettings() {
 
 
   if (!sessionId) {
+
     showLoginMessage(
       "❌ Session ID pa jwenn.",
       true
     );
 
     return;
+
   }
 
 
@@ -750,12 +1196,14 @@ async function verifySettings() {
       code
     )
   ) {
+
     showLoginMessage(
       "❌ Settings Code la dwe gen 6 karaktè.",
       true
     );
 
     return;
+
   }
 
 
@@ -764,14 +1212,18 @@ async function verifySettings() {
 
 
   if (button) {
-    button.disabled = true;
+
+    button.disabled =
+      true;
 
     button.textContent =
       "⏳ VERIFYING...";
+
   }
 
 
   try {
+
     const response =
       await fetch(
         "/api/verify",
@@ -787,6 +1239,7 @@ async function verifySettings() {
             sessionId,
             code
           })
+
         }
       );
 
@@ -799,17 +1252,20 @@ async function verifySettings() {
       !response.ok ||
       !data.success
     ) {
+
       showLoginMessage(
         "❌ Settings Code pa kòrèk.",
         true
       );
 
       return;
+
     }
 
 
     settings =
       data.settings || {};
+
 
     botInformation =
       data.botInformation || {};
@@ -817,25 +1273,35 @@ async function verifySettings() {
 
     openDashboard();
 
+
   } catch (error) {
+
     console.error(
       "Verification error:",
       error
     );
+
 
     showLoginMessage(
       "❌ Erè koneksyon ak server la.",
       true
     );
 
+
   } finally {
+
     if (button) {
-      button.disabled = false;
+
+      button.disabled =
+        false;
 
       button.textContent =
         "🔓 VERIFY / CONNECT";
+
     }
+
   }
+
 }
 
 
@@ -847,15 +1313,21 @@ function showLoginMessage(
   message,
   error = false
 ) {
+
   const element =
     $("loginMessage");
 
+
   if (!element) {
+
     return;
+
   }
+
 
   element.textContent =
     message;
+
 
   element.className =
     "message " +
@@ -864,6 +1336,7 @@ function showLoginMessage(
         ? "error"
         : "success"
     );
+
 }
 
 
@@ -872,9 +1345,12 @@ function showLoginMessage(
 ========================= */
 
 function openDashboard() {
+
   stopConnectionMonitor();
 
+
   hideAllScreens();
+
 
   $("dashboard")?.classList.remove(
     "hidden"
@@ -883,30 +1359,36 @@ function openDashboard() {
 
   renderBotInformation();
 
+
   renderSettings(
     "generalSettings",
     groups.general
   );
+
 
   renderSettings(
     "protectionSettings",
     groups.protection
   );
 
+
   renderSettings(
     "statusSettings",
     groups.status
   );
+
 
   renderSettings(
     "groupSettings",
     groups.group
   );
 
+
   renderSettings(
     "aiSettings",
     groups.ai
   );
+
 }
 
 
@@ -915,30 +1397,48 @@ function openDashboard() {
 ========================= */
 
 function renderBotInformation() {
-  if ($("botName")) {
+
+  if (
+    $("botName")
+  ) {
+
     $("botName").value =
       botInformation.name ||
       "TOPFEROS MD";
+
   }
 
 
-  if ($("botNumber")) {
+  if (
+    $("botNumber")
+  ) {
+
     $("botNumber").value =
       botInformation.number ||
       "";
+
   }
 
 
-  if ($("botPrefix")) {
+  if (
+    $("botPrefix")
+  ) {
+
     $("botPrefix").value =
       botInformation.prefix ||
       ".";
+
   }
 
 
-  if ($("botMode")) {
+  if (
+    $("botMode")
+  ) {
+
     updateModeDisplay();
+
   }
+
 }
 
 
@@ -947,14 +1447,21 @@ function renderBotInformation() {
 ========================= */
 
 function updateModeDisplay() {
-  if (!$("botMode")) {
+
+  if (
+    !$("botMode")
+  ) {
+
     return;
+
   }
+
 
   $("botMode").value =
     settings.privateMode
       ? "Private"
       : "Public";
+
 }
 
 
@@ -966,14 +1473,20 @@ function renderSettings(
   containerId,
   list
 ) {
+
   const container =
     $(containerId);
 
+
   if (!container) {
+
     return;
+
   }
 
-  container.innerHTML = "";
+
+  container.innerHTML =
+    "";
 
 
   for (
@@ -986,6 +1499,7 @@ function renderSettings(
         "div"
       );
 
+
     row.className =
       "setting";
 
@@ -994,6 +1508,7 @@ function renderSettings(
       document.createElement(
         "span"
       );
+
 
     span.textContent =
       label;
@@ -1004,6 +1519,7 @@ function renderSettings(
         "label"
       );
 
+
     labelElement.className =
       "switch";
 
@@ -1013,11 +1529,14 @@ function renderSettings(
         "input"
       );
 
+
     input.type =
       "checkbox";
 
+
     input.dataset.setting =
       key;
+
 
     input.checked =
       !!settings[key];
@@ -1028,6 +1547,7 @@ function renderSettings(
         "span"
       );
 
+
     slider.className =
       "slider";
 
@@ -1035,6 +1555,7 @@ function renderSettings(
     labelElement.appendChild(
       input
     );
+
 
     labelElement.appendChild(
       slider
@@ -1044,6 +1565,7 @@ function renderSettings(
     row.appendChild(
       span
     );
+
 
     row.appendChild(
       labelElement
@@ -1062,6 +1584,7 @@ function renderSettings(
         const settingKey =
           input.dataset.setting;
 
+
         settings[settingKey] =
           input.checked;
 
@@ -1079,9 +1602,11 @@ function renderSettings(
           settings.privateMode =
             false;
 
+
           refreshSwitch(
             "privateMode"
           );
+
         }
 
 
@@ -1094,9 +1619,11 @@ function renderSettings(
           settings.publicMode =
             false;
 
+
           refreshSwitch(
             "publicMode"
           );
+
         }
 
 
@@ -1113,9 +1640,11 @@ function renderSettings(
           settings.groupOpen =
             false;
 
+
           refreshSwitch(
             "groupOpen"
           );
+
         }
 
 
@@ -1128,9 +1657,11 @@ function renderSettings(
           settings.groupClose =
             false;
 
+
           refreshSwitch(
             "groupClose"
           );
+
         }
 
 
@@ -1140,6 +1671,7 @@ function renderSettings(
     );
 
   }
+
 }
 
 
@@ -1147,16 +1679,23 @@ function renderSettings(
    REFRESH SWITCH
 ========================= */
 
-function refreshSwitch(key) {
+function refreshSwitch(
+  key
+) {
+
   const input =
     document.querySelector(
       `input[data-setting="${key}"]`
     );
 
+
   if (input) {
+
     input.checked =
       !!settings[key];
+
   }
+
 }
 
 
@@ -1165,8 +1704,10 @@ function refreshSwitch(key) {
 ========================= */
 
 async function saveSettings() {
+
   const saveButton =
     $("saveButton");
+
 
   const saveMessage =
     $("saveMessage");
@@ -1189,26 +1730,32 @@ async function saveSettings() {
   botInformation.name =
     name;
 
+
   botInformation.prefix =
     prefix;
 
 
   if (saveButton) {
+
     saveButton.disabled =
       true;
 
     saveButton.textContent =
       "⏳ SAVING...";
+
   }
 
 
   if (saveMessage) {
+
     saveMessage.textContent =
       "";
+
   }
 
 
   try {
+
     const response =
       await fetch(
         "/api/settings",
@@ -1225,6 +1772,7 @@ async function saveSettings() {
             settings,
             botInformation
           })
+
         }
       );
 
@@ -1237,10 +1785,12 @@ async function saveSettings() {
       !response.ok ||
       !data.success
     ) {
+
       throw new Error(
         data.error ||
         "SAVE_FAILED"
       );
+
     }
 
 
@@ -1258,12 +1808,16 @@ async function saveSettings() {
 
 
     if (saveMessage) {
+
       saveMessage.textContent =
         "✅ Settings yo sove avèk siksè.";
 
+
       saveMessage.className =
         "message success";
+
     }
+
 
   } catch (error) {
 
@@ -1274,24 +1828,31 @@ async function saveSettings() {
 
 
     if (saveMessage) {
+
       saveMessage.textContent =
         "❌ Pa kapab sove settings yo.";
 
+
       saveMessage.className =
         "message error";
+
     }
 
   } finally {
 
     if (saveButton) {
+
       saveButton.disabled =
         false;
 
+
       saveButton.textContent =
         "💾 SAVE SETTINGS";
+
     }
 
   }
+
 }
 
 
@@ -1303,7 +1864,9 @@ async function logoutPanel() {
 
   try {
 
-    if (sessionId) {
+    if (
+      sessionId
+    ) {
 
       await fetch(
         "/api/logout",
@@ -1318,6 +1881,7 @@ async function logoutPanel() {
           body: JSON.stringify({
             sessionId
           })
+
         }
       );
 
@@ -1339,8 +1903,16 @@ async function logoutPanel() {
 
   sessionId = "";
 
+
+  stopPairingCooldown();
+
+
+  stopConnectionMonitor();
+
+
   window.location.href =
     window.location.pathname;
+
 }
 
 
@@ -1353,8 +1925,11 @@ function setupSettingsCodeInput() {
   const input =
     $("settingsCode");
 
+
   if (!input) {
+
     return;
+
   }
 
 
@@ -1401,17 +1976,22 @@ function setupSettingsCodeInput() {
 window.selectLanguage =
   selectLanguage;
 
+
 window.requestPairingCode =
   requestPairingCode;
+
 
 window.verifySettings =
   verifySettings;
 
+
 window.saveSettings =
   saveSettings;
 
+
 window.logoutPanel =
   logoutPanel;
+
 
 window.backToConnect =
   backToConnect;
