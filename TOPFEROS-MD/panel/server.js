@@ -13,15 +13,31 @@ const HOST = process.env.HOST || "0.0.0.0";
 
 const publicDir = path.resolve(__dirname, "public");
 const assetsDir = path.resolve(__dirname, "..", "assets");
+const backgroundFile = path.resolve(__dirname, "background.png");
 
 app.use(express.json({ limit: "100kb" }));
 app.use(express.urlencoded({ extended: true }));
 
+/* =========================
+   STATIC FILES
+========================= */
+
 app.use(express.static(publicDir));
+
+/* Bot logo
+   TOPFEROS-MD/assets/logo.png
+*/
 app.use("/assets", express.static(assetsDir));
 
 app.get("/assets/logo.png", (req, res) => {
   res.sendFile(path.join(assetsDir, "logo.png"));
+});
+
+/* Background
+   TOPFEROS-MD/panel/background.png
+*/
+app.get("/background.png", (req, res) => {
+  res.sendFile(backgroundFile);
 });
 
 /* =========================
@@ -38,6 +54,8 @@ app.get("/api/status", (req, res) => {
       number: connection.getPhoneNumber?.() || ""
     });
   } catch (error) {
+    console.error("❌ Status error:", error);
+
     res.status(500).json({
       success: false,
       connected: false
@@ -50,23 +68,32 @@ app.get("/api/status", (req, res) => {
 ========================= */
 
 app.get("/api/session/:sessionId", (req, res) => {
-  const session = settingsPanel.getSession(
-    req.params.sessionId
-  );
+  try {
+    const session = settingsPanel.getSession(
+      req.params.sessionId
+    );
 
-  if (!session) {
-    return res.status(404).json({
+    if (!session) {
+      return res.status(404).json({
+        success: false,
+        error: "SESSION_NOT_FOUND"
+      });
+    }
+
+    res.json({
+      success: true,
+      exists: true,
+      authenticated: !!session.authenticated,
+      number: session.number
+    });
+  } catch (error) {
+    console.error("❌ Session error:", error);
+
+    res.status(500).json({
       success: false,
-      error: "SESSION_NOT_FOUND"
+      error: "SESSION_ERROR"
     });
   }
-
-  res.json({
-    success: true,
-    exists: true,
-    authenticated: !!session.authenticated,
-    number: session.number
-  });
 });
 
 /* =========================
@@ -74,30 +101,39 @@ app.get("/api/session/:sessionId", (req, res) => {
 ========================= */
 
 app.post("/api/verify", (req, res) => {
-  const { sessionId, code } = req.body || {};
+  try {
+    const { sessionId, code } = req.body || {};
 
-  if (!sessionId || !code) {
-    return res.status(400).json({
+    if (!sessionId || !code) {
+      return res.status(400).json({
+        success: false,
+        error: "SESSION_AND_CODE_REQUIRED"
+      });
+    }
+
+    const result = settingsPanel.verifySession(
+      sessionId,
+      code
+    );
+
+    if (!result.success) {
+      return res.status(401).json(result);
+    }
+
+    res.json({
+      success: true,
+      message: "Settings Code verified",
+      settings: result.session.settings,
+      botInformation: result.session.botInformation
+    });
+  } catch (error) {
+    console.error("❌ Verification error:", error);
+
+    res.status(500).json({
       success: false,
-      error: "SESSION_AND_CODE_REQUIRED"
+      error: "VERIFICATION_FAILED"
     });
   }
-
-  const result = settingsPanel.verifySession(
-    sessionId,
-    code
-  );
-
-  if (!result.success) {
-    return res.status(401).json(result);
-  }
-
-  res.json({
-    success: true,
-    message: "Settings Code verified",
-    settings: result.session.settings,
-    botInformation: result.session.botInformation
-  });
 });
 
 /* =========================
@@ -105,21 +141,30 @@ app.post("/api/verify", (req, res) => {
 ========================= */
 
 app.get("/api/settings", (req, res) => {
-  const sessionId = req.query.sessionId;
+  try {
+    const sessionId = req.query.sessionId;
 
-  if (!settingsPanel.isAuthenticated(sessionId)) {
-    return res.status(401).json({
+    if (!settingsPanel.isAuthenticated(sessionId)) {
+      return res.status(401).json({
+        success: false,
+        error: "UNAUTHORIZED"
+      });
+    }
+
+    const data = settingsPanel.loadSettings(sessionId);
+
+    res.json({
+      success: true,
+      ...data
+    });
+  } catch (error) {
+    console.error("❌ Load settings error:", error);
+
+    res.status(500).json({
       success: false,
-      error: "UNAUTHORIZED"
+      error: "LOAD_SETTINGS_FAILED"
     });
   }
-
-  const data = settingsPanel.loadSettings(sessionId);
-
-  res.json({
-    success: true,
-    ...data
-  });
 });
 
 /* =========================
@@ -127,44 +172,53 @@ app.get("/api/settings", (req, res) => {
 ========================= */
 
 app.post("/api/settings", (req, res) => {
-  const {
-    sessionId,
-    settings,
-    botInformation
-  } = req.body || {};
+  try {
+    const {
+      sessionId,
+      settings,
+      botInformation
+    } = req.body || {};
 
-  if (!settingsPanel.isAuthenticated(sessionId)) {
-    return res.status(401).json({
+    if (!settingsPanel.isAuthenticated(sessionId)) {
+      return res.status(401).json({
+        success: false,
+        error: "UNAUTHORIZED"
+      });
+    }
+
+    const savedSettings =
+      settingsPanel.applySettings(
+        sessionId,
+        settings || {}
+      );
+
+    const savedBotInformation =
+      settingsPanel.updateBotInformation(
+        sessionId,
+        botInformation || {}
+      );
+
+    if (!savedSettings || !savedBotInformation) {
+      return res.status(400).json({
+        success: false,
+        error: "SAVE_FAILED"
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "Settings saved successfully",
+      settings: savedSettings,
+      botInformation: savedBotInformation
+    });
+  } catch (error) {
+    console.error("❌ Save settings error:", error);
+
+    res.status(500).json({
       success: false,
-      error: "UNAUTHORIZED"
+      error: "SAVE_SETTINGS_FAILED"
     });
   }
-
-  const savedSettings =
-    settingsPanel.applySettings(
-      sessionId,
-      settings || {}
-    );
-
-  const savedBotInformation =
-    settingsPanel.updateBotInformation(
-      sessionId,
-      botInformation || {}
-    );
-
-  if (!savedSettings || !savedBotInformation) {
-    return res.status(400).json({
-      success: false,
-      error: "SAVE_FAILED"
-    });
-  }
-
-  res.json({
-    success: true,
-    message: "Settings saved successfully",
-    settings: savedSettings,
-    botInformation: savedBotInformation
-  });
 });
 
 /* =========================
@@ -172,21 +226,30 @@ app.post("/api/settings", (req, res) => {
 ========================= */
 
 app.post("/api/language", (req, res) => {
-  const { sessionId, language } = req.body || {};
+  try {
+    const { sessionId, language } = req.body || {};
 
-  const allowed = ["en", "fr", "es"];
+    const allowed = ["en", "fr", "es"];
 
-  if (!allowed.includes(language)) {
-    return res.status(400).json({
+    if (!allowed.includes(language)) {
+      return res.status(400).json({
+        success: false,
+        error: "INVALID_LANGUAGE"
+      });
+    }
+
+    res.json({
+      success: true,
+      language
+    });
+  } catch (error) {
+    console.error("❌ Language error:", error);
+
+    res.status(500).json({
       success: false,
-      error: "INVALID_LANGUAGE"
+      error: "LANGUAGE_FAILED"
     });
   }
-
-  res.json({
-    success: true,
-    language
-  });
 });
 
 /* =========================
@@ -194,17 +257,26 @@ app.post("/api/language", (req, res) => {
 ========================= */
 
 app.post("/api/logout", (req, res) => {
-  const { sessionId } = req.body || {};
+  try {
+    const { sessionId } = req.body || {};
 
-  const session = settingsPanel.getSession(sessionId);
+    const session = settingsPanel.getSession(sessionId);
 
-  if (session) {
-    session.authenticated = false;
+    if (session) {
+      session.authenticated = false;
+    }
+
+    res.json({
+      success: true
+    });
+  } catch (error) {
+    console.error("❌ Logout error:", error);
+
+    res.status(500).json({
+      success: false,
+      error: "LOGOUT_FAILED"
+    });
   }
-
-  res.json({
-    success: true
-  });
 });
 
 /* =========================
@@ -234,7 +306,10 @@ const server = app.listen(PORT, HOST, () => {
 async function startWhatsApp() {
   try {
     await connection.start();
-    console.log("🤖 TOPFEROS MD WhatsApp started");
+
+    console.log(
+      "🤖 TOPFEROS MD WhatsApp started"
+    );
   } catch (error) {
     console.error(
       "❌ WhatsApp start error:",
@@ -257,7 +332,10 @@ async function shutdown(signal) {
   try {
     await connection.stop();
   } catch (error) {
-    console.error(error);
+    console.error(
+      "❌ Shutdown error:",
+      error
+    );
   }
 
   server.close(() => {
@@ -267,6 +345,10 @@ async function shutdown(signal) {
 
 process.on("SIGINT", () => shutdown("SIGINT"));
 process.on("SIGTERM", () => shutdown("SIGTERM"));
+
+/* =========================
+   EXPORTS
+========================= */
 
 module.exports = {
   app,
