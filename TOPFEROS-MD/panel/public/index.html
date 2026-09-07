@@ -8,11 +8,16 @@
     content="width=device-width, initial-scale=1.0"
   >
 
-  <title>TOPFEROS MD SETTINGS</title>
+  <meta
+    name="theme-color"
+    content="#000000"
+  >
+
+  <title>TOPFEROS MD PANEL</title>
 
   <link
     rel="stylesheet"
-    href="/style.css?v=20"
+    href="/style.css?v=30"
   >
 </head>
 
@@ -20,43 +25,140 @@
 
   <main class="container">
 
+    <!-- =========================
+         MAIN LOGO
+    ========================== -->
+
     <img
       src="/assets/logo.png"
       class="logo"
       alt="TOPFEROS MD"
     >
 
-    <h1>🦁 TOPFEROS MD SETTINGS</h1>
+    <h1>🦁 TOPFEROS MD PANEL</h1>
 
-    <!-- LANGUAGE -->
 
-    <section id="languageScreen" class="screen">
+    <!-- =========================
+         LANGUAGE SCREEN
+    ========================== -->
+
+    <section
+      id="languageScreen"
+      class="screen"
+    >
 
       <h2>🌐 Select Language</h2>
 
-      <button onclick="selectLanguage('en')">
+      <p class="description">
+        Choose your preferred language.
+      </p>
+
+      <button
+        type="button"
+        onclick="selectLanguage('en')"
+      >
         🇬🇧 English
       </button>
 
-      <button onclick="selectLanguage('fr')">
+      <button
+        type="button"
+        onclick="selectLanguage('fr')"
+      >
         🇫🇷 Français
       </button>
 
-      <button onclick="selectLanguage('es')">
+      <button
+        type="button"
+        onclick="selectLanguage('es')"
+      >
         🇪🇸 Español
       </button>
 
     </section>
 
 
-    <!-- SETTINGS LOGIN -->
+    <!-- =========================
+         CONNECT BOT SCREEN
+    ========================== -->
+
+    <section
+      id="connectScreen"
+      class="screen hidden"
+    >
+
+      <h2>📱 CONNECT BOT</h2>
+
+      <p class="description">
+        Enter your WhatsApp number to generate
+        a Pairing Code.
+      </p>
+
+      <input
+        id="phoneNumber"
+        type="tel"
+        inputmode="numeric"
+        autocomplete="tel"
+        placeholder="509XXXXXXXX"
+      >
+
+      <button
+        id="pairingButton"
+        type="button"
+        onclick="requestPairingCode()"
+      >
+        🔐 GET PAIRING CODE
+      </button>
+
+      <!-- PAIRING CODE -->
+
+      <div
+        id="pairingBox"
+        class="pairingBox hidden"
+      >
+
+        <h3>🔑 YOUR PAIRING CODE</h3>
+
+        <div
+          id="pairingCode"
+          class="pairingCode"
+        >
+          ----
+        </div>
+
+        <p class="description">
+          Open WhatsApp on your phone and enter
+          this code when requested.
+        </p>
+
+      </div>
+
+      <!-- CONNECTION STATUS -->
+
+      <div
+        id="connectStatus"
+        class="statusBox"
+      >
+        ⚪ Waiting for connection...
+      </div>
+
+      <p
+        id="pairingMessage"
+        class="message"
+      ></p>
+
+    </section>
+
+
+    <!-- =========================
+         SETTINGS LOGIN
+    ========================== -->
 
     <section
       id="loginScreen"
       class="screen hidden"
     >
 
-      <h2>🔐 Settings Login</h2>
+      <h2>🔐 SETTINGS LOGIN</h2>
 
       <p class="description">
         Enter your 6-character Settings Code.
@@ -66,12 +168,15 @@
         id="settingsCode"
         type="text"
         maxlength="6"
+        minlength="6"
         autocomplete="off"
+        autocapitalize="characters"
         placeholder="G7K2P9"
       >
 
       <button
         id="verifyButton"
+        type="button"
         onclick="verifySettings()"
       >
         🔓 VERIFY / CONNECT
@@ -82,15 +187,27 @@
         class="message"
       ></p>
 
+      <button
+        type="button"
+        class="secondaryButton"
+        onclick="backToConnect()"
+      >
+        ← BACK TO CONNECT
+      </button>
+
     </section>
 
 
-    <!-- DASHBOARD -->
+    <!-- =========================
+         DASHBOARD
+    ========================== -->
 
     <section
       id="dashboard"
       class="hidden"
     >
+
+      <!-- DASHBOARD HEADER -->
 
       <div class="dashboardHeader">
 
@@ -109,7 +226,9 @@
       </div>
 
 
-      <!-- BOT INFORMATION -->
+      <!-- =========================
+           BOT INFORMATION
+      ========================== -->
 
       <div class="card">
 
@@ -119,15 +238,18 @@
 
           <label>
             Name
+
             <input
               id="botName"
               type="text"
               value="TOPFEROS MD"
+              autocomplete="off"
             >
           </label>
 
           <label>
             Number
+
             <input
               id="botNumber"
               type="text"
@@ -137,19 +259,23 @@
 
           <label>
             Prefix
+
             <input
               id="botPrefix"
               type="text"
               value="."
               maxlength="5"
+              autocomplete="off"
             >
           </label>
 
           <label>
             Mode
+
             <input
               id="botMode"
               type="text"
+              value="public"
               readonly
             >
           </label>
@@ -159,69 +285,97 @@
       </div>
 
 
-      <!-- GENERAL -->
+      <!-- =========================
+           GENERAL
+      ========================== -->
 
       <div class="card">
 
         <h3>⚙️ GENERAL</h3>
 
-        <div id="generalSettings"></div>
+        <div
+          id="generalSettings"
+          class="settingsList"
+        ></div>
 
       </div>
 
 
-      <!-- PROTECTION -->
+      <!-- =========================
+           PROTECTION
+      ========================== -->
 
       <div class="card">
 
         <h3>🛡️ PROTECTION</h3>
 
-        <div id="protectionSettings"></div>
+        <div
+          id="protectionSettings"
+          class="settingsList"
+        ></div>
 
       </div>
 
 
-      <!-- STATUS -->
+      <!-- =========================
+           STATUS
+      ========================== -->
 
       <div class="card">
 
         <h3>📱 STATUS</h3>
 
-        <div id="statusSettings"></div>
+        <div
+          id="statusSettings"
+          class="settingsList"
+        ></div>
 
       </div>
 
 
-      <!-- GROUP -->
+      <!-- =========================
+           GROUP
+      ========================== -->
 
       <div class="card">
 
         <h3>👥 GROUP</h3>
 
-        <div id="groupSettings"></div>
+        <div
+          id="groupSettings"
+          class="settingsList"
+        ></div>
 
       </div>
 
 
-      <!-- AI -->
+      <!-- =========================
+           AI
+      ========================== -->
 
       <div class="card">
 
         <h3>🤖 AI</h3>
 
-        <div id="aiSettings"></div>
+        <div
+          id="aiSettings"
+          class="settingsList"
+        ></div>
 
       </div>
 
 
-      <!-- SAVE -->
+      <!-- =========================
+           SAVE
+      ========================== -->
 
       <button
         id="saveButton"
         class="saveButton"
+        type="button"
         onclick="saveSettings()"
       >
-        💾 APP SOVE
+        💾 SAVE SETTINGS
       </button>
 
       <p
@@ -229,6 +383,24 @@
         class="message"
       ></p>
 
+
+      <!-- =========================
+           LOGOUT
+      ========================== -->
+
+      <button
+        id="logoutButton"
+        class="secondaryButton"
+        type="button"
+        onclick="logoutPanel()"
+      >
+        🚪 LOGOUT
+      </button>
+
+
+      <!-- =========================
+           FOOTER
+      ========================== -->
 
       <footer>
         ==========================<br>
@@ -240,7 +412,12 @@
 
   </main>
 
-  <script src="/app.js?v=20"></script>
+
+  <!-- =========================
+       JAVASCRIPT
+  ========================== -->
+
+  <script src="/app.js?v=30"></script>
 
 </body>
 </html>
