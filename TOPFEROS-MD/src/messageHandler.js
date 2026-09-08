@@ -14,7 +14,9 @@ let config = {};
 try {
   config = require("../config");
 } catch (error) {
-  console.warn("⚠️ config.js pa jwenn, prefix default = .");
+  console.warn(
+    "⚠️ config.js pa jwenn, prefix default = ."
+  );
 }
 
 const PREFIX =
@@ -115,8 +117,10 @@ function getMessageText(message) {
     message?.message?.imageMessage?.caption ||
     message?.message?.videoMessage?.caption ||
     message?.message?.documentMessage?.caption ||
-    message?.message?.buttonsResponseMessage?.selectedButtonId ||
-    message?.message?.listResponseMessage?.singleSelectReply
+    message?.message?.buttonsResponseMessage
+      ?.selectedButtonId ||
+    message?.message?.listResponseMessage
+      ?.singleSelectReply
       ?.selectedRowId ||
     ""
   );
@@ -166,6 +170,7 @@ async function sendLogoMessage(
     );
 
     return true;
+
   } catch (error) {
     console.error(
       "❌ SEND LOGO ERROR:",
@@ -184,10 +189,12 @@ async function sendLogoMessage(
       );
 
       return true;
+
     } catch (fallbackError) {
       console.error(
         "❌ FALLBACK MESSAGE ERROR:",
-        fallbackError?.message || fallbackError
+        fallbackError?.message ||
+        fallbackError
       );
 
       return false;
@@ -226,7 +233,7 @@ async function sendAliveMessage(
 }
 
 // ============================================================
-// SETTINGS INFORMATION
+// SETTINGS STATUS
 // ============================================================
 
 function getStatus(
@@ -239,7 +246,7 @@ function getStatus(
 }
 
 // ============================================================
-// SETTINGS DETAILS MESSAGE
+// SETTINGS INFORMATION
 // ============================================================
 
 function buildSettingsInformation(
@@ -276,45 +283,102 @@ function buildSettingsInformation(
 🎀 Non       » ${name}
 🎂 Laj       » ${age}
 🔤 Prefiks   » ${prefix}
-🌐 Mòd       » ${getStatus(settings, "publicMode")}
+🌐 Mòd       » ${getStatus(
+    settings,
+    "publicMode"
+  )}
 
 ┌─────── ⋆⋅☆⋅⋆ ──────────┐
 🛡️ *PROTECTION* 🛡️
 └────────── ⋆⋅☆⋅⋆ ──────────┘
 
-📞 Anti Call       » ${getStatus(settings, "antiCall")}
-🗑️ Anti Delete     » ${getStatus(settings, "antiDelete")}
-🚫 Anti Spam       » ${getStatus(settings, "antiSpam")}
-🔗 Anti Link       » ${getStatus(settings, "groupAntiLink")}
+📞 Anti Call       » ${getStatus(
+    settings,
+    "antiCall"
+  )}
+🗑️ Anti Delete     » ${getStatus(
+    settings,
+    "antiDelete"
+  )}
+🚫 Anti Spam       » ${getStatus(
+    settings,
+    "antiSpam"
+  )}
+🔗 Anti Link       » ${getStatus(
+    settings,
+    "groupAntiLink"
+  )}
 
 ┌─────── ⋆⋅☆⋅⋆ ──────────┐
 ⚙️ *AUTOMATIK* ⚙️
 └────────── ⋆⋅☆⋅⋆ ──────────┘
 
-📡 Always Online   » ${getStatus(settings, "alwaysOnline")}
-⌨️ Fake Typing     » ${getStatus(settings, "fakeTyping")}
-🎙️ Fake Recording  » ${getStatus(settings, "fakeRecording")}
-❤️ Auto React      » ${getStatus(settings, "autoReact")}
-📱 Auto Status     » ${getStatus(settings, "autoStatus")}
-💬 Status Reply    » ${getStatus(settings, "statusReply")}
-👍 Status Like     » ${getStatus(settings, "statusLike")}
-❤️ Status React    » ${getStatus(settings, "statusReact")}
+📡 Always Online   » ${getStatus(
+    settings,
+    "alwaysOnline"
+  )}
+⌨️ Fake Typing     » ${getStatus(
+    settings,
+    "fakeTyping"
+  )}
+🎙️ Fake Recording  » ${getStatus(
+    settings,
+    "fakeRecording"
+  )}
+❤️ Auto React      » ${getStatus(
+    settings,
+    "autoReact"
+  )}
+📱 Auto Status     » ${getStatus(
+    settings,
+    "autoStatus"
+  )}
+💬 Status Reply    » ${getStatus(
+    settings,
+    "statusReply"
+  )}
+👍 Status Like     » ${getStatus(
+    settings,
+    "statusLike"
+  )}
+❤️ Status React    » ${getStatus(
+    settings,
+    "statusReact"
+  )}
 
 ┌─────── ⋆⋅☆⋅⋆ ──────────┐
 👥 *GROUP SETTINGS* 👥
 └────────── ⋆⋅☆⋅⋆ ──────────┘
 
-🚫 Group Anti Spam   » ${getStatus(settings, "groupAntiSpam")}
-🗑️ Group Anti Delete » ${getStatus(settings, "groupAntiDelete")}
-👑 Admin Group       » ${getStatus(settings, "adminGroup")}
-🔒 Group Close       » ${getStatus(settings, "groupClose")}
-🔓 Group Open        » ${getStatus(settings, "groupOpen")}
+🚫 Group Anti Spam   » ${getStatus(
+    settings,
+    "groupAntiSpam"
+  )}
+🗑️ Group Anti Delete » ${getStatus(
+    settings,
+    "groupAntiDelete"
+  )}
+👑 Admin Group       » ${getStatus(
+    settings,
+    "adminGroup"
+  )}
+🔒 Group Close       » ${getStatus(
+    settings,
+    "groupClose"
+  )}
+🔓 Group Open        » ${getStatus(
+    settings,
+    "groupOpen"
+  )}
 
 ┌─────── ⋆⋅☆⋅⋆ ──────────┐
 🤖 *AI & SYSTEM* 🤖
 └────────── ⋆⋅☆⋅⋆ ──────────┘
 
-🤖 AI Chat » ${getStatus(settings, "aiChat")}
+🤖 AI Chat » ${getStatus(
+    settings,
+    "aiChat"
+  )}
 
 ╭━━━━━━━━━━━❀━━━━━━━━━━━╮
 ✨ *Aksè Pwopriyetè Sèlman* ✨
@@ -332,21 +396,60 @@ function buildSettingsInformation(
 async function handleSettings(
   sock,
   jid,
-  quoted
+  quoted,
+  sessionId
 ) {
   try {
-    // Make sure the session exists.
-    const panel =
-      settingsPanel.createSession(sock);
 
     // --------------------------------------------------------
-    // FIRST MESSAGE
-    // Detailed settings
+    // VERIFY SESSION ID
+    // --------------------------------------------------------
+
+    if (!sessionId) {
+      await sock.sendMessage(
+        jid,
+        {
+          text:
+`❌ *SESSION PA JWENN*
+
+Mwen pa kapab idantifye session bot sa a.
+
+Tanpri rekonekte bot la epi eseye:
+➜ *.settings*`
+        },
+        {
+          quoted
+        }
+      );
+
+      return;
+    }
+
+    // --------------------------------------------------------
+    // MAKE SURE PANEL SESSION EXISTS
+    // IMPORTANT:
+    // Use the SAME WhatsApp sessionId.
+    // --------------------------------------------------------
+
+    const panel =
+      settingsPanel.createSession(
+        sock,
+        sessionId
+      );
+
+    if (!panel) {
+      throw new Error(
+        "Settings session lan pa kapab kreye."
+      );
+    }
+
+    // --------------------------------------------------------
+    // SETTINGS INFORMATION
     // --------------------------------------------------------
 
     const settingsText =
       buildSettingsInformation(
-        panel.sessionId
+        sessionId
       );
 
     await sock.sendMessage(
@@ -360,14 +463,14 @@ async function handleSettings(
     );
 
     // --------------------------------------------------------
-    // SECOND MESSAGE
-    // Code + Settings Link + COPY BUTTON
+    // SETTINGS CODE + PANEL LINK
     // --------------------------------------------------------
 
     await settingsPanel.sendPanelLink(
       sock,
       jid,
-      quoted
+      quoted,
+      sessionId
     );
 
   } catch (error) {
@@ -376,23 +479,31 @@ async function handleSettings(
       error?.message || error
     );
 
-    await sock.sendMessage(
-      jid,
-      {
-        text:
+    try {
+      await sock.sendMessage(
+        jid,
+        {
+          text:
 `❌ *ERÈ SETTINGS*
 
 Mwen pa kapab kreye Settings Session lan kounya.
 
-Tanpri eseye:
+Tanpri eseye ankò:
 ➜ *.settings*
 
 🚀 *TOPFEROS TECH*`
-      },
-      {
-        quoted
-      }
-    );
+        },
+        {
+          quoted
+        }
+      );
+    } catch (sendError) {
+      console.error(
+        "❌ SETTINGS ERROR MESSAGE:",
+        sendError?.message ||
+        sendError
+      );
+    }
   }
 }
 
@@ -402,17 +513,42 @@ Tanpri eseye:
 
 async function handleMessage(
   sock,
-  message
+  message,
+  sessionId
 ) {
   try {
+
+    // --------------------------------------------------------
+    // BASIC VALIDATION
+    // --------------------------------------------------------
+
     if (!sock || !message) {
       return;
     }
 
-    // Ignore messages sent by the bot itself.
+    // --------------------------------------------------------
+    // SESSION VALIDATION
+    // --------------------------------------------------------
+
+    if (!sessionId) {
+      console.warn(
+        "⚠️ Message received without sessionId."
+      );
+
+      return;
+    }
+
+    // --------------------------------------------------------
+    // IGNORE BOT'S OWN MESSAGE
+    // --------------------------------------------------------
+
     if (message?.key?.fromMe) {
       return;
     }
+
+    // --------------------------------------------------------
+    // GET JID
+    // --------------------------------------------------------
 
     const jid =
       message?.key?.remoteJid;
@@ -421,18 +557,27 @@ async function handleMessage(
       return;
     }
 
-    // Ignore status broadcasts.
+    // --------------------------------------------------------
+    // IGNORE STATUS
+    // --------------------------------------------------------
+
     if (
       jid === "status@broadcast"
     ) {
       return;
     }
 
+    // --------------------------------------------------------
+    // GET MESSAGE TEXT
+    // --------------------------------------------------------
+
     const rawText =
       getMessageText(message);
 
     const text =
-      String(rawText || "").trim();
+      String(
+        rawText || ""
+      ).trim();
 
     if (!text) {
       return;
@@ -446,6 +591,10 @@ async function handleMessage(
       return;
     }
 
+    // --------------------------------------------------------
+    // COMMAND LINE
+    // --------------------------------------------------------
+
     const commandLine =
       text
         .slice(PREFIX.length)
@@ -454,6 +603,10 @@ async function handleMessage(
     if (!commandLine) {
       return;
     }
+
+    // --------------------------------------------------------
+    // COMMAND PARTS
+    // --------------------------------------------------------
 
     const parts =
       commandLine.split(/\s+/);
@@ -526,7 +679,8 @@ async function handleMessage(
       await handleSettings(
         sock,
         jid,
-        message
+        message,
+        sessionId
       );
 
       return;
