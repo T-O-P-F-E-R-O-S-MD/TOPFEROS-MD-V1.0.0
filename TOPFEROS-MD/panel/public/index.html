@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
 
@@ -17,7 +18,7 @@
 
   <link
     rel="stylesheet"
-    href="/style.css?v=30"
+    href="/style.css?v=31"
   >
 </head>
 
@@ -109,7 +110,10 @@
         🔐 GET PAIRING CODE
       </button>
 
-      <!-- PAIRING CODE -->
+
+      <!-- =========================
+           PAIRING CODE
+      ========================== -->
 
       <div
         id="pairingBox"
@@ -125,6 +129,15 @@
           ----
         </div>
 
+        <button
+          id="copyPairingButton"
+          type="button"
+          class="secondaryButton"
+          onclick="copyPairingCode()"
+        >
+          📋 COPY CODE
+        </button>
+
         <p class="description">
           Open WhatsApp on your phone and enter
           this code when requested.
@@ -132,7 +145,10 @@
 
       </div>
 
-      <!-- CONNECTION STATUS -->
+
+      <!-- =========================
+           CONNECTION STATUS
+      ========================== -->
 
       <div
         id="connectStatus"
@@ -207,8 +223,6 @@
       class="hidden"
     >
 
-      <!-- DASHBOARD HEADER -->
-
       <div class="dashboardHeader">
 
         <img
@@ -226,9 +240,7 @@
       </div>
 
 
-      <!-- =========================
-           BOT INFORMATION
-      ========================== -->
+      <!-- BOT INFORMATION -->
 
       <div class="card">
 
@@ -285,9 +297,7 @@
       </div>
 
 
-      <!-- =========================
-           GENERAL
-      ========================== -->
+      <!-- GENERAL -->
 
       <div class="card">
 
@@ -301,9 +311,7 @@
       </div>
 
 
-      <!-- =========================
-           PROTECTION
-      ========================== -->
+      <!-- PROTECTION -->
 
       <div class="card">
 
@@ -317,9 +325,7 @@
       </div>
 
 
-      <!-- =========================
-           STATUS
-      ========================== -->
+      <!-- STATUS -->
 
       <div class="card">
 
@@ -333,9 +339,7 @@
       </div>
 
 
-      <!-- =========================
-           GROUP
-      ========================== -->
+      <!-- GROUP -->
 
       <div class="card">
 
@@ -349,9 +353,7 @@
       </div>
 
 
-      <!-- =========================
-           AI
-      ========================== -->
+      <!-- AI -->
 
       <div class="card">
 
@@ -365,9 +367,7 @@
       </div>
 
 
-      <!-- =========================
-           SAVE
-      ========================== -->
+      <!-- SAVE -->
 
       <button
         id="saveButton"
@@ -384,9 +384,7 @@
       ></p>
 
 
-      <!-- =========================
-           LOGOUT
-      ========================== -->
+      <!-- LOGOUT -->
 
       <button
         id="logoutButton"
@@ -397,10 +395,6 @@
         🚪 LOGOUT
       </button>
 
-
-      <!-- =========================
-           FOOTER
-      ========================== -->
 
       <footer>
         ==========================<br>
@@ -417,7 +411,7 @@
        JAVASCRIPT
   ========================== -->
 
-  <script src="/app.js?v=30"></script>
+  <script src="/app.js?v=31"></script>
 
 </body>
 </html>
