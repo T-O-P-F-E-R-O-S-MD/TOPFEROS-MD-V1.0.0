@@ -252,11 +252,6 @@ function setupPhoneInput() {
 
 async function requestPairingCode() {
 
-  /*
-   * Pa gen nouvo request
-   * si youn deja ap fèt.
-   */
-
   if (
     pairingInProgress
   ) {
@@ -265,11 +260,6 @@ async function requestPairingCode() {
 
   }
 
-
-  /*
-   * Pa kite user mande
-   * plizyè code pandan cooldown.
-   */
 
   if (
     pairingCooldownSeconds > 0
@@ -296,6 +286,9 @@ async function requestPairingCode() {
 
   const codeElement =
     $("pairingCode");
+
+  const copyButton =
+    $("copyPairingButton");
 
   const status =
     $("connectStatus");
@@ -373,6 +366,17 @@ async function requestPairingCode() {
   }
 
 
+  if (copyButton) {
+
+    copyButton.disabled =
+      true;
+
+    copyButton.textContent =
+      "📋 COPY CODE";
+
+  }
+
+
   if (status) {
 
     status.textContent =
@@ -444,11 +448,6 @@ async function requestPairingCode() {
           "PAIRING_FAILED"
         );
 
-      /*
-       * Si server la bay yon
-       * cooldown, pran kantite
-       * segonn li bay la.
-       */
 
       if (
         data.cooldownSeconds
@@ -462,7 +461,44 @@ async function requestPairingCode() {
 
       }
 
+
       throw error;
+
+    }
+
+
+    /* =========================
+       VALIDATE SERVER CODE
+    ========================== */
+
+    const rawCode =
+      String(
+        data.code || ""
+      )
+      .replace(/\s/g, "")
+      .toUpperCase();
+
+
+    if (
+      !rawCode
+    ) {
+
+      throw new Error(
+        "SERVER_RETURNED_EMPTY_PAIRING_CODE"
+      );
+
+    }
+
+
+    if (
+      rawCode.length !== 8
+    ) {
+
+      console.warn(
+        "Unexpected pairing code length:",
+        rawCode.length,
+        rawCode
+      );
 
     }
 
@@ -475,8 +511,19 @@ async function requestPairingCode() {
 
       codeElement.textContent =
         formatPairingCode(
-          data.code
+          rawCode
         );
+
+    }
+
+
+    if (copyButton) {
+
+      copyButton.disabled =
+        false;
+
+      copyButton.textContent =
+        "📋 COPY CODE";
 
     }
 
@@ -504,10 +551,9 @@ async function requestPairingCode() {
     );
 
 
-    /*
-     * Cooldown apre yon
-     * pairing code reyisi.
-     */
+    /* =========================
+       COOLDOWN
+    ========================== */
 
     startPairingCooldown(
       Number(
@@ -554,11 +600,6 @@ async function requestPairingCode() {
       false;
 
 
-    /*
-     * Pa reaktive bouton an
-     * si cooldown toujou aktif.
-     */
-
     updatePairingCooldownUI();
 
   }
@@ -599,6 +640,170 @@ function formatPairingCode(
   return clean
     .match(/.{1,4}/g)
     .join(" ");
+
+}
+
+
+/* =========================
+   COPY PAIRING CODE
+========================= */
+
+async function copyPairingCode() {
+
+  const codeElement =
+    $("pairingCode");
+
+  const button =
+    $("copyPairingButton");
+
+
+  if (!codeElement) {
+
+    return;
+
+  }
+
+
+  const code =
+    codeElement.textContent
+      .trim()
+      .replace(/\s/g, "")
+      .toUpperCase();
+
+
+  if (
+    !code ||
+    code === "----"
+  ) {
+
+    showPairingMessage(
+      "❌ Pa gen Pairing Code pou kopye.",
+      true
+    );
+
+    return;
+
+  }
+
+
+  try {
+
+    /* =========================
+       MODERN CLIPBOARD
+    ========================== */
+
+    if (
+      navigator.clipboard &&
+      window.isSecureContext
+    ) {
+
+      await navigator.clipboard.writeText(
+        code
+      );
+
+    } else {
+
+      /* =========================
+         FALLBACK
+      ========================== */
+
+      const textarea =
+        document.createElement(
+          "textarea"
+        );
+
+      textarea.value =
+        code;
+
+      textarea.style.position =
+        "fixed";
+
+      textarea.style.left =
+        "-9999px";
+
+      textarea.style.top =
+        "0";
+
+      textarea.setAttribute(
+        "readonly",
+        ""
+      );
+
+      document.body.appendChild(
+        textarea
+      );
+
+      textarea.focus();
+
+      textarea.select();
+
+      textarea.setSelectionRange(
+        0,
+        textarea.value.length
+      );
+
+      const copied =
+        document.execCommand(
+          "copy"
+        );
+
+      textarea.remove();
+
+      if (!copied) {
+
+        throw new Error(
+          "COPY_FAILED"
+        );
+
+      }
+
+    }
+
+
+    if (button) {
+
+      button.disabled =
+        true;
+
+      button.textContent =
+        "✅ COPIED!";
+
+      setTimeout(
+        () => {
+
+          button.disabled =
+            false;
+
+          button.textContent =
+            "📋 COPY CODE";
+
+        },
+        2000
+      );
+
+    }
+
+
+    showPairingMessage(
+      "✅ Pairing Code la kopye. Ou ka kole li nan WhatsApp.",
+      false
+    );
+
+
+  } catch (error) {
+
+    console.error(
+      "Copy pairing code error:",
+      error
+    );
+
+
+    showPairingMessage(
+      "❌ Pa kapab kopye code la. Seleksyone code la epi kopye li manyèlman.",
+      true
+    );
+
+  }
 
 }
 
@@ -709,10 +914,6 @@ function updatePairingCooldownUI() {
   }
 
 
-  /*
-   * Pairing request ap fèt.
-   */
-
   if (
     pairingInProgress
   ) {
@@ -728,10 +929,6 @@ function updatePairingCooldownUI() {
   }
 
 
-  /*
-   * Cooldown aktif.
-   */
-
   if (
     pairingCooldownSeconds > 0
   ) {
@@ -746,10 +943,6 @@ function updatePairingCooldownUI() {
 
   }
 
-
-  /*
-   * Cooldown fini.
-   */
 
   button.disabled =
     false;
@@ -853,10 +1046,6 @@ async function checkBotStatus() {
     }
 
 
-    /* =========================
-       BOT CONNECTED
-    ========================== */
-
     if (
       data.connected
     ) {
@@ -868,12 +1057,6 @@ async function checkBotStatus() {
 
 
       stopConnectionMonitor();
-
-
-      /*
-       * Pairing cooldown pa
-       * nesesè ankò apre bot la konekte.
-       */
 
       stopPairingCooldown();
 
@@ -986,11 +1169,6 @@ async function findConnectedSession(
   number = ""
 ) {
 
-  /*
-   * If URL already contains
-   * a session ID, validate it.
-   */
-
   if (
     sessionId
   ) {
@@ -1011,12 +1189,6 @@ async function findConnectedSession(
 
   }
 
-
-  /*
-   * Current backend creates
-   * Settings Session when
-   * WhatsApp becomes connected.
-   */
 
   if (
     number
@@ -1490,7 +1662,7 @@ function renderSettings(
 
 
   for (
-    const [key, label]
+ const [key, label]
     of list
   ) {
 
@@ -1589,10 +1761,6 @@ function renderSettings(
           input.checked;
 
 
-        /* =========================
-           PUBLIC / PRIVATE
-        ========================== */
-
         if (
           settingKey ===
             "publicMode" &&
@@ -1601,7 +1769,6 @@ function renderSettings(
 
           settings.privateMode =
             false;
-
 
           refreshSwitch(
             "privateMode"
@@ -1619,17 +1786,12 @@ function renderSettings(
           settings.publicMode =
             false;
 
-
           refreshSwitch(
             "publicMode"
           );
 
         }
 
-
-        /* =========================
-           GROUP OPEN / CLOSE
-        ========================== */
 
         if (
           settingKey ===
@@ -1639,7 +1801,6 @@ function renderSettings(
 
           settings.groupOpen =
             false;
-
 
           refreshSwitch(
             "groupOpen"
@@ -1656,7 +1817,6 @@ function renderSettings(
 
           settings.groupClose =
             false;
-
 
           refreshSwitch(
             "groupClose"
@@ -1845,7 +2005,6 @@ async function saveSettings() {
       saveButton.disabled =
         false;
 
-
       saveButton.textContent =
         "💾 SAVE SETTINGS";
 
@@ -1905,7 +2064,6 @@ async function logoutPanel() {
 
 
   stopPairingCooldown();
-
 
   stopConnectionMonitor();
 
@@ -1979,6 +2137,10 @@ window.selectLanguage =
 
 window.requestPairingCode =
   requestPairingCode;
+
+
+window.copyPairingCode =
+  copyPairingCode;
 
 
 window.verifySettings =
