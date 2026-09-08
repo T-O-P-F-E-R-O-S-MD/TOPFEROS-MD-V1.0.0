@@ -1,13 +1,16 @@
 "use strict";
 
 const crypto = require("crypto");
+const sessionManager = require("../src/sessionManager");
 
 const PANEL_URL =
   process.env.SETTINGS_PANEL_URL ||
   process.env.PANEL_URL ||
   "https://topferos-md-v1-0-0.onrender.com";
 
-const sessions = new Map();
+/* ======================================================
+   DEFAULT SETTINGS
+====================================================== */
 
 const defaultSettings = {
   publicMode: true,
@@ -36,6 +39,10 @@ const defaultSettings = {
   aiChat: false
 };
 
+/* ======================================================
+   DEFAULT BOT INFORMATION
+====================================================== */
+
 const defaultBotInformation = {
   name: "TOPFEROS MD",
   number: "",
@@ -43,16 +50,16 @@ const defaultBotInformation = {
   mode: "Public"
 };
 
-function generateCode() {
-  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-  let code = "";
+/* ======================================================
+   LOCAL PANEL SESSION CACHE
+   Key = SAME sessionId from sessionManager
+====================================================== */
 
-  for (let i = 0; i < 6; i++) {
-    code += chars[crypto.randomInt(0, chars.length)];
-  }
+const sessions = new Map();
 
-  return code;
-}
+/* ======================================================
+   HELPERS
+====================================================== */
 
 function normalizeNumber(number) {
   return String(number || "").replace(/\D/g, "");
@@ -61,45 +68,305 @@ function normalizeNumber(number) {
 function getPhoneFromSocket(sock) {
   try {
     const jid = sock?.user?.id || "";
-    return normalizeNumber(jid.split(":")[0].split("@")[0]);
+
+    return normalizeNumber(
+      jid.split(":")[0].split("@")[0]
+    );
   } catch {
     return "";
   }
 }
 
-function createNewSession(sock, number = "") {
+function generateCode() {
+  const chars =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+
+  let code = "";
+
+  for (let i = 0; i < 6; i++) {
+    code += chars[
+      crypto.randomInt(0, chars.length)
+    ];
+  }
+
+  return code;
+}
+
+function getPanelLink(sessionId) {
+  return `${PANEL_URL}/?session=${encodeURIComponent(
+    sessionId
+  )}`;
+}
+
+/* ======================================================
+   GET / CREATE PANEL SESSION
+====================================================== */
+
+function ensureSession(sessionId, number = "", sock = null) {
+  if (!sessionId) return null;
+
+  let session = sessions.get(sessionId);
+
+  const waSession =
+    sessionManager.getSession(sessionId);
+
+  if (!waSession) {
+    return null;
+  }
+
   const phoneNumber =
     normalizeNumber(number) ||
+    normalizeNumber(waSession.number) ||
     getPhoneFromSocket(sock);
 
-  const sessionId = crypto.randomBytes(18).toString("hex");
+  if (!session) {
+    session = {
+      sessionId,
 
-  const session = {
-    sessionId,
-    number: phoneNumber,
-    code: generateCode(),
-    authenticated: false,
-    createdAt: Date.now(),
-    settings: { ...defaultSettings },
-    botInformation: {
-      ...defaultBotInformation,
-      number: phoneNumber
-    },
-    socket: sock || null
-  };
+      number: phoneNumber,
 
-  sessions.set(sessionId, session);
+      code: generateCode(),
+
+      authenticated: false,
+
+      createdAt: Date.now(),
+
+      updatedAt: Date.now(),
+
+      settings: {
+        ...defaultSettings
+      },
+
+      botInformation: {
+        ...defaultBotInformation,
+        number: phoneNumber
+      },
+
+      socket: sock || null
+    };
+
+    sessions.set(sessionId, session);
+  } else {
+    if (phoneNumber) {
+      session.number = phoneNumber;
+      session.botInformation.number = phoneNumber;
+    }
+
+    if (sock) {
+      session.socket = sock;
+    }
+
+    session.updatedAt = Date.now();
+  }
 
   return session;
 }
 
-function findSessionByNumber(number) {
-  const phoneNumber = normalizeNumber(number);
+/* ======================================================
+   CREATE NEW PANEL SESSION
+   IMPORTANT:
+   DOES NOT CREATE A NEW sessionId
+====================================================== */
 
-  if (!phoneNumber) return null;
+function createNewSession(sock = null, number = "", sessionId = null) {
+  let id = sessionId;
 
+  /*
+   * If a sessionId was not supplied,
+   * try to find the WhatsApp session by number.
+   */
+  if (!id && number) {
+    const normalized = normalizeNumber(number);
+
+    const waSession =
+      sessionManager.getSessionByNumber(
+        normalized
+      );
+
+    if (waSession) {
+      id = waSession.sessionId;
+    }
+  }
+
+  /*
+   * Try to find session from socket.
+   */
+  if (!id && sock) {
+    const existing =
+      sessionManager.getSessionBySocket?.(sock);
+
+    if (existing) {
+      id = existing.sessionId;
+    }
+  }
+
+  /*
+   * We MUST NOT invent a second session ID here.
+   */
+  if (!id) {
+    return null;
+  }
+
+  return ensureSession(
+    id,
+    number,
+    sock
+  );
+}
+
+/* ======================================================
+   CREATE / GET SESSION FROM SOCKET
+====================================================== */
+
+function createSession(sock, sessionId = null) {
+  let id = sessionId;
+
+  /*
+   * First priority:
+   * explicitly supplied sessionId.
+   */
+  if (id) {
+    const session =
+      ensureSession(id, "", sock);
+
+    if (!session) return null;
+
+    return formatSession(session);
+  }
+
+  /*
+   * Find WhatsApp session by socket.
+   */
+  if (sock) {
+    const waSession =
+      sessionManager.getSessionBySocket?.(sock);
+
+    if (waSession) {
+      const session =
+        ensureSession(
+          waSession.sessionId,
+          waSession.number,
+          sock
+        );
+
+      return session
+        ? formatSession(session)
+        : null;
+    }
+
+    /*
+     * If the socket is connected and we can
+     * read its number, find the WA session.
+     */
+    const number =
+      getPhoneFromSocket(sock);
+
+    if (number) {
+      const waSession =
+        sessionManager.getSessionByNumber(
+          number
+        );
+
+      if (waSession) {
+        const session =
+          ensureSession(
+            waSession.sessionId,
+            number,
+            sock
+          );
+
+        return session
+          ? formatSession(session)
+          : null;
+      }
+    }
+  }
+
+  return null;
+}
+
+/* ======================================================
+   FORMAT SESSION
+====================================================== */
+
+function formatSession(session) {
+  return {
+    sessionId: session.sessionId,
+
+    number: session.number,
+
+    code: session.code,
+
+    link: getPanelLink(
+      session.sessionId
+    )
+  };
+}
+
+/* ======================================================
+   GET SESSION
+====================================================== */
+
+function getSession(sessionId) {
+  if (!sessionId) return null;
+
+  const id = String(sessionId);
+
+  let session = sessions.get(id);
+
+  /*
+   * If panel cache doesn't have it yet,
+   * check the real WhatsApp session manager.
+   */
+  if (!session) {
+    const waSession =
+      sessionManager.getSession(id);
+
+    if (!waSession) {
+      return null;
+    }
+
+    session = ensureSession(
+      id,
+      waSession.number,
+      waSession.socket || null
+    );
+  }
+
+  return session || null;
+}
+
+/* ======================================================
+   GET SESSION BY NUMBER
+====================================================== */
+
+function getSessionByNumber(number) {
+  const normalized =
+    normalizeNumber(number);
+
+  if (!normalized) return null;
+
+  /*
+   * Prefer WhatsApp SessionManager.
+   */
+  const waSession =
+    sessionManager.getSessionByNumber(
+      normalized
+    );
+
+  if (waSession) {
+    return ensureSession(
+      waSession.sessionId,
+      normalized,
+      waSession.socket || null
+    );
+  }
+
+  /*
+   * Fallback to panel sessions.
+   */
   for (const session of sessions.values()) {
-    if (session.number === phoneNumber) {
+    if (session.number === normalized) {
       return session;
     }
   }
@@ -107,7 +374,30 @@ function findSessionByNumber(number) {
   return null;
 }
 
-function findSessionBySocket(sock) {
+/* ======================================================
+   GET SESSION BY SOCKET
+====================================================== */
+
+function getSessionBySocket(sock) {
+  if (!sock) return null;
+
+  /*
+   * Prefer WhatsApp SessionManager.
+   */
+  const waSession =
+    sessionManager.getSessionBySocket?.(sock);
+
+  if (waSession) {
+    return ensureSession(
+      waSession.sessionId,
+      waSession.number,
+      sock
+    );
+  }
+
+  /*
+   * Fallback.
+   */
   for (const session of sessions.values()) {
     if (session.socket === sock) {
       return session;
@@ -117,75 +407,117 @@ function findSessionBySocket(sock) {
   return null;
 }
 
-function setBotConnected(sock) {
-  const number = getPhoneFromSocket(sock);
+/* ======================================================
+   BOT CONNECTED
+====================================================== */
 
-  let session = findSessionByNumber(number);
+function setBotConnected(sock, sessionId = null) {
+  if (!sock) return null;
 
-  if (!session) {
-    session = createNewSession(sock, number);
-  } else {
-    session.socket = sock;
+  let id = sessionId;
 
-    if (number) {
-      session.number = number;
-      session.botInformation.number = number;
+  /*
+   * Find exact WhatsApp session.
+   */
+  if (!id) {
+    const waSession =
+      sessionManager.getSessionBySocket?.(sock);
+
+    if (waSession) {
+      id = waSession.sessionId;
     }
   }
+
+  /*
+   * Fallback using WhatsApp number.
+   */
+  if (!id) {
+    const number =
+      getPhoneFromSocket(sock);
+
+    if (number) {
+      const waSession =
+        sessionManager.getSessionByNumber(
+          number
+        );
+
+      if (waSession) {
+        id = waSession.sessionId;
+      }
+    }
+  }
+
+  if (!id) {
+    console.error(
+      "❌ setBotConnected: WhatsApp session not found"
+    );
+
+    return null;
+  }
+
+  const session =
+    ensureSession(
+      id,
+      getPhoneFromSocket(sock),
+      sock
+    );
+
+  if (!session) return null;
+
+  session.socket = sock;
+  session.authenticated = false;
+  session.updatedAt = Date.now();
 
   return session;
 }
 
-function setBotDisconnected(sock, remove = false) {
-  if (!sock) return;
+/* ======================================================
+   BOT DISCONNECTED
+====================================================== */
 
-  const session = findSessionBySocket(sock);
+function setBotDisconnected(
+  sock,
+  remove = false,
+  sessionId = null
+) {
+  let session = null;
 
-  if (!session) return;
+  if (sessionId) {
+    session = getSession(sessionId);
+  }
+
+  if (!session && sock) {
+    session = getSessionBySocket(sock);
+  }
+
+  if (!session) return false;
 
   session.socket = null;
+  session.updatedAt = Date.now();
 
+  /*
+   * Do NOT delete the panel session
+   * when WhatsApp temporarily disconnects.
+   */
   if (remove) {
-    sessions.delete(session.sessionId);
-  }
-}
-
-function createSession(sock) {
-  let session = findSessionBySocket(sock);
-
-  if (session) {
-    return {
-      sessionId: session.sessionId,
-      number: session.number,
-      code: session.code,
-      link: `${PANEL_URL}/?session=${session.sessionId}`
-    };
+    sessions.delete(
+      session.sessionId
+    );
   }
 
-  const number = getPhoneFromSocket(sock);
-
-  session = findSessionByNumber(number);
-
-  if (!session) {
-    session = createNewSession(sock, number);
-  } else {
-    session.socket = sock;
-  }
-
-  return {
-    sessionId: session.sessionId,
-    number: session.number,
-    code: session.code,
-    link: `${PANEL_URL}/?session=${session.sessionId}`
-  };
+  return true;
 }
 
-function getSession(sessionId) {
-  return sessions.get(String(sessionId || "")) || null;
-}
+/* ======================================================
+   VERIFY SETTINGS CODE
+====================================================== */
 
-function verifySession(sessionId, code) {
-  const session = getSession(sessionId);
+function verifySession(
+  sessionId,
+  code
+) {
+  const session =
+    getSession(sessionId);
 
   if (!session) {
     return {
@@ -194,9 +526,14 @@ function verifySession(sessionId, code) {
     };
   }
 
+  const submitted =
+    String(code || "")
+      .trim()
+      .toUpperCase();
+
   if (
-    String(code || "").trim().toUpperCase() !==
-    session.code
+    !submitted ||
+    submitted !== session.code
   ) {
     return {
       success: false,
@@ -205,6 +542,7 @@ function verifySession(sessionId, code) {
   }
 
   session.authenticated = true;
+  session.updatedAt = Date.now();
 
   return {
     success: true,
@@ -212,69 +550,163 @@ function verifySession(sessionId, code) {
   };
 }
 
+/* ======================================================
+   AUTHENTICATION
+====================================================== */
+
 function isAuthenticated(sessionId) {
-  const session = getSession(sessionId);
+  const session =
+    getSession(sessionId);
 
-  return !!(session && session.authenticated);
+  return Boolean(
+    session &&
+    session.authenticated
+  );
 }
 
-function getSettings(sessionId) {
-  const session = getSession(sessionId);
+/* ======================================================
+   LOGOUT PANEL ONLY
+====================================================== */
 
-  if (!session) return null;
-
-  return { ...session.settings };
-}
-
-function getBotInformation(sessionId) {
-  const session = getSession(sessionId);
-
-  if (!session) return null;
-
-  return { ...session.botInformation };
-}
-
-function setSetting(sessionId, key, value) {
-  const session = getSession(sessionId);
+function logoutSession(sessionId) {
+  const session =
+    getSession(sessionId);
 
   if (!session) return false;
 
-  if (!Object.prototype.hasOwnProperty.call(defaultSettings, key)) {
-    return false;
-  }
-
-  session.settings[key] = Boolean(value);
-
-  if (key === "publicMode" && value) {
-    session.settings.privateMode = false;
-  }
-
-  if (key === "privateMode" && value) {
-    session.settings.publicMode = false;
-  }
-
-  if (key === "groupClose" && value) {
-    session.settings.groupOpen = false;
-  }
-
-  if (key === "groupOpen" && value) {
-    session.settings.groupClose = false;
-  }
+  session.authenticated = false;
+  session.updatedAt = Date.now();
 
   return true;
 }
 
-function applySettings(sessionId, newSettings = {}) {
-  const session = getSession(sessionId);
+/* ======================================================
+   GET SETTINGS
+====================================================== */
+
+function getSettings(sessionId) {
+  const session =
+    getSession(sessionId);
 
   if (!session) return null;
 
-  for (const key of Object.keys(defaultSettings)) {
-    if (Object.prototype.hasOwnProperty.call(newSettings, key)) {
-      session.settings[key] = Boolean(newSettings[key]);
+  return {
+    ...session.settings
+  };
+}
+
+/* ======================================================
+   GET BOT INFORMATION
+====================================================== */
+
+function getBotInformation(sessionId) {
+  const session =
+    getSession(sessionId);
+
+  if (!session) return null;
+
+  return {
+    ...session.botInformation
+  };
+}
+
+/* ======================================================
+   SET ONE SETTING
+====================================================== */
+
+function setSetting(
+  sessionId,
+  key,
+  value
+) {
+  const session =
+    getSession(sessionId);
+
+  if (!session) return false;
+
+  if (
+    !Object.prototype.hasOwnProperty.call(
+      defaultSettings,
+      key
+    )
+  ) {
+    return false;
+  }
+
+  session.settings[key] =
+    Boolean(value);
+
+  /*
+   * Public / Private are mutually exclusive.
+   */
+  if (
+    key === "publicMode" &&
+    session.settings.publicMode
+  ) {
+    session.settings.privateMode = false;
+  }
+
+  if (
+    key === "privateMode" &&
+    session.settings.privateMode
+  ) {
+    session.settings.publicMode = false;
+  }
+
+  /*
+   * Group Open / Close are mutually exclusive.
+   */
+  if (
+    key === "groupClose" &&
+    session.settings.groupClose
+  ) {
+    session.settings.groupOpen = false;
+  }
+
+  if (
+    key === "groupOpen" &&
+    session.settings.groupOpen
+  ) {
+    session.settings.groupClose = false;
+  }
+
+  updateMode(session);
+
+  session.updatedAt = Date.now();
+
+  return true;
+}
+
+/* ======================================================
+   APPLY SETTINGS
+====================================================== */
+
+function applySettings(
+  sessionId,
+  newSettings = {}
+) {
+  const session =
+    getSession(sessionId);
+
+  if (!session) return null;
+
+  for (
+    const key of Object.keys(defaultSettings)
+  ) {
+    if (
+      Object.prototype.hasOwnProperty.call(
+        newSettings,
+        key
+      )
+    ) {
+      session.settings[key] =
+        Boolean(newSettings[key]);
     }
   }
 
+  /*
+   * Public / Private
+   */
   if (session.settings.publicMode) {
     session.settings.privateMode = false;
   }
@@ -283,6 +715,9 @@ function applySettings(sessionId, newSettings = {}) {
     session.settings.publicMode = false;
   }
 
+  /*
+   * Group Open / Close
+   */
   if (session.settings.groupClose) {
     session.settings.groupOpen = false;
   }
@@ -291,57 +726,156 @@ function applySettings(sessionId, newSettings = {}) {
     session.settings.groupClose = false;
   }
 
-  return { ...session.settings };
+  updateMode(session);
+
+  session.updatedAt = Date.now();
+
+  return {
+    ...session.settings
+  };
 }
 
-function updateBotInformation(sessionId, information = {}) {
-  const session = getSession(sessionId);
+/* ======================================================
+   UPDATE BOT MODE
+====================================================== */
 
-  if (!session) return null;
-
-  if (typeof information.name === "string") {
-    session.botInformation.name =
-      information.name.trim() || "TOPFEROS MD";
-  }
-
-  if (typeof information.prefix === "string") {
-    session.botInformation.prefix =
-      information.prefix.trim() || ".";
-  }
-
-  session.botInformation.number = session.number;
-
+function updateMode(session) {
   session.botInformation.mode =
     session.settings.privateMode
       ? "Private"
       : "Public";
-
-  return { ...session.botInformation };
 }
 
-function isEnabled(sessionId, key) {
-  const session = getSession(sessionId);
+/* ======================================================
+   UPDATE BOT INFORMATION
+====================================================== */
 
-  if (!session) return false;
-
-  return Boolean(session.settings[key]);
-}
-
-function loadSettings(sessionId) {
-  const session = getSession(sessionId);
+function updateBotInformation(
+  sessionId,
+  information = {}
+) {
+  const session =
+    getSession(sessionId);
 
   if (!session) return null;
 
+  if (
+    typeof information.name ===
+    "string"
+  ) {
+    const name =
+      information.name.trim();
+
+    session.botInformation.name =
+      name || "TOPFEROS MD";
+  }
+
+  if (
+    typeof information.prefix ===
+    "string"
+  ) {
+    const prefix =
+      information.prefix.trim();
+
+    session.botInformation.prefix =
+      prefix || ".";
+  }
+
+  /*
+   * Number always comes from
+   * the WhatsApp session.
+   */
+  if (session.number) {
+    session.botInformation.number =
+      session.number;
+  }
+
+  updateMode(session);
+
+  session.updatedAt = Date.now();
+
   return {
-    settings: { ...session.settings },
-    botInformation: { ...session.botInformation }
+    ...session.botInformation
   };
 }
 
-async function sendPanelLink(sock, jid, quoted) {
-  if (!sock || !jid) return false;
+/* ======================================================
+   IS FEATURE ENABLED
+====================================================== */
 
-  const session = createSession(sock);
+function isEnabled(
+  sessionId,
+  key
+) {
+  const session =
+    getSession(sessionId);
+
+  if (!session) return false;
+
+  if (
+    !Object.prototype.hasOwnProperty.call(
+      defaultSettings,
+      key
+    )
+  ) {
+    return false;
+  }
+
+  return Boolean(
+    session.settings[key]
+  );
+}
+
+/* ======================================================
+   LOAD SETTINGS
+====================================================== */
+
+function loadSettings(sessionId) {
+  const session =
+    getSession(sessionId);
+
+  if (!session) return null;
+
+  updateMode(session);
+
+  return {
+    settings: {
+      ...session.settings
+    },
+
+    botInformation: {
+      ...session.botInformation
+    }
+  };
+}
+
+/* ======================================================
+   SEND SETTINGS PANEL LINK
+====================================================== */
+
+async function sendPanelLink(
+  sock,
+  jid,
+  quoted,
+  sessionId = null
+) {
+  if (!sock || !jid) {
+    return false;
+  }
+
+  const session =
+    createSession(
+      sock,
+      sessionId
+    );
+
+  if (!session) {
+    console.error(
+      "❌ sendPanelLink: session not found"
+    );
+
+    return false;
+  }
 
   const text =
 `🦁 *TOPFEROS MD SETTINGS*
@@ -359,23 +893,91 @@ ${session.link}
       {
         text
       },
-      { quoted }
+      {
+        quoted
+      }
     );
 
     return true;
   } catch (error) {
-    console.error("sendPanelLink error:", error);
+    console.error(
+      "❌ sendPanelLink error:",
+      error
+    );
+
     return false;
   }
 }
 
+/* ======================================================
+   REMOVE PANEL SESSION
+====================================================== */
+
+function removeSession(sessionId) {
+  if (!sessionId) return false;
+
+  return sessions.delete(
+    String(sessionId)
+  );
+}
+
+/* ======================================================
+   CLEAR ALL PANEL SESSIONS
+====================================================== */
+
+function clearSessions() {
+  sessions.clear();
+}
+
+/* ======================================================
+   LIST PANEL SESSIONS
+====================================================== */
+
+function listSessions() {
+  return Array.from(
+    sessions.values()
+  ).map(session => ({
+    sessionId:
+      session.sessionId,
+
+    number:
+      session.number,
+
+    authenticated:
+      Boolean(
+        session.authenticated
+      ),
+
+    connected:
+      Boolean(
+        session.socket
+      ),
+
+    createdAt:
+      session.createdAt,
+
+    updatedAt:
+      session.updatedAt
+  }));
+}
+
+/* ======================================================
+   EXPORTS
+====================================================== */
+
 module.exports = {
   PANEL_URL,
+
   sessions,
+
   defaultSettings,
   defaultBotInformation,
 
   generateCode,
+
+  normalizeNumber,
+  getPhoneFromSocket,
+
   createNewSession,
   createSession,
 
@@ -383,8 +985,12 @@ module.exports = {
   setBotDisconnected,
 
   getSession,
+  getSessionByNumber,
+  getSessionBySocket,
+
   verifySession,
   isAuthenticated,
+  logoutSession,
 
   getSettings,
   getBotInformation,
@@ -395,5 +1001,10 @@ module.exports = {
 
   isEnabled,
   loadSettings,
-  sendPanelLink
+
+  sendPanelLink,
+
+  removeSession,
+  clearSessions,
+  listSessions
 };
