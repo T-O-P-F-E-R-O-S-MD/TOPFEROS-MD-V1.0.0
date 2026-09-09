@@ -59,6 +59,44 @@ app.use(
   )
 );
 
+// ============================================================
+// ASSETS
+// ============================================================
+
+const assetsDir =
+  path.join(
+    __dirname,
+    "..",
+    "assets"
+  );
+
+app.use(
+  "/assets",
+  express.static(
+    assetsDir
+  )
+);
+
+// ============================================================
+// BACKGROUND
+// ============================================================
+
+app.get(
+  "/background.png",
+  (req, res) => {
+    res.sendFile(
+      path.join(
+        __dirname,
+        "background.png"
+      )
+    );
+  }
+);
+
+// ============================================================
+// HOME
+// ============================================================
+
 app.get(
   "/",
   (req, res) => {
@@ -148,6 +186,7 @@ app.get(
     } catch (error) {
       return res.status(500).json({
         success: false,
+
         error:
           error?.message ||
           "STATUS_ERROR"
@@ -192,8 +231,10 @@ app.post(
       ) {
         return res.status(400).json({
           success: false,
+
           error:
             "INVALID_PHONE_NUMBER",
+
           message:
             "Mete yon nimewo WhatsApp valab ak kòd peyi a."
         });
@@ -205,30 +246,8 @@ app.post(
         );
 
       // ======================================================
-      // IMPORTANT FIX
-      // Pa itilize sèlman existing.connected.
-      // Verifye socket/user la toutbon.
+      // PAIRING IN PROGRESS ONLY
       // ======================================================
-
-      if (
-        existing &&
-        sessionManager.isConnected(
-          existing.sessionId
-        )
-      ) {
-        return res.status(409).json({
-          success: false,
-
-          error:
-            "NUMBER_ALREADY_CONNECTED",
-
-          message:
-            "This WhatsApp number already has a connected session.",
-
-          sessionId:
-            existing.sessionId
-        });
-      }
 
       if (
         existing?.pairing
@@ -246,6 +265,13 @@ app.post(
             existing.sessionId
         });
       }
+
+      // ======================================================
+      // IMPORTANT
+      //
+      // Pa bloke nimewo ki deja konekte.
+      // connection.js ap jere session ki deja egziste a.
+      // ======================================================
 
       const result =
         await connection.requestPairingCode(
@@ -273,7 +299,7 @@ app.post(
 
       const status =
         error?.code ===
-        "NUMBER_ALREADY_CONNECTED"
+        "PAIRING_IN_PROGRESS"
           ? 409
           : 500;
 
@@ -311,6 +337,7 @@ app.get(
       if (!sessionId) {
         return res.json({
           success: true,
+
           session: null
         });
       }
@@ -323,6 +350,7 @@ app.get(
       if (!session) {
         return res.json({
           success: false,
+
           session: null
         });
       }
@@ -353,7 +381,11 @@ app.get(
 
           settingsLink:
             connected
-              ? `${settingsPanel.PANEL_URL || process.env.PANEL_URL || "https://topferos-md-v1-0-0.onrender.com"}/settings`
+              ? `${
+                  settingsPanel.PANEL_URL ||
+                  process.env.PANEL_URL ||
+                  "https://topferos-md-v1-0-0.onrender.com"
+                }/settings`
               : null
         }
       });
@@ -361,6 +393,7 @@ app.get(
     } catch (error) {
       return res.status(500).json({
         success: false,
+
         error:
           error?.message ||
           "CURRENT_SESSION_ERROR"
@@ -388,6 +421,7 @@ app.get(
     if (!session) {
       return res.status(404).json({
         success: false,
+
         error:
           "SESSION_NOT_FOUND"
       });
@@ -443,6 +477,7 @@ app.post(
       ) {
         return res.status(400).json({
           success: false,
+
           error:
             "SESSION_AND_CODE_REQUIRED"
         });
@@ -455,8 +490,10 @@ app.post(
       ) {
         return res.status(409).json({
           success: false,
+
           error:
             "WHATSAPP_NOT_CONNECTED",
+
           message:
             "WhatsApp session lan pa konekte."
         });
@@ -474,6 +511,7 @@ app.post(
       ) {
         return res.status(401).json({
           success: false,
+
           error:
             "INVALID_SETTINGS_CODE"
         });
@@ -499,6 +537,7 @@ app.post(
     } catch (error) {
       return res.status(500).json({
         success: false,
+
         error:
           error?.message ||
           "VERIFY_ERROR"
@@ -524,6 +563,7 @@ app.get(
       if (!sessionId) {
         return res.status(400).json({
           success: false,
+
           error:
             "SESSION_ID_REQUIRED"
         });
@@ -536,6 +576,7 @@ app.get(
       ) {
         return res.status(401).json({
           success: false,
+
           error:
             "NOT_AUTHENTICATED"
         });
@@ -558,6 +599,7 @@ app.get(
     } catch (error) {
       return res.status(500).json({
         success: false,
+
         error:
           error?.message ||
           "SETTINGS_ERROR"
@@ -583,6 +625,7 @@ app.post(
       if (!sessionId) {
         return res.status(400).json({
           success: false,
+
           error:
             "SESSION_ID_REQUIRED"
         });
@@ -595,6 +638,7 @@ app.post(
       ) {
         return res.status(401).json({
           success: false,
+
           error:
             "NOT_AUTHENTICATED"
         });
@@ -612,6 +656,7 @@ app.post(
 
       return res.json({
         success: true,
+
         settings:
           result ||
           settingsPanel.getSettings(
@@ -622,6 +667,7 @@ app.post(
     } catch (error) {
       return res.status(500).json({
         success: false,
+
         error:
           error?.message ||
           "SETTINGS_UPDATE_ERROR"
@@ -658,6 +704,7 @@ app.post(
       ) {
         return res.status(400).json({
           success: false,
+
           error:
             "INVALID_LANGUAGE"
         });
@@ -665,12 +712,14 @@ app.post(
 
       return res.json({
         success: true,
+
         language
       });
 
     } catch (error) {
       return res.status(500).json({
         success: false,
+
         error:
           "LANGUAGE_ERROR"
       });
@@ -703,6 +752,7 @@ app.post(
     } catch (error) {
       return res.status(500).json({
         success: false,
+
         error:
           error?.message ||
           "DISCONNECT_ERROR"
@@ -736,6 +786,7 @@ app.delete(
     } catch (error) {
       return res.status(500).json({
         success: false,
+
         error:
           error?.message ||
           "REMOVE_SESSION_ERROR"
@@ -753,6 +804,7 @@ app.use(
   (req, res) => {
     res.status(404).json({
       success: false,
+
       error:
         "API_ROUTE_NOT_FOUND"
     });
@@ -765,8 +817,6 @@ app.use(
 
 async function startWhatsApp() {
   try {
-    // Restore tout WhatsApp sessions ki deja egziste
-    // epi rekonekte yo otomatikman.
     if (
       typeof connection.restoreStoredSessions ===
       "function"
@@ -827,15 +877,22 @@ async function shutdown(
 
 process.once(
   "SIGTERM",
-  () => shutdown("SIGTERM")
+  () =>
+    shutdown(
+      "SIGTERM"
+    )
 );
 
 process.once(
   "SIGINT",
-  () => shutdown("SIGINT")
+  () =>
+    shutdown(
+      "SIGINT"
+    )
 );
 
 module.exports = {
   app,
+
   server
 };
