@@ -7,7 +7,7 @@
   "scripts": {
     "start": "node index.js",
     "dev": "node --watch index.js",
-    "portal": "node portal/server.js",
+    "portal": "node panel/server.js",
     "check": "node --check index.js"
   },
   "keywords": [
@@ -25,7 +25,7 @@
     "node": ">=20.0.0"
   },
   "dependencies": {
-    "@whiskeysockets/baileys": "latest",
+    "@whiskeysockets/baileys": "6.7.21",
     "axios": "latest",
     "dotenv": "latest",
     "express": "latest",
