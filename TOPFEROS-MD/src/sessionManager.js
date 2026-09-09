@@ -4,6 +4,10 @@ const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
 
+// ============================================================
+// AUTH ROOT
+// ============================================================
+
 const AUTH_ROOT = path.join(
   __dirname,
   "..",
@@ -15,7 +19,15 @@ fs.mkdirSync(AUTH_ROOT, {
   recursive: true
 });
 
+// ============================================================
+// MEMORY
+// ============================================================
+
 const sessions = new Map();
+
+// ============================================================
+// PHONE HELPERS
+// ============================================================
 
 function cleanPhoneNumber(number) {
   return String(number || "")
@@ -28,25 +40,53 @@ function validatePhoneNumber(number) {
   );
 }
 
+// ============================================================
+// SESSION ID
+// ============================================================
+
 function generateSessionId() {
   return (
     "session-" +
     Date.now() +
     "-" +
-    crypto.randomBytes(4).toString("hex")
+    crypto
+      .randomBytes(4)
+      .toString("hex")
+  );
+}
+
+// ============================================================
+// PATHS
+// ============================================================
+
+function getSessionDir(sessionId) {
+  return path.join(
+    AUTH_ROOT,
+    sessionId
   );
 }
 
 function getAuthDir(sessionId) {
   return path.join(
-    AUTH_ROOT,
-    sessionId,
+    getSessionDir(sessionId),
     "auth"
   );
 }
 
-function ensureAuthDir(sessionId) {
-  const dir = getAuthDir(sessionId);
+function getSessionInfoFile(sessionId) {
+  return path.join(
+    getSessionDir(sessionId),
+    "session.json"
+  );
+}
+
+// ============================================================
+// DIRECTORY
+// ============================================================
+
+function ensureSessionDir(sessionId) {
+  const dir =
+    getSessionDir(sessionId);
 
   fs.mkdirSync(dir, {
     recursive: true
@@ -55,14 +95,120 @@ function ensureAuthDir(sessionId) {
   return dir;
 }
 
-function createSession(options = {}) {
-  const number = cleanPhoneNumber(
-    options.number
-  );
+function ensureAuthDir(sessionId) {
+  const dir =
+    getAuthDir(sessionId);
+
+  fs.mkdirSync(dir, {
+    recursive: true
+  });
+
+  return dir;
+}
+
+// ============================================================
+// SESSION METADATA
+// ============================================================
+
+function saveSessionInfo(session) {
+  if (!session?.sessionId) {
+    return false;
+  }
+
+  try {
+    ensureSessionDir(
+      session.sessionId
+    );
+
+    const data = {
+      sessionId:
+        session.sessionId,
+
+      number:
+        session.number || null,
+
+      createdAt:
+        session.createdAt ||
+        Date.now(),
+
+      updatedAt:
+        Date.now()
+    };
+
+    fs.writeFileSync(
+      getSessionInfoFile(
+        session.sessionId
+      ),
+      JSON.stringify(
+        data,
+        null,
+        2
+      ),
+      "utf8"
+    );
+
+    return true;
+
+  } catch (error) {
+    console.error(
+      "❌ SESSION INFO SAVE ERROR:",
+      error?.message || error
+    );
+
+    return false;
+  }
+}
+
+function loadSessionInfo(
+  sessionId
+) {
+  try {
+    const file =
+      getSessionInfoFile(
+        sessionId
+      );
+
+    if (
+      !fs.existsSync(file)
+    ) {
+      return null;
+    }
+
+    const raw =
+      fs.readFileSync(
+        file,
+        "utf8"
+      );
+
+    return JSON.parse(raw);
+
+  } catch (error) {
+    console.error(
+      `⚠️ SESSION INFO READ ERROR ${sessionId}:`,
+      error?.message || error
+    );
+
+    return null;
+  }
+}
+
+// ============================================================
+// CREATE SESSION
+// ============================================================
+
+function createSession(
+  options = {}
+) {
+  const number =
+    cleanPhoneNumber(
+      options.number
+    );
 
   if (
     number &&
-    !validatePhoneNumber(number)
+    !validatePhoneNumber(
+      number
+    )
   ) {
     throw new Error(
       "Invalid WhatsApp phone number."
@@ -73,30 +219,60 @@ function createSession(options = {}) {
     options.sessionId ||
     generateSessionId();
 
-  if (sessions.has(sessionId)) {
-    return sessions.get(sessionId);
+  // Already in memory
+  if (
+    sessions.has(sessionId)
+  ) {
+    return sessions.get(
+      sessionId
+    );
   }
+
+  ensureSessionDir(
+    sessionId
+  );
 
   const authDir =
     options.authDir ||
-    ensureAuthDir(sessionId);
+    ensureAuthDir(
+      sessionId
+    );
+
+  const existingInfo =
+    loadSessionInfo(
+      sessionId
+    );
 
   const session = {
     sessionId,
-    number: number || null,
+
+    number:
+      number ||
+      existingInfo?.number ||
+      null,
+
     authDir,
 
     socket: null,
 
     connected: false,
-    status: "disconnected",
+
+    status:
+      "disconnected",
 
     pairing: false,
-    pairingCode: null,
-    pairingStartedAt: null,
 
-    createdAt: Date.now(),
-    updatedAt: Date.now(),
+    pairingCode: null,
+
+    pairingStartedAt:
+      null,
+
+    createdAt:
+      existingInfo?.createdAt ||
+      Date.now(),
+
+    updatedAt:
+      Date.now(),
 
     panelSession: null
   };
@@ -106,12 +282,24 @@ function createSession(options = {}) {
     session
   );
 
+  saveSessionInfo(
+    session
+  );
+
   return session;
 }
 
-function getSession(sessionId) {
+// ============================================================
+// GET SESSION
+// ============================================================
+
+function getSession(
+  sessionId
+) {
   return sessionId
-    ? sessions.get(sessionId) || null
+    ? sessions.get(
+        sessionId
+      ) || null
     : null;
 }
 
@@ -121,15 +309,26 @@ function getAllSessions() {
   );
 }
 
-function getSessionByNumber(number) {
+// ============================================================
+// FIND BY NUMBER
+// ============================================================
+
+function getSessionByNumber(
+  number
+) {
   const phone =
-    cleanPhoneNumber(number);
+    cleanPhoneNumber(
+      number
+    );
 
   if (!phone) {
     return null;
   }
 
-  for (const session of sessions.values()) {
+  for (
+    const session
+    of sessions.values()
+  ) {
     if (
       cleanPhoneNumber(
         session.number
@@ -142,6 +341,10 @@ function getSessionByNumber(number) {
   return null;
 }
 
+// ============================================================
+// SOCKET
+// ============================================================
+
 function setSocket(
   sessionId,
   socket
@@ -153,18 +356,28 @@ function setSocket(
     return null;
   }
 
-  session.socket = socket || null;
-  session.updatedAt = Date.now();
+  session.socket =
+    socket || null;
+
+  session.updatedAt =
+    Date.now();
 
   return session;
 }
 
-function getSocket(sessionId) {
+function getSocket(
+  sessionId
+) {
   return (
-    getSession(sessionId)?.socket ||
-    null
+    getSession(
+      sessionId
+    )?.socket || null
   );
 }
+
+// ============================================================
+// NUMBER
+// ============================================================
 
 function setNumber(
   sessionId,
@@ -178,11 +391,15 @@ function setNumber(
   }
 
   const phone =
-    cleanPhoneNumber(number);
+    cleanPhoneNumber(
+      number
+    );
 
   if (
     phone &&
-    !validatePhoneNumber(phone)
+    !validatePhoneNumber(
+      phone
+    )
   ) {
     throw new Error(
       "Invalid WhatsApp phone number."
@@ -195,15 +412,26 @@ function setNumber(
   session.updatedAt =
     Date.now();
 
+  saveSessionInfo(
+    session
+  );
+
   return session;
 }
 
-function getPhoneNumber(sessionId) {
+function getPhoneNumber(
+  sessionId
+) {
   return (
-    getSession(sessionId)?.number ||
-    null
+    getSession(
+      sessionId
+    )?.number || null
   );
 }
+
+// ============================================================
+// STATUS
+// ============================================================
 
 function setStatus(
   sessionId,
@@ -217,7 +445,9 @@ function setStatus(
     return null;
   }
 
-  session.status = status;
+  session.status =
+    status;
+
   session.connected =
     Boolean(connected);
 
@@ -227,7 +457,9 @@ function setStatus(
   return session;
 }
 
-function isConnected(sessionId) {
+function isConnected(
+  sessionId
+) {
   const session =
     getSession(sessionId);
 
@@ -239,7 +471,13 @@ function isConnected(sessionId) {
   );
 }
 
-function startPairing(sessionId) {
+// ============================================================
+// PAIRING
+// ============================================================
+
+function startPairing(
+  sessionId
+) {
   const session =
     getSession(sessionId);
 
@@ -247,13 +485,20 @@ function startPairing(sessionId) {
     return null;
   }
 
-  session.pairing = true;
-  session.pairingCode = null;
+  session.pairing =
+    true;
+
+  session.pairingCode =
+    null;
+
   session.pairingStartedAt =
     Date.now();
 
-  session.status = "pairing";
-  session.connected = false;
+  session.status =
+    "pairing";
+
+  session.connected =
+    false;
 
   session.updatedAt =
     Date.now();
@@ -275,8 +520,11 @@ function setPairingCode(
   session.pairingCode =
     code || null;
 
-  session.pairing = true;
-  session.status = "pairing";
+  session.pairing =
+    true;
+
+  session.status =
+    "pairing";
 
   session.updatedAt =
     Date.now();
@@ -284,7 +532,9 @@ function setPairingCode(
   return session;
 }
 
-function getPairingInfo(sessionId) {
+function getPairingInfo(
+  sessionId
+) {
   const session =
     getSession(sessionId);
 
@@ -309,11 +559,15 @@ function getPairingInfo(sessionId) {
       session.status,
 
     connected:
-      isConnected(sessionId)
+      isConnected(
+        sessionId
+      )
   };
 }
 
-function endPairing(sessionId) {
+function endPairing(
+  sessionId
+) {
   const session =
     getSession(sessionId);
 
@@ -321,9 +575,14 @@ function endPairing(sessionId) {
     return null;
   }
 
-  session.pairing = false;
-  session.pairingCode = null;
-  session.pairingStartedAt = null;
+  session.pairing =
+    false;
+
+  session.pairingCode =
+    null;
+
+  session.pairingStartedAt =
+    null;
 
   session.updatedAt =
     Date.now();
@@ -331,51 +590,94 @@ function endPairing(sessionId) {
   return session;
 }
 
+// ============================================================
+// STORED SESSIONS
+// ============================================================
+
 function getStoredSessionIds() {
-  if (!fs.existsSync(AUTH_ROOT)) {
+  if (
+    !fs.existsSync(
+      AUTH_ROOT
+    )
+  ) {
     return [];
   }
 
   return fs
-    .readdirSync(AUTH_ROOT)
-    .filter((name) => {
-      const fullPath =
-        path.join(
-          AUTH_ROOT,
-          name
-        );
+    .readdirSync(
+      AUTH_ROOT
+    )
+    .filter(
+      (name) => {
+        const fullPath =
+          path.join(
+            AUTH_ROOT,
+            name
+          );
 
-      try {
-        return fs.statSync(
-          fullPath
-        ).isDirectory();
-      } catch {
-        return false;
+        try {
+          return fs.statSync(
+            fullPath
+          ).isDirectory();
+
+        } catch {
+          return false;
+        }
       }
-    });
+    );
 }
 
-function restoreSession(sessionId) {
+// ============================================================
+// RESTORE SESSION
+// ============================================================
+
+function restoreSession(
+  sessionId
+) {
   if (!sessionId) {
     return null;
   }
 
   const authDir =
-    getAuthDir(sessionId);
+    getAuthDir(
+      sessionId
+    );
 
-  if (!fs.existsSync(authDir)) {
+  if (
+    !fs.existsSync(
+      authDir
+    )
+  ) {
     return null;
   }
 
+  const info =
+    loadSessionInfo(
+      sessionId
+    );
+
   return createSession({
     sessionId,
+
+    number:
+      info?.number ||
+      null,
+
     authDir
   });
 }
 
-function removeSession(sessionId) {
+// ============================================================
+// REMOVE SESSION
+// ============================================================
+
+function removeSession(
+  sessionId
+) {
   const session =
-    getSession(sessionId);
+    getSession(
+      sessionId
+    );
 
   if (!session) {
     return false;
@@ -387,8 +689,7 @@ function removeSession(sessionId) {
 
   try {
     const sessionDir =
-      path.join(
-        AUTH_ROOT,
+      getSessionDir(
         sessionId
       );
 
@@ -399,6 +700,7 @@ function removeSession(sessionId) {
         force: true
       }
     );
+
   } catch (error) {
     console.error(
       "❌ AUTH REMOVE ERROR:",
@@ -408,6 +710,10 @@ function removeSession(sessionId) {
 
   return true;
 }
+
+// ============================================================
+// LIST
+// ============================================================
 
 function listSessions() {
   return getAllSessions();
@@ -419,26 +725,32 @@ function listPublicSessions() {
       (session) =>
         session.number
     )
-    .map((session) => ({
-      sessionId:
-        session.sessionId,
+    .map(
+      (session) => ({
+        sessionId:
+          session.sessionId,
 
-      number:
-        session.number,
+        number:
+          session.number,
 
-      status:
-        isConnected(
-          session.sessionId
-        )
-          ? "connected"
-          : session.status,
+        status:
+          isConnected(
+            session.sessionId
+          )
+            ? "connected"
+            : session.status,
 
-      connected:
-        isConnected(
-          session.sessionId
-        )
-    }));
+        connected:
+          isConnected(
+            session.sessionId
+          )
+      })
+    );
 }
+
+// ============================================================
+// EXPORTS
+// ============================================================
 
 module.exports = {
   AUTH_ROOT,
