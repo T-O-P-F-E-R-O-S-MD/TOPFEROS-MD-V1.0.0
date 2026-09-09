@@ -25,7 +25,9 @@ const messageHandler =
 
 const reconnectTimers = new Map();
 const startingSessions = new Set();
+const startingPromises = new Map();
 const stoppedSessions = new Set();
+const socketReadyPromises = new Map();
 
 // ============================================================
 // PHONE HELPERS
@@ -43,10 +45,7 @@ function validatePhoneNumber(number) {
 // MESSAGE HANDLER
 // ============================================================
 
-async function handleMessages(
-  sessionId,
-  messages
-) {
+async function handleMessages(sessionId, messages) {
   const socket =
     sessionManager.getSocket(sessionId);
 
@@ -63,7 +62,7 @@ async function handleMessages(
       );
     } catch (error) {
       console.error(
-        "❌ MESSAGE ERROR:",
+        `❌ MESSAGE ERROR ${sessionId}:`,
         error?.message || error
       );
     }
@@ -108,6 +107,125 @@ function scheduleReconnect(sessionId) {
     sessionId,
     timer
   );
+}
+
+// ============================================================
+// SOCKET READY
+//
+// We need to know when Baileys has actually started connecting.
+// Pairing code must NOT be requested before this point.
+//
+// IMPORTANT:
+// The listener is attached immediately when the socket is
+// created so we don't miss the "connecting" event.
+// ============================================================
+
+function createSocketReadyPromise(
+  sessionId,
+  socket
+) {
+  if (!socket) {
+    return Promise.reject(
+      new Error(
+        "WhatsApp socket is unavailable."
+      )
+    );
+  }
+
+  const existing =
+    socketReadyPromises.get(sessionId);
+
+  if (existing) {
+    return existing;
+  }
+
+  const promise =
+    new Promise((resolve, reject) => {
+      let finished = false;
+
+      const cleanup = () => {
+        try {
+          socket.ev.off(
+            "connection.update",
+            listener
+          );
+        } catch {}
+
+        socketReadyPromises.delete(
+          sessionId
+        );
+      };
+
+      const succeed = () => {
+        if (finished) {
+          return;
+        }
+
+        finished = true;
+        cleanup();
+        resolve(socket);
+      };
+
+      const fail = (error) => {
+        if (finished) {
+          return;
+        }
+
+        finished = true;
+        cleanup();
+        reject(error);
+      };
+
+      const listener = (update) => {
+        const {
+          connection,
+          lastDisconnect
+        } = update || {};
+
+        if (
+          connection === "connecting" ||
+          connection === "open"
+        ) {
+          succeed();
+          return;
+        }
+
+        if (connection === "close") {
+          const code =
+            lastDisconnect
+              ?.error
+              ?.output
+              ?.statusCode;
+
+          fail(
+            new Error(
+              `WhatsApp socket closed before it became ready. Status code: ${code || "unknown"}`
+            )
+          );
+        }
+      };
+
+      socket.ev.on(
+        "connection.update",
+        listener
+      );
+
+      // Safety timeout
+      setTimeout(() => {
+        fail(
+          new Error(
+            "WhatsApp socket did not start connecting within 30 seconds."
+          )
+        );
+      }, 30000);
+    });
+
+  socketReadyPromises.set(
+    sessionId,
+    promise
+  );
+
+  return promise;
 }
 
 // ============================================================
@@ -178,12 +296,22 @@ async function createSocket(sessionId) {
       30000
   });
 
+  // Save authentication credentials
   socket.ev.on(
     "creds.update",
     saveCreds
   );
 
+  // Store socket immediately
   sessionManager.setSocket(
+    sessionId,
+    socket
+  );
+
+  // IMPORTANT:
+  // Create readiness watcher immediately so we cannot miss
+  // the first "connecting" event.
+  createSocketReadyPromise(
     sessionId,
     socket
   );
@@ -211,7 +339,7 @@ async function startSession(sessionId) {
     );
   }
 
-  // Already really connected
+  // Already connected
   if (
     sessionManager.isConnected(
       sessionId
@@ -222,251 +350,304 @@ async function startSession(sessionId) {
 
   // Already starting
   if (
-    startingSessions.has(sessionId)
+    startingPromises.has(sessionId)
   ) {
-    return session.socket;
+    return startingPromises.get(
+      sessionId
+    );
   }
 
-  startingSessions.add(sessionId);
-  stoppedSessions.delete(sessionId);
-
-  sessionManager.setStatus(
-    sessionId,
-    "connecting",
-    false
+  stoppedSessions.delete(
+    sessionId
   );
 
-  try {
-    const socket =
-      await createSocket(sessionId);
+  const startPromise =
+    (async () => {
+      startingSessions.add(
+        sessionId
+      );
 
-    // ========================================================
-    // CONNECTION UPDATE
-    // ========================================================
+      sessionManager.setStatus(
+        sessionId,
+        "connecting",
+        false
+      );
 
-    socket.ev.on(
-      "connection.update",
-      async (update) => {
-        try {
-          const {
-            connection,
-            lastDisconnect
-          } = update || {};
+      try {
+        const socket =
+          await createSocket(
+            sessionId
+          );
 
-          // --------------------------------------------------
-          // CONNECTED
-          // --------------------------------------------------
+        // ====================================================
+        // CONNECTION UPDATE
+        // ====================================================
 
-          if (connection === "open") {
-            const number =
-              socket?.user?.id
-                ?.split(":")[0]
-                ?.replace(
-                  /@.+$/,
-                  ""
-                ) || null;
-
-            if (number) {
-              sessionManager.setNumber(
-                sessionId,
-                number
-              );
-            }
-
-            sessionManager.setSocket(
-              sessionId,
-              socket
-            );
-
-            sessionManager.setStatus(
-              sessionId,
-              "connected",
-              true
-            );
-
-            sessionManager.endPairing(
-              sessionId
-            );
-
-            startingSessions.delete(
-              sessionId
-            );
-
-            stoppedSessions.delete(
-              sessionId
-            );
-
+        socket.ev.on(
+          "connection.update",
+          async (update) => {
             try {
-              settingsPanel.setBotConnected(
-                socket,
-                sessionId
-              );
+              const {
+                connection,
+                lastDisconnect
+              } = update || {};
+
+              // ----------------------------------------------
+              // CONNECTING
+              // ----------------------------------------------
+
+              if (
+                connection === "connecting"
+              ) {
+                sessionManager.setStatus(
+                  sessionId,
+                  "connecting",
+                  false
+                );
+
+                console.log(
+                  `🔄 WHATSAPP CONNECTING: ${sessionId}`
+                );
+
+                return;
+              }
+
+              // ----------------------------------------------
+              // CONNECTED
+              // ----------------------------------------------
+
+              if (
+                connection === "open"
+              ) {
+                const number =
+                  socket?.user?.id
+                    ?.split(":")[0]
+                    ?.replace(
+                      /@.+$/,
+                      ""
+                    ) || null;
+
+                if (number) {
+                  sessionManager.setNumber(
+                    sessionId,
+                    number
+                  );
+                }
+
+                sessionManager.setSocket(
+                  sessionId,
+                  socket
+                );
+
+                sessionManager.setStatus(
+                  sessionId,
+                  "connected",
+                  true
+                );
+
+                sessionManager.endPairing(
+                  sessionId
+                );
+
+                startingSessions.delete(
+                  sessionId
+                );
+
+                stoppedSessions.delete(
+                  sessionId
+                );
+
+                try {
+                  settingsPanel.setBotConnected(
+                    socket,
+                    sessionId
+                  );
+                } catch (error) {
+                  console.error(
+                    "⚠️ SETTINGS CONNECT ERROR:",
+                    error?.message || error
+                  );
+                }
+
+                console.log(
+                  "========================================"
+                );
+
+                console.log(
+                  "✅ WHATSAPP CONNECTED"
+                );
+
+                console.log(
+                  `🆔 SESSION: ${sessionId}`
+                );
+
+                console.log(
+                  `📱 NUMBER: ${number || "unknown"}`
+                );
+
+                console.log(
+                  "========================================"
+                );
+
+                return;
+              }
+
+              // ----------------------------------------------
+              // CLOSED
+              // ----------------------------------------------
+
+              if (
+                connection === "close"
+              ) {
+                startingSessions.delete(
+                  sessionId
+                );
+
+                const code =
+                  lastDisconnect
+                    ?.error
+                    ?.output
+                    ?.statusCode;
+
+                const loggedOut =
+                  code ===
+                  DisconnectReason.loggedOut;
+
+                const replaced =
+                  code ===
+                  DisconnectReason.connectionReplaced;
+
+                sessionManager.setSocket(
+                  sessionId,
+                  null
+                );
+
+                sessionManager.endPairing(
+                  sessionId
+                );
+
+                sessionManager.setStatus(
+                  sessionId,
+                  loggedOut
+                    ? "logged_out"
+                    : "disconnected",
+                  false
+                );
+
+                try {
+                  settingsPanel.setBotDisconnected(
+                    sessionId
+                  );
+                } catch {}
+
+                console.log(
+                  "========================================"
+                );
+
+                console.log(
+                  "⚠️ WHATSAPP CONNECTION CLOSED"
+                );
+
+                console.log(
+                  `🆔 SESSION: ${sessionId}`
+                );
+
+                console.log(
+                  `⚠️ STATUS CODE: ${code || "unknown"}`
+                );
+
+                console.log(
+                  `⚠️ LOGGED OUT: ${loggedOut}`
+                );
+
+                console.log(
+                  `⚠️ REPLACED: ${replaced}`
+                );
+
+                console.log(
+                  "========================================"
+                );
+
+                if (
+                  !loggedOut &&
+                  !replaced &&
+                  !stoppedSessions.has(
+                    sessionId
+                  )
+                ) {
+                  scheduleReconnect(
+                    sessionId
+                  );
+                }
+              }
+
             } catch (error) {
               console.error(
-                "⚠️ SETTINGS CONNECT ERROR:",
+                `❌ CONNECTION UPDATE ERROR ${sessionId}:`,
                 error?.message || error
               );
             }
-
-            console.log(
-              "========================================"
-            );
-
-            console.log(
-              `✅ WHATSAPP CONNECTED`
-            );
-
-            console.log(
-              `🆔 SESSION: ${sessionId}`
-            );
-
-            console.log(
-              `📱 NUMBER: ${number || "unknown"}`
-            );
-
-            console.log(
-              "========================================"
-            );
-
-            return;
           }
-
-          // --------------------------------------------------
-          // CLOSED
-          // --------------------------------------------------
-
-          if (connection === "close") {
-            startingSessions.delete(
-              sessionId
-            );
-
-            const code =
-              lastDisconnect
-                ?.error
-                ?.output
-                ?.statusCode;
-
-            const loggedOut =
-              code ===
-              DisconnectReason.loggedOut;
-
-            const replaced =
-              code ===
-              DisconnectReason.connectionReplaced;
-
-            sessionManager.setSocket(
-              sessionId,
-              null
-            );
-
-            sessionManager.endPairing(
-              sessionId
-            );
-
-            sessionManager.setStatus(
-              sessionId,
-              loggedOut
-                ? "logged_out"
-                : "disconnected",
-              false
-            );
-
-            try {
-              settingsPanel.setBotDisconnected(
-                sessionId
-              );
-            } catch {}
-
-            console.log(
-              "========================================"
-            );
-
-            console.log(
-              `⚠️ WHATSAPP CONNECTION CLOSED`
-            );
-
-            console.log(
-              `🆔 SESSION: ${sessionId}`
-            );
-
-            console.log(
-              `⚠️ STATUS CODE: ${code || "unknown"}`
-            );
-
-            console.log(
-              `⚠️ LOGGED OUT: ${loggedOut}`
-            );
-
-            console.log(
-              "========================================"
-            );
-
-            if (
-              !loggedOut &&
-              !replaced &&
-              !stoppedSessions.has(
-                sessionId
-              )
-            ) {
-              scheduleReconnect(
-                sessionId
-              );
-            }
-          }
-
-        } catch (error) {
-          console.error(
-            `❌ CONNECTION UPDATE ERROR ${sessionId}:`,
-            error?.message || error
-          );
-        }
-      }
-    );
-
-    // ========================================================
-    // MESSAGES
-    // ========================================================
-
-    socket.ev.on(
-      "messages.upsert",
-      async ({
-        messages
-      }) => {
-        await handleMessages(
-          sessionId,
-          messages
         );
+
+        // ====================================================
+        // MESSAGES
+        // ====================================================
+
+        socket.ev.on(
+          "messages.upsert",
+          async ({
+            messages
+          }) => {
+            await handleMessages(
+              sessionId,
+              messages
+            );
+          }
+        );
+
+        return socket;
+
+      } catch (error) {
+        startingSessions.delete(
+          sessionId
+        );
+
+        sessionManager.setSocket(
+          sessionId,
+          null
+        );
+
+        sessionManager.setStatus(
+          sessionId,
+          "error",
+          false
+        );
+
+        console.error(
+          `❌ START SESSION ERROR ${sessionId}:`,
+          error?.message || error
+        );
+
+        scheduleReconnect(
+          sessionId
+        );
+
+        throw error;
       }
-    );
+    })();
 
-    return socket;
+  startingPromises.set(
+    sessionId,
+    startPromise
+  );
 
-  } catch (error) {
-    startingSessions.delete(
+  try {
+    return await startPromise;
+  } finally {
+    startingPromises.delete(
       sessionId
     );
-
-    sessionManager.setSocket(
-      sessionId,
-      null
-    );
-
-    sessionManager.setStatus(
-      sessionId,
-      "error",
-      false
-    );
-
-    console.error(
-      `❌ START SESSION ERROR ${sessionId}:`,
-      error?.message || error
-    );
-
-    scheduleReconnect(
-      sessionId
-    );
-
-    throw error;
   }
 }
 
@@ -555,6 +736,7 @@ async function requestPairingCode(number) {
       "========================================"
     );
 
+    // Lock this session into pairing state
     sessionManager.startPairing(
       sessionId
     );
@@ -573,6 +755,15 @@ async function requestPairingCode(number) {
         await startSession(
           sessionId
         );
+    } else if (
+      startingPromises.has(
+        sessionId
+      )
+    ) {
+      socket =
+        await startingPromises.get(
+          sessionId
+        );
     }
 
     if (!socket) {
@@ -582,10 +773,23 @@ async function requestPairingCode(number) {
     }
 
     // --------------------------------------------------------
-    // IMPORTANT
+    // WAIT FOR BAILEYS TO START CONNECTING
     //
-    // Pairing code must be requested while the socket
-    // is connecting. We DO NOT wait for connection=open.
+    // DO NOT wait for "open".
+    // Pairing code must be requested before WhatsApp is open.
+    // --------------------------------------------------------
+
+    console.log(
+      `⏳ Waiting for WhatsApp socket: ${sessionId}`
+    );
+
+    await createSocketReadyPromise(
+      sessionId,
+      socket
+    );
+
+    // --------------------------------------------------------
+    // REQUEST REAL PAIRING CODE
     // --------------------------------------------------------
 
     console.log(
@@ -627,11 +831,23 @@ async function requestPairingCode(number) {
     );
 
     console.log(
-      `🔑 PAIRING CODE: ${normalizedCode}`
+      "🔑 PAIRING CODE GENERATED"
     );
 
     console.log(
-      `⏳ WAITING FOR WHATSAPP: ${sessionId}`
+      `📱 NUMBER: ${phoneNumber}`
+    );
+
+    console.log(
+      `🆔 SESSION: ${sessionId}`
+    );
+
+    console.log(
+      `🔐 CODE: ${normalizedCode}`
+    );
+
+    console.log(
+      "⏳ WAITING FOR PHONE CONFIRMATION..."
     );
 
     console.log(
@@ -640,17 +856,10 @@ async function requestPairingCode(number) {
 
     return {
       success: true,
-
       sessionId,
-
-      number:
-        phoneNumber,
-
-      code:
-        normalizedCode,
-
-      status:
-        "pairing"
+      number: phoneNumber,
+      code: normalizedCode,
+      status: "pairing"
     };
 
   } catch (error) {
@@ -682,16 +891,12 @@ async function requestPairingCode(number) {
       false
     );
 
-    // IMPORTANT:
-    // Do not destroy the socket immediately if it exists.
-    // Baileys may still be handling the connection lifecycle.
-
     throw error;
   }
 }
 
 // ============================================================
-// RESTORE SESSIONS
+// RESTORE STORED SESSIONS
 // ============================================================
 
 async function restoreStoredSessions() {
@@ -752,7 +957,6 @@ async function stopSession(sessionId) {
 
   if (timer) {
     clearTimeout(timer);
-
     reconnectTimers.delete(
       sessionId
     );
@@ -819,6 +1023,14 @@ async function removeSession(
     sessionId
   );
 
+  socketReadyPromises.delete(
+    sessionId
+  );
+
+  startingPromises.delete(
+    sessionId
+  );
+
   return sessionManager.removeSession(
     sessionId
   );
@@ -829,8 +1041,13 @@ async function removeSession(
 // ============================================================
 
 module.exports = {
+  // IMPORTANT:
+  // index.js calls connection.start()
+  // without a sessionId.
+  //
+  // Therefore start MUST restore stored sessions.
   start:
-    startSession,
+    restoreStoredSessions,
 
   startSession,
 
