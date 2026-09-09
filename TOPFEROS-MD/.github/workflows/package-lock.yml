@@ -1,0 +1,46 @@
+name: Generate package-lock.json
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "TOPFEROS-MD/package.json"
+
+permissions:
+  contents: write
+
+jobs:
+  generate-lockfile:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: TOPFEROS-MD
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: TOPFEROS-MD/package-lock.json
+
+      - name: Generate package-lock.json
+        run: npm install --package-lock-only
+
+      - name: Commit package-lock.json
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add package-lock.json
+
+          if git diff --cached --quiet; then
+            echo "No package-lock.json changes."
+          else
+            git commit -m "chore: generate package-lock.json"
+            git push
+          fi
