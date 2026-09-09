@@ -1,469 +1,319 @@
 "use strict";
 
-const path = require("path");
-const express = require("express");
+const express =
+  require("express");
 
-const settingsPanel = require("../settings/panel");
-const connection = require("../src/connection");
-const sessionManager = require("../src/sessionManager");
+const path =
+  require("path");
 
-const app = express();
+const connection =
+  require("../src/connection");
 
-const PORT = process.env.PORT || 10000;
-const HOST = process.env.HOST || "0.0.0.0";
+const sessionManager =
+  require("../src/sessionManager");
 
-/* =========================
-   DIRECTORIES
-========================= */
+const settingsPanel =
+  require("../settings/panel");
 
-const publicDir = path.resolve(__dirname, "public");
-const assetsDir = path.resolve(__dirname, "..", "assets");
-const backgroundFile = path.resolve(__dirname, "background.png");
+const app =
+  express();
 
-/* =========================
-   MIDDLEWARE
-========================= */
+const PORT =
+  Number(
+    process.env.PORT || 3000
+  );
 
-app.use(express.json({ limit: "100kb" }));
-app.use(express.urlencoded({ extended: true }));
+const HOST =
+  process.env.HOST ||
+  "0.0.0.0";
 
-/* =========================
-   STATIC FILES
-========================= */
+// ============================================================
+// MIDDLEWARE
+// ============================================================
 
-app.use(express.static(publicDir));
+app.use(
+  express.json({
+    limit: "1mb"
+  })
+);
 
-/* =========================
-   BOT LOGO
-========================= */
+app.use(
+  express.urlencoded({
+    extended: true
+  })
+);
 
-app.use("/assets", express.static(assetsDir));
+// ============================================================
+// STATIC
+// ============================================================
 
-app.get("/assets/logo.png", (req, res) => {
-  res.sendFile(path.join(assetsDir, "logo.png"));
-});
+const publicDir =
+  path.join(
+    __dirname,
+    "public"
+  );
 
-/* =========================
-   PANEL BACKGROUND
-========================= */
+app.use(
+  express.static(
+    publicDir
+  )
+);
 
-app.get("/background.png", (req, res) => {
-  res.sendFile(backgroundFile);
-});
+app.get(
+  "/",
+  (req, res) => {
+    res.sendFile(
+      path.join(
+        publicDir,
+        "index.html"
+      )
+    );
+  }
+);
 
-/* =========================
-   HELPERS
-========================= */
+// ============================================================
+// HELPERS
+// ============================================================
 
-function cleanNumber(number) {
-  return String(number || "").replace(/\D/g, "");
-}
-
-function getSessionId(req) {
-  return (
-    req.query?.sessionId ||
-    req.body?.sessionId ||
-    req.params?.sessionId ||
-    null
+function cleanNumberValue(
+  number
+) {
+  return sessionManager.cleanPhoneNumber(
+    number
   );
 }
 
-function getConnectionSession(sessionId) {
-  if (!sessionId) return null;
-
-  try {
-    return sessionManager.getSession(sessionId);
-  } catch {
-    return null;
-  }
+function getConnectionSession(
+  sessionId
+) {
+  return sessionManager.getSession(
+    sessionId
+  );
 }
 
-function getSocketForSession(sessionId) {
-  if (!sessionId) return null;
+// ============================================================
+// STATUS
+// ============================================================
 
-  try {
-    return connection.getSocket(sessionId);
-  } catch {
-    return null;
-  }
-}
+app.get(
+  "/api/status",
+  (req, res) => {
+    try {
+      const sessionId =
+        String(
+          req.query.sessionId ||
+          ""
+        ).trim();
 
-/* =========================
-   BOT STATUS
-   MULTI-SESSION
-========================= */
+      if (sessionId) {
+        const session =
+          getConnectionSession(
+            sessionId
+          );
 
-app.get("/api/status", (req, res) => {
-  try {
-    const sessionId =
-      req.query?.sessionId || null;
+        if (!session) {
+          return res.json({
+            success: false,
+            connected: false,
+            error:
+              "SESSION_NOT_FOUND"
+          });
+        }
 
-    /*
-     * No sessionId:
-     * return general server status.
-     */
-    if (!sessionId) {
-      const sessions =
-        sessionManager.listPublicSessions();
+        return res.json({
+          success: true,
 
-      const connectedSessions =
-        sessions.filter(
-          session => session.connected
-        );
+          connected:
+            sessionManager.isConnected(
+              sessionId
+            ),
 
-      return res.json({
-        success: true,
-        connected:
-          connectedSessions.length > 0,
-        sessions:
-          sessions.length,
-        connectedSessions:
-          connectedSessions.length
-      });
-    }
+          sessionId,
 
-    const session =
-      getConnectionSession(sessionId);
+          number:
+            session.number,
 
-    if (!session) {
-      return res.status(404).json({
-        success: false,
-        connected: false,
-        error: "SESSION_NOT_FOUND"
-      });
-    }
-
-    const connected =
-      connection.isConnected(sessionId);
-
-    res.json({
-      success: true,
-      connected,
-      sessionId,
-      number:
-        session.number ||
-        connection.getPhoneNumber(sessionId) ||
-        "",
-      status:
-        session.status || "disconnected"
-    });
-
-  } catch (error) {
-    console.error(
-      "❌ Status error:",
-      error
-    );
-
-    res.status(500).json({
-      success: false,
-      connected: false,
-      error: "STATUS_FAILED"
-    });
-  }
-});
-
-/* =========================
-   ALL SESSIONS
-   ADMIN / SERVER STATUS
-========================= */
-
-app.get("/api/sessions", (req, res) => {
-  try {
-    const sessions =
-      sessionManager.listPublicSessions();
-
-    res.json({
-      success: true,
-      count: sessions.length,
-      sessions
-    });
-
-  } catch (error) {
-    console.error(
-      "❌ Sessions error:",
-      error
-    );
-
-    res.status(500).json({
-      success: false,
-      error: "SESSIONS_FAILED"
-    });
-  }
-});
-
-/* =========================
-   CURRENT SESSION
-========================= */
-
-app.get("/api/current-session", (req, res) => {
-  try {
-    const requestedSessionId =
-      req.query?.sessionId || null;
-
-    /*
-     * If the frontend already knows
-     * the sessionId, use that session.
-     */
-    if (requestedSessionId) {
-      const session =
-        getConnectionSession(
-          requestedSessionId
-        );
-
-      if (!session) {
-        return res.status(404).json({
-          success: false,
-          error: "SESSION_NOT_FOUND"
+          status:
+            session.status
         });
       }
 
-      const socket =
-        getSocketForSession(
-          requestedSessionId
+      return res.json({
+        success: true,
+
+        sessions:
+          sessionManager.listPublicSessions()
+      });
+
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        error:
+          error?.message ||
+          "STATUS_ERROR"
+      });
+    }
+  }
+);
+
+// ============================================================
+// SESSIONS
+// ============================================================
+
+app.get(
+  "/api/sessions",
+  (req, res) => {
+    return res.json({
+      success: true,
+
+      sessions:
+        sessionManager.listPublicSessions()
+    });
+  }
+);
+
+// ============================================================
+// PAIRING
+// ============================================================
+
+app.post(
+  "/api/pairing",
+  async (req, res) => {
+    try {
+      const number =
+        cleanNumberValue(
+          req.body?.number
         );
 
-      const connected =
-        connection.isConnected(
-          requestedSessionId
+      if (
+        !/^\d{8,15}$/.test(
+          number
+        )
+      ) {
+        return res.status(400).json({
+          success: false,
+          error:
+            "INVALID_PHONE_NUMBER",
+          message:
+            "Mete yon nimewo WhatsApp valab ak kòd peyi a."
+        });
+      }
+
+      const existing =
+        sessionManager.getSessionByNumber(
+          number
+        );
+
+      // ======================================================
+      // IMPORTANT FIX
+      // Pa itilize sèlman existing.connected.
+      // Verifye socket/user la toutbon.
+      // ======================================================
+
+      if (
+        existing &&
+        sessionManager.isConnected(
+          existing.sessionId
+        )
+      ) {
+        return res.status(409).json({
+          success: false,
+
+          error:
+            "NUMBER_ALREADY_CONNECTED",
+
+          message:
+            "This WhatsApp number already has a connected session.",
+
+          sessionId:
+            existing.sessionId
+        });
+      }
+
+      if (
+        existing?.pairing
+      ) {
+        return res.status(409).json({
+          success: false,
+
+          error:
+            "PAIRING_IN_PROGRESS",
+
+          message:
+            "Pairing code request already in progress.",
+
+          sessionId:
+            existing.sessionId
+        });
+      }
+
+      const result =
+        await connection.requestPairingCode(
+          number
         );
 
       return res.json({
         success: true,
-        connected,
+
         sessionId:
-          requestedSessionId,
+          result.sessionId,
+
         number:
-          session.number ||
-          connection.getPhoneNumber(
-            requestedSessionId
-          ) ||
-          "",
-        settingsLink:
-          `${process.env.SETTINGS_PANEL_URL ||
-            process.env.PANEL_URL ||
-            "https://topferos-md-v1-0-0.onrender.com"}/?session=${requestedSessionId}`,
-        socket:
-          !!socket
+          result.number,
+
+        code:
+          result.code
       });
-    }
 
-    /*
-     * Backward-compatible fallback:
-     * find a connected session.
-     */
-    const sessions =
-      sessionManager.listSessions();
-
-    const connectedSession =
-      sessions.find(
-        session => session.connected
+    } catch (error) {
+      console.error(
+        "❌ PAIRING API ERROR:",
+        error?.message || error
       );
 
-    if (!connectedSession) {
-      return res.status(404).json({
+      const status =
+        error?.code ===
+        "NUMBER_ALREADY_CONNECTED"
+          ? 409
+          : 500;
+
+      return res.status(
+        status
+      ).json({
         success: false,
-        error: "BOT_NOT_CONNECTED",
+
+        error:
+          error?.code ||
+          "PAIRING_ERROR",
+
         message:
-          "No WhatsApp session is connected."
+          error?.message ||
+          "Unable to generate pairing code."
       });
     }
-
-    const socket =
-      getSocketForSession(
-        connectedSession.sessionId
-      );
-
-    if (!socket) {
-      return res.status(404).json({
-        success: false,
-        error: "SOCKET_NOT_FOUND"
-      });
-    }
-
-    const session =
-      settingsPanel.createSession(
-        socket
-      );
-
-    if (!session?.sessionId) {
-      return res.status(404).json({
-        success: false,
-        error: "SESSION_NOT_FOUND"
-      });
-    }
-
-    res.json({
-      success: true,
-      connected: true,
-      sessionId:
-        session.sessionId,
-      number:
-        session.number ||
-        connectedSession.number ||
-        "",
-      settingsLink:
-        session.link || ""
-    });
-
-  } catch (error) {
-    console.error(
-      "❌ Current session error:",
-      error
-    );
-
-    res.status(500).json({
-      success: false,
-      error: "CURRENT_SESSION_FAILED"
-    });
   }
-});
+);
 
-/* =========================
-   WHATSAPP PAIRING CODE
-   MULTI-SESSION
-========================= */
-
-app.post("/api/pairing", async (req, res) => {
-  try {
-    const cleanNumber =
-      cleanNumberValue(req.body?.number);
-
-    if (!cleanNumber) {
-      return res.status(400).json({
-        success: false,
-        error: "NUMBER_REQUIRED",
-        message:
-          "WhatsApp number is required."
-      });
-    }
-
-    if (cleanNumber.length < 8) {
-      return res.status(400).json({
-        success: false,
-        error: "INVALID_NUMBER",
-        message:
-          "Invalid WhatsApp number."
-      });
-    }
-
-    /*
-     * Only reject this number if THIS number
-     * already has a connected session.
-     *
-     * Other users can connect normally.
-     */
-    const existing =
-      sessionManager.getSessionByNumber(
-        cleanNumber
-      );
-
-    if (
-      existing &&
-      existing.connected
-    ) {
-      return res.status(409).json({
-        success: false,
-        error: "NUMBER_ALREADY_CONNECTED",
-        message:
-          "This WhatsApp number already has a connected session.",
-        sessionId:
-          existing.sessionId
-      });
-    }
-
-    /*
-     * Prevent simultaneous pairing
-     * for the same number.
-     */
-    if (
-      existing &&
-      existing.pairing?.inProgress
-    ) {
-      return res.status(409).json({
-        success: false,
-        error: "PAIRING_IN_PROGRESS",
-        message:
-          "Pairing is already in progress for this number.",
-        sessionId:
-          existing.sessionId
-      });
-    }
-
-    console.log(
-      `📱 Pairing Code requested for: ${cleanNumber}`
-    );
-
-    const result =
-      await connection.requestPairingCode(
-        cleanNumber
-      );
-
-    /*
-     * New multi-session connection.js
-     * returns an object:
-     * {
-     *   sessionId,
-     *   number,
-     *   code
-     * }
-     */
-    if (
-      !result ||
-      !result.code ||
-      !result.sessionId
-    ) {
-      return res.status(500).json({
-        success: false,
-        error: "PAIRING_CODE_EMPTY",
-        message:
-          "Pairing Code could not be generated."
-      });
-    }
-
-    console.log(
-      `🔐 Pairing Code generated for ${cleanNumber} [${result.sessionId}]`
-    );
-
-    res.json({
-      success: true,
-      sessionId:
-        result.sessionId,
-      number:
-        result.number ||
-        cleanNumber,
-      code:
-        result.code
-    });
-
-  } catch (error) {
-    console.error(
-      "❌ Pairing Code error:",
-      error
-    );
-
-    const message =
-      error?.message ||
-      "Unable to generate Pairing Code.";
-
-    res.status(500).json({
-      success: false,
-      error: "PAIRING_FAILED",
-      message
-    });
-  }
-});
-
-/* =========================
-   SESSION INFORMATION
-========================= */
+// ============================================================
+// CURRENT SESSION
+// ============================================================
 
 app.get(
-  "/api/session/:sessionId",
+  "/api/current-session",
   (req, res) => {
     try {
-      const {
-        sessionId
-      } = req.params;
+      const sessionId =
+        String(
+          req.query.sessionId ||
+          ""
+        ).trim();
+
+      if (!sessionId) {
+        return res.json({
+          success: true,
+          session: null
+        });
+      }
 
       const session =
         sessionManager.getSession(
@@ -471,372 +321,366 @@ app.get(
         );
 
       if (!session) {
-        return res.status(404).json({
+        return res.json({
           success: false,
-          error: "SESSION_NOT_FOUND"
+          session: null
         });
       }
 
-      const panelSession =
-        settingsPanel.getSession?.(
+      const connected =
+        sessionManager.isConnected(
           sessionId
         );
 
-      const panelUrl =
-        process.env.SETTINGS_PANEL_URL ||
-        process.env.PANEL_URL ||
-        "https://topferos-md-v1-0-0.onrender.com";
-
-      res.json({
+      return res.json({
         success: true,
-        exists: true,
-        sessionId,
-        connected:
-          !!session.connected,
-        status:
-          session.status ||
-          "disconnected",
-        authenticated:
-          !!panelSession?.authenticated,
-        number:
-          session.number || "",
-        settingsLink:
-          `${panelUrl}/?session=${sessionId}`
+
+        session: {
+          sessionId,
+
+          number:
+            session.number,
+
+          connected,
+
+          status:
+            session.status,
+
+          socket:
+            Boolean(
+              session.socket
+            ),
+
+          settingsLink:
+            connected
+              ? `${settingsPanel.PANEL_URL || process.env.PANEL_URL || "https://topferos-md-v1-0-0.onrender.com"}/settings`
+              : null
+        }
       });
 
     } catch (error) {
-      console.error(
-        "❌ Session error:",
-        error
-      );
-
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
-        error: "SESSION_ERROR"
+        error:
+          error?.message ||
+          "CURRENT_SESSION_ERROR"
       });
     }
   }
 );
 
-/* =========================
-   VERIFY SETTINGS CODE
-========================= */
+// ============================================================
+// SESSION INFO
+// ============================================================
 
-app.post("/api/verify", (req, res) => {
-  try {
-    const {
-      sessionId,
-      code
-    } = req.body || {};
-
-    if (!sessionId || !code) {
-      return res.status(400).json({
-        success: false,
-        error:
-          "SESSION_AND_CODE_REQUIRED"
-      });
-    }
-
-    /*
-     * Verify that the WhatsApp session
-     * actually exists.
-     */
-    const waSession =
-      sessionManager.getSession(
-        sessionId
-      );
-
-    if (!waSession) {
-      return res.status(404).json({
-        success: false,
-        error: "SESSION_NOT_FOUND"
-      });
-    }
-
-    const result =
-      settingsPanel.verifySession(
-        sessionId,
-        code
-      );
-
-    if (
-      !result ||
-      !result.success
-    ) {
-      return res.status(401).json(
-        result || {
-          success: false,
-          error:
-            "INVALID_SETTINGS_CODE"
-        }
-      );
-    }
-
-    res.json({
-      success: true,
-      message:
-        "Settings Code verified",
-      sessionId,
-      settings:
-        result.session.settings,
-      botInformation:
-        result.session.botInformation
-    });
-
-  } catch (error) {
-    console.error(
-      "❌ Verification error:",
-      error
-    );
-
-    res.status(500).json({
-      success: false,
-      error:
-        "VERIFICATION_FAILED"
-    });
-  }
-});
-
-/* =========================
-   GET SETTINGS
-========================= */
-
-app.get("/api/settings", (req, res) => {
-  try {
-    const sessionId =
-      req.query?.sessionId;
-
-    if (!sessionId) {
-      return res.status(401).json({
-        success: false,
-        error: "SESSION_REQUIRED"
-      });
-    }
-
-    if (
-      !settingsPanel.isAuthenticated(
-        sessionId
-      )
-    ) {
-      return res.status(401).json({
-        success: false,
-        error: "UNAUTHORIZED"
-      });
-    }
-
-    const data =
-      settingsPanel.loadSettings(
-        sessionId
-      );
-
-    if (!data) {
-      return res.status(404).json({
-        success: false,
-        error:
-          "SETTINGS_NOT_FOUND"
-      });
-    }
-
-    res.json({
-      success: true,
-      sessionId,
-      ...data
-    });
-
-  } catch (error) {
-    console.error(
-      "❌ Load settings error:",
-      error
-    );
-
-    res.status(500).json({
-      success: false,
-      error:
-        "LOAD_SETTINGS_FAILED"
-    });
-  }
-});
-
-/* =========================
-   SAVE SETTINGS
-========================= */
-
-app.post("/api/settings", (req, res) => {
-  try {
-    const {
-      sessionId,
-      settings,
-      botInformation
-    } = req.body || {};
-
-    if (!sessionId) {
-      return res.status(401).json({
-        success: false,
-        error: "SESSION_REQUIRED"
-      });
-    }
-
-    if (
-      !settingsPanel.isAuthenticated(
-        sessionId
-      )
-    ) {
-      return res.status(401).json({
-        success: false,
-        error: "UNAUTHORIZED"
-      });
-    }
-
-    const savedSettings =
-      settingsPanel.applySettings(
-        sessionId,
-        settings || {}
-      );
-
-    const savedBotInformation =
-      settingsPanel.updateBotInformation(
-        sessionId,
-        botInformation || {}
-      );
-
-    if (
-      !savedSettings ||
-      !savedBotInformation
-    ) {
-      return res.status(400).json({
-        success: false,
-        error: "SAVE_FAILED"
-      });
-    }
-
-    res.json({
-      success: true,
-      sessionId,
-      message:
-        "Settings saved successfully",
-      settings:
-        savedSettings,
-      botInformation:
-        savedBotInformation
-    });
-
-  } catch (error) {
-    console.error(
-      "❌ Save settings error:",
-      error
-    );
-
-    res.status(500).json({
-      success: false,
-      error:
-        "SAVE_SETTINGS_FAILED"
-    });
-  }
-});
-
-/* =========================
-   LANGUAGE
-========================= */
-
-app.post("/api/language", (req, res) => {
-  try {
-    const {
-      language
-    } = req.body || {};
-
-    const allowed = [
-      "en",
-      "fr",
-      "es"
-    ];
-
-    if (
-      !allowed.includes(language)
-    ) {
-      return res.status(400).json({
-        success: false,
-        error: "INVALID_LANGUAGE"
-      });
-    }
-
-    res.json({
-      success: true,
-      language
-    });
-
-  } catch (error) {
-    console.error(
-      "❌ Language error:",
-      error
-    );
-
-    res.status(500).json({
-      success: false,
-      error: "LANGUAGE_FAILED"
-    });
-  }
-});
-
-/* =========================
-   LOGOUT PANEL
-========================= */
-
-app.post("/api/logout", (req, res) => {
-  try {
+app.get(
+  "/api/session/:sessionId",
+  (req, res) => {
     const {
       sessionId
-    } = req.body || {};
-
-    if (!sessionId) {
-      return res.status(400).json({
-        success: false,
-        error: "SESSION_REQUIRED"
-      });
-    }
+    } = req.params;
 
     const session =
-      settingsPanel.getSession(
+      sessionManager.getSession(
         sessionId
       );
 
     if (!session) {
       return res.status(404).json({
         success: false,
-        error: "SESSION_NOT_FOUND"
+        error:
+          "SESSION_NOT_FOUND"
       });
     }
 
-    /*
-     * This logs the USER out of the
-     * settings panel only.
-     *
-     * It does NOT disconnect WhatsApp.
-     */
-    session.authenticated = false;
-
-    res.json({
+    return res.json({
       success: true,
-      sessionId,
-      message:
-        "Panel logged out successfully."
-    });
 
-  } catch (error) {
-    console.error(
-      "❌ Logout error:",
-      error
-    );
+      session: {
+        sessionId,
 
-    res.status(500).json({
-      success: false,
-      error: "LOGOUT_FAILED"
+        number:
+          session.number,
+
+        status:
+          session.status,
+
+        connected:
+          sessionManager.isConnected(
+            sessionId
+          ),
+
+        pairing:
+          session.pairing
+      }
     });
   }
-});
+);
 
-/* =========================
-   DISCONNECT WHATSAPP SESSION
-========================= */
+// ============================================================
+// VERIFY SETTINGS CODE
+// ============================================================
+
+app.post(
+  "/api/verify",
+  (req, res) => {
+    try {
+      const sessionId =
+        String(
+          req.body?.sessionId ||
+          ""
+        ).trim();
+
+      const code =
+        String(
+          req.body?.code ||
+          ""
+        ).trim();
+
+      if (
+        !sessionId ||
+        !code
+      ) {
+        return res.status(400).json({
+          success: false,
+          error:
+            "SESSION_AND_CODE_REQUIRED"
+        });
+      }
+
+      if (
+        !sessionManager.isConnected(
+          sessionId
+        )
+      ) {
+        return res.status(409).json({
+          success: false,
+          error:
+            "WHATSAPP_NOT_CONNECTED",
+          message:
+            "WhatsApp session lan pa konekte."
+        });
+      }
+
+      const result =
+        settingsPanel.verifySession(
+          sessionId,
+          code
+        );
+
+      if (
+        !result ||
+        result.success !== true
+      ) {
+        return res.status(401).json({
+          success: false,
+          error:
+            "INVALID_SETTINGS_CODE"
+        });
+      }
+
+      return res.json({
+        success: true,
+
+        session:
+          result.session,
+
+        settings:
+          settingsPanel.getSettings(
+            sessionId
+          ),
+
+        botInformation:
+          settingsPanel.getBotInformation(
+            sessionId
+          )
+      });
+
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        error:
+          error?.message ||
+          "VERIFY_ERROR"
+      });
+    }
+  }
+);
+
+// ============================================================
+// SETTINGS GET
+// ============================================================
+
+app.get(
+  "/api/settings",
+  (req, res) => {
+    try {
+      const sessionId =
+        String(
+          req.query.sessionId ||
+          ""
+        ).trim();
+
+      if (!sessionId) {
+        return res.status(400).json({
+          success: false,
+          error:
+            "SESSION_ID_REQUIRED"
+        });
+      }
+
+      if (
+        !settingsPanel.isAuthenticated(
+          sessionId
+        )
+      ) {
+        return res.status(401).json({
+          success: false,
+          error:
+            "NOT_AUTHENTICATED"
+        });
+      }
+
+      return res.json({
+        success: true,
+
+        settings:
+          settingsPanel.getSettings(
+            sessionId
+          ),
+
+        botInformation:
+          settingsPanel.getBotInformation(
+            sessionId
+          )
+      });
+
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        error:
+          error?.message ||
+          "SETTINGS_ERROR"
+      });
+    }
+  }
+);
+
+// ============================================================
+// SETTINGS POST
+// ============================================================
+
+app.post(
+  "/api/settings",
+  (req, res) => {
+    try {
+      const sessionId =
+        String(
+          req.body?.sessionId ||
+          ""
+        ).trim();
+
+      if (!sessionId) {
+        return res.status(400).json({
+          success: false,
+          error:
+            "SESSION_ID_REQUIRED"
+        });
+      }
+
+      if (
+        !settingsPanel.isAuthenticated(
+          sessionId
+        )
+      ) {
+        return res.status(401).json({
+          success: false,
+          error:
+            "NOT_AUTHENTICATED"
+        });
+      }
+
+      const updates =
+        req.body?.settings ||
+        {};
+
+      const result =
+        settingsPanel.updateSettings(
+          sessionId,
+          updates
+        );
+
+      return res.json({
+        success: true,
+        settings:
+          result ||
+          settingsPanel.getSettings(
+            sessionId
+          )
+      });
+
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        error:
+          error?.message ||
+          "SETTINGS_UPDATE_ERROR"
+      });
+    }
+  }
+);
+
+// ============================================================
+// LANGUAGE
+// ============================================================
+
+app.post(
+  "/api/language",
+  (req, res) => {
+    try {
+      const language =
+        String(
+          req.body?.language ||
+          ""
+        ).toLowerCase();
+
+      const allowed = [
+        "en",
+        "fr",
+        "es",
+        "ht"
+      ];
+
+      if (
+        !allowed.includes(
+          language
+        )
+      ) {
+        return res.status(400).json({
+          success: false,
+          error:
+            "INVALID_LANGUAGE"
+        });
+      }
+
+      return res.json({
+        success: true,
+        language
+      });
+
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        error:
+          "LANGUAGE_ERROR"
+      });
+    }
+  }
+);
+
+// ============================================================
+// DISCONNECT
+// ============================================================
 
 app.post(
   "/api/session/:sessionId/disconnect",
@@ -846,47 +690,30 @@ app.post(
         sessionId
       } = req.params;
 
-      const session =
-        sessionManager.getSession(
+      const result =
+        await connection.stopSession(
           sessionId
         );
 
-      if (!session) {
-        return res.status(404).json({
-          success: false,
-          error: "SESSION_NOT_FOUND"
-        });
-      }
-
-      await connection.stopSession(
-        sessionId
-      );
-
-      res.json({
-        success: true,
-        sessionId,
-        message:
-          "WhatsApp session disconnected."
+      return res.json({
+        success:
+          Boolean(result)
       });
 
     } catch (error) {
-      console.error(
-        "❌ Disconnect error:",
-        error
-      );
-
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         error:
-          "DISCONNECT_FAILED"
+          error?.message ||
+          "DISCONNECT_ERROR"
       });
     }
   }
 );
 
-/* =========================
-   DELETE WHATSAPP SESSION
-========================= */
+// ============================================================
+// DELETE SESSION
+// ============================================================
 
 app.delete(
   "/api/session/:sessionId",
@@ -896,177 +723,143 @@ app.delete(
         sessionId
       } = req.params;
 
-      const session =
-        sessionManager.getSession(
+      const result =
+        await connection.removeSession(
           sessionId
         );
 
-      if (!session) {
-        return res.status(404).json({
-          success: false,
-          error: "SESSION_NOT_FOUND"
-        });
-      }
-
-      await connection.removeSession(
-        sessionId
-      );
-
-      res.json({
-        success: true,
-        sessionId,
-        message:
-          "WhatsApp session removed."
+      return res.json({
+        success:
+          Boolean(result)
       });
 
     } catch (error) {
-      console.error(
-        "❌ Remove session error:",
-        error
-      );
-
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         error:
-          "REMOVE_SESSION_FAILED"
+          error?.message ||
+          "REMOVE_SESSION_ERROR"
       });
     }
   }
 );
 
-/* =========================
-   HOME
-========================= */
+// ============================================================
+// API 404
+// ============================================================
 
-app.get("/", (req, res) => {
-  res.sendFile(
-    path.join(
-      publicDir,
-      "index.html"
-    )
-  );
-});
-
-/* =========================
-   API 404
-========================= */
-
-app.use("/api", (req, res) => {
-  res.status(404).json({
-    success: false,
-    error: "API_ROUTE_NOT_FOUND"
-  });
-});
-
-/* =========================
-   START SERVER
-========================= */
-
-const server = app.listen(
-  PORT,
-  HOST,
-  () => {
-    console.log(
-      `🌐 TOPFEROS MD PANEL running on ${HOST}:${PORT}`
-    );
+app.use(
+  "/api",
+  (req, res) => {
+    res.status(404).json({
+      success: false,
+      error:
+        "API_ROUTE_NOT_FOUND"
+    });
   }
 );
 
-/* =========================
-   START / RESTORE WHATSAPP
-========================= */
+// ============================================================
+// START WHATSAPP
+// ============================================================
 
 async function startWhatsApp() {
   try {
-    /*
-     * IMPORTANT:
-     *
-     * Do NOT create an empty WhatsApp
-     * session when the server starts.
-     *
-     * Restore sessions that already exist.
-     * New users create sessions through
-     * /api/pairing.
-     */
+    await connection.restoreStoredSessions();
+
     if (
-      typeof connection.restoreStoredSessions ===
-      "function"
+      DEFAULT_PHONE_NUMBER
     ) {
-      await connection.restoreStoredSessions();
+      const number =
+        cleanNumberValue(
+          DEFAULT_PHONE_NUMBER
+        );
+
+      if (
+        sessionManager.validatePhoneNumber(
+          number
+        )
+      ) {
+        let session =
+          sessionManager.getSessionByNumber(
+            number
+          );
+
+        if (!session) {
+          session =
+            sessionManager.createSession({
+              number
+            });
+        }
+
+        await connection.startSession(
+          session.sessionId
+        );
+      }
     }
 
     console.log(
-      "🤖 TOPFEROS MD Multi-Session WhatsApp service started"
+      "✅ TOPFEROS MD WhatsApp service ready."
     );
 
   } catch (error) {
     console.error(
-      "❌ WhatsApp start error:",
-      error
-    );
-
-    setTimeout(
-      startWhatsApp,
-      5000
+      "❌ START WHATSAPP ERROR:",
+      error?.message || error
     );
   }
 }
 
-startWhatsApp();
+// ============================================================
+// SERVER
+// ============================================================
 
-/* =========================
-   SHUTDOWN
-========================= */
+const server =
+  app.listen(
+    PORT,
+    HOST,
+    () => {
+      console.log(
+        `🚀 TOPFEROS MD PANEL running on ${HOST}:${PORT}`
+      );
 
-let shuttingDown = false;
+      startWhatsApp();
+    }
+  );
 
-async function shutdown(signal) {
-  if (shuttingDown) return;
+// ============================================================
+// SHUTDOWN
+// ============================================================
 
-  shuttingDown = true;
-
+async function shutdown(
+  signal
+) {
   console.log(
-    `\n🛑 ${signal} received`
+    `🛑 ${signal} received.`
   );
 
   try {
     await connection.stop();
-  } catch (error) {
-    console.error(
-      "❌ Shutdown error:",
-      error
-    );
-  }
+  } catch {}
 
-  server.close(() => {
-    process.exit(0);
-  });
+  server.close(
+    () => {
+      process.exit(0);
+    }
+  );
 }
 
-process.on(
-  "SIGINT",
-  () => shutdown("SIGINT")
-);
-
-process.on(
+process.once(
   "SIGTERM",
   () => shutdown("SIGTERM")
 );
 
-/* =========================
-   EXPORTS
-========================= */
+process.once(
+  "SIGINT",
+  () => shutdown("SIGINT")
+);
 
 module.exports = {
   app,
   server
 };
-
-/* =========================
-   NUMBER HELPER
-========================= */
-
-function cleanNumberValue(number) {
-  return String(number || "")
-    .replace(/\D/g, "");
-}
