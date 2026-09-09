@@ -765,37 +765,13 @@ app.use(
 
 async function startWhatsApp() {
   try {
-    await connection.restoreStoredSessions();
-
+    // Restore tout WhatsApp sessions ki deja egziste
+    // epi rekonekte yo otomatikman.
     if (
-      DEFAULT_PHONE_NUMBER
+      typeof connection.restoreStoredSessions ===
+      "function"
     ) {
-      const number =
-        cleanNumberValue(
-          DEFAULT_PHONE_NUMBER
-        );
-
-      if (
-        sessionManager.validatePhoneNumber(
-          number
-        )
-      ) {
-        let session =
-          sessionManager.getSessionByNumber(
-            number
-          );
-
-        if (!session) {
-          session =
-            sessionManager.createSession({
-              number
-            });
-        }
-
-        await connection.startSession(
-          session.sessionId
-        );
-      }
+      await connection.restoreStoredSessions();
     }
 
     console.log(
