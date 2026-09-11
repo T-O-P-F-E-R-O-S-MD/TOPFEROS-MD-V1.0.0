@@ -113,12 +113,8 @@ app.get(
 // HELPERS
 // ============================================================
 
-function cleanNumberValue(
-  number
-) {
-  return sessionManager.cleanPhoneNumber(
-    number
-  );
+function cleanNumberValue(number) {
+  return String(number || "").replace(/\D/g, "");
 }
 
 function getConnectionSession(
