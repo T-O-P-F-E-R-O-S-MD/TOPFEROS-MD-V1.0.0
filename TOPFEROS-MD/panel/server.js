@@ -114,7 +114,12 @@ app.get(
 // ============================================================
 
 function cleanNumberValue(number) {
-  return String(number || "").replace(/\D/g, "");
+  return String(
+    number || ""
+  ).replace(
+    /\D/g,
+    ""
+  );
 }
 
 function getConnectionSession(
@@ -123,6 +128,24 @@ function getConnectionSession(
   return sessionManager.getSession(
     sessionId
   );
+}
+
+function getPublicSessions() {
+  if (
+    typeof sessionManager.getPublicSessions ===
+    "function"
+  ) {
+    return sessionManager.getPublicSessions();
+  }
+
+  if (
+    typeof sessionManager.listPublicSessions ===
+    "function"
+  ) {
+    return sessionManager.listPublicSessions();
+  }
+
+  return [];
 }
 
 // ============================================================
@@ -176,10 +199,15 @@ app.get(
         success: true,
 
         sessions:
-          sessionManager.listPublicSessions()
+          getPublicSessions()
       });
 
     } catch (error) {
+      console.error(
+        "❌ STATUS API ERROR:",
+        error?.message || error
+      );
+
       return res.status(500).json({
         success: false,
 
@@ -198,12 +226,28 @@ app.get(
 app.get(
   "/api/sessions",
   (req, res) => {
-    return res.json({
-      success: true,
+    try {
+      return res.json({
+        success: true,
 
-      sessions:
-        sessionManager.listPublicSessions()
-    });
+        sessions:
+          getPublicSessions()
+      });
+
+    } catch (error) {
+      console.error(
+        "❌ SESSIONS API ERROR:",
+        error?.message || error
+      );
+
+      return res.status(500).json({
+        success: false,
+
+        error:
+          error?.message ||
+          "SESSIONS_ERROR"
+      });
+    }
   }
 );
 
@@ -242,7 +286,7 @@ app.post(
         );
 
       // ======================================================
-      // PAIRING IN PROGRESS ONLY
+      // PAIRING IN PROGRESS
       // ======================================================
 
       if (
@@ -263,16 +307,29 @@ app.post(
       }
 
       // ======================================================
-      // IMPORTANT
-      //
-      // Pa bloke nimewo ki deja konekte.
-      // connection.js ap jere session ki deja egziste a.
+      // GENERATE PAIRING CODE
       // ======================================================
 
       const result =
         await connection.requestPairingCode(
           number
         );
+
+      if (
+        !result ||
+        !result.code ||
+        !result.sessionId
+      ) {
+        return res.status(500).json({
+          success: false,
+
+          error:
+            "PAIRING_CODE_NOT_GENERATED",
+
+          message:
+            "Pa kapab jenere kòd koneksyon an."
+        });
+      }
 
       return res.json({
         success: true,
@@ -281,7 +338,8 @@ app.post(
           result.sessionId,
 
         number:
-          result.number,
+          result.number ||
+          number,
 
         code:
           result.code
