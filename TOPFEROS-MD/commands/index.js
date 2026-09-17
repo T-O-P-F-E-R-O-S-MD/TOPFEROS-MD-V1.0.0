@@ -1,32 +1,43 @@
 "use strict";
 
-const fs = require("fs");
-const path = require("path");
+const fs =
+  require("fs");
 
-const COMMANDS_DIR = __dirname;
+const path =
+  require("path");
 
-const commands = new Map();
-const commandFiles = new Map();
+const COMMANDS_DIR =
+  __dirname;
 
-/* ===============================
+const commands =
+  new Map();
+
+const commandFiles =
+  new Map();
+
+/* ============================================================
    NORMALIZE
-================================ */
+============================================================ */
 
-function normalize(value) {
-  return String(value || "")
+function normalize(
+  value
+) {
+  return String(
+    value || ""
+  )
     .trim()
     .toLowerCase();
 }
 
-/* ===============================
+/* ============================================================
    LOAD COMMANDS
-================================ */
+============================================================ */
 
 function loadCommands() {
   commands.clear();
   commandFiles.clear();
 
-  let files;
+  let files = [];
 
   try {
     files =
@@ -36,13 +47,20 @@ function loadCommands() {
   } catch (error) {
     console.error(
       "❌ COMMANDS DIRECTORY ERROR:",
-      error?.message || error
+      error?.message ||
+      error
     );
 
     return commands;
   }
 
-  for (const file of files) {
+  for (
+    const file of files
+  ) {
+    /* --------------------------------------------------------
+       ONLY JS FILES
+    -------------------------------------------------------- */
+
     if (
       !file
         .toLowerCase()
@@ -51,7 +69,7 @@ function loadCommands() {
       continue;
     }
 
-    /* Pa chaje Index.js li menm */
+    /* Pa chaje index.js */
 
     if (
       file.toLowerCase() ===
@@ -67,20 +85,59 @@ function loadCommands() {
       );
 
     try {
+      /* ------------------------------------------------------
+         CLEAR CACHE
+      ------------------------------------------------------ */
+
       delete require.cache[
-        require.resolve(filePath)
+        require.resolve(
+          filePath
+        )
       ];
 
       const command =
-        require(filePath);
+        require(
+          filePath
+        );
 
       if (
         !command ||
         typeof command !==
           "object"
       ) {
+        console.warn(
+          `⚠️ COMMAND INVALID: ${file}`
+        );
+
         continue;
       }
+
+      /* ------------------------------------------------------
+         SPECIAL LEGACY PARRAIN COMMAND
+      ------------------------------------------------------ */
+
+      if (
+        typeof command.name !==
+          "string" &&
+        typeof command.handleParrainCommand ===
+          "function"
+      ) {
+        command.name =
+          "parrain";
+
+        command.aliases = [
+          "parrainage",
+          "referral",
+          "ref"
+        ];
+
+        command.execute =
+          command.handleParrainCommand;
+      }
+
+      /* ------------------------------------------------------
+         COMMAND NAME
+      ------------------------------------------------------ */
 
       if (
         typeof command.name !==
@@ -88,17 +145,6 @@ function loadCommands() {
       ) {
         console.warn(
           `⚠️ COMMAND SAN NAME: ${file}`
-        );
-
-        continue;
-      }
-
-      if (
-        typeof command.execute !==
-          "function"
-      ) {
-        console.warn(
-          `⚠️ COMMAND SAN EXECUTE: ${file}`
         );
 
         continue;
@@ -113,15 +159,40 @@ function loadCommands() {
         continue;
       }
 
+      /* ------------------------------------------------------
+         EXECUTE
+      ------------------------------------------------------ */
+
       if (
-        commands.has(name)
+        typeof command.execute !==
+          "function"
       ) {
         console.warn(
-          `⚠️ COMMAND DUPLICATE: ${name}`
+          `⚠️ COMMAND SAN EXECUTE: ${file}`
         );
 
         continue;
       }
+
+      /* ------------------------------------------------------
+         DUPLICATE
+      ------------------------------------------------------ */
+
+      if (
+        commands.has(
+          name
+        )
+      ) {
+        console.warn(
+          `⚠️ COMMAND DUPLICATE: .${name} — ${file}`
+        );
+
+        continue;
+      }
+
+      /* ------------------------------------------------------
+         REGISTER COMMAND
+      ------------------------------------------------------ */
 
       commands.set(
         name,
@@ -134,10 +205,12 @@ function loadCommands() {
       );
 
       console.log(
-        `✅ COMMAND LOADED: ${PREFIX_LOG(name)} ← ${file}`
+        `✅ COMMAND LOADED: .${name} ← ${file}`
       );
 
-      /* ALIASES */
+      /* ------------------------------------------------------
+         ALIASES
+      ------------------------------------------------------ */
 
       if (
         Array.isArray(
@@ -145,11 +218,13 @@ function loadCommands() {
         )
       ) {
         for (
-          const alias
-          of command.aliases
+          const alias of
+            command.aliases
         ) {
           const aliasName =
-            normalize(alias);
+            normalize(
+              alias
+            );
 
           if (!aliasName) {
             continue;
@@ -161,7 +236,7 @@ function loadCommands() {
             )
           ) {
             console.warn(
-              `⚠️ ALIAS DUPLICATE: .${aliasName}`
+              `⚠️ ALIAS DUPLICATE: .${aliasName} — ignored`
             );
 
             continue;
@@ -194,51 +269,47 @@ function loadCommands() {
   }
 
   console.log(
-    `📦 COMMAND SYSTEM READY: ${commands.size} commands/aliases`
+    `📦 COMMAND SYSTEM READY: ${commands.size} COMMANDS / ALIASES`
   );
 
   return commands;
 }
 
-/* ===============================
-   LOG PREFIX
-================================ */
-
-function PREFIX_LOG(name) {
-  return `.${name}`;
-}
-
-/* ===============================
+/* ============================================================
    GET COMMAND
-================================ */
+============================================================ */
 
-function getCommand(name) {
+function getCommand(
+  name
+) {
   return (
     commands.get(
-      normalize(name)
+      normalize(
+        name
+      )
     ) || null
   );
 }
 
-/* ===============================
-   GET ALL
-================================ */
+/* ============================================================
+   GET COMMANDS
+============================================================ */
 
 function getCommands() {
   return commands;
 }
 
-/* ===============================
-   UNIQUE COMMAND LIST
-================================ */
+/* ============================================================
+   GET UNIQUE COMMAND LIST
+============================================================ */
 
 function getCommandList() {
   const unique =
     new Map();
 
   for (
-    const command
-    of commands.values()
+    const command of
+      commands.values()
   ) {
     if (
       !command?.name
@@ -252,7 +323,9 @@ function getCommandList() {
       );
 
     if (
-      !unique.has(name)
+      !unique.has(
+        name
+      )
     ) {
       unique.set(
         name,
@@ -266,35 +339,39 @@ function getCommandList() {
   ];
 }
 
-/* ===============================
-   COMMAND FILE
-================================ */
+/* ============================================================
+   GET COMMAND FILE
+============================================================ */
 
-function getCommandFile(name) {
+function getCommandFile(
+  name
+) {
   return (
     commandFiles.get(
-      normalize(name)
+      normalize(
+        name
+      )
     ) || null
   );
 }
 
-/* ===============================
+/* ============================================================
    RELOAD
-================================ */
+============================================================ */
 
 function reloadCommands() {
   return loadCommands();
 }
 
-/* ===============================
+/* ============================================================
    INITIAL LOAD
-================================ */
+============================================================ */
 
 loadCommands();
 
-/* ===============================
-   EXPORT
-================================ */
+/* ============================================================
+   EXPORTS
+============================================================ */
 
 module.exports = {
   loadCommands,
