@@ -61,10 +61,11 @@ function authDirectory(sessionId) {
 function ensureSessionDirectory(
   sessionId
 ) {
-  const dir = path.join(
-    SESSIONS_DIR,
-    sessionId
-  );
+  const dir =
+    path.join(
+      SESSIONS_DIR,
+      sessionId
+    );
 
   fs.mkdirSync(
     dir,
@@ -77,7 +78,7 @@ function ensureSessionDirectory(
 }
 
 // ============================================================
-// SAVE SESSION
+// SAVE
 // ============================================================
 
 function saveSession(session) {
@@ -93,21 +94,20 @@ function saveSession(session) {
       session.sessionId
     );
 
-    const file =
-      sessionFile(
-        session.sessionId
-      );
-
     const data = {
       sessionId:
         session.sessionId,
 
       number:
-        session.number || null,
+        session.number ||
+        null,
 
       status:
         session.status ||
         "disconnected",
+
+      connected:
+        !!session.connected,
 
       pairing:
         !!session.pairing,
@@ -129,7 +129,9 @@ function saveSession(session) {
     };
 
     fs.writeFileSync(
-      file,
+      sessionFile(
+        session.sessionId
+      ),
       JSON.stringify(
         data,
         null,
@@ -145,7 +147,8 @@ function saveSession(session) {
   } catch (error) {
     console.error(
       "❌ SAVE SESSION ERROR:",
-      error?.message || error
+      error?.message ||
+        String(error)
     );
 
     return false;
@@ -153,7 +156,7 @@ function saveSession(session) {
 }
 
 // ============================================================
-// READ SESSION
+// READ
 // ============================================================
 
 function readSessionFile(
@@ -180,7 +183,8 @@ function readSessionFile(
   } catch (error) {
     console.error(
       "❌ READ SESSION ERROR:",
-      error?.message || error
+      error?.message ||
+        String(error)
     );
 
     return null;
@@ -219,7 +223,8 @@ function createSessionObject(
       stored.sessionId,
 
     number:
-      stored.number || null,
+      stored.number ||
+      null,
 
     authDir:
       authDirectory(
@@ -230,7 +235,7 @@ function createSessionObject(
       null,
 
     connected:
-      false,
+      !!stored.connected,
 
     status:
       stored.status ||
@@ -283,13 +288,11 @@ function createSession(
   const clean =
     cleanNumber(number);
 
-  /*
-   * Si nimewo a deja gen yon session,
-   * retounen session ki egziste a.
-   */
   if (clean) {
     const existing =
-      getSessionByNumber(clean);
+      getSessionByNumber(
+        clean
+      );
 
     if (existing) {
       return existing;
@@ -376,9 +379,6 @@ function getSession(
     return null;
   }
 
-  /*
-   * Premye chèche nan RAM.
-   */
   if (
     sessions.has(sessionId)
   ) {
@@ -387,9 +387,6 @@ function getSession(
     );
   }
 
-  /*
-   * Apre sa chèche sou disk.
-   */
   const stored =
     readSessionFile(
       sessionId
@@ -417,7 +414,7 @@ function getSession(
 }
 
 // ============================================================
-// GET ALL SESSIONS
+// GET ALL
 // ============================================================
 
 function getAllSessions() {
@@ -467,22 +464,18 @@ function setSocket(
     socket || null;
 
   /*
-   * Se sèlman si Baileys socket la
-   * gen user la nou konsidere li connected.
+   * Pa mete connected=true jis paske socket
+   * egziste. connection.js ap mete status
+   * connected lè connection.open rive.
    */
-  session.connected =
-    !!(
-      socket &&
-      socket.user
-    );
+  if (!socket) {
+    session.connected =
+      false;
+  }
 
   session.updatedAt =
     Date.now();
 
-  /*
-   * Pa bezwen sove socket la sou disk.
-   * saveSession() sèlman sove metadata.
-   */
   saveSession(
     session
   );
@@ -526,7 +519,8 @@ function updateSession(
 
   if (
     !updates ||
-    typeof updates !== "object"
+    typeof updates !==
+      "object"
   ) {
     return false;
   }
@@ -557,9 +551,36 @@ function updateSession(
       updates.status ||
       "disconnected";
 
-    session.connected =
+    if (
       updates.status ===
-      "connected";
+      "connected"
+    ) {
+      session.connected =
+        true;
+    }
+
+    if (
+      updates.status ===
+        "disconnected" ||
+      updates.status ===
+        "logged_out" ||
+      updates.status ===
+        "pairing"
+    ) {
+      session.connected =
+        false;
+    }
+  }
+
+  // CONNECTED
+  if (
+    Object.prototype.hasOwnProperty.call(
+      updates,
+      "connected"
+    )
+  ) {
+    session.connected =
+      !!updates.connected;
   }
 
   // PAIRING
@@ -588,7 +609,7 @@ function updateSession(
         : null;
   }
 
-  // PAIRING START TIME
+  // PAIRING START
   if (
     Object.prototype.hasOwnProperty.call(
       updates,
@@ -600,9 +621,7 @@ function updateSession(
       null;
   }
 
-  /*
-   * Socket rete sèlman nan RAM.
-   */
+  // SOCKET
   if (
     Object.prototype.hasOwnProperty.call(
       updates,
@@ -613,19 +632,20 @@ function updateSession(
       updates.socket ||
       null;
 
-    session.connected =
-      !!(
-        session.socket &&
-        session.socket.user
-      );
+    if (!session.socket) {
+      session.connected =
+        false;
+    }
   }
 
-  /*
-   * Lòt metadata.
-   */
+  // OTHER METADATA
   for (
-    const [key, value] of
-      Object.entries(updates)
+    const [
+      key,
+      value
+    ] of Object.entries(
+      updates
+    )
   ) {
     if (
       key === "sessionId" ||
@@ -633,9 +653,11 @@ function updateSession(
       key === "createdAt" ||
       key === "number" ||
       key === "status" ||
+      key === "connected" ||
       key === "pairing" ||
       key === "pairingCode" ||
-      key === "pairingStartedAt" ||
+      key ===
+        "pairingStartedAt" ||
       key === "socket"
     ) {
       continue;
@@ -695,9 +717,7 @@ function getSessionByNumber(
     return null;
   }
 
-  /*
-   * Chèche nan RAM.
-   */
+  // RAM
   for (
     const session of
       sessions.values()
@@ -711,9 +731,7 @@ function getSessionByNumber(
     }
   }
 
-  /*
-   * Chèche sou disk.
-   */
+  // DISK
   const storedIds =
     getStoredSessionIds();
 
@@ -820,11 +838,7 @@ function setPairingCode(
       sessionId
     );
 
-  if (!session) {
-    return false;
-  }
-
-  if (!code) {
+  if (!session || !code) {
     return false;
   }
 
@@ -836,6 +850,12 @@ function setPairingCode(
 
   session.status =
     "pairing";
+
+  session.connected =
+    false;
+
+  session.updatedAt =
+    Date.now();
 
   saveSession(
     session
@@ -864,12 +884,6 @@ function endPairing(
 
   session.pairingStartedAt =
     null;
-
-  /*
-   * Pa modify status la isit.
-   * connection.js ap deside si li connected,
-   * disconnected, elatriye.
-   */
 
   saveSession(
     session
@@ -952,7 +966,8 @@ function getStoredSessionIds() {
   } catch (error) {
     console.error(
       "❌ GET STORED SESSIONS ERROR:",
-      error?.message || error
+      error?.message ||
+        String(error)
     );
 
     return [];
@@ -960,7 +975,7 @@ function getStoredSessionIds() {
 }
 
 // ============================================================
-// RESTORE SESSION
+// RESTORE
 // ============================================================
 
 function restoreSession(
@@ -991,10 +1006,6 @@ function resetAuth(
     session.authDir;
 
   try {
-    /*
-     * Efase sèlman auth folder la.
-     * session.json rete.
-     */
     if (
       fs.existsSync(
         authDir
@@ -1049,7 +1060,8 @@ function resetAuth(
   } catch (error) {
     console.error(
       "❌ RESET AUTH ERROR:",
-      error?.message || error
+      error?.message ||
+        String(error)
     );
 
     return false;
@@ -1057,7 +1069,7 @@ function resetAuth(
 }
 
 // ============================================================
-// REMOVE SESSION
+// REMOVE
 // ============================================================
 
 function removeSession(
@@ -1098,7 +1110,8 @@ function removeSession(
   } catch (error) {
     console.error(
       "❌ REMOVE SESSION ERROR:",
-      error?.message || error
+      error?.message ||
+        String(error)
     );
 
     return false;
@@ -1106,7 +1119,7 @@ function removeSession(
 }
 
 // ============================================================
-// PUBLIC SESSION DATA
+// PUBLIC SESSION
 // ============================================================
 
 function getPublicSession(
