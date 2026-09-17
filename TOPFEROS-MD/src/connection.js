@@ -304,25 +304,46 @@ async function createSocket(sessionId) {
     "group-participants.update",
     async (update) => {
       try {
+        /* ===== WELCOME ===== */
+
         if (
           update?.action === "add" &&
           welcome?.sendWelcome
         ) {
-          await welcome.sendWelcome(
-            sock,
-            update
-          );
+          for (
+            const participant
+            of update.participants || []
+          ) {
+            await welcome.sendWelcome(
+              sock,
+              {
+                id: update.id,
+                participants: [
+                  participant
+                ]
+              }
+            );
+          }
         }
+
+        /* ===== GOODBYE ===== */
 
         if (
           update?.action === "remove" &&
           goodbye?.sendGoodbye
         ) {
-          await goodbye.sendGoodbye(
-            sock,
-            update
-          );
+          for (
+            const participant
+            of update.participants || []
+          ) {
+            await goodbye.sendGoodbye({
+              sock,
+              chatId: update.id,
+              userJid: participant
+            });
+          }
         }
+
       } catch (error) {
         console.error(
           `❌ GROUP EVENT ERROR [${sessionId}]`,
@@ -341,9 +362,7 @@ async function createSocket(sessionId) {
    START SESSION
 ===================================== */
 
-async function startSession(
-  sessionId
-) {
+async function startSession(sessionId) {
   return createSocket(
     sessionId
   );
@@ -353,12 +372,8 @@ async function startSession(
    REQUEST PAIRING CODE
 ===================================== */
 
-async function requestPairingCode(
-  number
-) {
-  const clean = cleanNumber(
-    number
-  );
+async function requestPairingCode(number) {
+  const clean = cleanNumber(number);
 
   if (!clean) {
     throw new Error(
@@ -430,9 +445,7 @@ async function requestPairingCode(
    STOP SESSION
 ===================================== */
 
-async function stopSession(
-  sessionId
-) {
+async function stopSession(sessionId) {
   const sock =
     activeSockets.get(
       sessionId
@@ -481,9 +494,7 @@ async function stopSession(
    REMOVE SESSION
 ===================================== */
 
-async function removeSession(
-  sessionId
-) {
+async function removeSession(sessionId) {
   await stopSession(
     sessionId
   );
@@ -516,6 +527,7 @@ async function restoreStoredSessions() {
       console.log(
         `✅ SESSION RESTORED: ${sessionId}`
       );
+
     } catch (error) {
       console.error(
         `❌ SESSION RESTORE ERROR [${sessionId}]`,
