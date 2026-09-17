@@ -1,98 +1,50 @@
-"use strict";
+const { jidNormalizedUser } = require("@whiskeysockets/baileys");
 
-const config = require("../config");
+module.exports = {
+  name: "promote",
+  aliases: [],
+  description: "Bay yon manm dwa admin",
+  usage: ".promote @user",
+  category: "group",
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 👑 TOPFEROS MD — PROMOTE COMMAND
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  async execute({ sock, msg, args }) {
+    const jid = msg?.key?.remoteJid;
 
-async function execute(context) {
-  const {
-    sock,
-    message
-  } = context;
-
-  const chatId =
-    message?.key?.remoteJid;
-
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // ❌ VERIFY GROUP
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-  if (!chatId || !chatId.endsWith("@g.us")) {
-    await sock.sendMessage(
-      chatId,
-      {
-        text:
-          "❌ Command sa disponib sèlman nan group."
-      },
-      {
-        quoted: message
-      }
-    );
-
-    return;
-  }
-
-  try {
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 👤 GET TARGET USER
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-    const mentionedJid =
-      message.message?.extendedTextMessage
-        ?.contextInfo?.mentionedJid || [];
-
-    const quotedParticipant =
-      message.message?.extendedTextMessage
-        ?.contextInfo?.participant;
-
-    const target =
-      mentionedJid[0] ||
-      quotedParticipant;
-
-    if (!target) {
-      await sock.sendMessage(
-        chatId,
-        {
-          text:
-            "❌ Mention oswa reply sou moun ou vle fè admin lan.\n\nEgzanp: .promote @moun"
-        },
-        {
-          quoted: message
-        }
-      );
-
-      return;
+    if (!jid || !jid.endsWith("@g.us")) {
+      return sock.sendMessage(jid, {
+        text: "❌ Cette commande est réservée aux groupes."
+      });
     }
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 🔍 CHECK GROUP ADMIN STATUS
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    const mentioned =
+      msg?.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
 
-    const metadata =
-      await sock.groupMetadata(chatId);
+    let target = mentioned[0];
 
-    const participants =
-      metadata.participants || [];
+    if (!target && args?.[0]) {
+      const raw = String(args[0]).replace(/[^\d]/g, "");
 
-    const botId =
-      sock.user?.id?.split(":")[0] +
-      "@s.whatsapp.net";
+      if (raw) {
+        target = `${raw}@s.whatsapp.net`;
+      }
+    }
 
-    const botParticipant =
-      participants.find(
-        participant =>
-          participant.id === botId ||
-          participant.id?.split(":")[0] ===
-            sock.user?.id?.split(":")[0]
-      );
+    if (!target) {
+      return sock.sendMessage(jid, {
+        text: "❌ Mentionne le membre à promouvoir."
+      });
+    }
 
-    if (
-      !botParticipant ||
-      (
-        botParticipant.admin !== "admin" &&
-        botParticipant.admin !== "superadmin"
-      )
-    ) {
-      await sock
+    target = jidNormalizedUser(target);
+
+    await sock.groupParticipantsUpdate(
+      jid,
+      [target],
+      "promote"
+    );
+
+    return sock.sendMessage(jid, {
+      text: "✅ Membre promu administrateur."
+    });
+  }
+};
