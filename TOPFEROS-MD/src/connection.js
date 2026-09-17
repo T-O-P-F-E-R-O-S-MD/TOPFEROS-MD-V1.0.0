@@ -1,5 +1,7 @@
 "use strict";
 
+console.log("🔥 NOUVO CONNEXION.JS CHARGE 🔥");
+
 const {
   default: makeWASocket,
   useMultiFileAuthState,
