@@ -1,544 +1,158 @@
 "use strict";
 
-// ╔════════════════════════════════════════════════════╗
-// ║              🤖 TOPFEROS MD V1.0.0               ║
-// ║          ⚡ MULTI-SESSION COMMAND HANDLER         ║
-// ║              🚀 TOPFEROS TECH                     ║
-// ╚════════════════════════════════════════════════════╝
-
 const fs = require("fs");
 const path = require("path");
 
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 📁 COMMAND DIRECTORY
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
 const COMMANDS_DIR = __dirname;
 
+const commands = new Map();
+const loadedFiles = new Set();
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 📦 COMMAND CACHE
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function normalizeName(name) {
+  return String(name || "")
+    .trim()
+    .toLowerCase()
+    .replace(/\.js$/i, "");
+}
 
-const commandCache = new Map();
+function loadCommands() {
+  commands.clear();
+  loadedFiles.clear();
 
+  let files = [];
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 📥 LOAD COMMAND
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-function loadCommand(commandName) {
-
-  if (!commandName) {
-    return null;
+  try {
+    files = fs.readdirSync(COMMANDS_DIR);
+  } catch (error) {
+    console.error("❌ COMMAND DIRECTORY ERROR:", error.message);
+    return commands;
   }
 
-  const normalizedName =
-    String(commandName)
-      .trim()
-      .toLowerCase();
-
-  if (!normalizedName) {
-    return null;
-  }
-
-
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // ⚡ CHECK CACHE
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-  if (commandCache.has(normalizedName)) {
-    return commandCache.get(normalizedName);
-  }
-
-
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // 📄 POSSIBLE COMMAND FILES
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-  const possibleFiles = [
-    `${normalizedName}.js`,
-    `${normalizedName}.command.js`
-  ];
-
-
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // 🔎 FIND COMMAND FILE
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-  for (const fileName of possibleFiles) {
-
-    const filePath =
-      path.join(
-        COMMANDS_DIR,
-        fileName
-      );
-
-    if (!fs.existsSync(filePath)) {
+  for (const file of files) {
+    if (!file.toLowerCase().endsWith(".js")) {
       continue;
     }
 
+    // Pa chaje Index.js li menm
+    if (file.toLowerCase() === "index.js") {
+      continue;
+    }
+
+    const fullPath = path.join(COMMANDS_DIR, file);
 
     try {
+      delete require.cache[require.resolve(fullPath)];
 
-      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-      // 🔄 CLEAR REQUIRE CACHE
-      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      const command = require(fullPath);
 
-      delete require.cache[
-        require.resolve(filePath)
-      ];
+      // Helper files tankou Welcome.js / Goodbye.js
+      // pa obligatwa pou yo gen name/execute.
+      if (
+        !command ||
+        typeof command !== "object" ||
+        typeof command.name !== "string" ||
+        typeof command.execute !== "function"
+      ) {
+        continue;
+      }
 
+      const name = normalizeName(command.name);
 
-      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-      // 📦 LOAD COMMAND
-      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      if (!name) {
+        continue;
+      }
 
-      const command =
-        require(filePath);
+      if (commands.has(name)) {
+        console.warn(
+          `⚠️ COMMAND DUPLICATE: ${name} (${file})`
+        );
+        continue;
+      }
 
+      commands.set(name, command);
+      loadedFiles.add(file);
 
-      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-      // 💾 SAVE CACHE
-      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      // Aliases
+      if (Array.isArray(command.aliases)) {
+        for (const alias of command.aliases) {
+          const aliasName = normalizeName(alias);
 
-      commandCache.set(
-        normalizedName,
-        command
+          if (!aliasName) {
+            continue;
+          }
+
+          if (commands.has(aliasName)) {
+            console.warn(
+              `⚠️ ALIAS DUPLICATE: ${aliasName} — ` +
+              `kenbe premye command lan.`
+            );
+            continue;
+          }
+
+          commands.set(aliasName, command);
+        }
+      }
+
+      console.log(
+        `✅ COMMAND LOADED: ${name} ← ${file}`
       );
-
-
-      return command;
 
     } catch (error) {
-
       console.error(
-        `❌ Failed to load command "${normalizedName}":`,
-        error?.message || error
+        `❌ COMMAND LOAD ERROR [${file}]:`,
+        error.message
       );
-
-      return null;
     }
   }
-
-
-  return null;
-}
-
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🔎 FIND COMMAND
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-function findCommand(commandName) {
-
-  return loadCommand(
-    commandName
-  );
-}
-
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// ⚡ EXECUTE COMMAND
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-async function handleCommand(context = {}) {
-
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // 📦 GET CONTEXT
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-  const {
-    command,
-    args = [],
-    text = "",
-    message = null,
-    sock = null,
-
-    jid = null,
-    sender = null,
-
-    sessionId = null,
-    botNumber = null,
-
-    config = require("../config")
-  } = context;
-
-
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // 🛑 NO COMMAND
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-  if (!command) {
-    return false;
-  }
-
-
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // 🛑 NO SOCKET
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  //
-  // Multi-session mande command lan gen socket pa li.
-  //
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-  if (!sock) {
-
-    console.error(
-      `❌ COMMAND "${command}": Socket session lan pa disponib.`
-    );
-
-    return false;
-  }
-
-
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // 🔎 FIND COMMAND
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-  const commandModule =
-    findCommand(command);
-
-
-  if (!commandModule) {
-
-    console.log(
-      `⚠️ COMMAND NOT FOUND: ${command}`
-    );
-
-    return false;
-  }
-
-
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // 📦 COMPLETE SESSION CONTEXT
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  //
-  // Nou kreye yon nouvo context pou command lan.
-  // Sa anpeche session yo melanje.
-  //
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-  const commandContext = {
-
-    ...context,
-
-    // 🤖 Socket session aktyèl la
-    sock,
-
-    // 📨 WhatsApp message
-    message,
-
-    // 📍 Chat
-    jid,
-
-    // 👤 Sender
-    sender,
-
-    // ⚡ Command
-    command,
-
-    // 📋 Arguments
-    args,
-
-    // 💬 Original text
-    text,
-
-    // 🔐 Session ID
-    sessionId,
-
-    // 📱 Bot number
-    botNumber,
-
-    // ⚙️ Config
-    config
-  };
-
-
-  try {
-
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 📝 COMMAND LOG
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-    console.log(
-      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    );
-
-    console.log(
-      "⚡ EXECUTING COMMAND"
-    );
-
-    console.log(
-      `📌 COMMAND: ${command}`
-    );
-
-    console.log(
-      `📱 BOT: ${botNumber || "UNKNOWN"}`
-    );
-
-    console.log(
-      `🔐 SESSION: ${sessionId || "DEFAULT"}`
-    );
-
-    console.log(
-      `📍 JID: ${jid || "UNKNOWN"}`
-    );
-
-    console.log(
-      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    );
-
-
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 🧩 FUNCTION COMMAND
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-    if (
-      typeof commandModule ===
-      "function"
-    ) {
-
-      await commandModule(
-        commandContext
-      );
-
-      return true;
-    }
-
-
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // ▶️ EXECUTE METHOD
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-    if (
-      typeof commandModule.execute ===
-      "function"
-    ) {
-
-      await commandModule.execute(
-        commandContext
-      );
-
-      return true;
-    }
-
-
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // ▶️ RUN METHOD
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-    if (
-      typeof commandModule.run ===
-      "function"
-    ) {
-
-      await commandModule.run(
-        commandContext
-      );
-
-      return true;
-    }
-
-
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // ▶️ HANDLER METHOD
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-    if (
-      typeof commandModule.handler ===
-      "function"
-    ) {
-
-      await commandModule.handler(
-        sock,
-        message,
-        args,
-        text,
-        commandContext
-      );
-
-      return true;
-    }
-
-
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // ▶️ PARRAIN COMMAND
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    //
-    // Sipòte:
-    //
-    // handleParrainCommand({
-    //   sock,
-    //   jid,
-    //   args,
-    //   config
-    // })
-    //
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-    if (
-      typeof commandModule
-        .handleParrainCommand ===
-      "function"
-    ) {
-
-      await commandModule.handleParrainCommand({
-
-        // 🤖 Socket session aktyèl la
-        sock,
-
-        // 📍 Chat
-        jid:
-          jid ||
-          message?.key?.remoteJid,
-
-        // 📋 Arguments
-        args,
-
-        // ⚙️ Config
-        config,
-
-        // 🔐 Multi-session information
-        sessionId,
-
-        // 📱 Bot number
-        botNumber
-
-      });
-
-      return true;
-    }
-
-
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // ▶️ HANDLE METHOD
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-    if (
-      typeof commandModule.handle ===
-      "function"
-    ) {
-
-      await commandModule.handle(
-        commandContext
-      );
-
-      return true;
-    }
-
-
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // ⚠️ NO HANDLER
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-    console.warn(
-      `⚠️ Command "${command}" has no executable handler.`
-    );
-
-    return false;
-
-  } catch (error) {
-
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 🚨 COMMAND ERROR
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-    console.error(
-      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    );
-
-    console.error(
-      `❌ COMMAND ERROR: ${command}`
-    );
-
-    console.error(
-      `📱 BOT: ${botNumber || "UNKNOWN"}`
-    );
-
-    console.error(
-      `🔐 SESSION: ${sessionId || "DEFAULT"}`
-    );
-
-    console.error(
-      error?.message || error
-    );
-
-    console.error(
-      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    );
-
-    return false;
-  }
-}
-
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🧹 CLEAR COMMAND CACHE
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-function clearCommandCache() {
-
-  commandCache.clear();
 
   console.log(
-    "🧹 Command cache cleared."
+    `📦 TOTAL COMMANDS LOADED: ${commands.size}`
   );
+
+  return commands;
 }
 
+function getCommand(name) {
+  const key = normalizeName(name);
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 📋 GET LOADED COMMANDS
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  if (!key) {
+    return null;
+  }
 
-function getLoadedCommands() {
-
-  return Array.from(
-    commandCache.keys()
-  );
+  return commands.get(key) || null;
 }
 
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 📊 GET COMMAND COUNT
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-function getCommandCount() {
-
-  return commandCache.size;
+function getCommands() {
+  return commands;
 }
 
+function getCommandList() {
+  const unique = new Map();
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 📤 EXPORTS
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  for (const command of commands.values()) {
+    if (!command?.name) continue;
+
+    const name = normalizeName(command.name);
+
+    if (!unique.has(name)) {
+      unique.set(name, command);
+    }
+  }
+
+  return [...unique.values()];
+}
+
+function reloadCommands() {
+  return loadCommands();
+}
+
+// Chaje command yo depi kòmansman
+loadCommands();
 
 module.exports = {
-
-  // 🔥 Main handler
-  handle: handleCommand,
-
-  // ⚡ Full handler
-  handleCommand,
-
-  // 🔎 Command finder
-  findCommand,
-
-  // 📥 Command loader
-  loadCommand,
-
-  // 🧹 Cache control
-  clearCommandCache,
-
-  // 📋 Loaded commands
-  getLoadedCommands,
-
-  // 📊 Command count
-  getCommandCount
+  loadCommands,
+  reloadCommands,
+  getCommand,
+  getCommands,
+  getCommandList
 };
-
-
-// ╔════════════════════════════════════════════════════╗
-// ║                    By TOPFEROS TECH               ║
-// ╚════════════════════════════════════════════════════╝
