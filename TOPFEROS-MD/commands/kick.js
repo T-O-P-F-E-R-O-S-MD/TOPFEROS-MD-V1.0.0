@@ -1,126 +1,50 @@
-"use strict";
+const { jidNormalizedUser } = require("@whiskeysockets/baileys");
 
-const config = require("../config");
+module.exports = {
+  name: "kick",
+  aliases: ["remove"],
+  description: "Retire yon manm nan gwoup la",
+  usage: ".kick @user",
+  category: "group",
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🚫 TOPFEROS MD — KICK COMMAND
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  async execute({ sock, msg, args }) {
+    const jid = msg?.key?.remoteJid;
 
-async function execute(context) {
-  const {
-    sock,
-    message
-  } = context;
+    if (!jid || !jid.endsWith("@g.us")) {
+      return sock.sendMessage(jid, {
+        text: "❌ Cette commande est réservée aux groupes."
+      });
+    }
 
-  const chatId =
-    message?.key?.remoteJid;
+    const mentioned =
+      msg?.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
 
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // ❌ VERIFY GROUP
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    let target = mentioned[0];
 
-  if (!chatId || !chatId.endsWith("@g.us")) {
-    await sock.sendMessage(
-      chatId,
-      {
-        text:
-          "❌ Command sa disponib sèlman nan group."
-      },
-      {
-        quoted: message
+    if (!target && args?.[0]) {
+      const raw = String(args[0]).replace(/[^\d]/g, "");
+
+      if (raw) {
+        target = `${raw}@s.whatsapp.net`;
       }
-    );
-
-    return;
-  }
-
-  try {
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 👤 GET TARGET USER
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-    const mentionedJid =
-      message.message?.extendedTextMessage
-        ?.contextInfo?.mentionedJid || [];
-
-    const quotedParticipant =
-      message.message?.extendedTextMessage
-        ?.contextInfo?.participant;
-
-    const target =
-      mentionedJid[0] ||
-      quotedParticipant;
+    }
 
     if (!target) {
-      await sock.sendMessage(
-        chatId,
-        {
-          text:
-            "❌ Mention oswa reply sou moun ou vle retire a.\n\nEgzanp: .kick @moun"
-        },
-        {
-          quoted: message
-        }
-      );
-
-      return;
+      return sock.sendMessage(jid, {
+        text: "❌ Mentionne le membre à retirer."
+      });
     }
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 📋 GET GROUP MEMBERS
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    target = jidNormalizedUser(target);
 
-    const metadata =
-      await sock.groupMetadata(chatId);
+    await sock.groupParticipantsUpdate(
+      jid,
+      [target],
+      "remove"
+    );
 
-    const participants =
-      metadata.participants || [];
-
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 🤖 CHECK BOT ADMIN STATUS
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-    const botNumber =
-      sock.user?.id?.split(":")[0];
-
-    const botParticipant =
-      participants.find(
-        participant =>
-          participant.id?.split(":")[0] ===
-          botNumber
-      );
-
-    if (
-      !botParticipant ||
-      (
-        botParticipant.admin !== "admin" &&
-        botParticipant.admin !== "superadmin"
-      )
-    ) {
-      await sock.sendMessage(
-        chatId,
-        {
-          text:
-            "❌ Bot la dwe admin pou li kapab retire yon moun."
-        },
-        {
-          quoted: message
-        }
-      );
-
-      return;
-    }
-
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 🔍 FIND TARGET
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-    const targetParticipant =
-      participants.find(
-        participant =>
-          participant.id === target ||
-          participant.id?.split(":")[0] ===
-            target.split(":")[0]
-      );
-
-    if (!targetParticipant)
+    return sock.sendMessage(jid, {
+      text: "✅ Membre retiré du groupe."
+    });
+  }
+};
