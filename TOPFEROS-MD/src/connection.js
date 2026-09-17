@@ -1303,20 +1303,38 @@ function getSessionStatus(sessionId) {
 // ============================================================
 
 module.exports = {
-  // Main lifecycle
   start,
   stop,
 
-  // Sessions
   startSession,
   stopSession,
+
   restoreStoredSessions,
 
-  // Pairing
   requestPairingCode,
 
-  // Helpers
+  createSession:
+    sessionManager.createSession,
+
+  getSession:
+    sessionManager.getSession,
+
+  getAllSessions:
+    sessionManager.getAllSessions,
+
+  getSocket:
+    sessionManager.getSocket,
+
+  isConnected:
+    sessionManager.isConnected,
+
+  getPhoneNumber:
+    sessionManager.getPhoneNumber,
+
+  getPairingInfo:
+    sessionManager.getPairingInfo,
+
   cleanPhoneNumber,
-  validatePhoneNumber,
-  getSessionStatus
+
+  validatePhoneNumber
 };
