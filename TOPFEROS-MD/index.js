@@ -9,15 +9,21 @@
 const fs = require("fs");
 const path = require("path");
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// ⚙️ LOAD CONFIGURATION
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ============================================================
+// LOAD CONFIGURATION
+// ============================================================
 
 const config = require("./config");
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🎨 CONSOLE COLORS
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ============================================================
+// LOAD WHATSAPP CONNECTION
+// ============================================================
+
+let connection = null;
+
+// ============================================================
+// CONSOLE COLORS
+// ============================================================
 
 const colors = {
   reset: "\x1b[0m",
@@ -31,9 +37,9 @@ const colors = {
   bold: "\x1b[1m"
 };
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 📝 LOGGER
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ============================================================
+// LOGGER
+// ============================================================
 
 function log(message, color = colors.white) {
   console.log(`${color}${message}${colors.reset}`);
@@ -51,9 +57,9 @@ function error(message) {
   log(`❌ ${message}`, colors.red);
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 📁 REQUIRED DIRECTORIES
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ============================================================
+// REQUIRED DIRECTORIES
+// ============================================================
 
 function createDirectories() {
   const directories = [
@@ -73,7 +79,10 @@ function createDirectories() {
   ];
 
   for (const directory of directories) {
-    const directoryPath = path.join(__dirname, directory);
+    const directoryPath = path.join(
+      __dirname,
+      directory
+    );
 
     if (!fs.existsSync(directoryPath)) {
       fs.mkdirSync(directoryPath, {
@@ -85,60 +94,93 @@ function createDirectories() {
   success("Project directories checked.");
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🖼️ LOGO CHECK
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ============================================================
+// LOGO CHECK
+// ============================================================
 
 function checkLogo() {
   if (!config.bot || !config.bot.logo) {
-    warning("Bot logo path is not configured.");
+    warning(
+      "Bot logo path is not configured."
+    );
     return;
   }
 
-  const logoPath = path.join(__dirname, config.bot.logo);
+  const logoPath = path.join(
+    __dirname,
+    config.bot.logo
+  );
 
   if (fs.existsSync(logoPath)) {
-    success(`Bot logo found: ${config.bot.logo}`);
+    success(
+      `Bot logo found: ${config.bot.logo}`
+    );
   } else {
-    warning(`Bot logo not found: ${config.bot.logo}`);
+    warning(
+      `Bot logo not found: ${config.bot.logo}`
+    );
   }
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// ⚙️ CONFIGURATION CHECK
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ============================================================
+// CONFIGURATION CHECK
+// ============================================================
 
 function checkConfiguration() {
   if (!config.bot) {
-    throw new Error("Bot configuration is missing.");
+    throw new Error(
+      "Bot configuration is missing."
+    );
   }
 
   if (!config.bot.name) {
-    throw new Error("Bot name is missing.");
+    throw new Error(
+      "Bot name is missing."
+    );
   }
 
   if (!config.bot.version) {
-    throw new Error("Bot version is missing.");
+    throw new Error(
+      "Bot version is missing."
+    );
   }
 
   if (!config.bot.prefix) {
-    throw new Error("Bot prefix is missing.");
+    throw new Error(
+      "Bot prefix is missing."
+    );
   }
 
   if (!config.bot.developer) {
-    throw new Error("Developer name is missing.");
+    throw new Error(
+      "Developer name is missing."
+    );
   }
 
-  success(`Bot: ${config.bot.name}`);
-  success(`Version: ${config.bot.version}`);
-  success(`Prefix: ${config.bot.prefix}`);
-  success(`Mode: ${config.bot.mode || "default"}`);
-  success(`Developer: ${config.bot.developer}`);
+  success(
+    `Bot: ${config.bot.name}`
+  );
+
+  success(
+    `Version: ${config.bot.version}`
+  );
+
+  success(
+    `Prefix: ${config.bot.prefix}`
+  );
+
+  success(
+    `Mode: ${config.bot.mode || "default"}`
+  );
+
+  success(
+    `Developer: ${config.bot.developer}`
+  );
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🔗 OFFICIAL LINKS
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ============================================================
+// OFFICIAL LINKS
+// ============================================================
 
 function showLinks() {
   if (!config.links) {
@@ -146,58 +188,85 @@ function showLinks() {
   }
 
   log("");
-  log("🔗 Official Links", colors.cyan);
+  log(
+    "🔗 Official Links",
+    colors.cyan
+  );
   log("");
 
   if (config.links.channel) {
-    log(`📢 Channel: ${config.links.channel}`);
+    log(
+      `📢 Channel: ${config.links.channel}`
+    );
   }
 
   if (config.links.group) {
-    log(`👥 Group: ${config.links.group}`);
+    log(
+      `👥 Group: ${config.links.group}`
+    );
   }
 
   if (config.links.web) {
-    log(`🌐 Web: ${config.links.web}`);
+    log(
+      `🌐 Web: ${config.links.web}`
+    );
   } else {
-    log("🌐 Web: Configured through Panel", colors.yellow);
+    log(
+      "🌐 Web: Configured through Panel",
+      colors.yellow
+    );
   }
 
   log("");
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 👑 OWNER INFORMATION
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ============================================================
+// OWNER INFORMATION
+// ============================================================
 
 function showOwner() {
   if (!config.owner) {
     return;
   }
 
-  log("👑 Owner Information", colors.magenta);
+  log(
+    "👑 Owner Information",
+    colors.magenta
+  );
+
   log("");
 
   if (config.owner.name) {
-    log(`👤 Owner Name: ${config.owner.name}`);
+    log(
+      `👤 Owner Name: ${config.owner.name}`
+    );
   }
 
   if (config.owner.number) {
-    log(`📱 Owner Number: ${config.owner.number}`);
+    log(
+      `📱 Owner Number: ${config.owner.number}`
+    );
   } else {
-    warning("Owner number is not configured.");
+    warning(
+      "Owner number is not configured."
+    );
   }
 
   log("");
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🌐 PANEL STATUS
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ============================================================
+// PANEL STATUS
+// ============================================================
 
 function showPanelStatus() {
-  if (config.portal && config.portal.enabled === false) {
-    warning("Web Settings Panel is disabled.");
+  if (
+    config.portal &&
+    config.portal.enabled === false
+  ) {
+    warning(
+      "Web Settings Panel is disabled."
+    );
     return;
   }
 
@@ -206,51 +275,68 @@ function showPanelStatus() {
     process.env.PORT ||
     3000;
 
-  success(`Web Settings Panel enabled on port ${port}.`);
+  success(
+    `Web Settings Panel enabled on port ${port}.`
+  );
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🗄️ DATABASE DIRECTORY
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ============================================================
+// DATABASE DIRECTORY
+// ============================================================
 
 function prepareDatabase() {
   const databasePath = path.resolve(
     __dirname,
-    config.database?.path || "database/topferos.db"
+    config.database?.path ||
+      "database/topferos.db"
   );
 
-  const databaseDirectory = path.dirname(databasePath);
+  const databaseDirectory =
+    path.dirname(databasePath);
 
-  if (!fs.existsSync(databaseDirectory)) {
-    fs.mkdirSync(databaseDirectory, {
-      recursive: true
-    });
+  if (
+    !fs.existsSync(
+      databaseDirectory
+    )
+  ) {
+    fs.mkdirSync(
+      databaseDirectory,
+      {
+        recursive: true
+      }
+    );
   }
 
-  success("Database directory ready.");
+  success(
+    "Database directory ready."
+  );
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🤖 LOAD WHATSAPP CONNECTION
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-let connection = null;
+// ============================================================
+// START WHATSAPP CONNECTION
+// ============================================================
 
 async function startWhatsApp() {
-  const connectionFile = path.join(
-    __dirname,
-    "src",
-    "connection.js"
-  );
+  const connectionFile =
+    path.join(
+      __dirname,
+      "src",
+      "connection.js"
+    );
 
-  if (!fs.existsSync(connectionFile)) {
+  if (
+    !fs.existsSync(
+      connectionFile
+    )
+  ) {
     throw new Error(
       "src/connection.js was not found."
     );
   }
 
   try {
-    connection = require("./src/connection");
+    connection =
+      require("./src/connection");
 
     if (!connection) {
       throw new Error(
@@ -258,9 +344,28 @@ async function startWhatsApp() {
       );
     }
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // Restore saved Multi-Sessions first
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // --------------------------------------------------------
+    // connection.start()
+    // --------------------------------------------------------
+
+    if (
+      typeof connection.start ===
+      "function"
+    ) {
+      await connection.start();
+
+      success(
+        "WhatsApp connection service started."
+      );
+    } else {
+      throw new Error(
+        "connection.js does not expose a start() function."
+      );
+    }
+
+    // --------------------------------------------------------
+    // Restore existing sessions
+    // --------------------------------------------------------
 
     if (
       typeof connection.restoreStoredSessions ===
@@ -270,81 +375,67 @@ async function startWhatsApp() {
         const restored =
           await connection.restoreStoredSessions();
 
-        if (Array.isArray(restored)) {
+        if (
+          Array.isArray(restored) &&
+          restored.length > 0
+        ) {
           success(
-            `Multi-Session records restored: ${restored.length}`
+            `Restored ${restored.length} WhatsApp session(s).`
           );
         } else {
-          success(
-            "Multi-Session records restored."
+          log(
+            "ℹ️ No saved WhatsApp session to restore.",
+            colors.cyan
           );
         }
       } catch (restoreError) {
         warning(
-          `Session restore warning: ${restoreError.message}`
+          `Session restore warning: ${
+            restoreError?.message ||
+            restoreError
+          }`
         );
       }
     }
-
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // Start default/configured WhatsApp session
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-    if (typeof connection.start === "function") {
-      const result = await connection.start();
-
-      if (result) {
-        success("WhatsApp connection started.");
-      } else {
-        log(
-          "ℹ️ No default WhatsApp session configured. Panel is ready for new sessions.",
-          colors.cyan
-        );
-      }
-
-      return;
-    }
-
-    if (typeof connection === "function") {
-      await connection();
-      success("WhatsApp connection started.");
-      return;
-    }
-
-    throw new Error(
-      "connection.js does not expose a start() function."
-    );
 
   } catch (err) {
     error(
-      `WhatsApp connection error: ${err.message}`
+      `WhatsApp connection error: ${
+        err?.message || err
+      }`
     );
 
     throw err;
   }
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🌐 LOAD WEB PANEL
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ============================================================
+// LOAD WEB PANEL
+// ============================================================
 
 let panelServer = null;
 
 async function startPanel() {
-  const panelFile = path.join(
-    __dirname,
-    "panel",
-    "server.js"
-  );
+  const panelFile =
+    path.join(
+      __dirname,
+      "panel",
+      "server.js"
+    );
 
-  if (!fs.existsSync(panelFile)) {
+  if (
+    !fs.existsSync(
+      panelFile
+    )
+  ) {
     throw new Error(
       "panel/server.js was not found."
     );
   }
 
   try {
-    const panel = require("./panel/server");
+    const panel =
+      require("./panel/server");
 
     if (!panel) {
       throw new Error(
@@ -354,101 +445,128 @@ async function startPanel() {
 
     panelServer = panel;
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // panel/server.js already starts its Express server
-    // when required. We do NOT start another server.
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // server.js already starts Express.
+    // Do not start another server here.
 
     if (panel.server) {
-      success("TOPFEROS MD Web Panel loaded.");
+      success(
+        "TOPFEROS MD Web Panel loaded."
+      );
     } else if (panel.app) {
-      success("TOPFEROS MD Web Panel loaded.");
+      success(
+        "TOPFEROS MD Web Panel loaded."
+      );
     } else {
-      success("TOPFEROS MD Web Panel loaded.");
+      success(
+        "TOPFEROS MD Web Panel loaded."
+      );
     }
 
   } catch (err) {
     error(
-      `Web Panel error: ${err.message}`
+      `Web Panel error: ${
+        err?.message || err
+      }`
     );
 
     throw err;
   }
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🤖 STARTUP BANNER
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ============================================================
+// STARTUP BANNER
+// ============================================================
 
 function showBanner() {
   console.clear();
 
   log("");
+
   log(
     "╔══════════════════════════════════════════════╗",
     colors.cyan
   );
+
   log(
     "║                                              ║",
     colors.cyan
   );
+
   log(
     "║             🤖 TOPFEROS MD                   ║",
     colors.cyan
   );
+
   log(
     "║                 V1.0.0                       ║",
     colors.cyan
   );
+
   log(
     "║                                              ║",
     colors.cyan
   );
+
   log(
     "║             🚀 TOPFEROS TECH                 ║",
     colors.cyan
   );
+
   log(
     "║                                              ║",
     colors.cyan
   );
+
   log(
     "╚══════════════════════════════════════════════╝",
     colors.cyan
   );
+
   log("");
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 📊 SYSTEM INFORMATION
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ============================================================
+// SYSTEM INFORMATION
+// ============================================================
 
 function showSystemInformation() {
   log("");
+
   log(
     "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
     colors.cyan
   );
+
   log(
     "📦 System Initialization",
     colors.cyan
   );
+
   log(
     "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
     colors.cyan
   );
+
   log("");
 
-  log(`🟢 Node.js: ${process.version}`);
-  log(`🟢 Platform: ${process.platform}`);
-  log(`🟢 PID: ${process.pid}`);
+  log(
+    `🟢 Node.js: ${process.version}`
+  );
+
+  log(
+    `🟢 Platform: ${process.platform}`
+  );
+
+  log(
+    `🟢 PID: ${process.pid}`
+  );
 
   log("");
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🚀 MAIN START FUNCTION
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ============================================================
+// MAIN START FUNCTION
+// ============================================================
 
 async function startBot() {
   try {
@@ -458,37 +576,75 @@ async function startBot() {
       "🚀 Starting TOPFEROS MD...",
       colors.bold
     );
+
     log("");
+
+    // --------------------------------------------------------
+    // Directories
+    // --------------------------------------------------------
 
     createDirectories();
 
+    // --------------------------------------------------------
+    // Configuration
+    // --------------------------------------------------------
+
     checkConfiguration();
+
+    // --------------------------------------------------------
+    // Logo
+    // --------------------------------------------------------
 
     checkLogo();
 
+    // --------------------------------------------------------
+    // Database
+    // --------------------------------------------------------
+
     prepareDatabase();
+
+    // --------------------------------------------------------
+    // Owner
+    // --------------------------------------------------------
 
     showOwner();
 
+    // --------------------------------------------------------
+    // Links
+    // --------------------------------------------------------
+
     showLinks();
+
+    // --------------------------------------------------------
+    // Panel status
+    // --------------------------------------------------------
 
     showPanelStatus();
 
+    // --------------------------------------------------------
+    // System information
+    // --------------------------------------------------------
+
     showSystemInformation();
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // --------------------------------------------------------
     // WhatsApp
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // --------------------------------------------------------
 
     await startWhatsApp();
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // --------------------------------------------------------
     // Web Panel
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // --------------------------------------------------------
 
     await startPanel();
 
+    // --------------------------------------------------------
+    // COMPLETE
+    // --------------------------------------------------------
+
     log("");
+
     log(
       "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
       colors.green
@@ -504,22 +660,30 @@ async function startBot() {
     );
 
     log("");
+
     log(
       "🌐 Panel is ready for Multi-Session connections.",
       colors.cyan
     );
+
     log(
       "📱 Users can connect their WhatsApp numbers through the Panel.",
       colors.cyan
     );
+
     log("");
 
   } catch (err) {
     error(
-      `Startup failed: ${err.message}`
+      `Startup failed: ${
+        err?.message || err
+      }`
     );
 
-    if (process.env.NODE_ENV !== "production") {
+    if (
+      process.env.NODE_ENV !==
+      "production"
+    ) {
       console.error(err);
     }
 
@@ -527,35 +691,49 @@ async function startBot() {
   }
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🛑 PROCESS ERROR HANDLING
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ============================================================
+// PROCESS ERROR HANDLING
+// ============================================================
 
-process.on("uncaughtException", (err) => {
-  error(
-    `Uncaught Exception: ${err.message}`
-  );
+process.on(
+  "uncaughtException",
+  err => {
+    error(
+      `Uncaught Exception: ${
+        err?.message || err
+      }`
+    );
 
-  if (process.env.NODE_ENV !== "production") {
-    console.error(err);
+    if (
+      process.env.NODE_ENV !==
+      "production"
+    ) {
+      console.error(err);
+    }
   }
-});
+);
 
-process.on("unhandledRejection", (reason) => {
-  error(
-    `Unhandled Promise Rejection: ${
-      reason?.message || reason
-    }`
-  );
+process.on(
+  "unhandledRejection",
+  reason => {
+    error(
+      `Unhandled Promise Rejection: ${
+        reason?.message || reason
+      }`
+    );
 
-  if (process.env.NODE_ENV !== "production") {
-    console.error(reason);
+    if (
+      process.env.NODE_ENV !==
+      "production"
+    ) {
+      console.error(reason);
+    }
   }
-});
+);
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🛑 GRACEFUL SHUTDOWN
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ============================================================
+// GRACEFUL SHUTDOWN
+// ============================================================
 
 let shuttingDown = false;
 
@@ -567,54 +745,76 @@ async function shutdown(signal) {
   shuttingDown = true;
 
   log("");
-  warning(`${signal} received.`);
-  log("🛑 Shutting down TOPFEROS MD...");
+
+  warning(
+    `${signal} received.`
+  );
+
+  log(
+    "🛑 Shutting down TOPFEROS MD..."
+  );
+
+  // ----------------------------------------------------------
+  // Stop WhatsApp sessions
+  // ----------------------------------------------------------
 
   try {
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // Stop WhatsApp Multi-Sessions
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
     if (
       connection &&
-      typeof connection.stop === "function"
+      typeof connection.stop ===
+        "function"
     ) {
       await connection.stop();
+
       success(
         "WhatsApp Multi-Sessions stopped."
       );
     }
   } catch (err) {
     error(
-      `WhatsApp shutdown error: ${err.message}`
+      `WhatsApp shutdown error: ${
+        err?.message || err
+      }`
     );
   }
 
-  try {
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // Close Express Panel server if available
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // ----------------------------------------------------------
+  // Close Panel
+  // ----------------------------------------------------------
 
+  try {
     if (
       panelServer &&
       panelServer.server &&
-      typeof panelServer.server.close === "function"
+      typeof panelServer.server.close ===
+        "function"
     ) {
-      await new Promise((resolve) => {
-        panelServer.server.close(() => {
-          resolve();
-        });
-      });
+      await new Promise(
+        resolve => {
+          panelServer.server.close(
+            () => resolve()
+          );
+        }
+      );
 
-      success("Web Panel server stopped.");
+      success(
+        "Web Panel server stopped."
+      );
     }
   } catch (err) {
     error(
-      `Panel shutdown error: ${err.message}`
+      `Panel shutdown error: ${
+        err?.message || err
+      }`
     );
   }
 
+  // ----------------------------------------------------------
+  // Complete
+  // ----------------------------------------------------------
+
   log("");
+
   success(
     "TOPFEROS MD shutdown completed."
   );
@@ -622,16 +822,26 @@ async function shutdown(signal) {
   process.exit(0);
 }
 
-process.on("SIGINT", () => {
-  shutdown("SIGINT");
-});
+// ============================================================
+// SIGNALS
+// ============================================================
 
-process.on("SIGTERM", () => {
-  shutdown("SIGTERM");
-});
+process.on(
+  "SIGINT",
+  () => {
+    shutdown("SIGINT");
+  }
+);
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// ▶️ RUN BOT
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+process.on(
+  "SIGTERM",
+  () => {
+    shutdown("SIGTERM");
+  }
+);
+
+// ============================================================
+// RUN BOT
+// ============================================================
 
 startBot();
