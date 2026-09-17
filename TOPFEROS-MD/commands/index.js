@@ -6,47 +6,52 @@ const path = require("path");
 const COMMANDS_DIR = __dirname;
 
 const commands = new Map();
-const loadedFiles = new Set();
+const commandFiles = new Map();
 
-function normalizeName(name) {
-  return String(name || "")
+function normalize(value) {
+  return String(value || "")
     .trim()
-    .toLowerCase()
-    .replace(/\.js$/i, "");
+    .toLowerCase();
 }
 
 function loadCommands() {
   commands.clear();
-  loadedFiles.clear();
+  commandFiles.clear();
 
-  let files = [];
+  let files;
 
   try {
     files = fs.readdirSync(COMMANDS_DIR);
   } catch (error) {
-    console.error("❌ COMMAND DIRECTORY ERROR:", error.message);
+    console.error(
+      "❌ COMMANDS DIRECTORY ERROR:",
+      error.message
+    );
     return commands;
   }
 
   for (const file of files) {
-    if (!file.toLowerCase().endsWith(".js")) {
+    if (
+      !file.toLowerCase().endsWith(".js") ||
+      file.toLowerCase() === "index.js"
+    ) {
       continue;
     }
 
-    // Pa chaje Index.js li menm
-    if (file.toLowerCase() === "index.js") {
-      continue;
-    }
-
-    const fullPath = path.join(COMMANDS_DIR, file);
+    const filePath = path.join(
+      COMMANDS_DIR,
+      file
+    );
 
     try {
-      delete require.cache[require.resolve(fullPath)];
+      delete require.cache[
+        require.resolve(filePath)
+      ];
 
-      const command = require(fullPath);
+      const command = require(filePath);
 
-      // Helper files tankou Welcome.js / Goodbye.js
-      // pa obligatwa pou yo gen name/execute.
+      // Welcome.js / Goodbye.js elatriye
+      // ka pa gen execute(). Yo pa command.
       if (
         !command ||
         typeof command !== "object" ||
@@ -56,7 +61,7 @@ function loadCommands() {
         continue;
       }
 
-      const name = normalizeName(command.name);
+      const name = normalize(command.name);
 
       if (!name) {
         continue;
@@ -64,18 +69,21 @@ function loadCommands() {
 
       if (commands.has(name)) {
         console.warn(
-          `⚠️ COMMAND DUPLICATE: ${name} (${file})`
+          `⚠️ COMMAND DUPLICATE: ${name}`
         );
         continue;
       }
 
       commands.set(name, command);
-      loadedFiles.add(file);
+      commandFiles.set(name, file);
 
-      // Aliases
+      console.log(
+        `✅ COMMAND LOADED: .${name} ← ${file}`
+      );
+
       if (Array.isArray(command.aliases)) {
         for (const alias of command.aliases) {
-          const aliasName = normalizeName(alias);
+          const aliasName = normalize(alias);
 
           if (!aliasName) {
             continue;
@@ -83,43 +91,43 @@ function loadCommands() {
 
           if (commands.has(aliasName)) {
             console.warn(
-              `⚠️ ALIAS DUPLICATE: ${aliasName} — ` +
-              `kenbe premye command lan.`
+              `⚠️ ALIAS DUPLICATE: .${aliasName} — ignored`
             );
             continue;
           }
 
-          commands.set(aliasName, command);
+          commands.set(
+            aliasName,
+            command
+          );
+
+          commandFiles.set(
+            aliasName,
+            file
+          );
         }
       }
-
-      console.log(
-        `✅ COMMAND LOADED: ${name} ← ${file}`
-      );
-
     } catch (error) {
       console.error(
         `❌ COMMAND LOAD ERROR [${file}]:`,
-        error.message
+        error?.stack ||
+        error?.message ||
+        error
       );
     }
   }
 
   console.log(
-    `📦 TOTAL COMMANDS LOADED: ${commands.size}`
+    `📦 COMMAND SYSTEM READY: ${commands.size} names/aliases`
   );
 
   return commands;
 }
 
 function getCommand(name) {
-  const key = normalizeName(name);
-
-  if (!key) {
-    return null;
-  }
-
-  return commands.get(key) || null;
+  return commands.get(
+    normalize(name)
+  ) || null;
 }
 
 function getCommands() {
@@ -130,9 +138,13 @@ function getCommandList() {
   const unique = new Map();
 
   for (const command of commands.values()) {
-    if (!command?.name) continue;
+    if (!command?.name) {
+      continue;
+    }
 
-    const name = normalizeName(command.name);
+    const name = normalize(
+      command.name
+    );
 
     if (!unique.has(name)) {
       unique.set(name, command);
@@ -142,11 +154,16 @@ function getCommandList() {
   return [...unique.values()];
 }
 
+function getCommandFile(name) {
+  return commandFiles.get(
+    normalize(name)
+  ) || null;
+}
+
 function reloadCommands() {
   return loadCommands();
 }
 
-// Chaje command yo depi kòmansman
 loadCommands();
 
 module.exports = {
@@ -154,5 +171,6 @@ module.exports = {
   reloadCommands,
   getCommand,
   getCommands,
-  getCommandList
+  getCommandList,
+  getCommandFile
 };
