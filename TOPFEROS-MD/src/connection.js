@@ -30,11 +30,10 @@ const startingPromises =
 const stoppedSessions =
   new Set();
 
-const RECONNECT_DELAY =
-  5000;
+const RECONNECT_DELAY = 5000;
 
 // ============================================================
-// PHONE NUMBER
+// PHONE NUMBER HELPERS
 // ============================================================
 
 function cleanPhoneNumber(number) {
@@ -45,8 +44,10 @@ function cleanPhoneNumber(number) {
     return "";
   }
 
-  return String(number)
-    .replace(/\D/g, "");
+  return String(number).replace(
+    /\D/g,
+    ""
+  );
 }
 
 function validatePhoneNumber(number) {
@@ -124,7 +125,7 @@ async function handleMessages(update) {
     }
   } catch (error) {
     console.error(
-      "❌ Erè message handler:",
+      "❌ Erè nan message handler:",
       error?.message || error
     );
   }
@@ -207,7 +208,7 @@ function scheduleReconnect(sessionId) {
           );
         } catch (error) {
           console.error(
-            `❌ Erè rekoneksyon ${sessionId}:`,
+            `❌ Erè pandan rekoneksyon ${sessionId}:`,
             error?.message || error
           );
 
@@ -275,12 +276,12 @@ async function createSocket(sessionId) {
         latest.version;
 
       console.log(
-        `📦 Baileys WhatsApp version: ${version.join(".")}`
+        `📦 Baileys version: ${version.join(".")}`
       );
     }
   } catch (error) {
     console.warn(
-      "⚠️ Pa kapab jwenn dènye vèsyon WhatsApp:",
+      "⚠️ Pa kapab jwenn dènye vèsyon Baileys:",
       error?.message || error
     );
   }
@@ -298,10 +299,8 @@ async function createSocket(sessionId) {
       false,
 
     /*
-     * IMPORTANT:
-     * Browser sa a se browser configuration
-     * ki te itilize nan version ki te konn
-     * verifye pairing code la.
+     * Browser configuration ki te
+     * itilize nan ansyen version lan.
      */
     browser:
       Browsers.ubuntu(
@@ -319,10 +318,6 @@ async function createSocket(sessionId) {
       socketConfig
     );
 
-  /*
-   * Sove credentials chak fwa Baileys
-   * modifye auth state la.
-   */
   socket.ev.on(
     "creds.update",
     async () => {
@@ -388,6 +383,11 @@ async function startSession(sessionId) {
         );
       }
 
+      /*
+       * Si session nan logged_out,
+       * pa eseye konekte l dirèkteman.
+       * requestPairingCode() ap reset auth la.
+       */
       if (
         session.status ===
         "logged_out"
@@ -431,8 +431,7 @@ async function startSession(sessionId) {
       }
 
       /*
-       * Yon sèl listener connection.update
-       * pou chak startSession.
+       * Connection events.
        */
       socket.ev.on(
         "connection.update",
@@ -457,6 +456,10 @@ async function startSession(sessionId) {
               );
             }
 
+            // ==================================================
+            // OPEN
+            // ==================================================
+
             if (
               connection ===
               "open"
@@ -477,8 +480,9 @@ async function startSession(sessionId) {
               ) {
                 phoneNumber =
                   cleanPhoneNumber(
-                    socket.user.id
-                      .split(":")[0]
+                    socket.user.id.split(
+                      ":"
+                    )[0]
                   );
               }
 
@@ -531,6 +535,10 @@ async function startSession(sessionId) {
               );
             }
 
+            // ==================================================
+            // CLOSE
+            // ==================================================
+
             if (
               connection ===
               "close"
@@ -574,6 +582,10 @@ async function startSession(sessionId) {
                 null
               );
 
+              // ==============================================
+              // LOGGED OUT
+              // ==============================================
+
               if (loggedOut) {
                 sessionManager.setStatus(
                   sessionId,
@@ -614,6 +626,10 @@ async function startSession(sessionId) {
                 return;
               }
 
+              // ==============================================
+              // CONNECTION REPLACED
+              // ==============================================
+
               if (
                 connectionReplaced
               ) {
@@ -633,6 +649,10 @@ async function startSession(sessionId) {
 
                 return;
               }
+
+              // ==============================================
+              // NORMAL DISCONNECT
+              // ==============================================
 
               sessionManager.setStatus(
                 sessionId,
@@ -680,9 +700,10 @@ async function startSession(sessionId) {
         }
       );
 
-      /*
-       * Mesaj WhatsApp yo.
-       */
+      // ========================================================
+      // MESSAGES
+      // ========================================================
+
       socket.ev.on(
         "messages.upsert",
         async messageUpdate => {
@@ -739,19 +760,15 @@ async function requestPairingCode(
     `📱 Demann pairing code pou: ${phoneNumber}`
   );
 
-  /*
-   * Chèche session ki deja asosye
-   * ak nimewo sa a.
-   */
+  // ==========================================================
+  // GET OR CREATE SESSION
+  // ==========================================================
+
   let session =
     sessionManager.getSessionByNumber(
       phoneNumber
     );
 
-  /*
-   * Si pa gen session,
-   * kreye yon nouvo.
-   */
   if (!session) {
     session =
       sessionManager.createSession(
@@ -776,6 +793,74 @@ async function requestPairingCode(
   );
 
   // ==========================================================
+  // LOGGED OUT / RESET AUTH
+  // ==========================================================
+
+  if (
+    session.status ===
+    "logged_out"
+  ) {
+    console.log(
+      `♻️ Reset auth pou nouvo pairing: ${sessionId}`
+    );
+
+    /*
+     * Fèmen ansyen socket anvan reset auth.
+     */
+    try {
+      await stopSession(
+        sessionId
+      );
+    } catch (error) {
+      console.warn(
+        "⚠️ Pa kapab stop ansyen socket:",
+        error?.message || error
+      );
+    }
+
+    /*
+     * Reset auth directory la.
+     */
+    if (
+      typeof sessionManager.resetAuth ===
+      "function"
+    ) {
+      const resetResult =
+        sessionManager.resetAuth(
+          sessionId
+        );
+
+      if (!resetResult) {
+        throw new Error(
+          "Pa kapab reset auth session lan."
+        );
+      }
+    } else {
+      throw new Error(
+        "sessionManager.resetAuth() pa disponib."
+      );
+    }
+
+    /*
+     * Rekipere session lan apre reset.
+     */
+    session =
+      sessionManager.getSession(
+        sessionId
+      );
+
+    if (!session) {
+      throw new Error(
+        "Session disparèt apre reset auth."
+      );
+    }
+
+    console.log(
+      `✅ Auth reset fini pou ${sessionId}`
+    );
+  }
+
+  // ==========================================================
   // ALREADY CONNECTED
   // ==========================================================
 
@@ -786,10 +871,17 @@ async function requestPairingCode(
   ) {
     return {
       success: true,
+
       sessionId,
-      number: phoneNumber,
-      status: "connected",
+
+      number:
+        phoneNumber,
+
+      status:
+        "connected",
+
       code: null,
+
       message:
         "Bot la deja konekte."
     };
@@ -804,71 +896,30 @@ async function requestPairingCode(
     session.pairingCode
   ) {
     console.log(
-      `♻️ Pairing code deja egziste pou ${phoneNumber}`
+      `♻️ Pairing code deja disponib pou ${phoneNumber}`
     );
 
     return {
       success: true,
+
       sessionId,
-      number: phoneNumber,
-      status: "pairing",
+
+      number:
+        phoneNumber,
+
+      status:
+        "pairing",
+
       code:
         session.pairingCode,
+
       message:
         "Pairing code la deja disponib."
     };
   }
 
   // ==========================================================
-  // RESET OLD BROKEN SOCKET
-  // ==========================================================
-
-  let socket =
-    sessionManager.getSocket(
-      sessionId
-    );
-
-  /*
-   * Si socket la egziste men li pa konekte,
-   * nou itilize li olye nou kreye yon dezyèm socket.
-   */
-  if (
-    !socket
-  ) {
-    /*
-     * Make sure session status la
-     * pa rete sou yon ansyen error.
-     */
-    if (
-      session.status ===
-        "error" ||
-      session.status ===
-        "disconnected"
-    ) {
-      sessionManager.setStatus(
-        sessionId,
-        "connecting"
-      );
-    }
-
-    socket =
-      await startSession(
-        sessionId
-      );
-  }
-
-  if (
-    !socket ||
-    typeof socket.requestPairingCode !==
-      "function"
-  ) {
-    throw new Error(
-      "Baileys socket la pa gen requestPairingCode()."
-    );
-  }
-
-  // ==========================================================
-  // START PAIRING STATE
+  // START PAIRING
   // ==========================================================
 
   if (
@@ -880,16 +931,9 @@ async function requestPairingCode(
     );
   }
 
-  /*
-   * Mete nimewo a avan code la.
-   */
   sessionManager.setNumber(
     sessionId,
     phoneNumber
-  );
-
-  console.log(
-    `🔐 TOPFEROS MD ap mande pairing code pou ${phoneNumber}...`
   );
 
   // ==========================================================
