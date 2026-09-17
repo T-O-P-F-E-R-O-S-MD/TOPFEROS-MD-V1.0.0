@@ -1,31 +1,20 @@
 "use strict";
 
-const express =
-  require("express");
+const express = require("express");
+const path = require("path");
 
-const path =
-  require("path");
+const connection = require("../src/connection");
+const sessionManager = require("../src/sessionManager");
+const settingsPanel = require("../settings/panel");
 
-const connection =
-  require("../src/connection");
+const app = express();
 
-const sessionManager =
-  require("../src/sessionManager");
-
-const settingsPanel =
-  require("../settings/panel");
-
-const app =
-  express();
-
-const PORT =
-  Number(
-    process.env.PORT || 3000
-  );
+const PORT = Number(
+  process.env.PORT || 3000
+);
 
 const HOST =
-  process.env.HOST ||
-  "0.0.0.0";
+  process.env.HOST || "0.0.0.0";
 
 // ============================================================
 // MIDDLEWARE
@@ -47,34 +36,28 @@ app.use(
 // STATIC
 // ============================================================
 
-const publicDir =
-  path.join(
-    __dirname,
-    "public"
-  );
+const publicDir = path.join(
+  __dirname,
+  "public"
+);
 
 app.use(
-  express.static(
-    publicDir
-  )
+  express.static(publicDir)
 );
 
 // ============================================================
 // ASSETS
 // ============================================================
 
-const assetsDir =
-  path.join(
-    __dirname,
-    "..",
-    "assets"
-  );
+const assetsDir = path.join(
+  __dirname,
+  "..",
+  "assets"
+);
 
 app.use(
   "/assets",
-  express.static(
-    assetsDir
-  )
+  express.static(assetsDir)
 );
 
 // ============================================================
@@ -84,11 +67,21 @@ app.use(
 app.get(
   "/background.png",
   (req, res) => {
+    const backgroundPath = path.join(
+      __dirname,
+      "background.png"
+    );
+
     res.sendFile(
-      path.join(
-        __dirname,
-        "background.png"
-      )
+      backgroundPath,
+      error => {
+        if (error && !res.headersSent) {
+          res.status(404).json({
+            success: false,
+            error: "BACKGROUND_NOT_FOUND"
+          });
+        }
+      }
     );
   }
 );
@@ -158,8 +151,7 @@ app.get(
     try {
       const sessionId =
         String(
-          req.query.sessionId ||
-          ""
+          req.query.sessionId || ""
         ).trim();
 
       if (sessionId) {
@@ -169,11 +161,10 @@ app.get(
           );
 
         if (!session) {
-          return res.json({
+          return res.status(404).json({
             success: false,
             connected: false,
-            error:
-              "SESSION_NOT_FOUND"
+            error: "SESSION_NOT_FOUND"
           });
         }
 
@@ -197,7 +188,6 @@ app.get(
 
       return res.json({
         success: true,
-
         sessions:
           getPublicSessions()
       });
@@ -210,7 +200,6 @@ app.get(
 
       return res.status(500).json({
         success: false,
-
         error:
           error?.message ||
           "STATUS_ERROR"
@@ -229,7 +218,6 @@ app.get(
     try {
       return res.json({
         success: true,
-
         sessions:
           getPublicSessions()
       });
@@ -242,7 +230,6 @@ app.get(
 
       return res.status(500).json({
         success: false,
-
         error:
           error?.message ||
           "SESSIONS_ERROR"
@@ -285,12 +272,29 @@ app.post(
           number
         );
 
-      // ======================================================
-      // PAIRING IN PROGRESS
-      // ======================================================
+      if (
+        existing?.pairing &&
+        existing?.pairingCode
+      ) {
+        return res.json({
+          success: true,
+
+          sessionId:
+            existing.sessionId,
+
+          number,
+
+          code:
+            existing.pairingCode,
+
+          status:
+            existing.status
+        });
+      }
 
       if (
-        existing?.pairing
+        existing?.pairing &&
+        !existing?.pairingCode
       ) {
         return res.status(409).json({
           success: false,
@@ -306,10 +310,6 @@ app.post(
         });
       }
 
-      // ======================================================
-      // GENERATE PAIRING CODE
-      // ======================================================
-
       const result =
         await connection.requestPairingCode(
           number
@@ -317,9 +317,44 @@ app.post(
 
       if (
         !result ||
-        !result.code ||
         !result.sessionId
       ) {
+        return res.status(500).json({
+          success: false,
+
+          error:
+            "PAIRING_SESSION_NOT_CREATED",
+
+          message:
+            "Pa kapab kreye WhatsApp session lan."
+        });
+      }
+
+      if (
+        result.status === "connected"
+      ) {
+        return res.json({
+          success: true,
+
+          sessionId:
+            result.sessionId,
+
+          number:
+            result.number ||
+            number,
+
+          code:
+            null,
+
+          status:
+            "connected",
+
+          message:
+            "WhatsApp session lan deja konekte."
+        });
+      }
+
+      if (!result.code) {
         return res.status(500).json({
           success: false,
 
@@ -342,7 +377,11 @@ app.post(
           number,
 
         code:
-          result.code
+          result.code,
+
+        status:
+          result.status ||
+          "pairing"
       });
 
     } catch (error) {
@@ -351,24 +390,18 @@ app.post(
         error?.message || error
       );
 
-      const status =
-        error?.code ===
-        "PAIRING_IN_PROGRESS"
-          ? 409
-          : 500;
+      const message =
+        error?.message ||
+        "Unable to generate pairing code.";
 
-      return res.status(
-        status
-      ).json({
+      return res.status(500).json({
         success: false,
 
         error:
           error?.code ||
           "PAIRING_ERROR",
 
-        message:
-          error?.message ||
-          "Unable to generate pairing code."
+        message
       });
     }
   }
@@ -384,14 +417,12 @@ app.get(
     try {
       const sessionId =
         String(
-          req.query.sessionId ||
-          ""
+          req.query.sessionId || ""
         ).trim();
 
       if (!sessionId) {
         return res.json({
           success: true,
-
           session: null
         });
       }
@@ -402,10 +433,11 @@ app.get(
         );
 
       if (!session) {
-        return res.json({
+        return res.status(404).json({
           success: false,
-
-          session: null
+          session: null,
+          error:
+            "SESSION_NOT_FOUND"
         });
       }
 
@@ -413,6 +445,11 @@ app.get(
         sessionManager.isConnected(
           sessionId
         );
+
+      const panelUrl =
+        settingsPanel.PANEL_URL ||
+        process.env.PANEL_URL ||
+        "";
 
       return res.json({
         success: true,
@@ -434,12 +471,8 @@ app.get(
             ),
 
           settingsLink:
-            connected
-              ? `${
-                  settingsPanel.PANEL_URL ||
-                  process.env.PANEL_URL ||
-                  "https://topferos-md-v1-0-0.onrender.com"
-                }/settings`
+            connected && panelUrl
+              ? `${panelUrl}/settings`
               : null
         }
       });
@@ -463,45 +496,57 @@ app.get(
 app.get(
   "/api/session/:sessionId",
   (req, res) => {
-    const {
-      sessionId
-    } = req.params;
-
-    const session =
-      sessionManager.getSession(
+    try {
+      const {
         sessionId
-      );
+      } = req.params;
 
-    if (!session) {
-      return res.status(404).json({
+      const session =
+        sessionManager.getSession(
+          sessionId
+        );
+
+      if (!session) {
+        return res.status(404).json({
+          success: false,
+          error:
+            "SESSION_NOT_FOUND"
+        });
+      }
+
+      return res.json({
+        success: true,
+
+        session: {
+          sessionId,
+
+          number:
+            session.number,
+
+          status:
+            session.status,
+
+          connected:
+            sessionManager.isConnected(
+              sessionId
+            ),
+
+          pairing:
+            Boolean(
+              session.pairing
+            )
+        }
+      });
+
+    } catch (error) {
+      return res.status(500).json({
         success: false,
 
         error:
-          "SESSION_NOT_FOUND"
+          error?.message ||
+          "SESSION_INFO_ERROR"
       });
     }
-
-    return res.json({
-      success: true,
-
-      session: {
-        sessionId,
-
-        number:
-          session.number,
-
-        status:
-          session.status,
-
-        connected:
-          sessionManager.isConnected(
-            sessionId
-          ),
-
-        pairing:
-          session.pairing
-      }
-    });
   }
 );
 
@@ -553,6 +598,19 @@ app.post(
         });
       }
 
+      if (
+        !settingsPanel ||
+        typeof settingsPanel.verifySession !==
+          "function"
+      ) {
+        return res.status(500).json({
+          success: false,
+
+          error:
+            "SETTINGS_PANEL_UNAVAILABLE"
+        });
+      }
+
       const result =
         settingsPanel.verifySession(
           sessionId,
@@ -578,14 +636,20 @@ app.post(
           result.session,
 
         settings:
-          settingsPanel.getSettings(
-            sessionId
-          ),
+          typeof settingsPanel.getSettings ===
+          "function"
+            ? settingsPanel.getSettings(
+                sessionId
+              )
+            : {},
 
         botInformation:
-          settingsPanel.getBotInformation(
-            sessionId
-          )
+          typeof settingsPanel.getBotInformation ===
+          "function"
+            ? settingsPanel.getBotInformation(
+                sessionId
+              )
+            : {}
       });
 
     } catch (error) {
@@ -624,6 +688,8 @@ app.get(
       }
 
       if (
+        typeof settingsPanel.isAuthenticated !==
+        "function" ||
         !settingsPanel.isAuthenticated(
           sessionId
         )
@@ -640,14 +706,20 @@ app.get(
         success: true,
 
         settings:
-          settingsPanel.getSettings(
-            sessionId
-          ),
+          typeof settingsPanel.getSettings ===
+          "function"
+            ? settingsPanel.getSettings(
+                sessionId
+              )
+            : {},
 
         botInformation:
-          settingsPanel.getBotInformation(
-            sessionId
-          )
+          typeof settingsPanel.getBotInformation ===
+          "function"
+            ? settingsPanel.getBotInformation(
+                sessionId
+              )
+            : {}
       });
 
     } catch (error) {
@@ -686,6 +758,8 @@ app.post(
       }
 
       if (
+        typeof settingsPanel.isAuthenticated !==
+        "function" ||
         !settingsPanel.isAuthenticated(
           sessionId
         )
@@ -699,8 +773,20 @@ app.post(
       }
 
       const updates =
-        req.body?.settings ||
-        {};
+        req.body?.settings || {};
+
+      if (
+        !settingsPanel ||
+        typeof settingsPanel.updateSettings !==
+          "function"
+      ) {
+        return res.status(500).json({
+          success: false,
+
+          error:
+            "SETTINGS_UPDATE_UNAVAILABLE"
+        });
+      }
 
       const result =
         settingsPanel.updateSettings(
@@ -713,8 +799,13 @@ app.post(
 
         settings:
           result ||
-          settingsPanel.getSettings(
-            sessionId
+          (
+            typeof settingsPanel.getSettings ===
+            "function"
+              ? settingsPanel.getSettings(
+                  sessionId
+                )
+              : {}
           )
       });
 
@@ -793,6 +884,20 @@ app.post(
         sessionId
       } = req.params;
 
+      const session =
+        sessionManager.getSession(
+          sessionId
+        );
+
+      if (!session) {
+        return res.status(404).json({
+          success: false,
+
+          error:
+            "SESSION_NOT_FOUND"
+        });
+      }
+
       const result =
         await connection.stopSession(
           sessionId
@@ -800,7 +905,9 @@ app.post(
 
       return res.json({
         success:
-          Boolean(result)
+          Boolean(result),
+
+        sessionId
       });
 
     } catch (error) {
@@ -827,6 +934,20 @@ app.delete(
         sessionId
       } = req.params;
 
+      const session =
+        sessionManager.getSession(
+          sessionId
+        );
+
+      if (!session) {
+        return res.status(404).json({
+          success: false,
+
+          error:
+            "SESSION_NOT_FOUND"
+        });
+      }
+
       const result =
         await connection.removeSession(
           sessionId
@@ -834,7 +955,9 @@ app.delete(
 
       return res.json({
         success:
-          Boolean(result)
+          Boolean(result),
+
+        sessionId
       });
 
     } catch (error) {
@@ -856,7 +979,7 @@ app.delete(
 app.use(
   "/api",
   (req, res) => {
-    res.status(404).json({
+    return res.status(404).json({
       success: false,
 
       error:
@@ -864,31 +987,6 @@ app.use(
     });
   }
 );
-
-// ============================================================
-// START WHATSAPP
-// ============================================================
-
-async function startWhatsApp() {
-  try {
-    if (
-      typeof connection.restoreStoredSessions ===
-      "function"
-    ) {
-      await connection.restoreStoredSessions();
-    }
-
-    console.log(
-      "✅ TOPFEROS MD WhatsApp service ready."
-    );
-
-  } catch (error) {
-    console.error(
-      "❌ START WHATSAPP ERROR:",
-      error?.message || error
-    );
-  }
-}
 
 // ============================================================
 // SERVER
@@ -902,51 +1000,39 @@ const server =
       console.log(
         `🚀 TOPFEROS MD PANEL running on ${HOST}:${PORT}`
       );
-
-      startWhatsApp();
     }
   );
 
 // ============================================================
-// SHUTDOWN
+// ERROR HANDLER
 // ============================================================
 
-async function shutdown(
-  signal
-) {
-  console.log(
-    `🛑 ${signal} received.`
-  );
+app.use(
+  (err, req, res, next) => {
+    console.error(
+      "❌ EXPRESS ERROR:",
+      err?.message || err
+    );
 
-  try {
-    await connection.stop();
-  } catch {}
-
-  server.close(
-    () => {
-      process.exit(0);
+    if (res.headersSent) {
+      return next(err);
     }
-  );
-}
 
-process.once(
-  "SIGTERM",
-  () =>
-    shutdown(
-      "SIGTERM"
-    )
+    return res.status(500).json({
+      success: false,
+
+      error:
+        err?.message ||
+        "INTERNAL_SERVER_ERROR"
+    });
+  }
 );
 
-process.once(
-  "SIGINT",
-  () =>
-    shutdown(
-      "SIGINT"
-    )
-);
+// ============================================================
+// EXPORT
+// ============================================================
 
 module.exports = {
   app,
-
   server
 };
