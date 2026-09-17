@@ -1,6 +1,6 @@
 "use strict";
 
-console.log("🔥 TOPFEROS MD — CONNEXION.JS CHARGE 🔥");
+console.log("🔥 TOPFEROS MD — CONNECTION.JS CHARGE 🔥");
 
 const {
   default: makeWASocket,
@@ -9,168 +9,274 @@ const {
   DisconnectReason
 } = require("@whiskeysockets/baileys");
 
-const { Boom } = require("@hapi/boom");
+const sessionManager =
+  require("./sessionManager");
 
-const sessionManager = require("./sessionManager");
-const messageHandler = require("./handlers/messageHandler");
+const messageHandler =
+  require("./messageHandler");
+
+/* ============================================================
+   GET SESSION
+============================================================ */
 
 function getSession(sessionId) {
-  if (typeof sessionManager.getSessionById === "function") {
-    return sessionManager.getSessionById(sessionId);
+  if (
+    typeof sessionManager.getSession ===
+    "function"
+  ) {
+    return sessionManager.getSession(
+      sessionId
+    );
   }
 
-  if (typeof sessionManager.getSession === "function") {
-    return sessionManager.getSession(sessionId);
-  }
-
-  if (typeof sessionManager.getSessionByNumber === "function") {
-    return sessionManager.getSessionByNumber(sessionId);
+  if (
+    typeof sessionManager.getSessionById ===
+    "function"
+  ) {
+    return sessionManager.getSessionById(
+      sessionId
+    );
   }
 
   return null;
 }
 
-async function updateSession(sessionId, data) {
+/* ============================================================
+   UPDATE SESSION
+============================================================ */
+
+function updateSession(
+  sessionId,
+  updates = {}
+) {
   try {
-    if (typeof sessionManager.updateSession === "function") {
-      await sessionManager.updateSession(sessionId, data);
+    if (
+      typeof sessionManager.updateSession ===
+      "function"
+    ) {
+      return sessionManager.updateSession(
+        sessionId,
+        updates
+      );
     }
+
+    return false;
   } catch (error) {
     console.error(
-      `❌ SESSION UPDATE ERROR [${sessionId}]:`,
+      `❌ UPDATE SESSION ERROR [${sessionId}]:`,
       error?.message || error
     );
+
+    return false;
   }
 }
 
-/* ===============================
+/* ============================================================
    MESSAGE LISTENER
-================================ */
+============================================================ */
 
-function attachMessageListener(sock, sessionId) {
+function attachMessageListener(
+  sock,
+  sessionId
+) {
   if (!sock) {
-    console.error("❌ SOCKET MANKE.");
+    console.error(
+      "❌ MESSAGE LISTENER: SOCKET MANKE."
+    );
     return;
   }
 
-  sock.ev.on("messages.upsert", async (upsert) => {
-    try {
-      const messages = upsert?.messages || [];
-
-      console.log(
-        `📩 MESSAGES UPSERT [${sessionId}] — ${upsert?.type || "unknown"} — ${messages.length}`
-      );
-
-      for (const message of messages) {
-        if (!message) continue;
+  sock.ev.on(
+    "messages.upsert",
+    async (upsert) => {
+      try {
+        const messages =
+          upsert?.messages || [];
 
         console.log(
-          `➡️ MESSAGE HANDLER APPELÉ [${sessionId}]`
+          `📩 MESSAGES UPSERT [${sessionId}] — ${
+            upsert?.type || "unknown"
+          } — ${messages.length}`
         );
 
-        await messageHandler.handleMessage(
-          sock,
-          message,
-          sessionId
+        for (
+          const message of messages
+        ) {
+          if (!message) {
+            continue;
+          }
+
+          await messageHandler.handleMessage(
+            sock,
+            message,
+            sessionId
+          );
+        }
+
+      } catch (error) {
+        console.error(
+          `❌ MESSAGES UPSERT ERROR [${sessionId}]:`,
+          error?.stack ||
+          error?.message ||
+          error
         );
       }
-    } catch (error) {
-      console.error(
-        `❌ MESSAGES UPSERT ERROR [${sessionId}]:`,
-        error?.stack || error
-      );
     }
-  });
+  );
 
   console.log(
     `👂 MESSAGE LISTENER ATTACHED: ${sessionId}`
   );
 }
 
-/* ===============================
+/* ============================================================
    CONNECTION LISTENER
-================================ */
+============================================================ */
 
-function attachConnectionListener(sock, sessionId) {
-  sock.ev.on("connection.update", async (update) => {
-    try {
-      const {
-        connection,
-        lastDisconnect
-      } = update;
+function attachConnectionListener(
+  sock,
+  sessionId
+) {
+  if (!sock) {
+    return;
+  }
 
-      console.log(
-        `🔌 CONNECTION UPDATE [${sessionId}]:`,
-        connection || "update"
-      );
-
-      if (connection === "open") {
-        console.log(
-          `✅ WHATSAPP CONNECTED: ${sessionId}`
-        );
-
-        await updateSession(sessionId, {
-          socket: sock,
-          status: "connected",
-          jid: sock.user?.id || null
-        });
-
-        return;
-      }
-
-      if (connection === "close") {
-        const statusCode =
-          new Boom(lastDisconnect?.error)
-            ?.output?.statusCode;
+  sock.ev.on(
+    "connection.update",
+    async (update) => {
+      try {
+        const {
+          connection,
+          lastDisconnect
+        } = update;
 
         console.log(
-          `❌ WHATSAPP DISCONNECTED [${sessionId}]: ${
-            statusCode || "UNKNOWN"
+          `🔌 CONNECTION UPDATE [${sessionId}]: ${
+            connection || "update"
           }`
         );
 
-        await updateSession(sessionId, {
-          socket: null,
-          status: "disconnected"
-        });
+        /* ----------------------------------------------------
+           CONNECTED
+        ---------------------------------------------------- */
 
-        if (statusCode === DisconnectReason.loggedOut) {
+        if (
+          connection === "open"
+        ) {
           console.log(
-            `🚪 SESSION LOGGED OUT: ${sessionId}`
+            `✅ WHATSAPP CONNECTED: ${sessionId}`
           );
+
+          updateSession(
+            sessionId,
+            {
+              socket: sock,
+              status: "connected",
+              pairing: false,
+              pairingCode: null,
+              pairingStartedAt: null
+            }
+          );
+
           return;
         }
 
-        console.log(
-          `🔄 RECONNECTING: ${sessionId}`
-        );
+        /* ----------------------------------------------------
+           CLOSED
+        ---------------------------------------------------- */
 
-        setTimeout(async () => {
-          try {
-            await startSession(sessionId);
-          } catch (error) {
-            console.error(
-              `❌ RECONNECT ERROR [${sessionId}]:`,
-              error?.message || error
+        if (
+          connection === "close"
+        ) {
+          const statusCode =
+            lastDisconnect?.error
+              ?.output
+              ?.statusCode;
+
+          console.log(
+            `❌ WHATSAPP DISCONNECTED [${sessionId}]: ${
+              statusCode || "UNKNOWN"
+            }`
+          );
+
+          updateSession(
+            sessionId,
+            {
+              socket: null,
+              status: "disconnected"
+            }
+          );
+
+          /* LOGGED OUT */
+
+          if (
+            statusCode ===
+            DisconnectReason.loggedOut
+          ) {
+            console.log(
+              `🚪 SESSION LOGGED OUT: ${sessionId}`
             );
+
+            return;
           }
-        }, 3000);
+
+          /* RECONNECT */
+
+          console.log(
+            `🔄 RECONNECTING SESSION: ${sessionId}`
+          );
+
+          setTimeout(
+            async () => {
+              try {
+                const session =
+                  getSession(
+                    sessionId
+                  );
+
+                if (!session) {
+                  return;
+                }
+
+                await startSession(
+                  sessionId
+                );
+
+              } catch (error) {
+                console.error(
+                  `❌ RECONNECT ERROR [${sessionId}]:`,
+                  error?.message ||
+                  error
+                );
+              }
+            },
+            3000
+          );
+        }
+
+      } catch (error) {
+        console.error(
+          `❌ CONNECTION UPDATE ERROR [${sessionId}]:`,
+          error?.stack ||
+          error?.message ||
+          error
+        );
       }
-    } catch (error) {
-      console.error(
-        `❌ CONNECTION UPDATE ERROR [${sessionId}]:`,
-        error?.stack || error
-      );
     }
-  });
+  );
 }
 
-/* ===============================
+/* ============================================================
    CREATE SOCKET
-================================ */
+============================================================ */
 
-async function createSocket(sessionId) {
-  const session = getSession(sessionId);
+async function createSocket(
+  sessionId
+) {
+  const session =
+    getSession(
+      sessionId
+    );
 
   if (!session) {
     throw new Error(
@@ -187,36 +293,46 @@ async function createSocket(sessionId) {
   const {
     state,
     saveCreds
-  } = await useMultiFileAuthState(
-    session.authDir
-  );
+  } =
+    await useMultiFileAuthState(
+      session.authDir
+    );
 
   const {
     version
-  } = await fetchLatestBaileysVersion();
+  } =
+    await fetchLatestBaileysVersion();
 
   console.log(
-    `📦 BAILEYS VERSION [${sessionId}]: ${version.join(".")}`
+    `📦 BAILEYS VERSION [${sessionId}]: ${version.join(
+      "."
+    )}`
   );
 
-  const sock = makeWASocket({
-    version,
-    auth: state,
+  const sock =
+    makeWASocket({
+      version,
 
-    printQRInTerminal: false,
+      auth: state,
 
-    browser: [
-      "TOPFEROS MD",
-      "Chrome",
-      "1.0.0"
-    ],
+      printQRInTerminal:
+        false,
 
-    syncFullHistory: false,
+      browser: [
+        "TOPFEROS MD",
+        "Chrome",
+        "1.0.0"
+      ],
 
-    markOnlineOnConnect: false,
+      syncFullHistory:
+        false,
 
-    generateHighQualityLinkPreview: false
-  });
+      markOnlineOnConnect:
+        false,
+
+      generateHighQualityLinkPreview:
+        false
+    });
 
   /* SAVE CREDENTIALS */
 
@@ -225,9 +341,7 @@ async function createSocket(sessionId) {
     saveCreds
   );
 
-  /* IMPORTANT:
-     LISTENER YO DWE ATACHE SOU
-     SOCKET SA A. */
+  /* LISTENERS */
 
   attachMessageListener(
     sock,
@@ -239,19 +353,30 @@ async function createSocket(sessionId) {
     sessionId
   );
 
-  await updateSession(sessionId, {
-    socket: sock,
-    status: "connecting"
-  });
+  /* SAVE SOCKET */
+
+  updateSession(
+    sessionId,
+    {
+      socket: sock,
+      status: "connecting"
+    }
+  );
 
   return sock;
 }
 
-/* ===============================
+/* ============================================================
    START SESSION
-================================ */
+============================================================ */
 
-async function startSession(sessionId) {
+async function startSession(
+  sessionId
+) {
+  if (!sessionId) {
+    return null;
+  }
+
   console.log(
     `🚀 START SESSION: ${sessionId}`
   );
@@ -261,45 +386,118 @@ async function startSession(sessionId) {
   );
 }
 
-/* ===============================
-   PAIRING CODE
-================================ */
+/* ============================================================
+   REQUEST PAIRING CODE
+   PANEL LA VOYE NIMEWO A DIRÈKT
+============================================================ */
 
 async function requestPairingCode(
-  sessionId,
   phoneNumber
 ) {
-  const session = getSession(sessionId);
-
-  if (!session) {
-    throw new Error(
-      `Session pa jwenn: ${sessionId}`
+  const number =
+    String(
+      phoneNumber || ""
+    ).replace(
+      /\D/g,
+      ""
     );
-  }
 
-  const sock = await startSession(
-    sessionId
-  );
-
-  const number = String(
-    phoneNumber || ""
-  ).replace(/\D/g, "");
-
-  if (!number) {
+  if (
+    !number ||
+    !/^\d{8,15}$/.test(number)
+  ) {
     throw new Error(
       "Phone number invalid."
     );
   }
 
-  /*
-   * Nou itilize state ki soti
-   * nan useMultiFileAuthState
-   * olye socket.authState.
-   */
+  /* ----------------------------------------------------------
+     CHECK EXISTING SESSION
+  ---------------------------------------------------------- */
+
+  let session =
+    sessionManager.getSessionByNumber
+      ? sessionManager.getSessionByNumber(
+          number
+        )
+      : null;
+
+  if (
+    session &&
+    session.pairing
+  ) {
+    const error =
+      new Error(
+        "Pairing already in progress."
+      );
+
+    error.code =
+      "PAIRING_IN_PROGRESS";
+
+    throw error;
+  }
+
+  /* ----------------------------------------------------------
+     CREATE NEW SESSION
+  ---------------------------------------------------------- */
+
+  if (!session) {
+    session =
+      sessionManager.createSession(
+        number
+      );
+  }
+
+  if (!session) {
+    throw new Error(
+      "Unable to create WhatsApp session."
+    );
+  }
+
+  const sessionId =
+    session.sessionId;
+
+  /* ----------------------------------------------------------
+     MARK PAIRING
+  ---------------------------------------------------------- */
+
+  if (
+    typeof sessionManager.startPairing ===
+    "function"
+  ) {
+    sessionManager.startPairing(
+      sessionId
+    );
+  }
+
+  /* ----------------------------------------------------------
+     START SOCKET
+  ---------------------------------------------------------- */
+
+  const sock =
+    await startSession(
+      sessionId
+    );
 
   console.log(
     `🔑 REQUEST PAIRING CODE [${sessionId}]`
   );
+
+  /* ----------------------------------------------------------
+     WAIT A LITTLE FOR SOCKET
+  ---------------------------------------------------------- */
+
+  await new Promise(
+    resolve =>
+      setTimeout(
+        resolve,
+        1000
+      )
+  );
+
+  /* ----------------------------------------------------------
+     GENERATE CODE
+  ---------------------------------------------------------- */
 
   const code =
     await sock.requestPairingCode(
@@ -310,23 +508,149 @@ async function requestPairingCode(
     `🔐 PAIRING CODE [${sessionId}]: ${code}`
   );
 
+  if (
+    typeof sessionManager.setNumber ===
+    "function"
+  ) {
+    sessionManager.setNumber(
+      sessionId,
+      number
+    );
+  }
+
+  if (
+    typeof sessionManager.setPairingCode ===
+    "function"
+  ) {
+    sessionManager.setPairingCode(
+      sessionId,
+      code
+    );
+  }
+
   return {
-    socket: sock,
-    code
+    success: true,
+
+    sessionId,
+
+    number,
+
+    code,
+
+    socket: sock
   };
 }
 
-/* ===============================
-   STOP SESSION
-================================ */
+/* ============================================================
+   RESTORE STORED SESSIONS
+============================================================ */
 
-async function stopSession(sessionId) {
+async function restoreStoredSessions() {
+  if (
+    typeof sessionManager.getStoredSessionIds !==
+    "function"
+  ) {
+    return [];
+  }
+
+  const sessionIds =
+    sessionManager.getStoredSessionIds();
+
+  const restored = [];
+
+  for (
+    const sessionId of sessionIds
+  ) {
+    try {
+      const session =
+        getSession(
+          sessionId
+        );
+
+      if (!session) {
+        continue;
+      }
+
+      /*
+       * Pa relanse yon session ki deja
+       * gen socket aktif nan RAM.
+       */
+
+      if (
+        session.socket
+      ) {
+        continue;
+      }
+
+      await startSession(
+        sessionId
+      );
+
+      restored.push(
+        sessionId
+      );
+
+    } catch (error) {
+      console.error(
+        `❌ RESTORE SESSION ERROR [${sessionId}]:`,
+        error?.message ||
+        error
+      );
+    }
+  }
+
+  console.log(
+    `♻️ STORED SESSIONS RESTORED: ${restored.length}`
+  );
+
+  return restored;
+}
+
+/* ============================================================
+   START
+   index.js APPEL connection.start()
+============================================================ */
+
+async function start() {
+  const restored =
+    await restoreStoredSessions();
+
+  /*
+   * Pa gen session default espesyal.
+   * Panel la ap kreye nouvo session
+   * lè yon moun mande pairing.
+   */
+
+  if (
+    restored.length === 0
+  ) {
+    console.log(
+      "ℹ️ NO DEFAULT SESSION — PANEL READY."
+    );
+  }
+
+  return restored;
+}
+
+/* ============================================================
+   STOP SESSION
+============================================================ */
+
+async function stopSession(
+  sessionId
+) {
   try {
     const session =
-      getSession(sessionId);
+      getSession(
+        sessionId
+      );
+
+    if (!session) {
+      return false;
+    }
 
     const sock =
-      session?.socket;
+      session.socket;
 
     if (sock) {
       try {
@@ -338,7 +662,7 @@ async function stopSession(sessionId) {
       } catch {}
     }
 
-    await updateSession(
+    updateSession(
       sessionId,
       {
         socket: null,
@@ -349,18 +673,30 @@ async function stopSession(sessionId) {
     console.log(
       `🛑 SESSION STOPPED: ${sessionId}`
     );
+
+    return true;
+
   } catch (error) {
     console.error(
       `❌ STOP SESSION ERROR [${sessionId}]:`,
-      error?.message || error
+      error?.message ||
+      error
     );
+
+    return false;
   }
 }
+
+/* ============================================================
+   EXPORTS
+============================================================ */
 
 module.exports = {
   createSocket,
   startSession,
   requestPairingCode,
+  restoreStoredSessions,
+  start,
   stopSession,
   attachMessageListener,
   attachConnectionListener
