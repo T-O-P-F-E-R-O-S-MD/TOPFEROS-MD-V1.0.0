@@ -4,7 +4,8 @@ const {
   default: makeWASocket,
   useMultiFileAuthState,
   DisconnectReason,
-  fetchLatestBaileysVersion
+  fetchLatestBaileysVersion,
+  Browsers
 } = require("@whiskeysockets/baileys");
 
 const sessionManager = require("./sessionManager");
@@ -286,7 +287,9 @@ async function createSocket(sessionId) {
     markOnlineOnConnect: false,
     syncFullHistory: false,
     generateHighQualityLinkPreview: false,
-    browser: ["TOPFEROS MD", "Chrome", "1.0.0"]
+
+    // Browser standard pou pairing code WhatsApp
+    browser: Browsers.ubuntu("Chrome")
   };
 
   if (version) {
@@ -607,7 +610,6 @@ async function requestPairingCode(number) {
     );
   }
 
-  // IMPORTANT:
   // sessionManager uses "sessionId", NOT "id".
   if (!session || !session.sessionId) {
     throw new Error(
@@ -970,20 +972,16 @@ async function stop() {
 // ============================================================
 
 module.exports = {
-  // Main
   start: restoreStoredSessions,
   stop,
 
-  // Sessions
   startSession,
   stopSession,
   removeSession,
   restoreStoredSessions,
 
-  // Pairing
   requestPairingCode,
 
-  // Session Manager compatibility
   createSession:
     sessionManager.createSession,
 
@@ -1005,7 +1003,6 @@ module.exports = {
   getPairingInfo:
     sessionManager.getPairingInfo,
 
-  // Helpers
   cleanPhoneNumber,
   validatePhoneNumber
 };
