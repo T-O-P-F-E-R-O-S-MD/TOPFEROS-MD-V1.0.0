@@ -3,7 +3,8 @@
 let config = {};
 
 try {
-  config = require("../config");
+  config =
+    require("../config");
 } catch (error) {
   console.warn(
     "⚠️ CONFIG LOAD WARNING:",
@@ -12,19 +13,19 @@ try {
 }
 
 const commandIndex =
-  require("../commands/Index");
+  require("../commands/index");
 
 const PREFIX =
   config?.bot?.prefix ||
-  config?.PREFIX ||
-  config?.prefix ||
   ".";
 
-/* ===============================
-   GET TEXT
-================================ */
+/* ============================================================
+   GET MESSAGE TEXT
+============================================================ */
 
-function getMessageText(message) {
+function getMessageText(
+  message
+) {
   const msg =
     message?.message;
 
@@ -34,52 +35,84 @@ function getMessageText(message) {
 
   return (
     msg.conversation ||
-    msg.extendedTextMessage?.text ||
-    msg.imageMessage?.caption ||
-    msg.videoMessage?.caption ||
-    msg.documentMessage?.caption ||
-    msg.audioMessage?.caption ||
+
+    msg.extendedTextMessage
+      ?.text ||
+
+    msg.imageMessage
+      ?.caption ||
+
+    msg.videoMessage
+      ?.caption ||
+
+    msg.documentMessage
+      ?.caption ||
+
+    msg.audioMessage
+      ?.caption ||
+
     msg.buttonsResponseMessage
       ?.selectedButtonId ||
+
     msg.listResponseMessage
       ?.singleSelectReply
       ?.selectedRowId ||
+
     msg.templateButtonReplyMessage
       ?.selectedId ||
+
     ""
   );
 }
 
-/* ===============================
+/* ============================================================
    QUOTED MESSAGE
-================================ */
+============================================================ */
 
-function getQuotedMessage(message) {
+function getQuotedMessage(
+  message
+) {
   return (
     message?.message
       ?.extendedTextMessage
       ?.contextInfo
       ?.quotedMessage ||
+
+    message?.message
+      ?.imageMessage
+      ?.contextInfo
+      ?.quotedMessage ||
+
+    message?.message
+      ?.videoMessage
+      ?.contextInfo
+      ?.quotedMessage ||
+
     null
   );
 }
 
-/* ===============================
+/* ============================================================
    SENDER
-================================ */
+============================================================ */
 
-function getSender(message) {
+function getSender(
+  message
+) {
   return (
     message?.key?.participant ||
+
     message?.participant ||
+
     message?.key?.remoteJid ||
+
     null
   );
 }
 
-/* ===============================
+/* ============================================================
    HANDLE MESSAGE
-================================ */
+============================================================ */
 
 async function handleMessage(
   sock,
@@ -87,37 +120,50 @@ async function handleMessage(
   sessionId
 ) {
   try {
-    if (!sock || !message) {
+    if (
+      !sock ||
+      !message
+    ) {
       return;
     }
 
     if (!sessionId) {
       console.error(
-        "❌ MESSAGE HANDLER: sessionId manke."
+        "❌ MESSAGE HANDLER: SESSION ID MANKE."
       );
+
       return;
     }
 
-    if (message?.key?.fromMe) {
-      return;
-    }
-
-    const chatId =
-      message?.key?.remoteJid;
-
-    if (!chatId) {
-      return;
-    }
+    /* Ignore messages bot la voye */
 
     if (
-      chatId === "status@broadcast"
+      message?.key?.fromMe
+    ) {
+      return;
+    }
+
+    const jid =
+      message?.key?.remoteJid;
+
+    if (!jid) {
+      return;
+    }
+
+    /* Ignore status */
+
+    if (
+      jid ===
+      "status@broadcast"
     ) {
       return;
     }
 
     const text =
       String(
-        getMessageText(message) || ""
+        getMessageText(
+          message
+        ) || ""
       ).trim();
 
     console.log(
@@ -130,36 +176,54 @@ async function handleMessage(
       return;
     }
 
-    /* PREFIX */
+    /* ========================================================
+       PREFIX
+    ======================================================== */
 
-    if (!text.startsWith(PREFIX)) {
+    if (
+      !text.startsWith(
+        PREFIX
+      )
+    ) {
       return;
     }
 
     const commandLine =
       text
-        .slice(PREFIX.length)
+        .slice(
+          PREFIX.length
+        )
         .trim();
 
     if (!commandLine) {
       return;
     }
 
+    /* ========================================================
+       COMMAND + ARGS
+    ======================================================== */
+
     const parts =
-      commandLine.split(/\s+/);
+      commandLine.split(
+        /\s+/
+      );
 
     const commandName =
       String(
-        parts.shift() || ""
+        parts.shift() ||
+        ""
       ).toLowerCase();
 
-    const args = parts;
+    const args =
+      parts;
 
     console.log(
       `🔎 COMMAND SEARCH: ${PREFIX}${commandName}`
     );
 
-    /* FIND COMMAND */
+    /* ========================================================
+       FIND COMMAND
+    ======================================================== */
 
     const command =
       commandIndex.getCommand(
@@ -174,24 +238,39 @@ async function handleMessage(
       return;
     }
 
-    const commandText =
-      args.join(" ").trim();
+    /* ========================================================
+       COMMAND TEXT
+    ======================================================== */
 
-    /* CONTEXT */
+    const commandText =
+      args.join(
+        " "
+      ).trim();
+
+    /* ========================================================
+       CONTEXT
+    ======================================================== */
 
     const context = {
       sock,
+
       message,
 
       sessionId,
 
-      chatId,
+      jid,
+
+      chatId: jid,
 
       sender:
-        getSender(message),
+        getSender(
+          message
+        ),
 
       quoted:
-        getQuotedMessage(message),
+        getQuotedMessage(
+          message
+        ),
 
       command:
         commandName,
@@ -210,15 +289,47 @@ async function handleMessage(
     };
 
     console.log(
-      `🚀 EXECUTING COMMAND: ${command.name}`
+      `🚀 EXECUTING COMMAND: ${
+        command.name ||
+        commandName
+      }`
     );
 
-    await command.execute(
-      context
-    );
+    /* ========================================================
+       EXECUTE
+    ======================================================== */
+
+    if (
+      typeof command.execute ===
+      "function"
+    ) {
+      await command.execute(
+        context
+      );
+    }
+
+    else if (
+      typeof command.handleParrainCommand ===
+      "function"
+    ) {
+      await command.handleParrainCommand(
+        context
+      );
+    }
+
+    else {
+      console.error(
+        `❌ COMMAND PA GEN EXECUTE: ${commandName}`
+      );
+
+      return;
+    }
 
     console.log(
-      `✅ COMMAND COMPLETED: ${command.name}`
+      `✅ COMMAND COMPLETED: ${
+        command.name ||
+        commandName
+      }`
     );
 
   } catch (error) {
@@ -231,7 +342,13 @@ async function handleMessage(
   }
 }
 
+/* ============================================================
+   EXPORTS
+============================================================ */
+
 module.exports = {
   handleMessage,
-  getMessageText
+  getMessageText,
+  getQuotedMessage,
+  getSender
 };
