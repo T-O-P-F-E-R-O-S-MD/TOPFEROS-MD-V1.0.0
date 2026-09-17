@@ -699,7 +699,7 @@ async function startSession(
         }
       );
 
-          // ==================================================
+      // ==================================================
       // MESSAGE HANDLER
       // ==================================================
 
@@ -1050,8 +1050,7 @@ async function requestPairingCode(
       if (
         typeof sessionManager.setStatus ===
         "function"
-      ) {
-        sessionManager.setStatus(
+      ) {      sessionManager.setStatus(
           sessionId,
           "error"
         );
