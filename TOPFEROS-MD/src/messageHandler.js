@@ -1,7 +1,5 @@
 "use strict";
 
-const path = require("path");
-
 let config = {};
 
 try {
@@ -13,7 +11,8 @@ try {
   );
 }
 
-const commandIndex = require("../commands");
+const commandIndex =
+  require("../commands/Index");
 
 const PREFIX =
   config?.bot?.prefix ||
@@ -22,7 +21,8 @@ const PREFIX =
   ".";
 
 function getMessageText(message) {
-  const msg = message?.message;
+  const msg =
+    message?.message;
 
   if (!msg) {
     return "";
@@ -35,9 +35,13 @@ function getMessageText(message) {
     msg.videoMessage?.caption ||
     msg.documentMessage?.caption ||
     msg.audioMessage?.caption ||
-    msg.buttonsResponseMessage?.selectedButtonId ||
-    msg.listResponseMessage?.singleSelectReply?.selectedRowId ||
-    msg.templateButtonReplyMessage?.selectedId ||
+    msg.buttonsResponseMessage
+      ?.selectedButtonId ||
+    msg.listResponseMessage
+      ?.singleSelectReply
+      ?.selectedRowId ||
+    msg.templateButtonReplyMessage
+      ?.selectedId ||
     ""
   );
 }
@@ -47,11 +51,12 @@ function getQuotedMessage(message) {
     message?.message
       ?.extendedTextMessage
       ?.contextInfo
-      ?.quotedMessage || null
+      ?.quotedMessage ||
+    null
   );
 }
 
-function getSenderJid(message) {
+function getSender(message) {
   return (
     message?.key?.participant ||
     message?.participant ||
@@ -67,15 +72,12 @@ async function handleMessage(
 ) {
   try {
     if (!sock || !message) {
-      console.log(
-        "⚠️ handleMessage: sock/message manke."
-      );
       return;
     }
 
     if (!sessionId) {
-      console.log(
-        "⚠️ handleMessage: sessionId manke."
+      console.error(
+        "❌ MESSAGE HANDLER: sessionId manke."
       );
       return;
     }
@@ -84,25 +86,28 @@ async function handleMessage(
       return;
     }
 
-    const remoteJid =
+    const chatId =
       message?.key?.remoteJid;
 
-    if (!remoteJid) {
+    if (!chatId) {
       return;
     }
 
-    // Status pa antre nan command system
-    if (remoteJid === "status@broadcast") {
+    if (
+      chatId ===
+      "status@broadcast"
+    ) {
       return;
     }
 
     const text =
-      String(getMessageText(message) || "")
-        .trim();
+      String(
+        getMessageText(message) || ""
+      ).trim();
 
     console.log(
-      `📨 TEXT [${sessionId}]:`,
-      text || "[MEDIA/NO TEXT]"
+      `📝 MESSAGE [${sessionId}]:`,
+      text || "[MEDIA]"
     );
 
     if (!text) {
@@ -126,8 +131,9 @@ async function handleMessage(
       commandLine.split(/\s+/);
 
     const commandName =
-      String(parts.shift() || "")
-        .toLowerCase();
+      String(
+        parts.shift() || ""
+      ).toLowerCase();
 
     const args = parts;
 
@@ -137,12 +143,12 @@ async function handleMessage(
       );
 
     console.log(
-      `🎯 COMMAND [${sessionId}]: ${commandName}`
+      `🔎 COMMAND SEARCH: .${commandName}`
     );
 
     if (!command) {
       console.log(
-        `❓ UNKNOWN COMMAND: ${commandName}`
+        `❓ UNKNOWN COMMAND: .${commandName}`
       );
 
       return;
@@ -155,35 +161,42 @@ async function handleMessage(
       sock,
       message,
 
-      // Session
       sessionId,
 
-      // Command
-      command: commandName,
+      chatId,
+
+      sender:
+        getSender(message),
+
+      quoted:
+        getQuotedMessage(message),
+
+      command:
+        commandName,
+
       commandName,
+
       args,
-      text: commandText,
 
-      // WhatsApp data
-      chatId: remoteJid,
-      sender: getSenderJid(message),
-      quoted: getQuotedMessage(message),
+      text:
+        commandText,
 
-      // Config
-      config,
+      prefix:
+        PREFIX,
 
-      // Prefix
-      prefix: PREFIX
+      config
     };
 
     console.log(
-      `🚀 EXECUTING: ${command.name}`
+      `🚀 EXECUTING COMMAND: ${command.name}`
     );
 
-    await command.execute(context);
+    await command.execute(
+      context
+    );
 
     console.log(
-      `✅ COMMAND DONE: ${command.name}`
+      `✅ COMMAND COMPLETED: ${command.name}`
     );
 
   } catch (error) {
