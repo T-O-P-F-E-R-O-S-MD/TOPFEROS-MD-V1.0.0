@@ -804,9 +804,6 @@ async function requestPairingCode(
       `♻️ Reset auth pou nouvo pairing: ${sessionId}`
     );
 
-    /*
-     * Fèmen ansyen socket anvan reset auth.
-     */
     try {
       await stopSession(
         sessionId
@@ -818,9 +815,6 @@ async function requestPairingCode(
       );
     }
 
-    /*
-     * Reset auth directory la.
-     */
     if (
       typeof sessionManager.resetAuth ===
       "function"
@@ -841,9 +835,6 @@ async function requestPairingCode(
       );
     }
 
-    /*
-     * Rekipere session lan apre reset.
-     */
     session =
       sessionManager.getSession(
         sessionId
@@ -937,20 +928,53 @@ async function requestPairingCode(
   );
 
   // ==========================================================
+  // CREATE / GET WHATSAPP SOCKET
+  // ==========================================================
+
+  /*
+   * FIX:
+   *
+   * Ansyen kòd la t ap rele:
+   *
+   *     socket.requestPairingCode(...)
+   *
+   * san li pa t defini `socket`.
+   *
+   * Kounye a nou verifye si session nan deja gen
+   * yon socket. Si li pa genyen, startSession()
+   * ap kreye youn.
+   */
+
+  let socket =
+    sessionManager.getSocket(
+      sessionId
+    );
+
+  if (!socket) {
+    socket =
+      await startSession(
+        sessionId
+      );
+  }
+
+  if (!socket) {
+    throw new Error(
+      "Pa kapab kreye WhatsApp socket pou pairing."
+    );
+  }
+
+  // ==========================================================
   // REQUEST CODE
   // ==========================================================
 
   try {
     /*
-     * IMPORTANT:
-     *
      * Nou pa tann QR.
      * Nou pa tann "open".
-     * Nou pa tann 30 segonn.
-     *
      * Nou mande WhatsApp pairing code
      * dirèkteman sou socket la.
      */
+
     const rawCode =
       await socket.requestPairingCode(
         phoneNumber
@@ -973,9 +997,10 @@ async function requestPairingCode(
       );
     }
 
-    /*
-     * Sove code la.
-     */
+    // ========================================================
+    // SAVE PAIRING CODE
+    // ========================================================
+
     sessionManager.setPairingCode(
       sessionId,
       code
@@ -1017,6 +1042,7 @@ async function requestPairingCode(
      * Si WhatsApp ap tann validation,
      * efase auth state la ka kraze pairing.
      */
+
     try {
       if (
         typeof sessionManager.endPairing ===
@@ -1038,235 +1064,3 @@ async function requestPairingCode(
     throw error;
   }
 }
-
-// ============================================================
-// RESTORE STORED SESSIONS
-// ============================================================
-
-async function restoreStoredSessions() {
-  if (
-    typeof sessionManager.getStoredSessionIds !==
-    "function"
-  ) {
-    console.warn(
-      "⚠️ sessionManager.getStoredSessionIds() pa disponib."
-    );
-
-    return [];
-  }
-
-  const sessionIds =
-    sessionManager.getStoredSessionIds();
-
-  if (
-    !Array.isArray(
-      sessionIds
-    )
-  ) {
-    return [];
-  }
-
-  const restored = [];
-
-  for (
-    const sessionId of
-      sessionIds
-  ) {
-    try {
-      const session =
-        sessionManager.getSession(
-          sessionId
-        );
-
-      if (!session) {
-        continue;
-      }
-
-      if (
-        session.status ===
-        "logged_out"
-      ) {
-        continue;
-      }
-
-      stoppedSessions.delete(
-        sessionId
-      );
-
-      await startSession(
-        sessionId
-      );
-
-      restored.push(
-        sessionId
-      );
-
-      console.log(
-        `♻️ Session restore: ${sessionId}`
-      );
-    } catch (error) {
-      console.error(
-        `❌ Pa kapab restore session ${sessionId}:`,
-        error?.message || error
-      );
-    }
-  }
-
-  return restored;
-}
-
-// ============================================================
-// STOP SESSION
-// ============================================================
-
-async function stopSession(
-  sessionId
-) {
-  if (!sessionId) {
-    return false;
-  }
-
-  stoppedSessions.add(
-    sessionId
-  );
-
-  clearReconnectTimer(
-    sessionId
-  );
-
-  const socket =
-    sessionManager.getSocket(
-      sessionId
-    );
-
-  if (socket) {
-    try {
-      socket.end(
-        undefined
-      );
-    } catch (_) {}
-  }
-
-  sessionManager.setSocket(
-    sessionId,
-    null
-  );
-
-  try {
-    sessionManager.setStatus(
-      sessionId,
-      "disconnected"
-    );
-  } catch (_) {}
-
-  return true;
-}
-
-// ============================================================
-// REMOVE SESSION
-// ============================================================
-
-async function removeSession(
-  sessionId
-) {
-  if (!sessionId) {
-    return false;
-  }
-
-  await stopSession(
-    sessionId
-  );
-
-  stoppedSessions.delete(
-    sessionId
-  );
-
-  clearReconnectTimer(
-    sessionId
-  );
-
-  return sessionManager.removeSession(
-    sessionId
-  );
-}
-
-// ============================================================
-// STOP ALL
-// ============================================================
-
-async function stop() {
-  const sessions =
-    sessionManager.getAllSessions();
-
-  const sessionIds =
-    Array.isArray(sessions)
-      ? sessions.map(
-          session =>
-            session.sessionId
-        )
-      : [];
-
-  for (
-    const sessionId of
-      sessionIds
-  ) {
-    try {
-      await stopSession(
-        sessionId
-      );
-    } catch (error) {
-      console.error(
-        `❌ Erè stop session ${sessionId}:`,
-        error?.message || error
-      );
-    }
-  }
-
-  return true;
-}
-
-// ============================================================
-// EXPORTS
-// ============================================================
-
-module.exports = {
-  start:
-    restoreStoredSessions,
-
-  stop,
-
-  startSession,
-
-  stopSession,
-
-  removeSession,
-
-  restoreStoredSessions,
-
-  requestPairingCode,
-
-  createSession:
-    sessionManager.createSession,
-
-  getSession:
-    sessionManager.getSession,
-
-  getAllSessions:
-    sessionManager.getAllSessions,
-
-  getSocket:
-    sessionManager.getSocket,
-
-  isConnected:
-    sessionManager.isConnected,
-
-  getPhoneNumber:
-    sessionManager.getPhoneNumber,
-
-  getPairingInfo:
-    sessionManager.getPairingInfo,
-
-  cleanPhoneNumber,
-
-  validatePhoneNumber
-};
