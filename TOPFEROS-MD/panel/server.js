@@ -9,25 +9,121 @@ const sessionManager = require('../src/sessionManager');
 let settingsPanel = null;
 
 try {
-  settingsPanel = require('../src/settingsPanel');
+  settingsPanel =
+    require('../src/settingsPanel');
 } catch (error) {
-  console.log('[TOPFEROS] settingsPanel pa disponib pou kounye a.');
+  console.log(
+    '[TOPFEROS] settingsPanel pa disponib.'
+  );
 }
 
 const app = express();
 
-const PORT = Number(process.env.PORT) || 3000;
-const HOST = process.env.HOST || '0.0.0.0';
+const PORT =
+  Number(process.env.PORT) || 3000;
 
-const PUBLIC_DIR = path.join(__dirname, 'public');
+const HOST =
+  process.env.HOST || '0.0.0.0';
 
-app.use(express.json({ limit: '2mb' }));
-app.use(express.urlencoded({
-  extended: true,
-  limit: '2mb'
-}));
+/*
+|--------------------------------------------------------------------------
+| PANEL PATHS
+|--------------------------------------------------------------------------
+*/
 
-app.use(express.static(PUBLIC_DIR));
+const PUBLIC_DIR =
+  path.join(__dirname, 'public');
+
+/*
+ * Background panel la.
+ * Nou kenbe chemen sa paske ansyen panel
+ * ou a te sèvi ak background.png ki nan panel/.
+ */
+const BACKGROUND_FILE =
+  path.join(
+    __dirname,
+    'background.png'
+  );
+
+/*
+ * Assets folder ki gen logo bot la.
+ *
+ * Nou teste plizyè chemen pou nou pa kraze
+ * ansyen estrikti TOPFEROS MD la.
+ */
+const ASSETS_DIR =
+  path.join(
+    __dirname,
+    '..',
+    'assets'
+  );
+
+/*
+|--------------------------------------------------------------------------
+| MIDDLEWARE
+|--------------------------------------------------------------------------
+*/
+
+app.use(
+  express.json({
+    limit: '2mb'
+  })
+);
+
+app.use(
+  express.urlencoded({
+    extended: true,
+    limit: '2mb'
+  })
+);
+
+/*
+ * Fichye panel yo.
+ */
+app.use(
+  express.static(
+    PUBLIC_DIR
+  )
+);
+
+/*
+ * Logo, icons, images, etc.
+ *
+ * Sa a te manke nan nouvo server.js la.
+ */
+app.use(
+  '/assets',
+  express.static(
+    ASSETS_DIR
+  )
+);
+
+/*
+|--------------------------------------------------------------------------
+| BACKGROUND
+|--------------------------------------------------------------------------
+*/
+
+app.get(
+  '/background.png',
+  (req, res) => {
+    res.sendFile(
+      BACKGROUND_FILE,
+      error => {
+        if (error) {
+          console.error(
+            '[TOPFEROS] Background pa jwenn:',
+            error?.message || error
+          );
+
+          res.status(
+            error?.statusCode || 404
+          ).end();
+        }
+      }
+    );
+  }
+);
 
 /*
 |--------------------------------------------------------------------------
@@ -35,28 +131,47 @@ app.use(express.static(PUBLIC_DIR));
 |--------------------------------------------------------------------------
 */
 
-function cleanNumberValue(value) {
-  return String(value || '').replace(/\D/g, '');
+function cleanNumberValue(
+  value
+) {
+  return String(
+    value || ''
+  ).replace(
+    /\D/g,
+    ''
+  );
 }
 
-function getConnectionSession(sessionId) {
+function isValidPhoneNumber(
+  number
+) {
+  return /^\d{8,15}$/.test(
+    number
+  );
+}
+
+function makeSessionId(
+  number
+) {
+  return `session_${cleanNumberValue(
+    number
+  )}`;
+}
+
+function getConnectionSession(
+  sessionId
+) {
   if (!sessionId) {
     return null;
   }
 
-  return sessionManager.getSession(sessionId);
+  return sessionManager.getSession(
+    sessionId
+  );
 }
 
 function getPublicSessions() {
   return sessionManager.getPublicSessions();
-}
-
-function makeSessionId(number) {
-  return `session_${cleanNumberValue(number)}`;
-}
-
-function isValidPhoneNumber(number) {
-  return /^\d{8,15}$/.test(number);
 }
 
 /*
@@ -65,212 +180,245 @@ function isValidPhoneNumber(number) {
 |--------------------------------------------------------------------------
 */
 
-app.get('/', (req, res) => {
-  res.sendFile(
-    path.join(PUBLIC_DIR, 'index.html')
-  );
-});
-
-/*
-|--------------------------------------------------------------------------
-| BACKGROUND
-|--------------------------------------------------------------------------
-*/
-
-app.get('/background.png', (req, res) => {
-  res.sendFile(
-    path.join(PUBLIC_DIR, 'background.png')
-  );
-});
-
-/*
-|--------------------------------------------------------------------------
-| API STATUS
-|--------------------------------------------------------------------------
-*/
-
-app.get('/api/status', (req, res) => {
-  try {
-    const sessions = getPublicSessions();
-
-    const connected = sessions.filter(
-      session => session.connected === true
+app.get(
+  '/',
+  (req, res) => {
+    res.sendFile(
+      path.join(
+        PUBLIC_DIR,
+        'index.html'
+      )
     );
-
-    const pairing = sessions.filter(
-      session => session.pairing === true
-    );
-
-    res.json({
-      success: true,
-
-      status: 'online',
-
-      totalSessions: sessions.length,
-
-      connectedSessions: connected.length,
-
-      pairingSessions: pairing.length,
-
-      sessions
-    });
-  } catch (error) {
-    console.error(
-      '[TOPFEROS] /api/status:',
-      error?.message || error
-    );
-
-    res.status(500).json({
-      success: false,
-      error: 'Impossible de récupérer le statut.'
-    });
   }
-});
+);
 
 /*
 |--------------------------------------------------------------------------
-| API SESSIONS
+| STATUS
 |--------------------------------------------------------------------------
 */
 
-app.get('/api/sessions', (req, res) => {
-  try {
-    res.json({
-      success: true,
-      sessions: getPublicSessions()
-    });
-  } catch (error) {
-    console.error(
-      '[TOPFEROS] /api/sessions:',
-      error?.message || error
-    );
+app.get(
+  '/api/status',
+  (req, res) => {
+    try {
+      const sessions =
+        getPublicSessions();
 
-    res.status(500).json({
-      success: false,
-      error: 'Impossible de récupérer les sessions.'
-    });
+      const connected =
+        sessions.filter(
+          session =>
+            session.connected === true
+        );
+
+      const pairing =
+        sessions.filter(
+          session =>
+            session.pairing === true
+        );
+
+      res.json({
+        success: true,
+
+        status: 'online',
+
+        totalSessions:
+          sessions.length,
+
+        connectedSessions:
+          connected.length,
+
+        pairingSessions:
+          pairing.length,
+
+        sessions
+      });
+    } catch (error) {
+      console.error(
+        '[TOPFEROS] /api/status:',
+        error?.message || error
+      );
+
+      res.status(500).json({
+        success: false,
+        error:
+          'Impossible de récupérer le statut.'
+      });
+    }
   }
-});
+);
+
+/*
+|--------------------------------------------------------------------------
+| SESSIONS
+|--------------------------------------------------------------------------
+*/
+
+app.get(
+  '/api/sessions',
+  (req, res) => {
+    try {
+      res.json({
+        success: true,
+
+        sessions:
+          getPublicSessions()
+      });
+    } catch (error) {
+      console.error(
+        '[TOPFEROS] /api/sessions:',
+        error?.message || error
+      );
+
+      res.status(500).json({
+        success: false,
+        error:
+          'Impossible de récupérer les sessions.'
+      });
+    }
+  }
+);
 
 /*
 |--------------------------------------------------------------------------
 | PAIRING CODE
 |--------------------------------------------------------------------------
-|
-| IMPORTANT :
-| Le code est généré directement par connection.js.
-| On ne réutilise PAS un ancien pairingCode stocké sur disque,
-| car un ancien code peut être expiré.
-|
-|--------------------------------------------------------------------------
 */
 
-app.post('/api/pairing', async (req, res) => {
-  try {
-    const rawNumber =
-      req.body?.number ||
-      req.body?.phoneNumber ||
-      req.body?.phone ||
-      '';
+app.post(
+  '/api/pairing',
+  async (req, res) => {
+    try {
+      const rawNumber =
+        req.body?.number ||
+        req.body?.phoneNumber ||
+        req.body?.phone ||
+        '';
 
-    const number = cleanNumberValue(rawNumber);
+      const number =
+        cleanNumberValue(
+          rawNumber
+        );
 
-    if (!isValidPhoneNumber(number)) {
-      return res.status(400).json({
-        success: false,
-        error:
-          'Numéro invalide. Utilisez le code pays + numéro, sans +, espaces ou tirets.'
-      });
-    }
-
-    const sessionId =
-      cleanNumberValue(req.body?.sessionId) ||
-      makeSessionId(number);
-
-    /*
-     * Si une session connectée existe déjà pour ce numéro,
-     * inutile de demander un nouveau pairing code.
-     */
-    const existingSession =
-      getConnectionSession(sessionId);
-
-    if (
-      existingSession &&
-      existingSession.connected === true
-    ) {
-      return res.status(409).json({
-        success: false,
-        error: 'Ce numéro est déjà connecté.',
-        sessionId
-      });
-    }
-
-    /*
-     * Si une ancienne session est bloquée dans un état pairing,
-     * on nettoie uniquement l'état de pairing.
-     *
-     * On ne supprime PAS les credentials ici.
-     */
-    if (
-      existingSession &&
-      existingSession.pairing === true
-    ) {
-      await sessionManager.updateSession(
-        sessionId,
-        {
-          status: 'disconnected',
-          connected: false,
-          pairing: false,
-          pairingCode: null,
-          pairingStartedAt: null,
+      if (
+        !isValidPhoneNumber(
           number
-        }
+        )
+      ) {
+        return res.status(400).json({
+          success: false,
+
+          error:
+            'Numéro invalide. Utilisez le code pays + numéro, sans +, espaces ou tirets.'
+        });
+      }
+
+      const sessionId =
+        cleanNumberValue(
+          req.body?.sessionId
+        ) ||
+        makeSessionId(
+          number
+        );
+
+      let session =
+        getConnectionSession(
+          sessionId
+        );
+
+      /*
+       * Si session deja connectée,
+       * pa mande nouvo code.
+       */
+      if (
+        session &&
+        session.connected === true
+      ) {
+        return res.status(409).json({
+          success: false,
+
+          error:
+            'Ce numéro est déjà connecté.',
+
+          sessionId
+        });
+      }
+
+      /*
+       * Si yon ansyen pairing te rete
+       * sou disk, netwaye state la.
+       */
+      if (
+        session &&
+        session.pairing === true
+      ) {
+        await sessionManager.updateSession(
+          sessionId,
+          {
+            status: 'disconnected',
+
+            connected: false,
+
+            pairing: false,
+
+            pairingCode: null,
+
+            pairingStartedAt:
+              null,
+
+            number
+          }
+        );
+      }
+
+      console.log(
+        `[TOPFEROS] Demande pairing code: ${number}`
       );
+
+      /*
+       * connection.js jere tout socket
+       * + requestPairingCode().
+       */
+      const result =
+        await connection.requestPairingCode(
+          sessionId,
+          number
+        );
+
+      return res.json({
+        success: true,
+
+        sessionId:
+          result.sessionId,
+
+        number:
+          result.number,
+
+        code:
+          result.code,
+
+        pairingCode:
+          result.code,
+
+        message:
+          'Pairing code généré avec succès.'
+      });
+    } catch (error) {
+      console.error(
+        '[TOPFEROS] /api/pairing:',
+        error?.message || error
+      );
+
+      return res.status(500).json({
+        success: false,
+
+        error:
+          error?.message ||
+          'Impossible de générer le pairing code.'
+      });
     }
-
-    console.log(
-      `[TOPFEROS] Demande pairing code pour ${number}`
-    );
-
-    /*
-     * connection.js s'occupe entièrement du socket,
-     * du handshake et de requestPairingCode().
-     */
-    const result =
-      await connection.requestPairingCode(
-        sessionId,
-        number
-      );
-
-    return res.json({
-      success: true,
-
-      sessionId: result.sessionId,
-
-      number: result.number,
-
-      code: result.code,
-
-      pairingCode: result.code,
-
-      message:
-        'Pairing code généré. Entrez ce code dans WhatsApp > Appareils connectés > Connecter un appareil > Connecter avec un numéro de téléphone.'
-    });
-  } catch (error) {
-    console.error(
-      '[TOPFEROS] /api/pairing error:',
-      error?.message || error
-    );
-
-    return res.status(500).json({
-      success: false,
-
-      error:
-        error?.message ||
-        'Impossible de générer le pairing code.'
-    });
   }
-});
+);
 
 /*
 |--------------------------------------------------------------------------
@@ -278,40 +426,49 @@ app.post('/api/pairing', async (req, res) => {
 |--------------------------------------------------------------------------
 */
 
-app.get('/api/current-session', (req, res) => {
-  try {
-    const sessionId =
-      req.query?.session ||
-      req.query?.sessionId;
+app.get(
+  '/api/current-session',
+  (req, res) => {
+    try {
+      const sessionId =
+        req.query?.session ||
+        req.query?.sessionId;
 
-    if (!sessionId) {
+      if (!sessionId) {
+        return res.json({
+          success: true,
+          session: null
+        });
+      }
+
+      const session =
+        getConnectionSession(
+          sessionId
+        );
+
       return res.json({
         success: true,
-        session: null
+
+        session:
+          sessionManager.publicSession(
+            session
+          )
+      });
+    } catch (error) {
+      console.error(
+        '[TOPFEROS] /api/current-session:',
+        error?.message || error
+      );
+
+      res.status(500).json({
+        success: false,
+
+        error:
+          'Impossible de récupérer la session.'
       });
     }
-
-    const session =
-      getConnectionSession(sessionId);
-
-    return res.json({
-      success: true,
-
-      session:
-        sessionManager.publicSession(session)
-    });
-  } catch (error) {
-    console.error(
-      '[TOPFEROS] /api/current-session:',
-      error?.message || error
-    );
-
-    res.status(500).json({
-      success: false,
-      error: 'Impossible de récupérer la session.'
-    });
   }
-});
+);
 
 /*
 |--------------------------------------------------------------------------
@@ -319,92 +476,118 @@ app.get('/api/current-session', (req, res) => {
 |--------------------------------------------------------------------------
 */
 
-app.get('/api/session/:sessionId', (req, res) => {
-  try {
-    const { sessionId } = req.params;
+app.get(
+  '/api/session/:sessionId',
+  (req, res) => {
+    try {
+      const {
+        sessionId
+      } = req.params;
 
-    const session =
-      getConnectionSession(sessionId);
+      const session =
+        getConnectionSession(
+          sessionId
+        );
 
-    if (!session) {
-      return res.status(404).json({
+      if (!session) {
+        return res.status(404).json({
+          success: false,
+
+          error:
+            'Session introuvable.'
+        });
+      }
+
+      return res.json({
+        success: true,
+
+        session:
+          sessionManager.publicSession(
+            session
+          )
+      });
+    } catch (error) {
+      console.error(
+        '[TOPFEROS] /api/session:',
+        error?.message || error
+      );
+
+      res.status(500).json({
         success: false,
-        error: 'Session introuvable.'
+
+        error:
+          'Impossible de récupérer la session.'
       });
     }
-
-    return res.json({
-      success: true,
-
-      session:
-        sessionManager.publicSession(session)
-    });
-  } catch (error) {
-    console.error(
-      '[TOPFEROS] /api/session/:sessionId:',
-      error?.message || error
-    );
-
-    res.status(500).json({
-      success: false,
-      error: 'Impossible de récupérer la session.'
-    });
   }
-});
+);
 
 /*
 |--------------------------------------------------------------------------
-| VERIFY SESSION
+| VERIFY
 |--------------------------------------------------------------------------
 */
 
-app.post('/api/verify', async (req, res) => {
-  try {
-    const sessionId =
-      req.body?.sessionId ||
-      req.body?.session;
+app.post(
+  '/api/verify',
+  async (req, res) => {
+    try {
+      const sessionId =
+        req.body?.sessionId ||
+        req.body?.session;
 
-    if (!sessionId) {
-      return res.status(400).json({
+      if (!sessionId) {
+        return res.status(400).json({
+          success: false,
+
+          error:
+            'sessionId obligatwa.'
+        });
+      }
+
+      const session =
+        getConnectionSession(
+          sessionId
+        );
+
+      if (!session) {
+        return res.status(404).json({
+          success: false,
+
+          error:
+            'Session introuvable.'
+        });
+      }
+
+      return res.json({
+        success: true,
+
+        verified:
+          session.connected === true,
+
+        connected:
+          session.connected === true,
+
+        session:
+          sessionManager.publicSession(
+            session
+          )
+      });
+    } catch (error) {
+      console.error(
+        '[TOPFEROS] /api/verify:',
+        error?.message || error
+      );
+
+      res.status(500).json({
         success: false,
-        error: 'sessionId obligatwa.'
+
+        error:
+          'Erreur de vérification.'
       });
     }
-
-    const session =
-      getConnectionSession(sessionId);
-
-    if (!session) {
-      return res.status(404).json({
-        success: false,
-        error: 'Session introuvable.'
-      });
-    }
-
-    return res.json({
-      success: true,
-
-      verified:
-        session.connected === true,
-
-      connected:
-        session.connected === true,
-
-      session:
-        sessionManager.publicSession(session)
-    });
-  } catch (error) {
-    console.error(
-      '[TOPFEROS] /api/verify:',
-      error?.message || error
-    );
-
-    res.status(500).json({
-      success: false,
-      error: 'Erreur de vérification.'
-    });
   }
-});
+);
 
 /*
 |--------------------------------------------------------------------------
@@ -412,71 +595,85 @@ app.post('/api/verify', async (req, res) => {
 |--------------------------------------------------------------------------
 */
 
-app.get('/api/settings', async (req, res) => {
-  try {
-    if (
-      settingsPanel &&
-      typeof settingsPanel.getSettings === 'function'
-    ) {
-      const settings =
-        await settingsPanel.getSettings();
+app.get(
+  '/api/settings',
+  async (req, res) => {
+    try {
+      if (
+        settingsPanel &&
+        typeof settingsPanel.getSettings ===
+          'function'
+      ) {
+        const settings =
+          await settingsPanel.getSettings();
+
+        return res.json({
+          success: true,
+          settings
+        });
+      }
 
       return res.json({
         success: true,
-        settings
+        settings: {}
+      });
+    } catch (error) {
+      console.error(
+        '[TOPFEROS] GET settings:',
+        error?.message || error
+      );
+
+      res.status(500).json({
+        success: false,
+
+        error:
+          'Impossible de récupérer les paramètres.'
       });
     }
-
-    return res.json({
-      success: true,
-      settings: {}
-    });
-  } catch (error) {
-    console.error(
-      '[TOPFEROS] GET /api/settings:',
-      error?.message || error
-    );
-
-    res.status(500).json({
-      success: false,
-      error: 'Impossible de récupérer les paramètres.'
-    });
   }
-});
+);
 
-app.post('/api/settings', async (req, res) => {
-  try {
-    if (
-      settingsPanel &&
-      typeof settingsPanel.updateSettings === 'function'
-    ) {
-      const settings =
-        await settingsPanel.updateSettings(
+app.post(
+  '/api/settings',
+  async (req, res) => {
+    try {
+      if (
+        settingsPanel &&
+        typeof settingsPanel.updateSettings ===
+          'function'
+      ) {
+        const settings =
+          await settingsPanel.updateSettings(
+            req.body || {}
+          );
+
+        return res.json({
+          success: true,
+          settings
+        });
+      }
+
+      return res.json({
+        success: true,
+
+        settings:
           req.body || {}
-        );
+      });
+    } catch (error) {
+      console.error(
+        '[TOPFEROS] POST settings:',
+        error?.message || error
+      );
 
-      return res.json({
-        success: true,
-        settings
+      res.status(500).json({
+        success: false,
+
+        error:
+          'Impossible de sauvegarder les paramètres.'
       });
     }
-
-    return res.json({
-      success: true,
-      settings: req.body || {}
-    });
-  } catch (error) {
-    console.error(
-      '[TOPFEROS] POST /api/settings:',
-      error?.message || error
-    );
-
-    res.status(500).json({
-      success: false,
-      error: 'Impossible de sauvegarder les paramètres.'
-    });
   }
-});
+);
 
 /*
 |--------------------------------------------------------------------------
@@ -484,55 +681,70 @@ app.post('/api/settings', async (req, res) => {
 |--------------------------------------------------------------------------
 */
 
-app.post('/api/language', async (req, res) => {
-  try {
-    const language =
-      String(
-        req.body?.language ||
-        req.body?.lang ||
-        'fr'
-      ).toLowerCase();
+app.post(
+  '/api/language',
+  async (req, res) => {
+    try {
+      const language =
+        String(
+          req.body?.language ||
+          req.body?.lang ||
+          'fr'
+        ).toLowerCase();
 
-    const allowedLanguages = [
-      'fr',
-      'en',
-      'es'
-    ];
+      const allowedLanguages = [
+        'fr',
+        'en',
+        'es'
+      ];
 
-    if (!allowedLanguages.includes(language)) {
-      return res.status(400).json({
+      if (
+        !allowedLanguages.includes(
+          language
+        )
+      ) {
+        return res.status(400).json({
+          success: false,
+
+          error:
+            'Langue non supportée.'
+        });
+      }
+
+      if (
+        settingsPanel &&
+        typeof settingsPanel.setLanguage ===
+          'function'
+      ) {
+        await settingsPanel.setLanguage(
+          language
+        );
+      }
+
+      return res.json({
+        success: true,
+
+        language
+      });
+    } catch (error) {
+      console.error(
+        '[TOPFEROS] language:',
+        error?.message || error
+      );
+
+      res.status(500).json({
         success: false,
-        error: 'Langue non supportée.'
+
+        error:
+          'Impossible de changer la langue.'
       });
     }
-
-    if (
-      settingsPanel &&
-      typeof settingsPanel.setLanguage === 'function'
-    ) {
-      await settingsPanel.setLanguage(language);
-    }
-
-    return res.json({
-      success: true,
-      language
-    });
-  } catch (error) {
-    console.error(
-      '[TOPFEROS] /api/language:',
-      error?.message || error
-    );
-
-    res.status(500).json({
-      success: false,
-      error: 'Impossible de changer la langue.'
-    });
   }
-});
+);
 
 /*
 |--------------------------------------------------------------------------
-| DISCONNECT SESSION
+| DISCONNECT
 |--------------------------------------------------------------------------
 */
 
@@ -540,15 +752,21 @@ app.post(
   '/api/session/:sessionId/disconnect',
   async (req, res) => {
     try {
-      const { sessionId } = req.params;
+      const {
+        sessionId
+      } = req.params;
 
       const session =
-        getConnectionSession(sessionId);
+        getConnectionSession(
+          sessionId
+        );
 
       if (!session) {
         return res.status(404).json({
           success: false,
-          error: 'Session introuvable.'
+
+          error:
+            'Session introuvable.'
         });
       }
 
@@ -558,7 +776,10 @@ app.post(
 
       return res.json({
         success: true,
-        message: 'Session déconnectée.',
+
+        message:
+          'Session déconnectée.',
+
         sessionId
       });
     } catch (error) {
@@ -569,6 +790,7 @@ app.post(
 
       res.status(500).json({
         success: false,
+
         error:
           error?.message ||
           'Impossible de déconnecter la session.'
@@ -587,15 +809,21 @@ app.delete(
   '/api/session/:sessionId',
   async (req, res) => {
     try {
-      const { sessionId } = req.params;
+      const {
+        sessionId
+      } = req.params;
 
       const session =
-        getConnectionSession(sessionId);
+        getConnectionSession(
+          sessionId
+        );
 
       if (!session) {
         return res.status(404).json({
           success: false,
-          error: 'Session introuvable.'
+
+          error:
+            'Session introuvable.'
         });
       }
 
@@ -605,7 +833,10 @@ app.delete(
 
       return res.json({
         success: true,
-        message: 'Session supprimée.',
+
+        message:
+          'Session supprimée.',
+
         sessionId
       });
     } catch (error) {
@@ -616,6 +847,7 @@ app.delete(
 
       res.status(500).json({
         success: false,
+
         error:
           error?.message ||
           'Impossible de supprimer la session.'
@@ -630,12 +862,17 @@ app.delete(
 |--------------------------------------------------------------------------
 */
 
-app.use('/api', (req, res) => {
-  res.status(404).json({
-    success: false,
-    error: 'API route introuvable.'
-  });
-});
+app.use(
+  '/api',
+  (req, res) => {
+    res.status(404).json({
+      success: false,
+
+      error:
+        'API route introuvable.'
+    });
+  }
+);
 
 /*
 |--------------------------------------------------------------------------
@@ -643,23 +880,33 @@ app.use('/api', (req, res) => {
 |--------------------------------------------------------------------------
 */
 
-app.use((error, req, res, next) => {
-  console.error(
-    '[TOPFEROS] Express error:',
-    error?.message || error
-  );
+app.use(
+  (
+    error,
+    req,
+    res,
+    next
+  ) => {
+    console.error(
+      '[TOPFEROS] Express error:',
+      error?.message || error
+    );
 
-  if (res.headersSent) {
-    return next(error);
+    if (
+      res.headersSent
+    ) {
+      return next(error);
+    }
+
+    res.status(500).json({
+      success: false,
+
+      error:
+        error?.message ||
+        'Erreur interne du serveur.'
+    });
   }
-
-  res.status(500).json({
-    success: false,
-    error:
-      error?.message ||
-      'Erreur interne du serveur.'
-  });
-});
+);
 
 /*
 |--------------------------------------------------------------------------
@@ -667,22 +914,26 @@ app.use((error, req, res, next) => {
 |--------------------------------------------------------------------------
 */
 
-const server = app.listen(
-  PORT,
-  HOST,
-  () => {
-    console.log(
-      `[TOPFEROS] Panel running on http://${HOST}:${PORT}`
+const server =
+  app.listen(
+    PORT,
+    HOST,
+    () => {
+      console.log(
+        `[TOPFEROS] Panel running on ${HOST}:${PORT}`
+      );
+    }
+  );
+
+server.on(
+  'error',
+  error => {
+    console.error(
+      '[TOPFEROS] Panel server error:',
+      error?.message || error
     );
   }
 );
-
-server.on('error', (error) => {
-  console.error(
-    '[TOPFEROS] Panel server error:',
-    error?.message || error
-  );
-});
 
 module.exports = {
   app,
