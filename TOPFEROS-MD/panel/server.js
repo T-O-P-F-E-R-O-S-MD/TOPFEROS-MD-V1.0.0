@@ -1,1036 +1,688 @@
-"use strict";
+'use strict';
 
-const express = require("express");
-const path = require("path");
+const express = require('express');
+const path = require('path');
 
-const connection = require("../src/connection");
-const sessionManager = require("../src/sessionManager");
-const settingsPanel = require("../settings/panel");
+const connection = require('../src/connection');
+const sessionManager = require('../src/sessionManager');
+
+let settingsPanel = null;
+
+try {
+  settingsPanel = require('../src/settingsPanel');
+} catch (error) {
+  console.log('[TOPFEROS] settingsPanel pa disponib pou kounye a.');
+}
 
 const app = express();
 
-const PORT = Number(
-  process.env.PORT || 3000
-);
+const PORT = Number(process.env.PORT) || 3000;
+const HOST = process.env.HOST || '0.0.0.0';
 
-const HOST =
-  process.env.HOST || "0.0.0.0";
+const PUBLIC_DIR = path.join(__dirname, 'public');
 
-// ============================================================
-// MIDDLEWARE
-// ============================================================
+app.use(express.json({ limit: '2mb' }));
+app.use(express.urlencoded({
+  extended: true,
+  limit: '2mb'
+}));
 
-app.use(
-  express.json({
-    limit: "1mb"
-  })
-);
+app.use(express.static(PUBLIC_DIR));
 
-app.use(
-  express.urlencoded({
-    extended: true
-  })
-);
+/*
+|--------------------------------------------------------------------------
+| HELPERS
+|--------------------------------------------------------------------------
+*/
 
-// ============================================================
-// STATIC
-// ============================================================
-
-const publicDir = path.join(
-  __dirname,
-  "public"
-);
-
-app.use(
-  express.static(publicDir)
-);
-
-// ============================================================
-// ASSETS
-// ============================================================
-
-const assetsDir = path.join(
-  __dirname,
-  "..",
-  "assets"
-);
-
-app.use(
-  "/assets",
-  express.static(assetsDir)
-);
-
-// ============================================================
-// BACKGROUND
-// ============================================================
-
-app.get(
-  "/background.png",
-  (req, res) => {
-    const backgroundPath = path.join(
-      __dirname,
-      "background.png"
-    );
-
-    res.sendFile(
-      backgroundPath,
-      error => {
-        if (error && !res.headersSent) {
-          res.status(404).json({
-            success: false,
-            error: "BACKGROUND_NOT_FOUND"
-          });
-        }
-      }
-    );
-  }
-);
-
-// ============================================================
-// HOME
-// ============================================================
-
-app.get(
-  "/",
-  (req, res) => {
-    res.sendFile(
-      path.join(
-        publicDir,
-        "index.html"
-      )
-    );
-  }
-);
-
-// ============================================================
-// HELPERS
-// ============================================================
-
-function cleanNumberValue(number) {
-  return String(
-    number || ""
-  ).replace(
-    /\D/g,
-    ""
-  );
+function cleanNumberValue(value) {
+  return String(value || '').replace(/\D/g, '');
 }
 
-function getConnectionSession(
-  sessionId
-) {
-  return sessionManager.getSession(
-    sessionId
-  );
+function getConnectionSession(sessionId) {
+  if (!sessionId) {
+    return null;
+  }
+
+  return sessionManager.getSession(sessionId);
 }
 
 function getPublicSessions() {
-  if (
-    typeof sessionManager.getPublicSessions ===
-    "function"
-  ) {
-    return sessionManager.getPublicSessions();
-  }
-
-  if (
-    typeof sessionManager.listPublicSessions ===
-    "function"
-  ) {
-    return sessionManager.listPublicSessions();
-  }
-
-  return [];
+  return sessionManager.getPublicSessions();
 }
 
-// ============================================================
-// STATUS
-// ============================================================
-
-app.get(
-  "/api/status",
-  (req, res) => {
-    try {
-      const sessionId =
-        String(
-          req.query.sessionId || ""
-        ).trim();
-
-      if (sessionId) {
-        const session =
-          getConnectionSession(
-            sessionId
-          );
-
-        if (!session) {
-          return res.status(404).json({
-            success: false,
-            connected: false,
-            error: "SESSION_NOT_FOUND"
-          });
-        }
-
-        return res.json({
-          success: true,
-
-          connected:
-            sessionManager.isConnected(
-              sessionId
-            ),
-
-          sessionId,
-
-          number:
-            session.number,
-
-          status:
-            session.status
-        });
-      }
-
-      return res.json({
-        success: true,
-        sessions:
-          getPublicSessions()
-      });
-
-    } catch (error) {
-      console.error(
-        "❌ STATUS API ERROR:",
-        error?.message || error
-      );
-
-      return res.status(500).json({
-        success: false,
-        error:
-          error?.message ||
-          "STATUS_ERROR"
-      });
-    }
-  }
-);
-
-// ============================================================
-// SESSIONS
-// ============================================================
-
-app.get(
-  "/api/sessions",
-  (req, res) => {
-    try {
-      return res.json({
-        success: true,
-        sessions:
-          getPublicSessions()
-      });
-
-    } catch (error) {
-      console.error(
-        "❌ SESSIONS API ERROR:",
-        error?.message || error
-      );
-
-      return res.status(500).json({
-        success: false,
-        error:
-          error?.message ||
-          "SESSIONS_ERROR"
-      });
-    }
-  }
-);
-
-// ============================================================
-// PAIRING
-// ============================================================
-
-app.post(
-  "/api/pairing",
-  async (req, res) => {
-    try {
-      const number =
-        cleanNumberValue(
-          req.body?.number
-        );
-
-      if (
-        !/^\d{8,15}$/.test(
-          number
-        )
-      ) {
-        return res.status(400).json({
-          success: false,
-
-          error:
-            "INVALID_PHONE_NUMBER",
-
-          message:
-            "Mete yon nimewo WhatsApp valab ak kòd peyi a."
-        });
-      }
-
-      const existing =
-        sessionManager.getSessionByNumber(
-          number
-        );
-
-      if (
-        existing?.pairing &&
-        existing?.pairingCode
-      ) {
-        return res.json({
-          success: true,
-
-          sessionId:
-            existing.sessionId,
-
-          number,
-
-          code:
-            existing.pairingCode,
-
-          status:
-            existing.status
-        });
-      }
-
-      if (
-        existing?.pairing &&
-        !existing?.pairingCode
-      ) {
-        return res.status(409).json({
-          success: false,
-
-          error:
-            "PAIRING_IN_PROGRESS",
-
-          message:
-            "Pairing code request already in progress.",
-
-          sessionId:
-            existing.sessionId
-        });
-      }
-
-      const result =
-        await connection.requestPairingCode(
-          number
-        );
-
-      if (
-        !result ||
-        !result.sessionId
-      ) {
-        return res.status(500).json({
-          success: false,
-
-          error:
-            "PAIRING_SESSION_NOT_CREATED",
-
-          message:
-            "Pa kapab kreye WhatsApp session lan."
-        });
-      }
-
-      if (
-        result.status === "connected"
-      ) {
-        return res.json({
-          success: true,
-
-          sessionId:
-            result.sessionId,
-
-          number:
-            result.number ||
-            number,
-
-          code:
-            null,
-
-          status:
-            "connected",
-
-          message:
-            "WhatsApp session lan deja konekte."
-        });
-      }
-
-      if (!result.code) {
-        return res.status(500).json({
-          success: false,
-
-          error:
-            "PAIRING_CODE_NOT_GENERATED",
-
-          message:
-            "Pa kapab jenere kòd koneksyon an."
-        });
-      }
-
-      return res.json({
-        success: true,
-
-        sessionId:
-          result.sessionId,
-
-        number:
-          result.number ||
-          number,
-
-        code:
-          result.code,
-
-        status:
-          result.status ||
-          "pairing"
-      });
-
-    } catch (error) {
-      console.error(
-        "❌ PAIRING API ERROR:",
-        error?.message || error
-      );
-
-      const message =
-        error?.message ||
-        "Unable to generate pairing code.";
-
-      return res.status(500).json({
-        success: false,
-
-        error:
-          error?.code ||
-          "PAIRING_ERROR",
-
-        message
-      });
-    }
-  }
-);
-
-// ============================================================
-// CURRENT SESSION
-// ============================================================
-
-app.get(
-  "/api/current-session",
-  (req, res) => {
-    try {
-      const sessionId =
-        String(
-          req.query.sessionId || ""
-        ).trim();
-
-      if (!sessionId) {
-        return res.json({
-          success: true,
-          session: null
-        });
-      }
-
-      const session =
-        sessionManager.getSession(
-          sessionId
-        );
-
-      if (!session) {
-        return res.status(404).json({
-          success: false,
-          session: null,
-          error:
-            "SESSION_NOT_FOUND"
-        });
-      }
-
-      const connected =
-        sessionManager.isConnected(
-          sessionId
-        );
-
-      const panelUrl =
-        settingsPanel.PANEL_URL ||
-        process.env.PANEL_URL ||
-        "";
-
-      return res.json({
-        success: true,
-
-        session: {
-          sessionId,
-
-          number:
-            session.number,
-
-          connected,
-
-          status:
-            session.status,
-
-          socket:
-            Boolean(
-              session.socket
-            ),
-
-          settingsLink:
-            connected && panelUrl
-              ? `${panelUrl}/settings`
-              : null
-        }
-      });
-
-    } catch (error) {
-      return res.status(500).json({
-        success: false,
-
-        error:
-          error?.message ||
-          "CURRENT_SESSION_ERROR"
-      });
-    }
-  }
-);
-
-// ============================================================
-// SESSION INFO
-// ============================================================
-
-app.get(
-  "/api/session/:sessionId",
-  (req, res) => {
-    try {
-      const {
-        sessionId
-      } = req.params;
-
-      const session =
-        sessionManager.getSession(
-          sessionId
-        );
-
-      if (!session) {
-        return res.status(404).json({
-          success: false,
-          error:
-            "SESSION_NOT_FOUND"
-        });
-      }
-
-      return res.json({
-        success: true,
-
-        session: {
-          sessionId,
-
-          number:
-            session.number,
-
-          status:
-            session.status,
-
-          connected:
-            sessionManager.isConnected(
-              sessionId
-            ),
-
-          pairing:
-            Boolean(
-              session.pairing
-            )
-        }
-      });
-
-    } catch (error) {
-      return res.status(500).json({
-        success: false,
-
-        error:
-          error?.message ||
-          "SESSION_INFO_ERROR"
-      });
-    }
-  }
-);
-
-// ============================================================
-// VERIFY SETTINGS CODE
-// ============================================================
-
-app.post(
-  "/api/verify",
-  (req, res) => {
-    try {
-      const sessionId =
-        String(
-          req.body?.sessionId ||
-          ""
-        ).trim();
-
-      const code =
-        String(
-          req.body?.code ||
-          ""
-        ).trim();
-
-      if (
-        !sessionId ||
-        !code
-      ) {
-        return res.status(400).json({
-          success: false,
-
-          error:
-            "SESSION_AND_CODE_REQUIRED"
-        });
-      }
-
-      if (
-        !sessionManager.isConnected(
-          sessionId
-        )
-      ) {
-        return res.status(409).json({
-          success: false,
-
-          error:
-            "WHATSAPP_NOT_CONNECTED",
-
-          message:
-            "WhatsApp session lan pa konekte."
-        });
-      }
-
-      if (
-        !settingsPanel ||
-        typeof settingsPanel.verifySession !==
-          "function"
-      ) {
-        return res.status(500).json({
-          success: false,
-
-          error:
-            "SETTINGS_PANEL_UNAVAILABLE"
-        });
-      }
-
-      const result =
-        settingsPanel.verifySession(
-          sessionId,
-          code
-        );
-
-      if (
-        !result ||
-        result.success !== true
-      ) {
-        return res.status(401).json({
-          success: false,
-
-          error:
-            "INVALID_SETTINGS_CODE"
-        });
-      }
-
-      return res.json({
-        success: true,
-
-        session:
-          result.session,
-
-        settings:
-          typeof settingsPanel.getSettings ===
-          "function"
-            ? settingsPanel.getSettings(
-                sessionId
-              )
-            : {},
-
-        botInformation:
-          typeof settingsPanel.getBotInformation ===
-          "function"
-            ? settingsPanel.getBotInformation(
-                sessionId
-              )
-            : {}
-      });
-
-    } catch (error) {
-      return res.status(500).json({
-        success: false,
-
-        error:
-          error?.message ||
-          "VERIFY_ERROR"
-      });
-    }
-  }
-);
-
-// ============================================================
-// SETTINGS GET
-// ============================================================
-
-app.get(
-  "/api/settings",
-  (req, res) => {
-    try {
-      const sessionId =
-        String(
-          req.query.sessionId ||
-          ""
-        ).trim();
-
-      if (!sessionId) {
-        return res.status(400).json({
-          success: false,
-
-          error:
-            "SESSION_ID_REQUIRED"
-        });
-      }
-
-      if (
-        typeof settingsPanel.isAuthenticated !==
-        "function" ||
-        !settingsPanel.isAuthenticated(
-          sessionId
-        )
-      ) {
-        return res.status(401).json({
-          success: false,
-
-          error:
-            "NOT_AUTHENTICATED"
-        });
-      }
-
-      return res.json({
-        success: true,
-
-        settings:
-          typeof settingsPanel.getSettings ===
-          "function"
-            ? settingsPanel.getSettings(
-                sessionId
-              )
-            : {},
-
-        botInformation:
-          typeof settingsPanel.getBotInformation ===
-          "function"
-            ? settingsPanel.getBotInformation(
-                sessionId
-              )
-            : {}
-      });
-
-    } catch (error) {
-      return res.status(500).json({
-        success: false,
-
-        error:
-          error?.message ||
-          "SETTINGS_ERROR"
-      });
-    }
-  }
-);
-
-// ============================================================
-// SETTINGS POST
-// ============================================================
-
-app.post(
-  "/api/settings",
-  (req, res) => {
-    try {
-      const sessionId =
-        String(
-          req.body?.sessionId ||
-          ""
-        ).trim();
-
-      if (!sessionId) {
-        return res.status(400).json({
-          success: false,
-
-          error:
-            "SESSION_ID_REQUIRED"
-        });
-      }
-
-      if (
-        typeof settingsPanel.isAuthenticated !==
-        "function" ||
-        !settingsPanel.isAuthenticated(
-          sessionId
-        )
-      ) {
-        return res.status(401).json({
-          success: false,
-
-          error:
-            "NOT_AUTHENTICATED"
-        });
-      }
-
-      const updates =
-        req.body?.settings || {};
-
-      if (
-        !settingsPanel ||
-        typeof settingsPanel.updateSettings !==
-          "function"
-      ) {
-        return res.status(500).json({
-          success: false,
-
-          error:
-            "SETTINGS_UPDATE_UNAVAILABLE"
-        });
-      }
-
-      const result =
-        settingsPanel.updateSettings(
-          sessionId,
-          updates
-        );
-
-      return res.json({
-        success: true,
-
-        settings:
-          result ||
-          (
-            typeof settingsPanel.getSettings ===
-            "function"
-              ? settingsPanel.getSettings(
-                  sessionId
-                )
-              : {}
-          )
-      });
-
-    } catch (error) {
-      return res.status(500).json({
-        success: false,
-
-        error:
-          error?.message ||
-          "SETTINGS_UPDATE_ERROR"
-      });
-    }
-  }
-);
-
-// ============================================================
-// LANGUAGE
-// ============================================================
-
-app.post(
-  "/api/language",
-  (req, res) => {
-    try {
-      const language =
-        String(
-          req.body?.language ||
-          ""
-        ).toLowerCase();
-
-      const allowed = [
-        "en",
-        "fr",
-        "es",
-        "ht"
-      ];
-
-      if (
-        !allowed.includes(
-          language
-        )
-      ) {
-        return res.status(400).json({
-          success: false,
-
-          error:
-            "INVALID_LANGUAGE"
-        });
-      }
-
-      return res.json({
-        success: true,
-
-        language
-      });
-
-    } catch (error) {
-      return res.status(500).json({
-        success: false,
-
-        error:
-          "LANGUAGE_ERROR"
-      });
-    }
-  }
-);
-
-// ============================================================
-// DISCONNECT
-// ============================================================
-
-app.post(
-  "/api/session/:sessionId/disconnect",
-  async (req, res) => {
-    try {
-      const {
-        sessionId
-      } = req.params;
-
-      const session =
-        sessionManager.getSession(
-          sessionId
-        );
-
-      if (!session) {
-        return res.status(404).json({
-          success: false,
-
-          error:
-            "SESSION_NOT_FOUND"
-        });
-      }
-
-      const result =
-        await connection.stopSession(
-          sessionId
-        );
-
-      return res.json({
-        success:
-          Boolean(result),
-
-        sessionId
-      });
-
-    } catch (error) {
-      return res.status(500).json({
-        success: false,
-
-        error:
-          error?.message ||
-          "DISCONNECT_ERROR"
-      });
-    }
-  }
-);
-
-// ============================================================
-// DELETE SESSION
-// ============================================================
-
-app.delete(
-  "/api/session/:sessionId",
-  async (req, res) => {
-    try {
-      const {
-        sessionId
-      } = req.params;
-
-      const session =
-        sessionManager.getSession(
-          sessionId
-        );
-
-      if (!session) {
-        return res.status(404).json({
-          success: false,
-
-          error:
-            "SESSION_NOT_FOUND"
-        });
-      }
-
-      const result =
-        await connection.removeSession(
-          sessionId
-        );
-
-      return res.json({
-        success:
-          Boolean(result),
-
-        sessionId
-      });
-
-    } catch (error) {
-      return res.status(500).json({
-        success: false,
-
-        error:
-          error?.message ||
-          "REMOVE_SESSION_ERROR"
-      });
-    }
-  }
-);
-
-// ============================================================
-// API 404
-// ============================================================
-
-app.use(
-  "/api",
-  (req, res) => {
-    return res.status(404).json({
-      success: false,
-
-      error:
-        "API_ROUTE_NOT_FOUND"
-    });
-  }
-);
-
-// ============================================================
-// SERVER
-// ============================================================
-
-const server =
-  app.listen(
-    PORT,
-    HOST,
-    () => {
-      console.log(
-        `🚀 TOPFEROS MD PANEL running on ${HOST}:${PORT}`
-      );
-    }
+function makeSessionId(number) {
+  return `session_${cleanNumberValue(number)}`;
+}
+
+function isValidPhoneNumber(number) {
+  return /^\d{8,15}$/.test(number);
+}
+
+/*
+|--------------------------------------------------------------------------
+| MAIN PANEL
+|--------------------------------------------------------------------------
+*/
+
+app.get('/', (req, res) => {
+  res.sendFile(
+    path.join(PUBLIC_DIR, 'index.html')
   );
+});
 
-// ============================================================
-// ERROR HANDLER
-// ============================================================
+/*
+|--------------------------------------------------------------------------
+| BACKGROUND
+|--------------------------------------------------------------------------
+*/
 
-app.use(
-  (err, req, res, next) => {
-    console.error(
-      "❌ EXPRESS ERROR:",
-      err?.message || err
+app.get('/background.png', (req, res) => {
+  res.sendFile(
+    path.join(PUBLIC_DIR, 'background.png')
+  );
+});
+
+/*
+|--------------------------------------------------------------------------
+| API STATUS
+|--------------------------------------------------------------------------
+*/
+
+app.get('/api/status', (req, res) => {
+  try {
+    const sessions = getPublicSessions();
+
+    const connected = sessions.filter(
+      session => session.connected === true
     );
 
-    if (res.headersSent) {
-      return next(err);
+    const pairing = sessions.filter(
+      session => session.pairing === true
+    );
+
+    res.json({
+      success: true,
+
+      status: 'online',
+
+      totalSessions: sessions.length,
+
+      connectedSessions: connected.length,
+
+      pairingSessions: pairing.length,
+
+      sessions
+    });
+  } catch (error) {
+    console.error(
+      '[TOPFEROS] /api/status:',
+      error?.message || error
+    );
+
+    res.status(500).json({
+      success: false,
+      error: 'Impossible de récupérer le statut.'
+    });
+  }
+});
+
+/*
+|--------------------------------------------------------------------------
+| API SESSIONS
+|--------------------------------------------------------------------------
+*/
+
+app.get('/api/sessions', (req, res) => {
+  try {
+    res.json({
+      success: true,
+      sessions: getPublicSessions()
+    });
+  } catch (error) {
+    console.error(
+      '[TOPFEROS] /api/sessions:',
+      error?.message || error
+    );
+
+    res.status(500).json({
+      success: false,
+      error: 'Impossible de récupérer les sessions.'
+    });
+  }
+});
+
+/*
+|--------------------------------------------------------------------------
+| PAIRING CODE
+|--------------------------------------------------------------------------
+|
+| IMPORTANT :
+| Le code est généré directement par connection.js.
+| On ne réutilise PAS un ancien pairingCode stocké sur disque,
+| car un ancien code peut être expiré.
+|
+|--------------------------------------------------------------------------
+*/
+
+app.post('/api/pairing', async (req, res) => {
+  try {
+    const rawNumber =
+      req.body?.number ||
+      req.body?.phoneNumber ||
+      req.body?.phone ||
+      '';
+
+    const number = cleanNumberValue(rawNumber);
+
+    if (!isValidPhoneNumber(number)) {
+      return res.status(400).json({
+        success: false,
+        error:
+          'Numéro invalide. Utilisez le code pays + numéro, sans +, espaces ou tirets.'
+      });
     }
+
+    const sessionId =
+      cleanNumberValue(req.body?.sessionId) ||
+      makeSessionId(number);
+
+    /*
+     * Si une session connectée existe déjà pour ce numéro,
+     * inutile de demander un nouveau pairing code.
+     */
+    const existingSession =
+      getConnectionSession(sessionId);
+
+    if (
+      existingSession &&
+      existingSession.connected === true
+    ) {
+      return res.status(409).json({
+        success: false,
+        error: 'Ce numéro est déjà connecté.',
+        sessionId
+      });
+    }
+
+    /*
+     * Si une ancienne session est bloquée dans un état pairing,
+     * on nettoie uniquement l'état de pairing.
+     *
+     * On ne supprime PAS les credentials ici.
+     */
+    if (
+      existingSession &&
+      existingSession.pairing === true
+    ) {
+      await sessionManager.updateSession(
+        sessionId,
+        {
+          status: 'disconnected',
+          connected: false,
+          pairing: false,
+          pairingCode: null,
+          pairingStartedAt: null,
+          number
+        }
+      );
+    }
+
+    console.log(
+      `[TOPFEROS] Demande pairing code pour ${number}`
+    );
+
+    /*
+     * connection.js s'occupe entièrement du socket,
+     * du handshake et de requestPairingCode().
+     */
+    const result =
+      await connection.requestPairingCode(
+        sessionId,
+        number
+      );
+
+    return res.json({
+      success: true,
+
+      sessionId: result.sessionId,
+
+      number: result.number,
+
+      code: result.code,
+
+      pairingCode: result.code,
+
+      message:
+        'Pairing code généré. Entrez ce code dans WhatsApp > Appareils connectés > Connecter un appareil > Connecter avec un numéro de téléphone.'
+    });
+  } catch (error) {
+    console.error(
+      '[TOPFEROS] /api/pairing error:',
+      error?.message || error
+    );
 
     return res.status(500).json({
       success: false,
 
       error:
-        err?.message ||
-        "INTERNAL_SERVER_ERROR"
+        error?.message ||
+        'Impossible de générer le pairing code.'
     });
+  }
+});
+
+/*
+|--------------------------------------------------------------------------
+| CURRENT SESSION
+|--------------------------------------------------------------------------
+*/
+
+app.get('/api/current-session', (req, res) => {
+  try {
+    const sessionId =
+      req.query?.session ||
+      req.query?.sessionId;
+
+    if (!sessionId) {
+      return res.json({
+        success: true,
+        session: null
+      });
+    }
+
+    const session =
+      getConnectionSession(sessionId);
+
+    return res.json({
+      success: true,
+
+      session:
+        sessionManager.publicSession(session)
+    });
+  } catch (error) {
+    console.error(
+      '[TOPFEROS] /api/current-session:',
+      error?.message || error
+    );
+
+    res.status(500).json({
+      success: false,
+      error: 'Impossible de récupérer la session.'
+    });
+  }
+});
+
+/*
+|--------------------------------------------------------------------------
+| SINGLE SESSION
+|--------------------------------------------------------------------------
+*/
+
+app.get('/api/session/:sessionId', (req, res) => {
+  try {
+    const { sessionId } = req.params;
+
+    const session =
+      getConnectionSession(sessionId);
+
+    if (!session) {
+      return res.status(404).json({
+        success: false,
+        error: 'Session introuvable.'
+      });
+    }
+
+    return res.json({
+      success: true,
+
+      session:
+        sessionManager.publicSession(session)
+    });
+  } catch (error) {
+    console.error(
+      '[TOPFEROS] /api/session/:sessionId:',
+      error?.message || error
+    );
+
+    res.status(500).json({
+      success: false,
+      error: 'Impossible de récupérer la session.'
+    });
+  }
+});
+
+/*
+|--------------------------------------------------------------------------
+| VERIFY SESSION
+|--------------------------------------------------------------------------
+*/
+
+app.post('/api/verify', async (req, res) => {
+  try {
+    const sessionId =
+      req.body?.sessionId ||
+      req.body?.session;
+
+    if (!sessionId) {
+      return res.status(400).json({
+        success: false,
+        error: 'sessionId obligatwa.'
+      });
+    }
+
+    const session =
+      getConnectionSession(sessionId);
+
+    if (!session) {
+      return res.status(404).json({
+        success: false,
+        error: 'Session introuvable.'
+      });
+    }
+
+    return res.json({
+      success: true,
+
+      verified:
+        session.connected === true,
+
+      connected:
+        session.connected === true,
+
+      session:
+        sessionManager.publicSession(session)
+    });
+  } catch (error) {
+    console.error(
+      '[TOPFEROS] /api/verify:',
+      error?.message || error
+    );
+
+    res.status(500).json({
+      success: false,
+      error: 'Erreur de vérification.'
+    });
+  }
+});
+
+/*
+|--------------------------------------------------------------------------
+| SETTINGS
+|--------------------------------------------------------------------------
+*/
+
+app.get('/api/settings', async (req, res) => {
+  try {
+    if (
+      settingsPanel &&
+      typeof settingsPanel.getSettings === 'function'
+    ) {
+      const settings =
+        await settingsPanel.getSettings();
+
+      return res.json({
+        success: true,
+        settings
+      });
+    }
+
+    return res.json({
+      success: true,
+      settings: {}
+    });
+  } catch (error) {
+    console.error(
+      '[TOPFEROS] GET /api/settings:',
+      error?.message || error
+    );
+
+    res.status(500).json({
+      success: false,
+      error: 'Impossible de récupérer les paramètres.'
+    });
+  }
+});
+
+app.post('/api/settings', async (req, res) => {
+  try {
+    if (
+      settingsPanel &&
+      typeof settingsPanel.updateSettings === 'function'
+    ) {
+      const settings =
+        await settingsPanel.updateSettings(
+          req.body || {}
+        );
+
+      return res.json({
+        success: true,
+        settings
+      });
+    }
+
+    return res.json({
+      success: true,
+      settings: req.body || {}
+    });
+  } catch (error) {
+    console.error(
+      '[TOPFEROS] POST /api/settings:',
+      error?.message || error
+    );
+
+    res.status(500).json({
+      success: false,
+      error: 'Impossible de sauvegarder les paramètres.'
+    });
+  }
+});
+
+/*
+|--------------------------------------------------------------------------
+| LANGUAGE
+|--------------------------------------------------------------------------
+*/
+
+app.post('/api/language', async (req, res) => {
+  try {
+    const language =
+      String(
+        req.body?.language ||
+        req.body?.lang ||
+        'fr'
+      ).toLowerCase();
+
+    const allowedLanguages = [
+      'fr',
+      'en',
+      'es'
+    ];
+
+    if (!allowedLanguages.includes(language)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Langue non supportée.'
+      });
+    }
+
+    if (
+      settingsPanel &&
+      typeof settingsPanel.setLanguage === 'function'
+    ) {
+      await settingsPanel.setLanguage(language);
+    }
+
+    return res.json({
+      success: true,
+      language
+    });
+  } catch (error) {
+    console.error(
+      '[TOPFEROS] /api/language:',
+      error?.message || error
+    );
+
+    res.status(500).json({
+      success: false,
+      error: 'Impossible de changer la langue.'
+    });
+  }
+});
+
+/*
+|--------------------------------------------------------------------------
+| DISCONNECT SESSION
+|--------------------------------------------------------------------------
+*/
+
+app.post(
+  '/api/session/:sessionId/disconnect',
+  async (req, res) => {
+    try {
+      const { sessionId } = req.params;
+
+      const session =
+        getConnectionSession(sessionId);
+
+      if (!session) {
+        return res.status(404).json({
+          success: false,
+          error: 'Session introuvable.'
+        });
+      }
+
+      await connection.stopSession(
+        sessionId
+      );
+
+      return res.json({
+        success: true,
+        message: 'Session déconnectée.',
+        sessionId
+      });
+    } catch (error) {
+      console.error(
+        '[TOPFEROS] disconnect:',
+        error?.message || error
+      );
+
+      res.status(500).json({
+        success: false,
+        error:
+          error?.message ||
+          'Impossible de déconnecter la session.'
+      });
+    }
   }
 );
 
-// ============================================================
-// EXPORT
-// ============================================================
+/*
+|--------------------------------------------------------------------------
+| DELETE SESSION
+|--------------------------------------------------------------------------
+*/
+
+app.delete(
+  '/api/session/:sessionId',
+  async (req, res) => {
+    try {
+      const { sessionId } = req.params;
+
+      const session =
+        getConnectionSession(sessionId);
+
+      if (!session) {
+        return res.status(404).json({
+          success: false,
+          error: 'Session introuvable.'
+        });
+      }
+
+      await connection.removeSession(
+        sessionId
+      );
+
+      return res.json({
+        success: true,
+        message: 'Session supprimée.',
+        sessionId
+      });
+    } catch (error) {
+      console.error(
+        '[TOPFEROS] delete session:',
+        error?.message || error
+      );
+
+      res.status(500).json({
+        success: false,
+        error:
+          error?.message ||
+          'Impossible de supprimer la session.'
+      });
+    }
+  }
+);
+
+/*
+|--------------------------------------------------------------------------
+| API 404
+|--------------------------------------------------------------------------
+*/
+
+app.use('/api', (req, res) => {
+  res.status(404).json({
+    success: false,
+    error: 'API route introuvable.'
+  });
+});
+
+/*
+|--------------------------------------------------------------------------
+| EXPRESS ERROR HANDLER
+|--------------------------------------------------------------------------
+*/
+
+app.use((error, req, res, next) => {
+  console.error(
+    '[TOPFEROS] Express error:',
+    error?.message || error
+  );
+
+  if (res.headersSent) {
+    return next(error);
+  }
+
+  res.status(500).json({
+    success: false,
+    error:
+      error?.message ||
+      'Erreur interne du serveur.'
+  });
+});
+
+/*
+|--------------------------------------------------------------------------
+| START SERVER
+|--------------------------------------------------------------------------
+*/
+
+const server = app.listen(
+  PORT,
+  HOST,
+  () => {
+    console.log(
+      `[TOPFEROS] Panel running on http://${HOST}:${PORT}`
+    );
+  }
+);
+
+server.on('error', (error) => {
+  console.error(
+    '[TOPFEROS] Panel server error:',
+    error?.message || error
+  );
+});
 
 module.exports = {
   app,
