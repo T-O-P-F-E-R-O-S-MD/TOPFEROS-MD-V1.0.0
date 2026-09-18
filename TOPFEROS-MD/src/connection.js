@@ -111,7 +111,7 @@ async function sendConnectedMessage(
 
 ╭───────❖ 𝐂𝐎𝐍𝐍𝐄𝐂𝐓𝐄𝐃 ❖───────╮
 │                              │
-│ 🎉 𝐂𝐎𝐍𝐍𝐄𝐂𝐓𝐄𝐃 𝐒𝐔𝐂𝐂𝐄𝐒𝐒𝐅𝐔𝐋𝐋𝐘 🎉
+│ 🎉 🦁𝕋𝕆ℙ𝔽𝔼ℝ𝕆𝕊 𝕄𝔻 𝕍1.0.0 𝕆ℕ𝕃𝕀ℕ𝔼 🎉
 │                              │
 │ ⚡ Prefix   : .
 │ 🌐 Mode     : Public
@@ -139,15 +139,17 @@ async function sendConnectedMessage(
 
 ╭──────❖ 𝐐𝐔𝐈𝐂𝐊 𝐌𝐄𝐍𝐔 ❖──────╮
 │                              │
-│ 📋 Tape .menu
-│    ➜ Pou jwenn tout commandes yo
+│ 📋 Type .menu
+│    ➜ To view all commands
 │
-│ ⚙️ Tape .setting
-│    ➜ Pou jwenn link pòtal setting lan
+│ ⚙️ Type .setting
+│    ➜ To get the settings portal link
 │                              │
 ╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯
 
-        🦁 By TOPFEROS MD
+╭━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╮
+│      🦁 By TOPFEROS MD 
+╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯
 `;
 
     const logoPath = path.join(
