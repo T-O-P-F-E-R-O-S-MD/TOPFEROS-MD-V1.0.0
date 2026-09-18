@@ -69,6 +69,60 @@ function getSender(message) {
 }
 
 /* ===============================
+   REACT TO COMMAND
+================================ */
+
+async function reactToCommand(sock, message) {
+  try {
+    if (!sock || !message?.key) {
+      return false;
+    }
+
+    const chatId = message.key.remoteJid;
+
+    if (!chatId) {
+      return false;
+    }
+
+    /*
+     * 🦁 REACTION REYÈL SOU MESAJ COMMAND LAN
+     *
+     * Egzanp:
+     * .menu
+     *   ↓
+     * 🦁 reaction sou .menu
+     *   ↓
+     * Menu voye
+     */
+
+    await sock.sendMessage(chatId, {
+      react: {
+        text: "🦁",
+        key: message.key
+      }
+    });
+
+    console.log(
+      `🦁 COMMAND REACTION SENT [${chatId}]`
+    );
+
+    return true;
+
+  } catch (error) {
+    /*
+     * Si reaction lan pa pase, command lan
+     * dwe toujou kontinye egzekite.
+     */
+    console.warn(
+      "⚠️ COMMAND REACTION ERROR:",
+      error?.message || error
+    );
+
+    return false;
+  }
+}
+
+/* ===============================
    HANDLE MESSAGE
 ================================ */
 
@@ -85,6 +139,10 @@ async function handleMessage(sock, message, sessionId) {
       return;
     }
 
+    /*
+     * Pa trete mesaj bot la voye pou evite
+     * loop/repons sou pwòp mesaj li.
+     */
     if (message?.key?.fromMe) {
       return;
     }
@@ -95,6 +153,12 @@ async function handleMessage(sock, message, sessionId) {
       return;
     }
 
+    /*
+     * STATUS
+     *
+     * Status yo pa pase nan command handler la.
+     * Yo dwe trete nan sistèm Status reaction lan.
+     */
     if (chatId === "status@broadcast") {
       return;
     }
@@ -113,7 +177,9 @@ async function handleMessage(sock, message, sessionId) {
       return;
     }
 
-    /* PREFIX */
+    /* ===============================
+       PREFIX
+    ================================ */
 
     if (!text.startsWith(PREFIX)) {
       return;
@@ -139,7 +205,9 @@ async function handleMessage(sock, message, sessionId) {
       `🔎 COMMAND SEARCH: ${PREFIX}${commandName}`
     );
 
-    /* FIND COMMAND */
+    /* ===============================
+       FIND COMMAND
+    ================================ */
 
     const command = commandIndex.getCommand(
       commandName
@@ -154,7 +222,9 @@ async function handleMessage(sock, message, sessionId) {
 
     const commandText = args.join(" ").trim();
 
-    /* CONTEXT */
+    /* ===============================
+       CONTEXT
+    ================================ */
 
     const context = {
       sock,
@@ -182,6 +252,31 @@ async function handleMessage(sock, message, sessionId) {
     };
 
     console.log(
+      `🦁 REACTING TO COMMAND: ${PREFIX}${commandName}`
+    );
+
+    /*
+     * ==========================================
+     * 🦁 REACTION ANVAN COMMAND lan
+     * ==========================================
+     *
+     * Egzanp:
+     *
+     * User: .menu
+     *
+     * Bot: 🦁  ← reaction sou .menu
+     *
+     * Apre sa:
+     * Bot: [MENU]
+     */
+
+    await reactToCommand(sock, message);
+
+    /* ===============================
+       EXECUTE COMMAND
+    ================================ */
+
+    console.log(
       `🚀 EXECUTING COMMAND: ${command.name}`
     );
 
@@ -201,7 +296,12 @@ async function handleMessage(sock, message, sessionId) {
   }
 }
 
+/* ===============================
+   EXPORTS
+================================ */
+
 module.exports = {
   handleMessage,
-  getMessageText
+  getMessageText,
+  reactToCommand
 };
