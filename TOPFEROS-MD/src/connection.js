@@ -708,10 +708,16 @@ async function createSocket(
   // ==========================================================
 
   sock.ev.on(
-    "messages.upsert",
-    async upsert => {
+  "messages.upsert",
+  async upsert => {
 
-      try {
+    console.log(
+      "📩 MESSAGES.UPSERT RECEIVED:",
+      upsert?.type,
+      upsert?.messages?.length || 0
+    );
+
+    try {
 
         if (
           upsert?.type !==
