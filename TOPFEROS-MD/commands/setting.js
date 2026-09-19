@@ -1,35 +1,44 @@
 "use strict";
 
-const config = (() => {
-  try {
-    return require("../config");
-  } catch {
-    return {};
-  }
-});
+let config = {};
+
+try {
+  config = require("../config");
+} catch (error) {
+  console.warn(
+    "[TOPFEROS] Config pa disponib pou setting.js:",
+    error?.message || error
+  );
+}
 
 function getSettingsUrl() {
-  const cfg = config();
-
   return (
     process.env.SETTINGS_URL ||
     process.env.PANEL_URL ||
-    cfg?.settingsUrl ||
-    cfg?.panelUrl ||
-    cfg?.web?.settingsUrl ||
-    cfg?.web?.panelUrl ||
+    config?.settingsUrl ||
+    config?.panelUrl ||
+    config?.web?.settingsUrl ||
+    config?.web?.panelUrl ||
     "http://localhost:3000"
   );
 }
 
-async function execute({ sock, message }) {
-  const chatId = message?.key?.remoteJid;
+async function execute({
+  sock,
+  message
+}) {
+  try {
+    const chatId =
+      message?.key?.remoteJid;
 
-  if (!chatId) return;
+    if (!chatId) {
+      return;
+    }
 
-  const settingsUrl = getSettingsUrl();
+    const settingsUrl =
+      getSettingsUrl();
 
-  const text =
+    const text =
 `╭━━━〔 ⚙️ TOPFEROS MD 〕━━━╮
 ┃
 ┃ ⚙️ *SETTINGS PANEL*
@@ -44,15 +53,25 @@ ${settingsUrl}
 
 👇 Louvri link la pou antre nan panel settings lan.`;
 
-  await sock.sendMessage(
-    chatId,
-    {
-      text
-    },
-    {
-      quoted: message
-    }
-  );
+    await sock.sendMessage(
+      chatId,
+      {
+        text
+      },
+      {
+        quoted: message
+      }
+    );
+
+    console.log(
+      `[TOPFEROS] .setting executed successfully`
+    );
+  } catch (error) {
+    console.error(
+      "[TOPFEROS] Erè .setting:",
+      error?.message || error
+    );
+  }
 }
 
 module.exports = {
