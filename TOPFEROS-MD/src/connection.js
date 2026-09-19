@@ -3,7 +3,7 @@
 // ============================================================
 // TOPFEROS MD
 // CONNECTION MANAGER
-// WhatsApp / Baileys
+// WhatsApp / Baileys 6.7.21
 // ============================================================
 
 const {
@@ -44,13 +44,17 @@ let goodbye = null;
 try {
   welcome = require("../commands/welcome");
 } catch (error) {
-  welcome = null;
+  console.warn(
+    "⚠️ welcome.js pa disponib."
+  );
 }
 
 try {
   goodbye = require("../commands/goodbye");
 } catch (error) {
-  goodbye = null;
+  console.warn(
+    "⚠️ goodbye.js pa disponib."
+  );
 }
 
 // ============================================================
@@ -257,9 +261,7 @@ async function createSocket(
   }
 
   // ----------------------------------------------------------
-  // IMPORTANT:
-  // Use the SAME authDir provided by sessionManager.
-  // Do NOT create another auth path here.
+  // USE SESSION MANAGER AUTH DIRECTORY
   // ----------------------------------------------------------
 
   const authDir =
@@ -501,7 +503,7 @@ async function createSocket(
           );
 
           // --------------------------------------------------
-          // SEND SUCCESS MESSAGE
+          // SEND CONNECTED MESSAGE
           // --------------------------------------------------
 
           await sendConnectedMessage(
@@ -641,10 +643,6 @@ async function createSocket(
             }
           );
 
-          // --------------------------------------------------
-          // PREVENT DUPLICATE TIMER
-          // --------------------------------------------------
-
           if (
             reconnectTimers.has(
               cleanId
@@ -708,16 +706,16 @@ async function createSocket(
   // ==========================================================
 
   sock.ev.on(
-  "messages.upsert",
-  async upsert => {
+    "messages.upsert",
+    async upsert => {
 
-    console.log(
-      "📩 MESSAGES.UPSERT RECEIVED:",
-      upsert?.type,
-      upsert?.messages?.length || 0
-    );
+      console.log(
+        `📩 MESSAGES.UPSERT RECEIVED [${cleanId}]:`,
+        upsert?.type,
+        upsert?.messages?.length || 0
+      );
 
-    try {
+      try {
 
         if (
           upsert?.type !==
@@ -736,6 +734,20 @@ async function createSocket(
           ) {
             continue;
           }
+
+          // --------------------------------------------------
+          // IGNORE BOT'S OWN MESSAGES
+          // --------------------------------------------------
+
+          if (
+            msg?.key?.fromMe
+          ) {
+            continue;
+          }
+
+          // --------------------------------------------------
+          // SEND TO COMMAND HANDLER
+          // --------------------------------------------------
 
           if (
             messageHandler &&
@@ -833,14 +845,64 @@ async function startSession(
 
 // ============================================================
 // REQUEST PAIRING CODE
+//
+// Supports:
+//
+// requestPairingCode(number)
+//
+// AND:
+//
+// requestPairingCode(sessionId, number)
+//
+// This keeps compatibility with panel/server.js
 // ============================================================
 
 async function requestPairingCode(
-  number
+  sessionIdOrNumber,
+  maybeNumber
 ) {
 
-  const clean =
-    cleanNumber(number);
+  let requestedSessionId;
+  let clean;
+
+  // ----------------------------------------------------------
+  // PANEL FORM:
+  // requestPairingCode(sessionId, number)
+  // ----------------------------------------------------------
+
+  if (
+    maybeNumber !== undefined &&
+    maybeNumber !== null &&
+    String(maybeNumber).trim() !== ""
+  ) {
+
+    requestedSessionId =
+      safeSessionId(
+        sessionIdOrNumber
+      );
+
+    clean =
+      cleanNumber(
+        maybeNumber
+      );
+
+  } else {
+
+    // --------------------------------------------------------
+    // OLD FORM:
+    // requestPairingCode(number)
+    // --------------------------------------------------------
+
+    clean =
+      cleanNumber(
+        sessionIdOrNumber
+      );
+
+    requestedSessionId =
+      safeSessionId(
+        clean
+      );
+  }
 
   if (!clean) {
     throw new Error(
@@ -848,32 +910,44 @@ async function requestPairingCode(
     );
   }
 
+  if (!requestedSessionId) {
+    throw new Error(
+      "sessionId invalide"
+    );
+  }
+
+  console.log(
+    `📲 PAIRING REQUEST [${requestedSessionId}]`
+  );
+
+  console.log(
+    `📱 NUMBER [${requestedSessionId}]: ${clean}`
+  );
+
   // ----------------------------------------------------------
-  // FIND EXISTING SESSION BY NUMBER
+  // FIND SESSION
   // ----------------------------------------------------------
 
   let session =
-    sessionManager.getSessionByNumber(
-      clean
+    sessionManager.getSession(
+      requestedSessionId
     );
 
   // ----------------------------------------------------------
-  // PREVENT DUPLICATE PAIRING
+  // If the requested session ID doesn't exist,
+  // try finding it by number.
   // ----------------------------------------------------------
 
-  if (
-    session?.pairing
-  ) {
+  if (!session) {
 
-    const err =
-      new Error(
-        "PAIRING_IN_PROGRESS"
-      );
-
-    err.code =
-      "PAIRING_IN_PROGRESS";
-
-    throw err;
+    try {
+      session =
+        sessionManager.getSessionByNumber(
+          clean
+        );
+    } catch {
+      session = null;
+    }
   }
 
   // ----------------------------------------------------------
@@ -886,7 +960,7 @@ async function requestPairingCode(
       sessionManager.createSession(
         {
           sessionId:
-            clean,
+            requestedSessionId,
 
           number:
             clean
@@ -895,10 +969,33 @@ async function requestPairingCode(
 
   } else {
 
-    sessionManager.setNumber(
-      session.sessionId,
-      clean
-    );
+    /*
+     * IMPORTANT:
+     * If panel explicitly supplied a sessionId,
+     * keep that session ID.
+     */
+
+    try {
+
+      sessionManager.setNumber(
+        session.sessionId,
+        clean
+      );
+
+    } catch {
+
+      try {
+
+        sessionManager.updateSession(
+          session.sessionId,
+          {
+            number:
+              clean
+          }
+        );
+
+      } catch {}
+   }
 
     session =
       sessionManager.getSession(
@@ -916,7 +1013,26 @@ async function requestPairingCode(
     session.sessionId;
 
   // ----------------------------------------------------------
-  // CHECK IF ALREADY CONNECTED
+  // PREVENT DUPLICATE PAIRING
+  // ----------------------------------------------------------
+
+  if (
+    session.pairing
+  ) {
+
+    const err =
+      new Error(
+        "PAIRING_IN_PROGRESS"
+      );
+
+    err.code =
+      "PAIRING_IN_PROGRESS";
+
+    throw err;
+  }
+
+  // ----------------------------------------------------------
+  // CHECK ALREADY CONNECTED
   // ----------------------------------------------------------
 
   if (
@@ -935,6 +1051,17 @@ async function requestPairingCode(
   }
 
   // ----------------------------------------------------------
+  // CHECK ACTIVE SOCKET
+  // ----------------------------------------------------------
+
+  let sock =
+    active.get(
+      safeSessionId(
+        sessionId
+      )
+    );
+
+  // ----------------------------------------------------------
   // START PAIRING STATE
   // ----------------------------------------------------------
 
@@ -943,39 +1070,44 @@ async function requestPairingCode(
   );
 
   // ----------------------------------------------------------
-  // CREATE SOCKET
+  // CREATE SOCKET IF NEEDED
   // ----------------------------------------------------------
-
-  let sock;
 
   try {
 
-    sock =
-      await createSocket(
-        sessionId
-      );
+    if (!sock) {
+
+      sock =
+        await createSocket(
+          sessionId
+        );
+    }
 
   } catch (error) {
 
-    sessionManager.updateSession(
-      sessionId,
-      {
-        status:
-          "pairing_error",
+    try {
 
-        pairing:
-          false,
+      sessionManager.updateSession(
+        sessionId,
+        {
+          status:
+            "pairing_error",
 
-        pairingCode:
-          null
-      }
-    );
+          pairing:
+            false,
+
+          pairingCode:
+            null
+        }
+      );
+
+    } catch {}
 
     throw error;
   }
 
   // ----------------------------------------------------------
-  // LOAD AUTH STATE AGAIN
+  // LOAD AUTH STATE
   // ----------------------------------------------------------
 
   const authDir =
@@ -989,9 +1121,7 @@ async function requestPairingCode(
     );
 
   // ----------------------------------------------------------
-  // IMPORTANT:
-  // PAIRING CODE SHOULD ONLY BE REQUESTED
-  // FOR AN UNREGISTERED AUTH STATE.
+  // CHECK REGISTERED AUTH
   // ----------------------------------------------------------
 
   if (
@@ -1006,7 +1136,7 @@ async function requestPairingCode(
       sessionId,
       {
         status:
-          "error",
+          "connected",
 
         pairing:
           false,
@@ -1032,12 +1162,6 @@ async function requestPairingCode(
   // ----------------------------------------------------------
 
   try {
-
-    /*
-     * Small delay gives the socket a moment
-     * to initialize before WhatsApp receives
-     * the pairing request.
-     */
 
     await new Promise(
       resolve =>
@@ -1081,7 +1205,10 @@ async function requestPairingCode(
           false,
 
         pairingCode:
-          normalizedCode
+          normalizedCode,
+
+        number:
+          clean
       }
     );
 
@@ -1104,19 +1231,23 @@ async function requestPairingCode(
 
   } catch (error) {
 
-    sessionManager.updateSession(
-      sessionId,
-      {
-        status:
-          "pairing_error",
+    try {
 
-        pairing:
-          false,
+      sessionManager.updateSession(
+        sessionId,
+        {
+          status:
+            "pairing_error",
 
-        pairingCode:
-          null
-      }
-    );
+          pairing:
+            false,
+
+          pairingCode:
+            null
+        }
+      );
+
+    } catch {}
 
     console.error(
       `❌ PAIRING CODE ERROR [${sessionId}]`,
@@ -1254,15 +1385,18 @@ async function restoreStoredSessions() {
         continue;
       }
 
-      /*
-       * Do not automatically recreate a session
-       * that was explicitly logged out/stopped.
-       */
+      // ------------------------------------------------------
+      // Don't restore explicitly logged-out sessions
+      // ------------------------------------------------------
 
       if (
         session.status ===
-          "logged_out"
+        "logged_out"
       ) {
+        console.log(
+          `⏭️ SKIPPING LOGGED OUT SESSION [${id}]`
+        );
+
         continue;
       }
 
@@ -1302,7 +1436,7 @@ async function attachMessageListener(
   }
 
   /*
-   * Message listener is already attached
+   * Listener is already attached
    * inside createSocket().
    */
 
@@ -1323,7 +1457,7 @@ async function attachConnectionListener(
   }
 
   /*
-   * Connection listener is already attached
+   * Listener is already attached
    * inside createSocket().
    */
 
