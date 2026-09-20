@@ -2,10 +2,34 @@
 
 const express = require("express");
 const path = require("path");
+const fs = require("fs");
 
 const connection = require("../src/connection");
 const sessionManager = require("../src/sessionManager");
 const language = require("../src/language");
+
+/*
+|--------------------------------------------------------------------------
+| SETTINGS PANEL BACKEND
+|--------------------------------------------------------------------------
+*/
+
+const SETTING_PANEL_FILE = path.join(
+  __dirname,
+  "..",
+  "src",
+  "settingPanel.js"
+);
+
+console.log(
+  "[TOPFEROS] settingPanel path:",
+  SETTING_PANEL_FILE
+);
+
+console.log(
+  "[TOPFEROS] settingPanel exists:",
+  fs.existsSync(SETTING_PANEL_FILE)
+);
 
 let settingsPanel = null;
 
@@ -13,16 +37,24 @@ try {
   settingsPanel = require("../src/settingPanel");
 
   console.log(
-    "[TOPFEROS] settingPanel.js chaje avèk siksè."
+    "[TOPFEROS] ✅ settingPanel.js chaje avèk siksè."
   );
 } catch (error) {
   console.error(
     "[TOPFEROS] ❌ settingPanel.js pa disponib:",
-    error?.stack || error?.message || error
+    error?.stack ||
+      error?.message ||
+      error
   );
 }
 
 const app = express();
+
+/*
+|--------------------------------------------------------------------------
+| SERVER
+|--------------------------------------------------------------------------
+*/
 
 const PORT =
   Number(process.env.PORT) || 3000;
@@ -32,7 +64,7 @@ const HOST =
 
 /*
 |--------------------------------------------------------------------------
-| PANEL PATHS
+| PATHS
 |--------------------------------------------------------------------------
 */
 
@@ -61,6 +93,8 @@ const ASSETS_DIR =
 |--------------------------------------------------------------------------
 */
 
+app.disable("x-powered-by");
+
 app.use(
   express.json({
     limit: "2mb"
@@ -75,17 +109,17 @@ app.use(
 );
 
 /*
- * Panel public files
- */
+|--------------------------------------------------------------------------
+| STATIC FILES
+|--------------------------------------------------------------------------
+*/
+
 app.use(
   express.static(
     PUBLIC_DIR
   )
 );
 
-/*
- * Bot assets / logo
- */
 app.use(
   "/assets",
   express.static(
@@ -102,24 +136,16 @@ app.use(
 app.get(
   "/background.png",
   (req, res) => {
-    res.sendFile(
-      BACKGROUND_FILE,
-      error => {
-        if (error) {
-          console.error(
-            "[TOPFEROS] Background pa jwenn:",
-            error?.message || error
-          );
+    if (
+      !fs.existsSync(
+        BACKGROUND_FILE
+      )
+    ) {
+      return res.status(404).end();
+    }
 
-          if (!res.headersSent) {
-            res
-              .status(
-                error?.statusCode || 404
-              )
-              .end();
-          }
-        }
-      }
+    return res.sendFile(
+      BACKGROUND_FILE
     );
   }
 );
@@ -159,12 +185,19 @@ function getConnectionSession(
   }
 
   try {
+    if (
+      typeof sessionManager.getSession !==
+      "function"
+    ) {
+      return null;
+    }
+
     return sessionManager.getSession(
       sessionId
     );
   } catch (error) {
     console.error(
-      "[TOPFEROS] getSession error:",
+      "[TOPFEROS] getSession:",
       error?.message || error
     );
 
@@ -178,13 +211,16 @@ function getPublicSessions() {
       typeof sessionManager.getPublicSessions ===
       "function"
     ) {
-      return sessionManager.getPublicSessions();
+      return (
+        sessionManager.getPublicSessions() ||
+        []
+      );
     }
 
     return [];
   } catch (error) {
     console.error(
-      "[TOPFEROS] getPublicSessions error:",
+      "[TOPFEROS] getPublicSessions:",
       error?.message || error
     );
 
@@ -192,7 +228,9 @@ function getPublicSessions() {
   }
 }
 
-function publicSession(session) {
+function publicSession(
+  session
+) {
   if (!session) {
     return null;
   }
@@ -208,7 +246,7 @@ function publicSession(session) {
     }
   } catch (error) {
     console.error(
-      "[TOPFEROS] publicSession error:",
+      "[TOPFEROS] publicSession:",
       error?.message || error
     );
   }
@@ -216,7 +254,9 @@ function publicSession(session) {
   return session;
 }
 
-function getSessionIdFromRequest(req) {
+function getSessionIdFromRequest(
+  req
+) {
   return (
     req.query?.sessionId ||
     req.query?.session ||
@@ -226,17 +266,29 @@ function getSessionIdFromRequest(req) {
   );
 }
 
+function isSessionConnected(
+  session
+) {
+  return Boolean(
+    session &&
+      session.connected === true
+  );
+}
+
 function requireSession(
   req,
   res
 ) {
   const sessionId =
-    getSessionIdFromRequest(req);
+    getSessionIdFromRequest(
+      req
+    );
 
   if (!sessionId) {
     res.status(400).json({
       success: false,
-      error: "sessionId obligatwa."
+      error:
+        "sessionId obligatwa."
     });
 
     return null;
@@ -250,7 +302,8 @@ function requireSession(
   if (!session) {
     res.status(404).json({
       success: false,
-      error: "Session introuvable."
+      error:
+        "Session introuvable."
     });
 
     return null;
@@ -262,30 +315,47 @@ function requireSession(
   };
 }
 
-function isSessionConnected(
-  session
-) {
-  return Boolean(
-    session &&
-    session.connected === true
-  );
-}
-
 /*
 |--------------------------------------------------------------------------
-| MAIN PANEL
+| HOME
 |--------------------------------------------------------------------------
 */
 
 app.get(
   "/",
   (req, res) => {
-    res.sendFile(
+    return res.sendFile(
       path.join(
         PUBLIC_DIR,
         "index.html"
       )
     );
+  }
+);
+
+/*
+|--------------------------------------------------------------------------
+| HEALTH CHECK
+|--------------------------------------------------------------------------
+*/
+
+app.get(
+  "/health",
+  (req, res) => {
+    return res.json({
+      success: true,
+      service:
+        "TOPFEROS MD SETTINGS PANEL",
+      status: "online",
+      port: PORT,
+      host: HOST,
+      settingPanel:
+        Boolean(settingsPanel),
+      settingPanelFile:
+        fs.existsSync(
+          SETTING_PANEL_FILE
+        )
+    });
   }
 );
 
@@ -316,8 +386,15 @@ app.get(
 
       return res.json({
         success: true,
-
         status: "online",
+
+        settingPanel:
+          Boolean(settingsPanel),
+
+        settingPanelFile:
+          fs.existsSync(
+            SETTING_PANEL_FILE
+          ),
 
         totalSessions:
           sessions.length,
@@ -334,13 +411,12 @@ app.get(
       console.error(
         "[TOPFEROS] /api/status:",
         error?.stack ||
-        error?.message ||
-        error
+          error?.message ||
+          error
       );
 
       return res.status(500).json({
         success: false,
-
         error:
           "Impossible de récupérer le statut."
       });
@@ -360,7 +436,6 @@ app.get(
     try {
       return res.json({
         success: true,
-
         sessions:
           getPublicSessions()
       });
@@ -372,7 +447,6 @@ app.get(
 
       return res.status(500).json({
         success: false,
-
         error:
           "Impossible de récupérer les sessions."
       });
@@ -408,7 +482,6 @@ app.post(
       ) {
         return res.status(400).json({
           success: false,
-
           error:
             "Numéro invalide. Utilisez le code pays + numéro, sans +, espaces ou tirets."
         });
@@ -427,52 +500,45 @@ app.post(
           sessionId
         );
 
-      /*
-       * Si session deja connectée,
-       * pa mande nouvo pairing code.
-       */
       if (
         session &&
         session.connected === true
       ) {
         return res.status(409).json({
           success: false,
-
           error:
             "Ce numéro est déjà connecté.",
-
           sessionId
         });
       }
 
-      /*
-       * Netwaye ansyen pairing state.
-       */
       if (
         session &&
-        session.pairing === true
-      ) {
-        if (
-          typeof sessionManager.updateSession ===
+        session.pairing === true &&
+        typeof sessionManager.updateSession ===
           "function"
-        ) {
-          await sessionManager.updateSession(
-            sessionId,
-            {
-              status: "disconnected",
+      ) {
+        await sessionManager.updateSession(
+          sessionId,
+          {
+            status:
+              "disconnected",
 
-              connected: false,
+            connected:
+              false,
 
-              pairing: false,
+            pairing:
+              false,
 
-              pairingCode: null,
+            pairingCode:
+              null,
 
-              pairingStartedAt: null,
+            pairingStartedAt:
+              null,
 
-              number
-            }
-          );
-        }
+            number
+          }
+        );
       }
 
       console.log(
@@ -482,11 +548,10 @@ app.post(
       if (
         !connection ||
         typeof connection.requestPairingCode !==
-        "function"
+          "function"
       ) {
         return res.status(500).json({
           success: false,
-
           error:
             "requestPairingCode() pa disponib nan connection.js."
         });
@@ -502,18 +567,18 @@ app.post(
         success: true,
 
         sessionId:
-          result.sessionId ||
+          result?.sessionId ||
           sessionId,
 
         number:
-          result.number ||
+          result?.number ||
           number,
 
         code:
-          result.code,
+          result?.code || null,
 
         pairingCode:
-          result.code,
+          result?.code || null,
 
         message:
           "Pairing code généré avec succès."
@@ -522,13 +587,12 @@ app.post(
       console.error(
         "[TOPFEROS] /api/pairing:",
         error?.stack ||
-        error?.message ||
-        error
+          error?.message ||
+          error
       );
 
       return res.status(500).json({
         success: false,
-
         error:
           error?.message ||
           "Impossible de générer le pairing code."
@@ -572,7 +636,6 @@ app.get(
 
       return res.json({
         success: true,
-
         session:
           publicSession(
             session
@@ -586,7 +649,6 @@ app.get(
 
       return res.status(500).json({
         success: false,
-
         error:
           "Impossible de récupérer la session."
       });
@@ -616,7 +678,6 @@ app.get(
       if (!session) {
         return res.status(404).json({
           success: false,
-
           error:
             "Session introuvable."
         });
@@ -624,7 +685,6 @@ app.get(
 
       return res.json({
         success: true,
-
         session:
           publicSession(
             session
@@ -638,7 +698,6 @@ app.get(
 
       return res.status(500).json({
         success: false,
-
         error:
           "Impossible de récupérer la session."
       });
@@ -648,12 +707,7 @@ app.get(
 
 /*
 |--------------------------------------------------------------------------
-| VERIFY SESSION
-|--------------------------------------------------------------------------
-|
-| Important:
-| Yon session ki pa connected pa konsidere
-| kòm verifye.
+| VERIFY PANEL SESSION
 |--------------------------------------------------------------------------
 */
 
@@ -665,10 +719,15 @@ app.post(
         req.body?.sessionId ||
         req.body?.session;
 
+      const code =
+        req.body?.code ||
+        req.body?.panelCode ||
+        "";
+
       if (!sessionId) {
         return res.status(400).json({
           success: false,
-
+          verified: false,
           error:
             "sessionId obligatwa."
         });
@@ -682,50 +741,75 @@ app.post(
       if (!session) {
         return res.status(404).json({
           success: false,
-
+          verified: false,
           error:
             "Session introuvable."
         });
       }
 
-      const connected =
-        isSessionConnected(
+      /*
+       * Bot la dwe konekte.
+       */
+      if (
+        !isSessionConnected(
           session
-        );
+        )
+      ) {
+        return res.status(403).json({
+          success: false,
+          verified: false,
+          authenticated: false,
+          connected: false,
+          error:
+            "Bot la pa konekte."
+        });
+      }
+
+      if (!settingsPanel) {
+        return res.status(503).json({
+          success: false,
+          verified: false,
+          authenticated: false,
+          error:
+            "settingPanel.js pa disponib."
+        });
+      }
 
       /*
-       * Si settingPanel gen verifySession(),
-       * itilize li tou.
+       * Verifye code panel la.
        */
       let authenticated = false;
 
       if (
-        settingsPanel &&
-        typeof settingsPanel.isAuthenticated ===
+        typeof settingsPanel.verifySession ===
         "function"
       ) {
-        try {
-          authenticated =
-            Boolean(
-              settingsPanel.isAuthenticated(
-                sessionId
-              )
-            );
-        } catch (error) {
-          authenticated = false;
-        }
+        authenticated =
+          Boolean(
+            await settingsPanel.verifySession(
+              sessionId,
+              code
+            )
+          );
+      }
+
+      if (!authenticated) {
+        return res.status(401).json({
+          success: false,
+          verified: false,
+          authenticated: false,
+          connected: true,
+          error:
+            "Code panel la pa valide."
+        });
       }
 
       return res.json({
         success: true,
-
-        verified:
-          connected,
-
-        authenticated,
-
-        connected,
-
+        verified: true,
+        authenticated: true,
+        connected: true,
+        sessionId,
         session:
           publicSession(
             session
@@ -734,12 +818,14 @@ app.post(
     } catch (error) {
       console.error(
         "[TOPFEROS] /api/verify:",
-        error?.message || error
+        error?.stack ||
+          error?.message ||
+          error
       );
 
       return res.status(500).json({
         success: false,
-
+        verified: false,
         error:
           "Erreur de vérification."
       });
@@ -750,10 +836,6 @@ app.post(
 /*
 |--------------------------------------------------------------------------
 | GET SETTINGS
-|--------------------------------------------------------------------------
-|
-| GET:
-| /api/settings?sessionId=XXXXX
 |--------------------------------------------------------------------------
 */
 
@@ -776,10 +858,6 @@ app.get(
         session
       } = sessionData;
 
-      /*
-       * Pa kite yon moun li settings
-       * si bot la pa konekte.
-       */
       if (
         !isSessionConnected(
           session
@@ -787,22 +865,20 @@ app.get(
       ) {
         return res.status(403).json({
           success: false,
-
           error:
-            "Bot la pa konekte. Session settings la pa disponib."
+            "Bot la pa konekte. Settings yo pa disponib."
         });
       }
 
       if (
         !settingsPanel ||
         typeof settingsPanel.getSettings !==
-        "function"
+          "function"
       ) {
         return res.status(503).json({
           success: false,
-
           error:
-            "settingPanel.js pa disponib oswa getSettings() manke."
+            "settingPanel.js pa disponib."
         });
       }
 
@@ -815,7 +891,7 @@ app.get(
 
       if (
         typeof settingsPanel.getBotInformation ===
-        "function"
+          "function"
       ) {
         botInformation =
           await settingsPanel.getBotInformation(
@@ -825,7 +901,6 @@ app.get(
 
       return res.json({
         success: true,
-
         sessionId,
 
         settings:
@@ -838,13 +913,12 @@ app.get(
       console.error(
         "[TOPFEROS] GET settings:",
         error?.stack ||
-        error?.message ||
-        error
+          error?.message ||
+          error
       );
 
       return res.status(500).json({
         success: false,
-
         error:
           "Impossible de récupérer les paramètres."
       });
@@ -855,17 +929,6 @@ app.get(
 /*
 |--------------------------------------------------------------------------
 | SAVE SETTINGS
-|--------------------------------------------------------------------------
-|
-| POST:
-| /api/settings
-|
-| Body:
-| {
-|   sessionId: "...",
-|   publicMode: true,
-|   antiSpam: false
-| }
 |--------------------------------------------------------------------------
 */
 
@@ -880,7 +943,6 @@ app.post(
       if (!sessionId) {
         return res.status(400).json({
           success: false,
-
           error:
             "sessionId obligatwa."
         });
@@ -894,15 +956,11 @@ app.post(
       if (!session) {
         return res.status(404).json({
           success: false,
-
           error:
             "Session introuvable."
         });
       }
 
-      /*
-       * Pa pèmèt save si bot la offline.
-       */
       if (
         !isSessionConnected(
           session
@@ -910,24 +968,23 @@ app.post(
       ) {
         return res.status(403).json({
           success: false,
-
           error:
-            "Bot la pa konekte. Settings yo pa ka modifye."
+            "Bot la pa konekte."
         });
       }
 
-      if (!settingsPanel) {
+      if (
+        !settingsPanel ||
+        typeof settingsPanel.applySettings !==
+          "function"
+      ) {
         return res.status(503).json({
           success: false,
-
           error:
-            "settingPanel.js pa disponib."
+            "applySettings() pa disponib nan settingPanel.js."
         });
       }
 
-      /*
-       * Retire sessionId nan data settings yo.
-       */
       const updatedData = {
         ...(req.body || {})
       };
@@ -935,42 +992,14 @@ app.post(
       delete updatedData.sessionId;
       delete updatedData.session;
 
-      let settings = null;
-
-      /*
-       * Nouvo API nou vle itilize:
-       *
-       * applySettings(sessionId, data)
-       */
-      if (
-        typeof settingsPanel.applySettings ===
-        "function"
-      ) {
-        settings =
-          await settingsPanel.applySettings(
-            sessionId,
-            updatedData
-          );
-      }
-
-      /*
-       * Si applySettings pa retounen settings,
-       * relire yo nan backend la.
-       */
-      if (
-        settings == null &&
-        typeof settingsPanel.getSettings ===
-        "function"
-      ) {
-        settings =
-          await settingsPanel.getSettings(
-            sessionId
-          );
-      }
+      const settings =
+        await settingsPanel.applySettings(
+          sessionId,
+          updatedData
+        );
 
       return res.json({
         success: true,
-
         sessionId,
 
         settings:
@@ -980,13 +1009,12 @@ app.post(
       console.error(
         "[TOPFEROS] POST settings:",
         error?.stack ||
-        error?.message ||
-        error
+          error?.message ||
+          error
       );
 
       return res.status(500).json({
         success: false,
-
         error:
           error?.message ||
           "Impossible de sauvegarder les paramètres."
@@ -1027,7 +1055,6 @@ app.get(
       ) {
         return res.status(403).json({
           success: false,
-
           error:
             "Bot la pa konekte."
         });
@@ -1036,11 +1063,10 @@ app.get(
       if (
         !settingsPanel ||
         typeof settingsPanel.getBotInformation !==
-        "function"
+          "function"
       ) {
         return res.status(503).json({
           success: false,
-
           error:
             "getBotInformation() pa disponib."
         });
@@ -1053,7 +1079,6 @@ app.get(
 
       return res.json({
         success: true,
-
         sessionId,
 
         botInformation:
@@ -1067,7 +1092,6 @@ app.get(
 
       return res.status(500).json({
         success: false,
-
         error:
           "Impossible de récupérer les informations du bot."
       });
@@ -1092,7 +1116,6 @@ app.post(
       if (!sessionId) {
         return res.status(400).json({
           success: false,
-
           error:
             "sessionId obligatwa."
         });
@@ -1100,13 +1123,12 @@ app.post(
 
       const session =
         getConnectionSession(
-          sessionId                        
-                );
+          sessionId
+        );
 
       if (!session) {
         return res.status(404).json({
           success: false,
-
           error:
             "Session introuvable."
         });
@@ -1119,7 +1141,6 @@ app.post(
       ) {
         return res.status(403).json({
           success: false,
-
           error:
             "Bot la pa konekte."
         });
@@ -1128,11 +1149,10 @@ app.post(
       if (
         !settingsPanel ||
         typeof settingsPanel.updateBotInformation !==
-        "function"
+          "function"
       ) {
         return res.status(503).json({
           success: false,
-
           error:
             "updateBotInformation() pa disponib."
         });
@@ -1153,7 +1173,6 @@ app.post(
 
       return res.json({
         success: true,
-
         sessionId,
 
         botInformation:
@@ -1167,7 +1186,6 @@ app.post(
 
       return res.status(500).json({
         success: false,
-
         error:
           error?.message ||
           "Impossible de modifier les informations du bot."
@@ -1178,7 +1196,7 @@ app.post(
 
 /*
 |--------------------------------------------------------------------------
-| LANGUAGE LIST
+| LANGUAGES
 |--------------------------------------------------------------------------
 */
 
@@ -1200,7 +1218,6 @@ app.get(
 
       return res.status(500).json({
         success: false,
-
         error:
           "Impossible de récupérer les langues."
       });
@@ -1252,7 +1269,6 @@ app.get(
 
       return res.status(500).json({
         success: false,
-
         error:
           "Impossible de récupérer la langue."
       });
@@ -1263,13 +1279,6 @@ app.get(
 /*
 |--------------------------------------------------------------------------
 | CHANGE LANGUAGE
-|--------------------------------------------------------------------------
-|
-| Body:
-| {
-|   sessionId: "...",
-|   language: "fr"
-| }
 |--------------------------------------------------------------------------
 */
 
@@ -1288,7 +1297,6 @@ app.post(
       if (!sessionId) {
         return res.status(400).json({
           success: false,
-
           error:
             "sessionId obligatwa."
         });
@@ -1297,16 +1305,10 @@ app.post(
       if (!requestedLanguage) {
         return res.status(400).json({
           success: false,
-
           error:
             "language obligatwa."
         });
       }
-
-      const normalized =
-        language.normalizeLanguage(
-          requestedLanguage
-        );
 
       if (
         !language.isSupportedLanguage(
@@ -1315,11 +1317,15 @@ app.post(
       ) {
         return res.status(400).json({
           success: false,
-
           error:
             "Langue non supportée."
         });
       }
+
+      const normalized =
+        language.normalizeLanguage(
+          requestedLanguage
+        );
 
       const session =
         getConnectionSession(
@@ -1329,7 +1335,6 @@ app.post(
       if (!session) {
         return res.status(404).json({
           success: false,
-
           error:
             "Session introuvable."
         });
@@ -1342,20 +1347,15 @@ app.post(
       ) {
         return res.status(403).json({
           success: false,
-
           error:
             "Bot la pa konekte."
         });
       }
 
-      /*
-       * Si settingPanel.js gen setLanguage(),
-       * li ka sove lang lan pou session sa.
-       */
       if (
         settingsPanel &&
         typeof settingsPanel.setLanguage ===
-        "function"
+          "function"
       ) {
         await settingsPanel.setLanguage(
           sessionId,
@@ -1365,7 +1365,6 @@ app.post(
 
       return res.json({
         success: true,
-
         sessionId,
 
         language:
@@ -1385,13 +1384,12 @@ app.post(
       console.error(
         "[TOPFEROS] POST language:",
         error?.stack ||
-        error?.message ||
-        error
+          error?.message ||
+          error
       );
 
       return res.status(500).json({
         success: false,
-
         error:
           error?.message ||
           "Impossible de changer la langue."
@@ -1422,20 +1420,18 @@ app.post(
       if (!session) {
         return res.status(404).json({
           success: false,
-
           error:
             "Session introuvable."
         });
       }
 
       /*
-       * Invalidate settings panel session
-       * AVANT disconnect si fonksyon an disponib.
+       * Invalid panel session/code anvan disconnect.
        */
       if (
         settingsPanel &&
         typeof settingsPanel.setBotDisconnected ===
-        "function"
+          "function"
       ) {
         await settingsPanel.setBotDisconnected(
           sessionId
@@ -1445,11 +1441,10 @@ app.post(
       if (
         !connection ||
         typeof connection.stopSession !==
-        "function"
+          "function"
       ) {
         return res.status(500).json({
           success: false,
-
           error:
             "stopSession() pa disponib nan connection.js."
         });
@@ -1461,23 +1456,20 @@ app.post(
 
       return res.json({
         success: true,
-
         message:
           "Session déconnectée.",
-
         sessionId
       });
     } catch (error) {
       console.error(
         "[TOPFEROS] disconnect:",
         error?.stack ||
-        error?.message ||
-        error
+          error?.message ||
+          error
       );
 
       return res.status(500).json({
         success: false,
-
         error:
           error?.message ||
           "Impossible de déconnecter la session."
@@ -1508,19 +1500,15 @@ app.delete(
       if (!session) {
         return res.status(404).json({
           success: false,
-
           error:
             "Session introuvable."
         });
       }
 
-      /*
-       * Invalidate settings panel session.
-       */
       if (
         settingsPanel &&
         typeof settingsPanel.removeSession ===
-        "function"
+          "function"
       ) {
         await settingsPanel.removeSession(
           sessionId
@@ -1528,41 +1516,37 @@ app.delete(
       }
 
       if (
-        connection &&
-        typeof connection.removeSession ===
-        "function"
+        !connection ||
+        typeof connection.removeSession !==
+          "function"
       ) {
-        await connection.removeSession(
-          sessionId
-        );
-      } else {
         return res.status(500).json({
           success: false,
-
           error:
             "removeSession() pa disponib nan connection.js."
         });
       }
 
+      await connection.removeSession(
+        sessionId
+      );
+
       return res.json({
         success: true,
-
         message:
           "Session supprimée.",
-
         sessionId
       });
     } catch (error) {
       console.error(
         "[TOPFEROS] delete session:",
         error?.stack ||
-        error?.message ||
-        error
+          error?.message ||
+          error
       );
 
       return res.status(500).json({
         success: false,
-
         error:
           error?.message ||
           "Impossible de supprimer la session."
@@ -1582,7 +1566,6 @@ app.use(
   (req, res) => {
     return res.status(404).json({
       success: false,
-
       error:
         "API route introuvable."
     });
@@ -1605,8 +1588,8 @@ app.use(
     console.error(
       "[TOPFEROS] Express error:",
       error?.stack ||
-      error?.message ||
-      error
+        error?.message ||
+        error
     );
 
     if (
@@ -1617,7 +1600,6 @@ app.use(
 
     return res.status(500).json({
       success: false,
-
       error:
         error?.message ||
         "Erreur interne du serveur."
@@ -1637,7 +1619,43 @@ const server =
     HOST,
     () => {
       console.log(
-        `[TOPFEROS] Panel running on ${HOST}:${PORT}`
+        "=================================================="
+      );
+
+      console.log(
+        "[TOPFEROS MD] SETTINGS PANEL ONLINE"
+      );
+
+      console.log(
+        `[TOPFEROS] HOST: ${HOST}`
+      );
+
+      console.log(
+        `[TOPFEROS] PORT: ${PORT}`
+      );
+
+      console.log(
+        `[TOPFEROS] PUBLIC DIR: ${PUBLIC_DIR}`
+      );
+
+      console.log(
+        `[TOPFEROS] settingPanel file: ${SETTING_PANEL_FILE}`
+      );
+
+      console.log(
+        `[TOPFEROS] settingPanel exists: ${fs.existsSync(
+          SETTING_PANEL_FILE
+        )}`
+      );
+
+      console.log(
+        `[TOPFEROS] settingPanel loaded: ${Boolean(
+          settingsPanel
+        )}`
+      );
+
+      console.log(
+        "=================================================="
       );
     }
   );
@@ -1646,10 +1664,10 @@ server.on(
   "error",
   error => {
     console.error(
-      "[TOPFEROS] Panel server error:",
+      "[TOPFEROS] ❌ Panel server error:",
       error?.stack ||
-      error?.message ||
-      error
+        error?.message ||
+        error
     );
   }
 );
