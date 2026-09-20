@@ -1,7 +1,7 @@
 {
   "name": "topferos-wa-bot",
   "version": "1.0.0",
-  "description": "TOPFEROS MD - A powerful and customizable WhatsApp Bot made by TOPFEROS TECH",
+  "description": "TOPFEROS MD - A powerful and customizable WhatsApp Bot made by TOPFEROS MD TECH",
   "main": "index.js",
   "type": "commonjs",
   "scripts": {
