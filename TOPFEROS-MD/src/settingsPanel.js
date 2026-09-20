@@ -1,7 +1,7 @@
 "use strict";
 
 const crypto = require("crypto");
-const sessionManager = require("../src/sessionManager");
+const sessionManager = require("./sessionManager");
 
 const PANEL_URL =
   process.env.SETTINGS_PANEL_URL ||
@@ -15,6 +15,7 @@ const PANEL_URL =
 const defaultSettings = {
   publicMode: true,
   privateMode: false,
+
   alwaysOnline: true,
   fakeTyping: false,
   fakeRecording: false,
@@ -52,7 +53,6 @@ const defaultBotInformation = {
 
 /* ======================================================
    LOCAL PANEL SESSION CACHE
-   Key = SAME sessionId from sessionManager
 ====================================================== */
 
 const sessions = new Map();
@@ -99,16 +99,37 @@ function getPanelLink(sessionId) {
 }
 
 /* ======================================================
-   GET / CREATE PANEL SESSION
+   CHECK IF WHATSAPP SESSION IS CONNECTED
 ====================================================== */
 
-function ensureSession(sessionId, number = "", sock = null) {
+function isBotConnected(session) {
+  if (!session) return false;
+
+  if (!session.socket) {
+    return false;
+  }
+
+  return true;
+}
+
+/* ======================================================
+   ENSURE PANEL SESSION
+====================================================== */
+
+function ensureSession(
+  sessionId,
+  number = "",
+  sock = null
+) {
   if (!sessionId) return null;
 
-  let session = sessions.get(sessionId);
+  let session =
+    sessions.get(String(sessionId));
 
   const waSession =
-    sessionManager.getSession(sessionId);
+    sessionManager.getSession(
+      String(sessionId)
+    );
 
   if (!waSession) {
     return null;
@@ -121,13 +142,15 @@ function ensureSession(sessionId, number = "", sock = null) {
 
   if (!session) {
     session = {
-      sessionId,
+      sessionId: String(sessionId),
 
       number: phoneNumber,
 
       code: generateCode(),
 
       authenticated: false,
+
+      connected: Boolean(sock),
 
       createdAt: Date.now(),
 
@@ -145,15 +168,21 @@ function ensureSession(sessionId, number = "", sock = null) {
       socket: sock || null
     };
 
-    sessions.set(sessionId, session);
+    sessions.set(
+      String(sessionId),
+      session
+    );
   } else {
     if (phoneNumber) {
       session.number = phoneNumber;
-      session.botInformation.number = phoneNumber;
+
+      session.botInformation.number =
+        phoneNumber;
     }
 
     if (sock) {
       session.socket = sock;
+      session.connected = true;
     }
 
     session.updatedAt = Date.now();
@@ -164,19 +193,21 @@ function ensureSession(sessionId, number = "", sock = null) {
 
 /* ======================================================
    CREATE NEW PANEL SESSION
-   IMPORTANT:
-   DOES NOT CREATE A NEW sessionId
 ====================================================== */
 
-function createNewSession(sock = null, number = "", sessionId = null) {
+function createNewSession(
+  sock = null,
+  number = "",
+  sessionId = null
+) {
   let id = sessionId;
 
   /*
-   * If a sessionId was not supplied,
-   * try to find the WhatsApp session by number.
+   * Find WhatsApp session by number.
    */
   if (!id && number) {
-    const normalized = normalizeNumber(number);
+    const normalized =
+      normalizeNumber(number);
 
     const waSession =
       sessionManager.getSessionByNumber(
@@ -189,11 +220,13 @@ function createNewSession(sock = null, number = "", sessionId = null) {
   }
 
   /*
-   * Try to find session from socket.
+   * Find WhatsApp session by socket.
    */
   if (!id && sock) {
     const existing =
-      sessionManager.getSessionBySocket?.(sock);
+      sessionManager.getSessionBySocket?.(
+        sock
+      );
 
     if (existing) {
       id = existing.sessionId;
@@ -201,7 +234,7 @@ function createNewSession(sock = null, number = "", sessionId = null) {
   }
 
   /*
-   * We MUST NOT invent a second session ID here.
+   * Never invent a fake WhatsApp session ID.
    */
   if (!id) {
     return null;
@@ -218,28 +251,38 @@ function createNewSession(sock = null, number = "", sessionId = null) {
    CREATE / GET SESSION FROM SOCKET
 ====================================================== */
 
-function createSession(sock, sessionId = null) {
+function createSession(
+  sock,
+  sessionId = null
+) {
   let id = sessionId;
 
   /*
-   * First priority:
-   * explicitly supplied sessionId.
+   * Explicit session ID.
    */
   if (id) {
     const session =
-      ensureSession(id, "", sock);
+      ensureSession(
+        id,
+        "",
+        sock
+      );
 
-    if (!session) return null;
+    if (!session) {
+      return null;
+    }
 
     return formatSession(session);
   }
 
   /*
-   * Find WhatsApp session by socket.
+   * Find by socket.
    */
   if (sock) {
     const waSession =
-      sessionManager.getSessionBySocket?.(sock);
+      sessionManager.getSessionBySocket?.(
+        sock
+      );
 
     if (waSession) {
       const session =
@@ -255,8 +298,7 @@ function createSession(sock, sessionId = null) {
     }
 
     /*
-     * If the socket is connected and we can
-     * read its number, find the WA session.
+     * Find by WhatsApp number.
      */
     const number =
       getPhoneFromSocket(sock);
@@ -291,15 +333,22 @@ function createSession(sock, sessionId = null) {
 
 function formatSession(session) {
   return {
-    sessionId: session.sessionId,
+    sessionId:
+      session.sessionId,
 
-    number: session.number,
+    number:
+      session.number,
 
-    code: session.code,
+    code:
+      session.code,
 
-    link: getPanelLink(
-      session.sessionId
-    )
+    link:
+      getPanelLink(
+        session.sessionId
+      ),
+
+    connected:
+      isBotConnected(session)
   };
 }
 
@@ -308,15 +357,19 @@ function formatSession(session) {
 ====================================================== */
 
 function getSession(sessionId) {
-  if (!sessionId) return null;
+  if (!sessionId) {
+    return null;
+  }
 
-  const id = String(sessionId);
+  const id =
+    String(sessionId);
 
-  let session = sessions.get(id);
+  let session =
+    sessions.get(id);
 
   /*
-   * If panel cache doesn't have it yet,
-   * check the real WhatsApp session manager.
+   * Load from WhatsApp SessionManager
+   * if not already cached.
    */
   if (!session) {
     const waSession =
@@ -326,11 +379,12 @@ function getSession(sessionId) {
       return null;
     }
 
-    session = ensureSession(
-      id,
-      waSession.number,
-      waSession.socket || null
-    );
+    session =
+      ensureSession(
+        id,
+        waSession.number,
+        waSession.socket || null
+      );
   }
 
   return session || null;
@@ -344,11 +398,10 @@ function getSessionByNumber(number) {
   const normalized =
     normalizeNumber(number);
 
-  if (!normalized) return null;
+  if (!normalized) {
+    return null;
+  }
 
-  /*
-   * Prefer WhatsApp SessionManager.
-   */
   const waSession =
     sessionManager.getSessionByNumber(
       normalized
@@ -362,11 +415,10 @@ function getSessionByNumber(number) {
     );
   }
 
-  /*
-   * Fallback to panel sessions.
-   */
   for (const session of sessions.values()) {
-    if (session.number === normalized) {
+    if (
+      session.number === normalized
+    ) {
       return session;
     }
   }
@@ -379,13 +431,14 @@ function getSessionByNumber(number) {
 ====================================================== */
 
 function getSessionBySocket(sock) {
-  if (!sock) return null;
+  if (!sock) {
+    return null;
+  }
 
-  /*
-   * Prefer WhatsApp SessionManager.
-   */
   const waSession =
-    sessionManager.getSessionBySocket?.(sock);
+    sessionManager.getSessionBySocket?.(
+      sock
+    );
 
   if (waSession) {
     return ensureSession(
@@ -395,9 +448,6 @@ function getSessionBySocket(sock) {
     );
   }
 
-  /*
-   * Fallback.
-   */
   for (const session of sessions.values()) {
     if (session.socket === sock) {
       return session;
@@ -411,17 +461,24 @@ function getSessionBySocket(sock) {
    BOT CONNECTED
 ====================================================== */
 
-function setBotConnected(sock, sessionId = null) {
-  if (!sock) return null;
+function setBotConnected(
+  sock,
+  sessionId = null
+) {
+  if (!sock) {
+    return null;
+  }
 
   let id = sessionId;
 
   /*
-   * Find exact WhatsApp session.
+   * Find exact session from socket.
    */
   if (!id) {
     const waSession =
-      sessionManager.getSessionBySocket?.(sock);
+      sessionManager.getSessionBySocket?.(
+        sock
+      );
 
     if (waSession) {
       id = waSession.sessionId;
@@ -462,11 +519,25 @@ function setBotConnected(sock, sessionId = null) {
       sock
     );
 
-  if (!session) return null;
+  if (!session) {
+    return null;
+  }
+
+  /*
+   * New connection = new valid code.
+   * Old code must never remain valid.
+   */
+  session.code =
+    generateCode();
 
   session.socket = sock;
+
+  session.connected = true;
+
   session.authenticated = false;
-  session.updatedAt = Date.now();
+
+  session.updatedAt =
+    Date.now();
 
   return session;
 }
@@ -483,21 +554,45 @@ function setBotDisconnected(
   let session = null;
 
   if (sessionId) {
-    session = getSession(sessionId);
+    session =
+      getSession(sessionId);
   }
 
   if (!session && sock) {
-    session = getSessionBySocket(sock);
+    session =
+      getSessionBySocket(sock);
   }
 
-  if (!session) return false;
-
-  session.socket = null;
-  session.updatedAt = Date.now();
+  if (!session) {
+    return false;
+  }
 
   /*
-   * Do NOT delete the panel session
-   * when WhatsApp temporarily disconnects.
+   * Immediately disconnect panel.
+   */
+  session.socket = null;
+
+  session.connected = false;
+
+  /*
+   * IMPORTANT:
+   * Old code becomes invalid immediately.
+   */
+  session.authenticated = false;
+
+  /*
+   * Generate a new code so the previous
+   * code can never be reused.
+   */
+  session.code =
+    generateCode();
+
+  session.updatedAt =
+    Date.now();
+
+  /*
+   * Keep panel session during temporary
+   * WhatsApp reconnect unless remove=true.
    */
   if (remove) {
     sessions.delete(
@@ -526,6 +621,19 @@ function verifySession(
     };
   }
 
+  /*
+   * Code is only valid while WhatsApp
+   * is currently connected.
+   */
+  if (!isBotConnected(session)) {
+    session.authenticated = false;
+
+    return {
+      success: false,
+      error: "BOT_NOT_CONNECTED"
+    };
+  }
+
   const submitted =
     String(code || "")
       .trim()
@@ -537,12 +645,15 @@ function verifySession(
   ) {
     return {
       success: false,
-      error: "INVALID_SETTINGS_CODE"
+      error:
+        "INVALID_SETTINGS_CODE"
     };
   }
 
   session.authenticated = true;
-  session.updatedAt = Date.now();
+
+  session.updatedAt =
+    Date.now();
 
   return {
     success: true,
@@ -554,28 +665,50 @@ function verifySession(
    AUTHENTICATION
 ====================================================== */
 
-function isAuthenticated(sessionId) {
+function isAuthenticated(
+  sessionId
+) {
   const session =
     getSession(sessionId);
 
+  if (!session) {
+    return false;
+  }
+
+  /*
+   * Disconnect immediately invalidates
+   * panel authentication.
+   */
+  if (!isBotConnected(session)) {
+    session.authenticated = false;
+
+    return false;
+  }
+
   return Boolean(
-    session &&
     session.authenticated
   );
 }
 
 /* ======================================================
-   LOGOUT PANEL ONLY
+   LOGOUT PANEL
 ====================================================== */
 
-function logoutSession(sessionId) {
+function logoutSession(
+  sessionId
+) {
   const session =
     getSession(sessionId);
 
-  if (!session) return false;
+  if (!session) {
+    return false;
+  }
 
-  session.authenticated = false;
-  session.updatedAt = Date.now();
+  session.authenticated =
+    false;
+
+  session.updatedAt =
+    Date.now();
 
   return true;
 }
@@ -584,11 +717,15 @@ function logoutSession(sessionId) {
    GET SETTINGS
 ====================================================== */
 
-function getSettings(sessionId) {
+function getSettings(
+  sessionId
+) {
   const session =
     getSession(sessionId);
 
-  if (!session) return null;
+  if (!session) {
+    return null;
+  }
 
   return {
     ...session.settings
@@ -599,11 +736,15 @@ function getSettings(sessionId) {
    GET BOT INFORMATION
 ====================================================== */
 
-function getBotInformation(sessionId) {
+function getBotInformation(
+  sessionId
+) {
   const session =
     getSession(sessionId);
 
-  if (!session) return null;
+  if (!session) {
+    return null;
+  }
 
   return {
     ...session.botInformation
@@ -622,7 +763,9 @@ function setSetting(
   const session =
     getSession(sessionId);
 
-  if (!session) return false;
+  if (!session) {
+    return false;
+  }
 
   if (
     !Object.prototype.hasOwnProperty.call(
@@ -637,42 +780,47 @@ function setSetting(
     Boolean(value);
 
   /*
-   * Public / Private are mutually exclusive.
+   * Public / Private mutually exclusive.
    */
   if (
     key === "publicMode" &&
     session.settings.publicMode
   ) {
-    session.settings.privateMode = false;
+    session.settings.privateMode =
+      false;
   }
 
   if (
     key === "privateMode" &&
     session.settings.privateMode
   ) {
-    session.settings.publicMode = false;
+    session.settings.publicMode =
+      false;
   }
 
   /*
-   * Group Open / Close are mutually exclusive.
+   * Group Open / Close mutually exclusive.
    */
   if (
     key === "groupClose" &&
     session.settings.groupClose
   ) {
-    session.settings.groupOpen = false;
+    session.settings.groupOpen =
+      false;
   }
 
   if (
     key === "groupOpen" &&
     session.settings.groupOpen
   ) {
-    session.settings.groupClose = false;
+    session.settings.groupClose =
+      false;
   }
 
   updateMode(session);
 
-  session.updatedAt = Date.now();
+  session.updatedAt =
+    Date.now();
 
   return true;
 }
@@ -688,10 +836,13 @@ function applySettings(
   const session =
     getSession(sessionId);
 
-  if (!session) return null;
+  if (!session) {
+    return null;
+  }
 
   for (
-    const key of Object.keys(defaultSettings)
+    const key of
+    Object.keys(defaultSettings)
   ) {
     if (
       Object.prototype.hasOwnProperty.call(
@@ -705,30 +856,43 @@ function applySettings(
   }
 
   /*
-   * Public / Private
+   * Public / Private.
    */
-  if (session.settings.publicMode) {
-    session.settings.privateMode = false;
+  if (
+    session.settings.publicMode
+  ) {
+    session.settings.privateMode =
+      false;
   }
 
-  if (session.settings.privateMode) {
-    session.settings.publicMode = false;
+  if (
+    session.settings.privateMode
+  ) {
+    session.settings.publicMode =
+      false;
   }
 
   /*
-   * Group Open / Close
+   * Group Open / Close.
    */
-  if (session.settings.groupClose) {
-    session.settings.groupOpen = false;
+  if (
+    session.settings.groupClose
+  ) {
+    session.settings.groupOpen =
+      false;
   }
 
-  if (session.settings.groupOpen) {
-    session.settings.groupClose = false;
+  if (
+    session.settings.groupOpen
+  ) {
+    session.settings.groupClose =
+      false;
   }
 
   updateMode(session);
 
-  session.updatedAt = Date.now();
+  session.updatedAt =
+    Date.now();
 
   return {
     ...session.settings
@@ -757,7 +921,9 @@ function updateBotInformation(
   const session =
     getSession(sessionId);
 
-  if (!session) return null;
+  if (!session) {
+    return null;
+  }
 
   if (
     typeof information.name ===
@@ -782,8 +948,7 @@ function updateBotInformation(
   }
 
   /*
-   * Number always comes from
-   * the WhatsApp session.
+   * Number always comes from WhatsApp.
    */
   if (session.number) {
     session.botInformation.number =
@@ -792,7 +957,8 @@ function updateBotInformation(
 
   updateMode(session);
 
-  session.updatedAt = Date.now();
+  session.updatedAt =
+    Date.now();
 
   return {
     ...session.botInformation
@@ -810,7 +976,9 @@ function isEnabled(
   const session =
     getSession(sessionId);
 
-  if (!session) return false;
+  if (!session) {
+    return false;
+  }
 
   if (
     !Object.prototype.hasOwnProperty.call(
@@ -830,11 +998,15 @@ function isEnabled(
    LOAD SETTINGS
 ====================================================== */
 
-function loadSettings(sessionId) {
+function loadSettings(
+  sessionId
+) {
   const session =
     getSession(sessionId);
 
-  if (!session) return null;
+  if (!session) {
+    return null;
+  }
 
   updateMode(session);
 
@@ -902,6 +1074,8 @@ ${session.link}
   } catch (error) {
     console.error(
       "❌ sendPanelLink error:",
+      error?.stack ||
+      error?.message ||
       error
     );
 
@@ -913,8 +1087,12 @@ ${session.link}
    REMOVE PANEL SESSION
 ====================================================== */
 
-function removeSession(sessionId) {
-  if (!sessionId) return false;
+function removeSession(
+  sessionId
+) {
+  if (!sessionId) {
+    return false;
+  }
 
   return sessions.delete(
     String(sessionId)
@@ -950,6 +1128,7 @@ function listSessions() {
 
     connected:
       Boolean(
+        session.connected &&
         session.socket
       ),
 
