@@ -30,6 +30,11 @@ const settingsPanel = require("./settingPanel");
 const active = new Map();
 const reconnectTimers = new Map();
 
+// IMPORTANT:
+// Anpeche yon socket nou te sispann manyèlman
+// rekonekte ankò ak ansyen Signal session lan.
+const manuallyStopped = new Set();
+
 // ============================================================
 // OPTIONAL COMMANDS
 // ============================================================
@@ -214,6 +219,12 @@ async function createSocket(sessionId) {
   if (!cleanId) {
     throw new Error("sessionId obligatwa.");
   }
+
+  // ----------------------------------------------------------
+  // NEW SOCKET IS ALLOWED
+  // ----------------------------------------------------------
+
+  manuallyStopped.delete(cleanId);
 
   // ----------------------------------------------------------
   // PREVENT DUPLICATE SOCKET
@@ -433,6 +444,8 @@ async function createSocket(sessionId) {
 
           clearReconnectTimer(cleanId);
 
+          manuallyStopped.delete(cleanId);
+
           sessionManager.updateSession(
             cleanId,
             {
@@ -557,6 +570,35 @@ async function createSocket(sessionId) {
           );
 
           // --------------------------------------------------
+          // MANUAL STOP
+          // --------------------------------------------------
+
+          if (
+            manuallyStopped.has(cleanId)
+          ) {
+
+            clearReconnectTimer(
+              cleanId
+            );
+
+            sessionManager.updateSession(
+              cleanId,
+              {
+                status: "stopped",
+                connected: false,
+                pairing: false,
+                pairingCode: null
+              }
+            );
+
+            console.log(
+              `🛑 NO RECONNECT - SESSION STOPPED [${cleanId}]`
+            );
+
+            return;
+          }
+
+          // --------------------------------------------------
           // LOGGED OUT
           // --------------------------------------------------
 
@@ -616,6 +658,12 @@ async function createSocket(sessionId) {
           // RECONNECT
           // --------------------------------------------------
 
+          if (
+            manuallyStopped.has(cleanId)
+          ) {
+            return;
+          }
+
           sessionManager.updateSession(
             cleanId,
             {
@@ -640,6 +688,18 @@ async function createSocket(sessionId) {
                   cleanId
                 );
 
+                // IMPORTANT:
+                // Si session lan te stop pandan
+                // 5 segonn yo, pa kreye nouvo socket.
+                if (
+                  manuallyStopped.has(cleanId)
+                ) {
+                  console.log(
+                    `🛑 RECONNECT CANCELLED [${cleanId}]`
+                  );
+                  return;
+                }
+
                 try {
 
                   console.log(
@@ -659,9 +719,15 @@ async function createSocket(sessionId) {
                     error
                   );
 
-                  scheduleReconnect(
-                    cleanId
-                  );
+                  if (
+                    !manuallyStopped.has(
+                      cleanId
+                    )
+                  ) {
+                    scheduleReconnect(
+                      cleanId
+                    );
+                  }
                 }
 
               },
@@ -805,10 +871,17 @@ async function createSocket(sessionId) {
 // ============================================================
 
 function scheduleReconnect(sessionId) {
+
   const cleanId =
     safeSessionId(sessionId);
 
   if (!cleanId) {
+    return;
+  }
+
+  if (
+    manuallyStopped.has(cleanId)
+  ) {
     return;
   }
 
@@ -825,6 +898,12 @@ function scheduleReconnect(sessionId) {
         reconnectTimers.delete(
           cleanId
         );
+
+        if (
+          manuallyStopped.has(cleanId)
+        ) {
+          return;
+        }
 
         try {
 
@@ -845,9 +924,16 @@ function scheduleReconnect(sessionId) {
             error
           );
 
-          scheduleReconnect(
-            cleanId
-          );
+          if (
+            !manuallyStopped.has(
+              cleanId
+            )
+          ) {
+
+            scheduleReconnect(
+              cleanId
+            );
+          }
         }
 
       },
@@ -1070,6 +1156,10 @@ async function requestPairingCode(
     state?.creds?.registered
   ) {
 
+    clearReconnectTimer(
+      sessionId
+    );
+
     sessionManager.endPairing(
       sessionId
     );
@@ -1190,6 +1280,13 @@ async function stopSession(sessionId) {
     cleanId
   );
 
+  // IMPORTANT:
+  // Mete flag la AVAN nou fini socket la.
+  // Konsa connection.update pa ka relanse reconnect.
+  manuallyStopped.add(
+    cleanId
+  );
+
   const sock =
     active.get(cleanId) ||
     sessionManager.getSocket(cleanId);
@@ -1271,6 +1368,10 @@ async function removeSession(sessionId) {
   }
 
   clearReconnectTimer(
+    cleanId
+  );
+
+  manuallyStopped.add(
     cleanId
   );
 
@@ -1423,6 +1524,8 @@ async function stop() {
   }
 
   reconnectTimers.clear();
+
+  manuallyStopped.clear();
 
   return true;
 }
