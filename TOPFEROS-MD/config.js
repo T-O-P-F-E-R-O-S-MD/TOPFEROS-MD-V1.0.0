@@ -278,25 +278,27 @@ path:
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 ai: {
+  enabled:
+    true,
 
-enabled:
-  true,
+  provider:
+    process.env.AI_PROVIDER ||
+    "",
 
-provider:
-  process.env.AI_PROVIDER ||
-  "",
+  apiUrl:
+    process.env.AI_API_URL ||
+    "",
 
-apiKey:
-  process.env.AI_API_KEY ||
-  "",
+  apiKey:
+    process.env.AI_API_KEY ||
+    "",
 
-model:
-  process.env.AI_MODEL ||
-  "",
+  model:
+    process.env.AI_MODEL ||
+    "",
 
-autoReply:
-  false
-
+  autoReply:
+    false
 },
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
