@@ -388,6 +388,13 @@ app.get(
         success: true,
         status: "online",
 
+        connected:
+          connected.length > 0,
+
+        number:
+          connected[0]?.number ||
+          "",
+
         settingPanel:
           Boolean(settingsPanel),
 
@@ -495,6 +502,13 @@ app.post(
           number
         );
 
+      /*
+       * ================================================================
+       * IMPORTANT:
+       * Si session sa deja konekte, PA janm efase li.
+       * ================================================================
+       */
+
       let session =
         getConnectionSession(
           sessionId
@@ -512,37 +526,126 @@ app.post(
         });
       }
 
-      if (
-        session &&
-        session.pairing === true &&
-        typeof sessionManager.updateSession ===
-          "function"
-      ) {
-        await sessionManager.updateSession(
-          sessionId,
-          {
-            status:
-              "disconnected",
+      /*
+       * ================================================================
+       * RESET ANCIEN SESSION
+       *
+       * Si session lan egziste men li pa konekte:
+       *
+       * - retire ansyen socket/session
+       * - retire auth state / credentials
+       * - retire ansyen Signal keys
+       * - pèmèt requestPairingCode() kreye yon nouvo session
+       *
+       * Sa evite reutilize yon auth state ki bay:
+       *
+       * Bad MAC
+       * Failed to decrypt message
+       * ================================================================
+       */
 
-            connected:
-              false,
-
-            pairing:
-              false,
-
-            pairingCode:
-              null,
-
-            pairingStartedAt:
-              null,
-
-            number
-          }
+      if (session) {
+        console.log(
+          `[TOPFEROS] ⚠️ Ancien session trouvé: ${sessionId}`
         );
+
+        console.log(
+          `[TOPFEROS] 🔄 Reset de l'ancien session avant nouveau pairing...`
+        );
+
+        /*
+         * Invalid panel/session state anvan reset.
+         */
+
+        try {
+          if (
+            settingsPanel &&
+            typeof settingsPanel.setBotDisconnected ===
+              "function"
+          ) {
+            await settingsPanel.setBotDisconnected(
+              sessionId
+            );
+          }
+        } catch (panelError) {
+          console.error(
+            "[TOPFEROS] ⚠️ Erreur reset settingPanel:",
+            panelError?.message ||
+              panelError
+          );
+        }
+
+        /*
+         * Retire session nan atravè connection.js.
+         *
+         * connection.removeSession() dwe retire
+         * auth directory la ansanm ak session memory state la.
+         */
+
+        try {
+          if (
+            connection &&
+            typeof connection.removeSession ===
+              "function"
+          ) {
+            await connection.removeSession(
+              sessionId
+            );
+
+            console.log(
+              `[TOPFEROS] ✅ Ancien session supprimé: ${sessionId}`
+            );
+          } else {
+            console.warn(
+              "[TOPFEROS] ⚠️ connection.removeSession() pa disponib."
+            );
+          }
+        } catch (removeError) {
+          console.error(
+            "[TOPFEROS] ❌ Erè pandan reset ancien session:",
+            removeError?.stack ||
+              removeError?.message ||
+              removeError
+          );
+
+          return res.status(500).json({
+            success: false,
+            error:
+              "Pa kapab reset ansyen session lan.",
+            details:
+              removeError?.message ||
+              String(removeError)
+          });
+        }
+
+        /*
+         * Verifye session lan vrèman disparèt.
+         */
+
+        session =
+          getConnectionSession(
+            sessionId
+          );
+
+        if (session) {
+          console.warn(
+            `[TOPFEROS] ⚠️ Session ${sessionId} toujou egziste apre reset.`
+          );
+        } else {
+          console.log(
+            `[TOPFEROS] ✅ Session ${sessionId} pa egziste ankò.`
+          );
+        }
       }
 
+      /*
+       * ================================================================
+       * NOUVO PAIRING
+       * ================================================================
+       */
+
       console.log(
-        `[TOPFEROS] Demande pairing code: ${number}`
+        `[TOPFEROS] 🔐 Demande NEW pairing code: ${number}`
       );
 
       if (
@@ -563,6 +666,31 @@ app.post(
           number
         );
 
+      /*
+       * ================================================================
+       * VERIFY RESULT
+       * ================================================================
+       */
+
+      if (
+        !result ||
+        !result.code
+      ) {
+        console.error(
+          "[TOPFEROS] ❌ requestPairingCode() pa retounen code."
+        );
+
+        return res.status(500).json({
+          success: false,
+          error:
+            "WhatsApp pa retounen yon Pairing Code."
+        });
+      }
+
+      console.log(
+        `[TOPFEROS] ✅ NEW Pairing Code generated for ${number}`
+      );
+
       return res.json({
         success: true,
 
@@ -575,14 +703,17 @@ app.post(
           number,
 
         code:
-          result?.code || null,
+          result?.code ||
+          null,
 
         pairingCode:
-          result?.code || null,
+          result?.code ||
+          null,
 
         message:
-          "Pairing code généré avec succès."
+          "Nouveau pairing code généré avec succès."
       });
+
     } catch (error) {
       console.error(
         "[TOPFEROS] /api/pairing:",
@@ -678,6 +809,7 @@ app.get(
       if (!session) {
         return res.status(404).json({
           success: false,
+          exists: false,
           error:
             "Session introuvable."
         });
@@ -685,6 +817,7 @@ app.get(
 
       return res.json({
         success: true,
+        exists: true,
         session:
           publicSession(
             session
@@ -698,6 +831,7 @@ app.get(
 
       return res.status(500).json({
         success: false,
+        exists: false,
         error:
           "Impossible de récupérer la session."
       });
@@ -750,6 +884,7 @@ app.post(
       /*
        * Bot la dwe konekte.
        */
+
       if (
         !isSessionConnected(
           session
@@ -778,6 +913,7 @@ app.post(
       /*
        * Verifye code panel la.
        */
+
       let authenticated = false;
 
       if (
@@ -891,7 +1027,7 @@ app.get(
 
       if (
         typeof settingsPanel.getBotInformation ===
-          "function"
+        "function"
       ) {
         botInformation =
           await settingsPanel.getBotInformation(
@@ -1428,6 +1564,7 @@ app.post(
       /*
        * Invalid panel session/code anvan disconnect.
        */
+
       if (
         settingsPanel &&
         typeof settingsPanel.setBotDisconnected ===
