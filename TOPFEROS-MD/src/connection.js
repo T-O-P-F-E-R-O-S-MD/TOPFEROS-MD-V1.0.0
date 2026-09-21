@@ -26,9 +26,9 @@ const messageHandler =
   require("./messageHandler");
 
 // IMPORTANT:
-// Fichye a rele settingsPanel.js
+// Fichye a rele settingPanel.js
 const settingsPanel =
-  require("./settingsPanel");
+  require("./settingPanel");
 
 // ============================================================
 // ACTIVE SOCKETS
@@ -325,7 +325,7 @@ async function createSocket(
   }
 
   // ----------------------------------------------------------
-  // CREATE SOCKET
+  // SOCKET OPTIONS
   // ----------------------------------------------------------
 
   const socketOptions = {
@@ -373,6 +373,10 @@ async function createSocket(
     shouldIgnoreJid:
       jid => false
   };
+
+  // ----------------------------------------------------------
+  // CREATE SOCKET
+  // ----------------------------------------------------------
 
   const sock =
     makeWASocket(
@@ -525,20 +529,20 @@ async function createSocket(
               );
 
               console.log(
-                `⚙️ SETTINGS PANEL ACTIVATED [${cleanId}]`
+                `⚙️ SETTING PANEL ACTIVATED [${cleanId}]`
               );
 
             } else {
 
               console.warn(
-                `⚠️ setBotConnected pa jwenn nan settingsPanel.js [${cleanId}]`
+                `⚠️ setBotConnected pa jwenn nan settingPanel.js [${cleanId}]`
               );
             }
 
           } catch (panelError) {
 
             console.error(
-              `❌ SETTINGS PANEL CONNECT ERROR [${cleanId}]`,
+              `❌ SETTING PANEL CONNECT ERROR [${cleanId}]`,
               panelError?.stack ||
               panelError?.message ||
               panelError
@@ -597,14 +601,14 @@ async function createSocket(
               );
 
               console.log(
-                `⚙️ SETTINGS PANEL INVALIDATED [${cleanId}]`
+                `⚙️ SETTING PANEL INVALIDATED [${cleanId}]`
               );
             }
 
           } catch (panelError) {
 
             console.error(
-              `❌ SETTINGS PANEL DISCONNECT ERROR [${cleanId}]`,
+              `❌ SETTING PANEL DISCONNECT ERROR [${cleanId}]`,
               panelError?.stack ||
               panelError?.message ||
               panelError
@@ -950,7 +954,6 @@ async function createSocket(
           `❌ GROUP EVENT ERROR [${cleanId}]`,
           error?.stack ||
           error?.message ||
-          error?.message ||
           error
         );
       }
@@ -975,15 +978,53 @@ async function startSession(
 // ============================================================
 // REQUEST PAIRING CODE
 // ============================================================
+// Supports BOTH:
+// requestPairingCode(number)
+// AND:
+// requestPairingCode(sessionId, number)
+// ============================================================
 
 async function requestPairingCode(
-  number
+  sessionIdOrNumber,
+  maybeNumber
 ) {
 
-  const clean =
-    cleanNumber(number);
+  let requestedSessionId = null;
+  let number = "";
 
-  if (!clean) {
+  // ----------------------------------------------------------
+  // FORMAT 1:
+// requestPairingCode(number)
+// ----------------------------------------------------------
+
+  if (
+    maybeNumber === undefined
+  ) {
+
+    number =
+      cleanNumber(
+        sessionIdOrNumber
+      );
+
+  } else {
+
+    // --------------------------------------------------------
+    // FORMAT 2:
+    // requestPairingCode(sessionId, number)
+    // --------------------------------------------------------
+
+    requestedSessionId =
+      safeSessionId(
+        sessionIdOrNumber
+      );
+
+    number =
+      cleanNumber(
+        maybeNumber
+      );
+  }
+
+  if (!number) {
     throw new Error(
       "Numéro invalide"
     );
@@ -995,8 +1036,24 @@ async function requestPairingCode(
 
   let session =
     sessionManager.getSessionByNumber(
-      clean
+      number
     );
+
+  // ----------------------------------------------------------
+  // IF PANEL PROVIDED SESSION ID,
+  // TRY THAT SESSION FIRST
+  // ----------------------------------------------------------
+
+  if (
+    !session &&
+    requestedSessionId
+  ) {
+
+    session =
+      sessionManager.getSession(
+        requestedSessionId
+      );
+  }
 
   // ----------------------------------------------------------
   // PREVENT DUPLICATE PAIRING
@@ -1027,10 +1084,11 @@ async function requestPairingCode(
       sessionManager.createSession(
         {
           sessionId:
-            clean,
+            requestedSessionId ||
+            number,
 
           number:
-            clean
+            number
         }
       );
 
@@ -1038,7 +1096,7 @@ async function requestPairingCode(
 
     sessionManager.setNumber(
       session.sessionId,
-      clean
+      number
     );
 
     session =
@@ -1182,7 +1240,7 @@ async function requestPairingCode(
 
     const code =
       await sock.requestPairingCode(
-        clean
+        number
       );
 
     if (!code) {
@@ -1226,7 +1284,7 @@ async function requestPairingCode(
       sessionId,
 
       number:
-        clean,
+        number,
 
       code:
         normalizedCode,
@@ -1309,7 +1367,10 @@ async function stopSession(
     null
   );
 
-  // Invalidate settings panel session
+  // ----------------------------------------------------------
+  // INVALIDATE SETTING PANEL SESSION
+  // ----------------------------------------------------------
+
   try {
 
     if (
@@ -1326,7 +1387,14 @@ async function stopSession(
       );
     }
 
-  } catch {}
+  } catch (error) {
+
+    console.error(
+      `❌ SETTING PANEL STOP ERROR [${cleanId}]`,
+      error?.message ||
+      error
+    );
+  }
 
   sessionManager.updateSession(
     cleanId,
@@ -1520,7 +1588,10 @@ async function stop() {
     const timer of
     reconnectTimers.values()
   ) {
-    clearTimeout(timer);
+
+    clearTimeout(
+      timer
+    );
   }
 
   reconnectTimers.clear();
