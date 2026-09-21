@@ -174,6 +174,7 @@ async function execute(context) {
 ╭━━━〔 ℹ️ INFORMATION 〕━━━╮
 ┃
 ┃ ${prefix}menu
+┃ ${prefix}setting
 ┃ ${prefix}help
 ┃ ${prefix}info
 ┃ ${prefix}owner
