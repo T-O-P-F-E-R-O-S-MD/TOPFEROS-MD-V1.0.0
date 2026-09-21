@@ -153,7 +153,7 @@ async function sendConnectedMessage(
 ╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯
 
 ╭━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╮
-│      🦁 By TOPFEROS MD 
+│      🦁 By TOPFEROS MD
 ╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯
 `;
 
@@ -950,7 +950,9 @@ async function createSocket(
           `❌ GROUP EVENT ERROR [${cleanId}]`,
           error?.stack ||
           error?.message ||
-           );
+          error?.message ||
+          error
+        );
       }
     }
   );
