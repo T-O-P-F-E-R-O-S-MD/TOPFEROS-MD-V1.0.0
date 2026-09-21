@@ -10,6 +10,13 @@ async function execute(context) {
   } = context;
 
   const question = text.trim();
+  const chatId = message?.key?.remoteJid;
+
+  if (!chatId) return;
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // ❌ NO QUESTION
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   if (!question) {
     const response = `╭━━━〔 🤖 AI 〕━━━╮
@@ -19,100 +26,166 @@ async function execute(context) {
 ┃ 📌 Egzanp:
 ┃ ${config.bot?.prefix || "."}ai Ki sa ki WhatsApp?
 ┃
-╰━━━━━━━━━━━━━━━━━━━━╯`;
+╰━━━━━━━━━━━━━━━━━━━━╯
 
-    if (sock && message?.key?.remoteJid) {
-      await sock.sendMessage(
-        message.key.remoteJid,
-        {
-          text: response
-        },
-        {
-          quoted: message
-        }
-      );
-    }
+🚀 ${config.bot?.developer || "TOPFEROS TECH"}`;
+
+    await sock.sendMessage(
+      chatId,
+      { text: response },
+      { quoted: message }
+    );
 
     return;
   }
 
-  const apiUrl = config.ai?.apiUrl;
-  const apiKey = config.ai?.apiKey;
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 🤖 GROQ CONFIGURATION
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  if (!apiUrl || !apiKey) {
+  const apiUrl =
+    config.ai?.apiUrl ||
+    "https://api.groq.com/openai/v1/chat/completions";
+
+  const apiKey =
+    config.ai?.apiKey;
+
+  const model =
+    config.ai?.model ||
+    "openai/gpt-oss-20b";
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 🔑 API KEY MANQUANTE
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  if (!apiKey) {
     const response = `╭━━━〔 🤖 AI 〕━━━╮
 ┃
-┃ ⚠️ *AI API pa configure.*
+┃ ⚠️ *AI API KEY PA CONFIGURE.*
 ┃
-┃ Owner la bezwen mete
-┃ AI_API_URL ak AI_API_KEY
-┃ nan configuration bot la.
+┃ Mete API key Groq la nan
+┃ Environment Variables Render yo.
+┃
+┃ Variable:
+┃ AI_API_KEY
 ┃
 ╰━━━━━━━━━━━━━━━━━━━━╯
 
 🚀 ${config.bot?.developer || "TOPFEROS TECH"}`;
 
-    if (sock && message?.key?.remoteJid) {
-      await sock.sendMessage(
-        message.key.remoteJid,
-        {
-          text: response
-        },
-        {
-          quoted: message
-        }
-      );
-    }
+    await sock.sendMessage(
+      chatId,
+      { text: response },
+      { quoted: message }
+    );
 
     return;
   }
 
   try {
-    await sock.sendPresenceUpdate(
-      "composing",
-      message.key.remoteJid
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // ✍️ AI AP PREPARE REPONS LAN
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    try {
+      await sock.sendPresenceUpdate(
+        "composing",
+        chatId
+      );
+    } catch (_) {}
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // 🚀 GROQ API REQUEST
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    const response = await fetch(
+      apiUrl,
+      {
+        method: "POST",
+
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${apiKey}`
+        },
+
+        body: JSON.stringify({
+          model,
+
+          messages: [
+            {
+              role: "system",
+              content:
+                "You are TOPFEROS MD AI, a helpful and friendly WhatsApp assistant. Answer clearly and concisely."
+            },
+            {
+              role: "user",
+              content: question
+            }
+          ],
+
+          temperature: 0.7,
+
+          max_completion_tokens: 1024
+        })
+      }
     );
 
-    const response = await fetch(apiUrl, {
-      method: "POST",
-
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${apiKey}`
-      },
-
-      body: JSON.stringify({
-        message: question,
-        prompt: question
-      })
-    });
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // ❌ API ERROR
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     if (!response.ok) {
+
+      let errorText = "";
+
+      try {
+        errorText = await response.text();
+      } catch (_) {}
+
+      console.error(
+        "❌ GROQ API ERROR:",
+        response.status,
+        errorText
+      );
+
       throw new Error(
-        `AI API returned ${response.status}`
+        `Groq API returned ${response.status}`
       );
     }
 
-    const data = await response.json();
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // 📥 API RESPONSE
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    const data =
+      await response.json();
 
     const answer =
-      data.answer ||
-      data.response ||
-      data.message ||
-      data.result ||
-      data.output;
+      data?.choices?.[0]?.message?.content;
 
     if (!answer) {
+      console.error(
+        "❌ GROQ RESPONSE:",
+        JSON.stringify(data)
+      );
+
       throw new Error(
-        "AI API returned no answer."
+        "Groq API returned no answer."
       );
     }
 
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // 💬 SEND ANSWER
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
     const botName =
-      config.bot?.name || "TOPFEROS MD";
+      config.bot?.name ||
+      "TOPFEROS MD";
 
     const developer =
-      config.bot?.developer || "TOPFEROS TECH";
+      config.bot?.developer ||
+      "TOPFEROS TECH";
 
     const finalMessage = `╭━━━〔 🤖 ${botName} AI 〕━━━╮
 ┃
@@ -128,7 +201,7 @@ async function execute(context) {
 🚀 ${developer}`;
 
     await sock.sendMessage(
-      message.key.remoteJid,
+      chatId,
       {
         text: finalMessage
       },
@@ -137,30 +210,35 @@ async function execute(context) {
       }
     );
 
-    await sock.sendPresenceUpdate(
-      "paused",
-      message.key.remoteJid
-    );
+    try {
+      await sock.sendPresenceUpdate(
+        "paused",
+        chatId
+      );
+    } catch (_) {}
 
   } catch (error) {
+
     console.error(
-      "❌ AI Command Error:",
-      error.message
+      "❌ AI COMMAND ERROR:",
+      error?.stack ||
+      error?.message ||
+      error
     );
 
     const errorMessage = `╭━━━〔 🤖 AI 〕━━━╮
 ┃
 ┃ ❌ *AI pa disponib kounye a.*
 ┃
-┃ Tanpri verifye configuration
-┃ AI API a epi eseye ankò.
+┃ Verifye AI_API_KEY ak
+┃ configuration Groq la.
 ┃
 ╰━━━━━━━━━━━━━━━━━━━━╯
 
 🚀 ${config.bot?.developer || "TOPFEROS TECH"}`;
 
     await sock.sendMessage(
-      message.key.remoteJid,
+      chatId,
       {
         text: errorMessage
       },
@@ -169,16 +247,27 @@ async function execute(context) {
       }
     );
 
-    await sock.sendPresenceUpdate(
-      "paused",
-      message.key.remoteJid
-    );
+    try {
+      await sock.sendPresenceUpdate(
+        "paused",
+        chatId
+      );
+    } catch (_) {}
   }
 }
 
 module.exports = {
   name: "ai",
-  aliases: ["askai"],
-  description: "Poze yon kesyon ak sistèm AI a.",
+
+  aliases: [
+    "askai"
+  ],
+
+  description:
+    "Poze yon kesyon ak Groq AI.",
+
+  usage:
+    ".ai <kesyon>",
+
   execute
 };
