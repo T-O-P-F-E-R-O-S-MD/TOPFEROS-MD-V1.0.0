@@ -26,7 +26,10 @@ const AUTH_ROOT =
     "auth"
   );
 
-// Create directories
+// ============================================================
+// CREATE DIRECTORIES
+// ============================================================
+
 try {
   fs.mkdirSync(
     SESSION_ROOT,
@@ -44,7 +47,8 @@ try {
 } catch (error) {
   console.error(
     "❌ SESSION DIRECTORY ERROR:",
-    error?.message || error
+    error?.message ||
+    error
   );
 }
 
@@ -84,6 +88,10 @@ function getAuthDir(sessionId) {
   const cleanId =
     safeSessionId(sessionId);
 
+  if (!cleanId) {
+    return null;
+  }
+
   return path.join(
     AUTH_ROOT,
     cleanId
@@ -101,7 +109,9 @@ function createSession(options = {}) {
     options.number;
 
   const sessionId =
-    safeSessionId(requestedId);
+    safeSessionId(
+      requestedId
+    );
 
   if (!sessionId) {
     throw new Error(
@@ -111,19 +121,44 @@ function createSession(options = {}) {
 
   const number =
     cleanNumber(
-      options.number || ""
+      options.number ||
+      ""
     );
 
   const existing =
-    sessions.get(sessionId);
+    sessions.get(
+      sessionId
+    );
 
   if (existing) {
     if (number) {
-      existing.number = number;
+      existing.number =
+        number;
     }
+
+    existing.updatedAt =
+      Date.now();
 
     return existing;
   }
+
+  const authDir =
+    getAuthDir(
+      sessionId
+    );
+
+  if (!authDir) {
+    throw new Error(
+      "authDir pa kapab kreye."
+    );
+  }
+
+  fs.mkdirSync(
+    authDir,
+    {
+      recursive: true
+    }
+  );
 
   const session = {
     sessionId,
@@ -134,8 +169,7 @@ function createSession(options = {}) {
       options.username ||
       "",
 
-    authDir:
-      getAuthDir(sessionId),
+    authDir,
 
     socket:
       null,
@@ -159,13 +193,6 @@ function createSession(options = {}) {
       Date.now()
   };
 
-  fs.mkdirSync(
-    session.authDir,
-    {
-      recursive: true
-    }
-  );
-
   sessions.set(
     sessionId,
     session
@@ -182,16 +209,22 @@ function createSession(options = {}) {
 // GET SESSION
 // ============================================================
 
-function getSession(sessionId) {
+function getSession(
+  sessionId
+) {
   const cleanId =
-    safeSessionId(sessionId);
+    safeSessionId(
+      sessionId
+    );
 
   if (!cleanId) {
     return null;
   }
 
   return (
-    sessions.get(cleanId) ||
+    sessions.get(
+      cleanId
+    ) ||
     null
   );
 }
@@ -200,9 +233,13 @@ function getSession(sessionId) {
 // GET SESSION BY NUMBER
 // ============================================================
 
-function getSessionByNumber(number) {
+function getSessionByNumber(
+  number
+) {
   const clean =
-    cleanNumber(number);
+    cleanNumber(
+      number
+    );
 
   if (!clean) {
     return null;
@@ -212,7 +249,6 @@ function getSessionByNumber(number) {
     const session of
     sessions.values()
   ) {
-
     if (
       cleanNumber(
         session.number
@@ -234,7 +270,9 @@ function updateSession(
   updates = {}
 ) {
   const session =
-    getSession(sessionId);
+    getSession(
+      sessionId
+    );
 
   if (!session) {
     return null;
@@ -263,7 +301,9 @@ function setNumber(
     sessionId,
     {
       number:
-        cleanNumber(number)
+        cleanNumber(
+          number
+        )
     }
   );
 }
@@ -280,7 +320,8 @@ function setSocket(
     sessionId,
     {
       socket:
-        socket || null
+        socket ||
+        null
     }
   );
 }
@@ -293,7 +334,9 @@ function getSocket(
   sessionId
 ) {
   const session =
-    getSession(sessionId);
+    getSession(
+      sessionId
+    );
 
   return (
     session?.socket ||
@@ -309,7 +352,9 @@ function getConnectionState(
   sessionId
 ) {
   const session =
-    getSession(sessionId);
+    getSession(
+      sessionId
+    );
 
   if (!session) {
     return {
@@ -337,7 +382,8 @@ function getConnectionState(
       session.sessionId,
 
     number:
-      session.number || "",
+      session.number ||
+      "",
 
     status:
       session.status ||
@@ -370,7 +416,9 @@ function isConnected(
   sessionId
 ) {
   const session =
-    getSession(sessionId);
+    getSession(
+      sessionId
+    );
 
   return (
     session?.connected === true
@@ -454,7 +502,8 @@ function endPairing(
 // ============================================================
 
 function getStoredSessionIds() {
-  const ids = new Set();
+  const ids =
+    new Set();
 
   // ----------------------------------------------------------
   // Sessions already loaded in memory
@@ -472,7 +521,6 @@ function getStoredSessionIds() {
   // ----------------------------------------------------------
 
   try {
-
     if (
       !fs.existsSync(
         AUTH_ROOT
@@ -496,7 +544,6 @@ function getStoredSessionIds() {
       const entry of
       entries
     ) {
-
       if (
         !entry.isDirectory()
       ) {
@@ -516,7 +563,6 @@ function getStoredSessionIds() {
     }
 
   } catch (error) {
-
     console.error(
       "❌ READ STORED SESSIONS ERROR:",
       error?.message ||
@@ -546,16 +592,21 @@ function restoreSession(
   }
 
   const existing =
-    getSession(cleanId);
+    getSession(
+      cleanId
+    );
 
   if (existing) {
     return existing;
   }
 
   const authDir =
-    getAuthDir(cleanId);
+    getAuthDir(
+      cleanId
+    );
 
   if (
+    !authDir ||
     !fs.existsSync(
       authDir
     )
@@ -586,22 +637,21 @@ function removeSession(
   }
 
   const session =
-    sessions.get(cleanId);
+    sessions.get(
+      cleanId
+    );
 
   sessions.delete(
     cleanId
   );
 
-  // Remove authentication files
   if (
     session?.authDir &&
     fs.existsSync(
       session.authDir
     )
   ) {
-
     try {
-
       fs.rmSync(
         session.authDir,
         {
@@ -613,7 +663,6 @@ function removeSession(
       );
 
     } catch (error) {
-
       console.error(
         `❌ AUTH REMOVE ERROR [${cleanId}]`,
         error?.message ||
