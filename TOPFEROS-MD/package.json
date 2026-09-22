@@ -25,7 +25,7 @@
     "node": ">=20.0.0"
   },
   "dependencies": {
-    "@whiskeysockets/baileys": "6.7.21",
+    "@whiskeysockets/baileys": "6.7.24",
     "axios": "latest",
     "dotenv": "latest",
     "express": "latest",
