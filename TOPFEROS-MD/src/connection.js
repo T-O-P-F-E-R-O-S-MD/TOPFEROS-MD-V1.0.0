@@ -30,10 +30,74 @@ const settingsPanel = require("./settingPanel");
 const active = new Map();
 const reconnectTimers = new Map();
 
-// IMPORTANT:
-// Anpeche yon socket nou te sispann manyèlman
-// rekonekte ankò ak ansyen Signal session lan.
+// Pa kite yon socket ki te sispann manyèlman rekonekte
 const manuallyStopped = new Set();
+
+// Pa mande pairing code plizyè fwa sou menm socket
+const pairingRequested = new Set();
+
+// Socket la dwe rive nan etap QR/ready avan pairing code
+const pairingReady = new Set();
+const pairingWaiters = new Map();
+
+// ============================================================
+// MESSAGE RETRY CACHE
+// ============================================================
+
+class SimpleMessageRetryCache {
+  constructor(ttl = 60 * 60 * 1000) {
+    this.ttl = ttl;
+    this.cache = new Map();
+  }
+
+  async get(key) {
+    const item = this.cache.get(String(key));
+
+    if (!item) {
+      return undefined;
+    }
+
+    if (Date.now() > item.expiresAt) {
+      this.cache.delete(String(key));
+      return undefined;
+    }
+
+    return item.value;
+  }
+
+  async set(key, value, ttlSeconds) {
+    const ttl =
+      Number(ttlSeconds) > 0
+        ? Number(ttlSeconds) * 1000
+        : this.ttl;
+
+    this.cache.set(String(key), {
+      value,
+      expiresAt: Date.now() + ttl
+    });
+
+    return true;
+  }
+
+  async del(key) {
+    this.cache.delete(String(key));
+    return true;
+  }
+
+  async has(key) {
+    return (await this.get(key)) !== undefined;
+  }
+
+  async clear() {
+    this.cache.clear();
+  }
+}
+
+// IMPORTANT:
+// Cache la deyò socket la.
+// Lè socket la rekòmanse, retry counter yo pa reset.
+const msgRetryCounterCache =
+  new SimpleMessageRetryCache();
 
 // ============================================================
 // OPTIONAL COMMANDS
@@ -80,6 +144,85 @@ function clearReconnectTimer(sessionId) {
 }
 
 // ============================================================
+// PAIRING READY
+// ============================================================
+
+function markPairingReady(sessionId) {
+  const cleanId = safeSessionId(sessionId);
+
+  if (!cleanId) {
+    return;
+  }
+
+  pairingReady.add(cleanId);
+
+  const waiter = pairingWaiters.get(cleanId);
+
+  if (waiter) {
+    pairingWaiters.delete(cleanId);
+
+    try {
+      waiter.resolve();
+    } catch {}
+  }
+}
+
+function clearPairingReady(sessionId) {
+  const cleanId = safeSessionId(sessionId);
+
+  pairingReady.delete(cleanId);
+}
+
+function failPairingWaiter(sessionId, error) {
+  const cleanId = safeSessionId(sessionId);
+
+  const waiter = pairingWaiters.get(cleanId);
+
+  if (waiter) {
+    pairingWaiters.delete(cleanId);
+
+    try {
+      waiter.reject(error);
+    } catch {}
+  }
+}
+
+function waitForPairingReady(
+  sessionId,
+  timeout = 30000
+) {
+  const cleanId = safeSessionId(sessionId);
+
+  if (pairingReady.has(cleanId)) {
+    return Promise.resolve();
+  }
+
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      pairingWaiters.delete(cleanId);
+
+      reject(
+        new Error(
+          "WhatsApp socket pa rive nan etap pairing la alè."
+        )
+      );
+    }, timeout);
+
+    pairingWaiters.set(cleanId, {
+      resolve: () => {
+        clearTimeout(timer);
+        resolve();
+      },
+
+      reject: error => {
+        clearTimeout(timer);
+        reject(error);
+      }
+    });
+  });
+}
+
+// ============================================================
 // CONNECTION STATE
 // ============================================================
 
@@ -93,7 +236,10 @@ function getConnectionState(sessionId) {
 // CONNECTED MESSAGE
 // ============================================================
 
-async function sendConnectedMessage(sock, sessionId) {
+async function sendConnectedMessage(
+  sock,
+  sessionId
+) {
   try {
     if (!sock?.user?.id) {
       console.warn(
@@ -221,7 +367,8 @@ async function createSocket(sessionId) {
   }
 
   // ----------------------------------------------------------
-  // NEW SOCKET IS ALLOWED
+  // CANCEL MANUAL STOP ONLY WHEN WE ARE REALLY STARTING
+  // A NEW SOCKET
   // ----------------------------------------------------------
 
   manuallyStopped.delete(cleanId);
@@ -240,10 +387,12 @@ async function createSocket(sessionId) {
   // GET SESSION
   // ----------------------------------------------------------
 
-  let session = sessionManager.getSession(cleanId);
+  let session =
+    sessionManager.getSession(cleanId);
 
   if (!session) {
-    session = sessionManager.restoreSession(cleanId);
+    session =
+      sessionManager.restoreSession(cleanId);
   }
 
   if (!session) {
@@ -282,7 +431,10 @@ async function createSocket(sessionId) {
   const {
     state,
     saveCreds
-  } = await useMultiFileAuthState(authDir);
+  } =
+    await useMultiFileAuthState(
+      authDir
+    );
 
   // ----------------------------------------------------------
   // BAILEYS VERSION
@@ -299,6 +451,10 @@ async function createSocket(sessionId) {
       Array.isArray(latest.version)
     ) {
       version = latest.version;
+
+      console.log(
+        `📦 BAILEYS VERSION [${cleanId}]: ${version.join(".")}`
+      );
     }
 
   } catch (error) {
@@ -342,7 +498,19 @@ async function createSocket(sessionId) {
 
     syncFullHistory: false,
 
-    shouldIgnoreJid: () => false
+    // Pa pran fake/requestId messages
+    // kòm vrè messages pou commands.
+    shouldSyncHistoryMessage: () => false,
+
+    shouldIgnoreJid: () => false,
+
+    // Retry cache la rete deyò socket la.
+    msgRetryCounterCache,
+
+    // Opsyon ki disponib nan vèsyon ki pi resan yo.
+    enableAutoSessionRecreation: false,
+
+    enableRecentMessageCache: true
   };
 
   // ----------------------------------------------------------
@@ -399,11 +567,13 @@ async function createSocket(sessionId) {
 
   sock.ev.on(
     "connection.update",
-    async ({
-      connection,
-      lastDisconnect,
-      qr
-    }) => {
+    async update => {
+
+      const {
+        connection,
+        lastDisconnect,
+        qr
+      } = update || {};
 
       try {
 
@@ -411,7 +581,9 @@ async function createSocket(sessionId) {
         // CONNECTING
         // ----------------------------------------------------
 
-        if (connection === "connecting") {
+        if (
+          connection === "connecting"
+        ) {
 
           sessionManager.updateSession(
             cleanId,
@@ -427,24 +599,41 @@ async function createSocket(sessionId) {
         }
 
         // ----------------------------------------------------
-        // QR
+        // QR / PAIRING READY
         // ----------------------------------------------------
 
         if (qr) {
+
           console.log(
-            `ℹ️ QR received [${cleanId}]`
+            `ℹ️ QR RECEIVED [${cleanId}]`
           );
+
+          markPairingReady(cleanId);
         }
 
         // ----------------------------------------------------
         // OPEN
         // ----------------------------------------------------
 
-        if (connection === "open") {
+        if (
+          connection === "open"
+        ) {
 
-          clearReconnectTimer(cleanId);
+          clearReconnectTimer(
+            cleanId
+          );
 
-          manuallyStopped.delete(cleanId);
+          markPairingReady(
+            cleanId
+          );
+
+          manuallyStopped.delete(
+            cleanId
+          );
+
+          pairingRequested.delete(
+            cleanId
+          );
 
           sessionManager.updateSession(
             cleanId,
@@ -510,13 +699,21 @@ async function createSocket(sessionId) {
         // CLOSE
         // ----------------------------------------------------
 
-        if (connection === "close") {
+        if (
+          connection === "close"
+        ) {
 
-          active.delete(cleanId);
+          active.delete(
+            cleanId
+          );
 
           sessionManager.setSocket(
             cleanId,
             null
+          );
+
+          clearPairingReady(
+            cleanId
           );
 
           // --------------------------------------------------
@@ -574,7 +771,9 @@ async function createSocket(sessionId) {
           // --------------------------------------------------
 
           if (
-            manuallyStopped.has(cleanId)
+            manuallyStopped.has(
+              cleanId
+            )
           ) {
 
             clearReconnectTimer(
@@ -607,7 +806,13 @@ async function createSocket(sessionId) {
             DisconnectReason.loggedOut
           ) {
 
-            clearReconnectTimer(cleanId);
+            clearReconnectTimer(
+              cleanId
+            );
+
+            pairingRequested.delete(
+              cleanId
+            );
 
             sessionManager.updateSession(
               cleanId,
@@ -635,7 +840,13 @@ async function createSocket(sessionId) {
             DisconnectReason.badSession
           ) {
 
-            clearReconnectTimer(cleanId);
+            clearReconnectTimer(
+              cleanId
+            );
+
+            pairingRequested.delete(
+              cleanId
+            );
 
             sessionManager.updateSession(
               cleanId,
@@ -658,12 +869,6 @@ async function createSocket(sessionId) {
           // RECONNECT
           // --------------------------------------------------
 
-          if (
-            manuallyStopped.has(cleanId)
-          ) {
-            return;
-          }
-
           sessionManager.updateSession(
             cleanId,
             {
@@ -675,7 +880,9 @@ async function createSocket(sessionId) {
           );
 
           if (
-            reconnectTimers.has(cleanId)
+            reconnectTimers.has(
+              cleanId
+            )
           ) {
             return;
           }
@@ -688,15 +895,16 @@ async function createSocket(sessionId) {
                   cleanId
                 );
 
-                // IMPORTANT:
-                // Si session lan te stop pandan
-                // 5 segonn yo, pa kreye nouvo socket.
                 if (
-                  manuallyStopped.has(cleanId)
+                  manuallyStopped.has(
+                    cleanId
+                  )
                 ) {
+
                   console.log(
                     `🛑 RECONNECT CANCELLED [${cleanId}]`
                   );
+
                   return;
                 }
 
@@ -708,7 +916,7 @@ async function createSocket(sessionId) {
 
                   await createSocket(
                     cleanId
-                  );
+                         );
 
                 } catch (error) {
 
@@ -724,6 +932,7 @@ async function createSocket(sessionId) {
                       cleanId
                     )
                   ) {
+
                     scheduleReconnect(
                       cleanId
                     );
@@ -760,17 +969,30 @@ async function createSocket(sessionId) {
     "messages.upsert",
     async upsert => {
 
-      console.log(
-        `📩 MESSAGES.UPSERT RECEIVED [${cleanId}]:`,
-        upsert?.type,
-        upsert?.messages?.length || 0
-      );
-
       try {
 
+        console.log(
+          `📩 MESSAGES.UPSERT RECEIVED [${cleanId}]:`,
+          upsert?.type,
+          upsert?.messages?.length || 0
+        );
+
+        // Pa trete history oswa lòt upsert ki pa notify.
         if (
           upsert?.type !== "notify"
         ) {
+          return;
+        }
+
+        // Security:
+        // Pa trete fake/requestId upsert events.
+        if (
+          upsert?.requestId
+        ) {
+          console.log(
+            `⚠️ REQUEST-ID MESSAGE IGNORED [${cleanId}]`
+          );
+
           return;
         }
 
@@ -779,13 +1001,38 @@ async function createSocket(sessionId) {
           upsert.messages || []
         ) {
 
-          if (!msg?.message) {
+          if (!msg) {
             continue;
           }
 
-          if (msg?.key?.fromMe) {
+          if (
+            msg?.key?.fromMe
+          ) {
             continue;
           }
+
+          if (
+            !msg?.message
+          ) {
+
+            console.log(
+              `⚠️ MESSAGE WITHOUT CONTENT [${cleanId}]`
+            );
+
+            continue;
+          }
+
+          const remoteJid =
+            msg?.key?.remoteJid ||
+            "unknown";
+
+          console.log(
+            `📨 DECRYPTED MESSAGE [${cleanId}] FROM: ${remoteJid}`
+          );
+
+          // --------------------------------------------------
+          // MESSAGE HANDLER
+          // --------------------------------------------------
 
           if (
             messageHandler &&
@@ -900,7 +1147,9 @@ function scheduleReconnect(sessionId) {
         );
 
         if (
-          manuallyStopped.has(cleanId)
+          manuallyStopped.has(
+            cleanId
+          )
         ) {
           return;
         }
@@ -950,8 +1199,12 @@ function scheduleReconnect(sessionId) {
 // START SESSION
 // ============================================================
 
-async function startSession(sessionId) {
-  return createSocket(sessionId);
+async function startSession(
+  sessionId
+) {
+  return createSocket(
+    sessionId
+  );
 }
 
 // ============================================================
@@ -980,10 +1233,6 @@ async function requestPairingCode(
       );
 
   } else {
-
-    // --------------------------------------------------------
-    // requestPairingCode(sessionId, number)
-    // --------------------------------------------------------
 
     requestedSessionId =
       safeSessionId(
@@ -1030,7 +1279,9 @@ async function requestPairingCode(
   // PAIRING ALREADY RUNNING
   // ----------------------------------------------------------
 
-  if (session?.pairing) {
+  if (
+    session?.pairing
+  ) {
 
     const error =
       new Error(
@@ -1053,7 +1304,7 @@ async function requestPairingCode(
       sessionManager.createSession({
         sessionId:
           requestedSessionId ||
-          number,
+          `session_${number}`,
 
         number
       });
@@ -1107,6 +1358,14 @@ async function requestPairingCode(
     sessionId
   );
 
+  pairingRequested.delete(
+    sessionId
+  );
+
+  clearPairingReady(
+    sessionId
+  );
+
   // ----------------------------------------------------------
   // CREATE SOCKET
   // ----------------------------------------------------------
@@ -1135,25 +1394,18 @@ async function requestPairingCode(
   }
 
   // ----------------------------------------------------------
-  // LOAD AUTH STATE
+  // DO NOT LOAD auth state AGAIN
   // ----------------------------------------------------------
-
-  const authDir =
-    session.authDir;
-
-  const {
-    state
-  } =
-    await useMultiFileAuthState(
-      authDir
-    );
-
-  // ----------------------------------------------------------
-  // ALREADY REGISTERED
+  //
+  // createSocket() already loaded the auth state.
+  // Loading another useMultiFileAuthState() here can create
+  // another in-memory view of the same auth directory.
+  //
+  // Use the socket's current auth state instead.
   // ----------------------------------------------------------
 
   if (
-    state?.creds?.registered
+    sock?.authState?.creds?.registered
   ) {
 
     clearReconnectTimer(
@@ -1185,17 +1437,67 @@ async function requestPairingCode(
   }
 
   // ----------------------------------------------------------
+  // WAIT UNTIL SOCKET IS READY
+  // ----------------------------------------------------------
+
+  try {
+
+    await waitForPairingReady(
+      sessionId,
+      30000
+    );
+
+  } catch (error) {
+
+    sessionManager.updateSession(
+      sessionId,
+      {
+        status: "pairing_error",
+        pairing: false,
+        pairingCode: null
+      }
+    );
+
+    throw error;
+  }
+
+  // ----------------------------------------------------------
+  // PREVENT DUPLICATE REQUEST
+  // ----------------------------------------------------------
+
+  if (
+    pairingRequested.has(
+      sessionId
+    )
+  ) {
+
+    const current =
+      sessionManager.getSession(
+        sessionId
+      );
+
+    return {
+      sessionId,
+      number,
+      code:
+        current?.pairingCode ||
+        null,
+      socket: sock
+    };
+  }
+
+  pairingRequested.add(
+    sessionId
+  );
+
+  // ----------------------------------------------------------
   // REQUEST CODE
   // ----------------------------------------------------------
 
   try {
 
-    await new Promise(
-      resolve =>
-        setTimeout(
-          resolve,
-          1000
-        )
+    console.log(
+      `🔐 Requesting NEW pairing code [${sessionId}]`
     );
 
     const code =
@@ -1243,6 +1545,10 @@ async function requestPairingCode(
 
   } catch (error) {
 
+    pairingRequested.delete(
+      sessionId
+    );
+
     sessionManager.updateSession(
       sessionId,
       {
@@ -1267,7 +1573,9 @@ async function requestPairingCode(
 // STOP SESSION
 // ============================================================
 
-async function stopSession(sessionId) {
+async function stopSession(
+  sessionId
+) {
 
   const cleanId =
     safeSessionId(sessionId);
@@ -1280,27 +1588,43 @@ async function stopSession(sessionId) {
     cleanId
   );
 
-  // IMPORTANT:
-  // Mete flag la AVAN nou fini socket la.
-  // Konsa connection.update pa ka relanse reconnect.
   manuallyStopped.add(
     cleanId
+  );
+
+  pairingRequested.delete(
+    cleanId
+  );
+
+  clearPairingReady(
+    cleanId
+  );
+
+  failPairingWaiter(
+    cleanId,
+    new Error(
+      "Session stopped."
+    )
   );
 
   const sock =
     active.get(cleanId) ||
     sessionManager.getSocket(cleanId);
 
-  active.delete(cleanId);
+  active.delete(
+    cleanId
+  );
 
   if (sock) {
 
     try {
+
       sock.end(
         new Error(
           "Session stopped"
         )
       );
+
     } catch {}
   }
 
@@ -1358,7 +1682,9 @@ async function stopSession(sessionId) {
 // REMOVE SESSION
 // ============================================================
 
-async function removeSession(sessionId) {
+async function removeSession(
+  sessionId
+) {
 
   const cleanId =
     safeSessionId(sessionId);
@@ -1373,6 +1699,21 @@ async function removeSession(sessionId) {
 
   manuallyStopped.add(
     cleanId
+  );
+
+  pairingRequested.delete(
+    cleanId
+  );
+
+  clearPairingReady(
+    cleanId
+  );
+
+  failPairingWaiter(
+    cleanId,
+    new Error(
+      "Session removed."
+    )
   );
 
   await stopSession(
@@ -1490,7 +1831,6 @@ async function start() {
     console.error(
       "❌ TOPFEROS START ERROR",
       error?.stack ||
-      error?.message ||
       error
     );
 
@@ -1512,7 +1852,9 @@ async function stop() {
     const id of ids
   ) {
 
-    await stopSession(id);
+    await stopSession(
+      id
+    );
   }
 
   for (
@@ -1520,10 +1862,35 @@ async function stop() {
     reconnectTimers.values()
   ) {
 
-    clearTimeout(timer);
+    clearTimeout(
+      timer
+    );
   }
 
   reconnectTimers.clear();
+
+  pairingRequested.clear();
+  pairingReady.clear();
+
+  for (
+    const [id, waiter] of
+    pairingWaiters.entries()
+  ) {
+
+    try {
+
+      waiter.reject(
+        new Error(
+          "TOPFEROS MD stopped."
+        )
+      );
+
+    } catch {}
+
+    pairingWaiters.delete(
+      id
+    );
+  }
 
   manuallyStopped.clear();
 
