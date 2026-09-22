@@ -42,10 +42,7 @@ const colors = {
 // LOGGER
 // ============================================================
 
-function log(
-  message,
-  color = colors.white
-) {
+function log(message, color = colors.white) {
   console.log(
     `${color}${message}${colors.reset}`
   );
@@ -93,20 +90,13 @@ function createDirectories() {
     "panel/public"
   ];
 
-  for (
-    const directory of directories
-  ) {
-    const directoryPath =
-      path.join(
-        __dirname,
-        directory
-      );
+  for (const directory of directories) {
+    const directoryPath = path.join(
+      __dirname,
+      directory
+    );
 
-    if (
-      !fs.existsSync(
-        directoryPath
-      )
-    ) {
+    if (!fs.existsSync(directoryPath)) {
       fs.mkdirSync(
         directoryPath,
         {
@@ -137,17 +127,12 @@ function checkLogo() {
     return;
   }
 
-  const logoPath =
-    path.join(
-      __dirname,
-      config.bot.logo
-    );
+  const logoPath = path.join(
+    __dirname,
+    config.bot.logo
+  );
 
-  if (
-    fs.existsSync(
-      logoPath
-    )
-  ) {
+  if (fs.existsSync(logoPath)) {
     success(
       `Bot logo found: ${config.bot.logo}`
     );
@@ -324,23 +309,16 @@ function showPanelStatus() {
 // ============================================================
 
 function prepareDatabase() {
-  const databasePath =
-    path.resolve(
-      __dirname,
-      config.database?.path ||
-        "database/topferos.db"
-    );
+  const databasePath = path.resolve(
+    __dirname,
+    config.database?.path ||
+      "database/topferos.db"
+  );
 
   const databaseDirectory =
-    path.dirname(
-      databasePath
-    );
+    path.dirname(databasePath);
 
-  if (
-    !fs.existsSync(
-      databaseDirectory
-    )
-  ) {
+  if (!fs.existsSync(databaseDirectory)) {
     fs.mkdirSync(
       databaseDirectory,
       {
@@ -359,28 +337,22 @@ function prepareDatabase() {
 // ============================================================
 
 async function startWhatsApp() {
-  const connectionFile =
-    path.join(
-      __dirname,
-      "src",
-      "connection.js"
-    );
+  const connectionFile = path.join(
+    __dirname,
+    "src",
+    "connection.js"
+  );
 
-  if (
-    !fs.existsSync(
-      connectionFile
-    )
-  ) {
+  if (!fs.existsSync(connectionFile)) {
     throw new Error(
       "src/connection.js was not found."
     );
   }
 
   try {
-    connection =
-      require(
-        "./src/connection"
-      );
+    connection = require(
+      "./src/connection"
+    );
 
     if (!connection) {
       throw new Error(
@@ -399,7 +371,11 @@ async function startWhatsApp() {
 
     // IMPORTANT:
     // connection.start() already restores
-    // stored sessions.
+    // all stored sessions.
+    //
+    // DO NOT call restoreStoredSessions()
+    // here again. Doing so can create duplicate
+    // sockets using the same Baileys auth state.
     await connection.start();
 
     success(
@@ -423,28 +399,22 @@ async function startWhatsApp() {
 // ============================================================
 
 async function startPanel() {
-  const panelFile =
-    path.join(
-      __dirname,
-      "panel",
-      "server.js"
-    );
+  const panelFile = path.join(
+    __dirname,
+    "panel",
+    "server.js"
+  );
 
-  if (
-    !fs.existsSync(
-      panelFile
-    )
-  ) {
+  if (!fs.existsSync(panelFile)) {
     throw new Error(
       "panel/server.js was not found."
     );
   }
 
   try {
-    const panel =
-      require(
-        "./panel/server"
-      );
+    const panel = require(
+      "./panel/server"
+    );
 
     if (!panel) {
       throw new Error(
@@ -452,8 +422,7 @@ async function startPanel() {
       );
     }
 
-    panelServer =
-      panel;
+    panelServer = panel;
 
     success(
       "TOPFEROS MD Web Panel loaded."
@@ -692,9 +661,7 @@ process.on(
 // GRACEFUL SHUTDOWN
 // ============================================================
 
-async function shutdown(
-  signal
-) {
+async function shutdown(signal) {
   if (shuttingDown) {
     return;
   }
