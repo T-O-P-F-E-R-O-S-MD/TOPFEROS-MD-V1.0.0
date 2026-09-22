@@ -99,6 +99,38 @@ function getAuthDir(sessionId) {
 }
 
 // ============================================================
+// CHECK AUTH STATE
+// ============================================================
+
+function hasCredentials(sessionId) {
+  const authDir =
+    getAuthDir(sessionId);
+
+  if (!authDir) {
+    return false;
+  }
+
+  const credsFile =
+    path.join(
+      authDir,
+      "creds.json"
+    );
+
+  try {
+    return (
+      fs.existsSync(
+        credsFile
+      ) &&
+      fs.statSync(
+        credsFile
+      ).isFile()
+    );
+  } catch {
+    return false;
+  }
+}
+
+// ============================================================
 // CREATE SESSION
 // ============================================================
 
@@ -559,6 +591,18 @@ function getStoredSessionIds() {
         continue;
       }
 
+      // ------------------------------------------------------
+      // IMPORTANT:
+      // Only restore real WhatsApp auth sessions.
+      // Empty folders are ignored.
+      // ------------------------------------------------------
+
+      if (
+        !hasCredentials(id)
+      ) {
+        continue;
+      }
+
       ids.add(id);
     }
 
@@ -614,6 +658,17 @@ function restoreSession(
     return null;
   }
 
+  // ----------------------------------------------------------
+  // Do not restore an empty/incomplete auth folder.
+  // A valid Baileys stored session must have creds.json.
+  // ----------------------------------------------------------
+
+  if (
+    !hasCredentials(cleanId)
+  ) {
+    return null;
+  }
+
   return createSession({
     sessionId:
       cleanId
@@ -645,18 +700,25 @@ function removeSession(
     cleanId
   );
 
+  const authDir =
+    session?.authDir ||
+    getAuthDir(
+      cleanId
+    );
+
   if (
-    session?.authDir &&
+    authDir &&
     fs.existsSync(
-      session.authDir
+      authDir
     )
   ) {
     try {
       fs.rmSync(
-        session.authDir,
+        authDir,
         {
           recursive:
             true,
+
           force:
             true
         }
