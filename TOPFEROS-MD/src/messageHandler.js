@@ -33,9 +33,6 @@ const PREFIX =
 // ============================================================
 // UNWRAP WHATSAPP MESSAGE
 // ============================================================
-// Baileys ka mete mesaj la andedan plizyè wrapper.
-// Fonksyon sa a retire wrapper yo pou nou jwenn vrè mesaj la.
-// ============================================================
 
 function unwrapMessageContent(messageContent) {
   let current = messageContent;
@@ -110,19 +107,11 @@ function getMessageText(message) {
     return "";
   }
 
-  // ----------------------------------------------------------
-  // NORMAL TEXT
-  // ----------------------------------------------------------
-
   if (
     typeof msg.conversation === "string"
   ) {
     return msg.conversation;
   }
-
-  // ----------------------------------------------------------
-  // EXTENDED TEXT
-  // ----------------------------------------------------------
 
   if (
     typeof msg.extendedTextMessage?.text ===
@@ -131,20 +120,12 @@ function getMessageText(message) {
     return msg.extendedTextMessage.text;
   }
 
-  // ----------------------------------------------------------
-  // IMAGE CAPTION
-  // ----------------------------------------------------------
-
   if (
     typeof msg.imageMessage?.caption ===
       "string"
   ) {
     return msg.imageMessage.caption;
   }
-
-  // ----------------------------------------------------------
-  // VIDEO CAPTION
-  // ----------------------------------------------------------
 
   if (
     typeof msg.videoMessage?.caption ===
@@ -153,10 +134,6 @@ function getMessageText(message) {
     return msg.videoMessage.caption;
   }
 
-  // ----------------------------------------------------------
-  // DOCUMENT CAPTION
-  // ----------------------------------------------------------
-
   if (
     typeof msg.documentMessage?.caption ===
       "string"
@@ -164,20 +141,12 @@ function getMessageText(message) {
     return msg.documentMessage.caption;
   }
 
-  // ----------------------------------------------------------
-  // AUDIO
-  // ----------------------------------------------------------
-
   if (
     typeof msg.audioMessage?.caption ===
       "string"
   ) {
     return msg.audioMessage.caption;
   }
-
-  // ----------------------------------------------------------
-  // BUTTON RESPONSE
-  // ----------------------------------------------------------
 
   if (
     typeof
@@ -190,10 +159,6 @@ function getMessageText(message) {
         .selectedButtonId
     );
   }
-
-  // ----------------------------------------------------------
-  // LIST RESPONSE
-  // ----------------------------------------------------------
 
   if (
     typeof
@@ -209,10 +174,6 @@ function getMessageText(message) {
     );
   }
 
-  // ----------------------------------------------------------
-  // TEMPLATE BUTTON
-  // ----------------------------------------------------------
-
   if (
     typeof
       msg.templateButtonReplyMessage
@@ -224,10 +185,6 @@ function getMessageText(message) {
         .selectedId
     );
   }
-
-  // ----------------------------------------------------------
-  // INTERACTIVE RESPONSE
-  // ----------------------------------------------------------
 
   const interactive =
     msg.interactiveResponseMessage;
@@ -254,10 +211,6 @@ function getMessageText(message) {
       }
     } catch {}
   }
-
-  // ----------------------------------------------------------
-  // CONVERSATION INSIDE WRAPPER
-  // ----------------------------------------------------------
 
   for (
     const value of
@@ -298,10 +251,6 @@ function getQuotedMessage(message) {
     return null;
   }
 
-  // ----------------------------------------------------------
-  // DIRECT EXTENDED TEXT
-  // ----------------------------------------------------------
-
   const directContext =
     msg.extendedTextMessage
       ?.contextInfo;
@@ -313,10 +262,6 @@ function getQuotedMessage(message) {
       directContext.quotedMessage
     );
   }
-
-  // ----------------------------------------------------------
-  // IMAGE
-  // ----------------------------------------------------------
 
   const imageContext =
     msg.imageMessage
@@ -330,10 +275,6 @@ function getQuotedMessage(message) {
     );
   }
 
-  // ----------------------------------------------------------
-  // VIDEO
-  // ----------------------------------------------------------
-
   const videoContext =
     msg.videoMessage
       ?.contextInfo;
@@ -346,10 +287,6 @@ function getQuotedMessage(message) {
     );
   }
 
-  // ----------------------------------------------------------
-  // DOCUMENT
-  // ----------------------------------------------------------
-
   const documentContext =
     msg.documentMessage
       ?.contextInfo;
@@ -361,10 +298,6 @@ function getQuotedMessage(message) {
       documentContext.quotedMessage
     );
   }
-
-  // ----------------------------------------------------------
-  // AUDIO
-  // ----------------------------------------------------------
 
   const audioContext =
     msg.audioMessage
@@ -467,6 +400,114 @@ async function reactToCommand(
     );
 
     return false;
+  }
+}
+
+// ============================================================
+// SEND COMMAND ERROR
+// ============================================================
+
+async function sendCommandError(
+  sock,
+  chatId,
+  commandName,
+  error
+) {
+  try {
+
+    if (
+      !sock ||
+      !chatId
+    ) {
+      return;
+    }
+
+    const errorText =
+      "╭━━━━━━━━━━━━━━━━━━━━━━━━━━━━╮\n" +
+      "┃       ❌ COMMAND ERROR\n" +
+      "╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯\n\n" +
+
+      `⚙️ Kòmand: ${PREFIX}${commandName}\n\n` +
+
+      "Bot la jwenn kòmand lan, men li pa kapab fini ekzekisyon an.\n\n" +
+
+      "🔧 Verifye:\n" +
+      "• Paramèt kòmand lan\n" +
+      "• Configuration bot la\n" +
+      "• Permission bot la\n" +
+      "• Service/API kòmand lan\n\n" +
+
+      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n" +
+      "By TOPFEROS MD\n" +
+      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━";
+
+    await sock.sendMessage(
+      chatId,
+      {
+        text: errorText
+      }
+    );
+
+    console.log(
+      `📤 COMMAND ERROR RESPONSE SENT: ${PREFIX}${commandName}`
+    );
+
+  } catch (sendError) {
+
+    console.error(
+      "❌ FAILED TO SEND COMMAND ERROR:",
+      sendError?.stack ||
+      sendError?.message ||
+      sendError
+    );
+  }
+}
+
+// ============================================================
+// UNKNOWN COMMAND RESPONSE
+// ============================================================
+
+async function sendUnknownCommand(
+  sock,
+  chatId,
+  commandName
+) {
+  try {
+
+    if (
+      !sock ||
+      !chatId
+    ) {
+      return;
+    }
+
+    const unknownText =
+      "╭━━━━━━━━━━━━━━━━━━━━━━━━━━━━╮\n" +
+      "┃       ❓ UNKNOWN COMMAND\n" +
+      "╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯\n\n" +
+
+      `❌ Kòmand ${PREFIX}${commandName} pa egziste.\n\n` +
+
+      `📖 Ekri ${PREFIX}menu pou wè tout kòmand disponib yo.\n\n` +
+
+      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n" +
+      "By TOPFEROS MD\n" +
+      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━";
+
+    await sock.sendMessage(
+      chatId,
+      {
+        text: unknownText
+      }
+    );
+
+  } catch (error) {
+
+    console.error(
+      "❌ UNKNOWN COMMAND RESPONSE ERROR:",
+      error?.message ||
+      error
+    );
   }
 }
 
@@ -618,6 +659,12 @@ async function handleMessage(
         `❓ UNKNOWN COMMAND [${sessionId}]: ${PREFIX}${commandName}`
       );
 
+      await sendUnknownCommand(
+        sock,
+        chatId,
+        commandName
+      );
+
       return;
     }
 
@@ -640,56 +687,43 @@ async function handleMessage(
 
     const context = {
 
-      // Baileys socket
       sock,
 
-      // Original Baileys message
       message,
 
-      // Alias for compatibility
       msg:
         message,
 
-      // Session
       sessionId,
 
-      // Chat
       chatId,
 
-      // Sender
       sender:
         getSender(message),
 
-      // Group
       isGroup:
         isGroupMessage(
           message
         ),
 
-      // Quoted message
       quoted:
         getQuotedMessage(
           message
         ),
 
-      // Command
       command:
         commandName,
 
       commandName,
 
-      // Arguments
       args,
 
-      // Text after command
       text:
         commandText,
 
-      // Prefix
       prefix:
         PREFIX,
 
-      // Config
       config
     };
 
@@ -714,17 +748,32 @@ async function handleMessage(
     // EXECUTE COMMAND
     // --------------------------------------------------------
 
-    await command.execute(
-      context
-    );
+    try {
 
-    // --------------------------------------------------------
-    // SUCCESS
-    // --------------------------------------------------------
+      await command.execute(
+        context
+      );
 
-    console.log(
-      `✅ COMMAND COMPLETED [${sessionId}]: ${PREFIX}${commandName}`
-    );
+      console.log(
+        `✅ COMMAND COMPLETED [${sessionId}]: ${PREFIX}${commandName}`
+      );
+
+    } catch (commandError) {
+
+      console.error(
+        `❌ COMMAND EXECUTION ERROR [${sessionId}] [${PREFIX}${commandName}]`,
+        commandError?.stack ||
+        commandError?.message ||
+        commandError
+      );
+
+      await sendCommandError(
+        sock,
+        chatId,
+        commandName,
+        commandError
+      );
+    }
 
   } catch (error) {
 
@@ -736,6 +785,40 @@ async function handleMessage(
       error?.message ||
       error
     );
+
+    // --------------------------------------------------------
+    // GLOBAL HANDLER ERROR RESPONSE
+    // --------------------------------------------------------
+
+    try {
+
+      const chatId =
+        getChatId(message);
+
+      if (
+        sock &&
+        chatId &&
+        chatId !== "status@broadcast"
+      ) {
+
+        await sock.sendMessage(
+          chatId,
+          {
+            text:
+              "❌ Yon erè rive pandan bot la t ap trete kòmand lan.\n\n" +
+              "🔧 Tanpri eseye ankò."
+          }
+        );
+      }
+
+    } catch (sendError) {
+
+      console.error(
+        "❌ GLOBAL ERROR RESPONSE FAILED:",
+        sendError?.message ||
+        sendError
+      );
+    }
   }
 }
 
@@ -752,3 +835,8 @@ module.exports = {
   isGroupMessage,
   reactToCommand
 };
+
+
+// ╔════════════════════════════════════════════════════╗
+// ║              🚀 BY TOPFEROS MD TECH              ║
+// ╚════════════════════════════════════════════════════╝
