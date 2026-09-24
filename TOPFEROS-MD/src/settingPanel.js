@@ -836,7 +836,25 @@ function setSetting(
 
   return true;
 }
+  // ========================================================
+  // ANTI-DELETE DESTINATION
+  // ========================================================
 
+  if (
+    key === "antiDeleteSameChat" &&
+    session.settings.antiDeleteSameChat
+  ) {
+    session.settings.antiDeleteDM =
+      false;
+  }
+
+  if (
+    key === "antiDeleteDM" &&
+    session.settings.antiDeleteDM
+  ) {
+    session.settings.antiDeleteSameChat =
+      false;
+  }
 /* ======================================================
    APPLY SETTINGS
 ====================================================== */
@@ -910,7 +928,23 @@ function applySettings(
     ...session.settings
   };
 }
+  // ========================================================
+  // ANTI-DELETE DESTINATION
+  // ========================================================
 
+  if (
+    session.settings.antiDeleteSameChat
+  ) {
+    session.settings.antiDeleteDM =
+      false;
+  }
+
+  if (
+    session.settings.antiDeleteDM
+  ) {
+    session.settings.antiDeleteSameChat =
+      false;
+  }
 /* ======================================================
    UPDATE BOT MODE
 ====================================================== */
