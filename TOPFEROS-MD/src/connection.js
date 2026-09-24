@@ -25,6 +25,9 @@ const sessionManager =
 const messageHandler =
   require("./messageHandler");
 
+const antiDelete =
+  require("../services/antiDelete");
+
 // ============================================================
 // ACTIVE SOCKETS
 // ============================================================
@@ -703,21 +706,21 @@ async function createSocket(
     }
   );
 
-  // ==========================================================
+    // ==========================================================
   // MESSAGES
   // ==========================================================
 
   sock.ev.on(
-  "messages.upsert",
-  async upsert => {
+    "messages.upsert",
+    async upsert => {
 
-    console.log(
-      "📩 MESSAGES.UPSERT RECEIVED:",
-      upsert?.type,
-      upsert?.messages?.length || 0
-    );
+      console.log(
+        "📩 MESSAGES.UPSERT RECEIVED:",
+        upsert?.type,
+        upsert?.messages?.length || 0
+      );
 
-    try {
+      try {
 
         if (
           upsert?.type !==
@@ -731,11 +734,54 @@ async function createSocket(
           upsert.messages || []
         ) {
 
+          /*
+           * Pa retire sa.
+           * Li enpòtan pou mesaj san content
+           * pa kraze handler la.
+           */
           if (
             !msg?.message
           ) {
             continue;
           }
+
+          // ==================================================
+          // ANTI-DELETE
+          // ==================================================
+
+          const protocolMessage =
+            msg?.message
+              ?.protocolMessage;
+
+          if (
+            protocolMessage
+          ) {
+
+            await antiDelete.handleDeleteEvent(
+              sock,
+              cleanId,
+              msg
+            );
+
+            /*
+             * Protocol message la pa yon
+             * command normal.
+             */
+            continue;
+          }
+
+          // ==================================================
+          // CACHE ORIGINAL MESSAGE
+          // ==================================================
+
+          await antiDelete.handleIncomingMessage(
+            cleanId,
+            msg
+          );
+
+          // ==================================================
+          // NORMAL MESSAGE HANDLER
+          // ==================================================
 
           if (
             messageHandler &&
@@ -770,6 +816,9 @@ async function createSocket(
     }
   );
 
+// ╔════════════════════════════════════════════════════╗
+// ║             🚀 TECH BY TOPFEROS MD               ║
+// ╚════════════════════════════════════════════════════╝
   // ==========================================================
   // GROUP PARTICIPANTS
   // ==========================================================
