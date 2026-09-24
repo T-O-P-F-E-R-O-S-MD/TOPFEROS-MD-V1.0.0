@@ -478,6 +478,7 @@ async function handleStatusActions(
     );
   }
 }
+
 // ============================================================
 // CHECK GROUP
 // ============================================================
@@ -686,10 +687,17 @@ async function handleMessage(
     }
 
     // --------------------------------------------------------
-    // AUTOMATIC STATUS SYSTEM
+    // 🖼️ STATUS SYSTEM
     // --------------------------------------------------------
     // Status pa bezwen prefix.
-    // Save / Send / Anrejistre fèt otomatikman.
+    //
+    // Lè yon Status rive:
+    // 👁️ Seen
+    // ❤️ Like
+    // ⚡ React
+    // 📥 Save
+    // 📤 Send
+    // 🗂️ Anrejistre
     // --------------------------------------------------------
 
     if (
@@ -697,7 +705,10 @@ async function handleMessage(
       "status@broadcast"
     ) {
 
-      // Pa trete pwòp Status bot la
+      // ------------------------------------------------------
+      // IGNORE BOT'S OWN STATUS
+      // ------------------------------------------------------
+
       if (
         message?.key?.fromMe
       ) {
@@ -707,6 +718,20 @@ async function handleMessage(
 
         return;
       }
+
+      // ------------------------------------------------------
+      // 👁️ ❤️ ⚡ STATUS ACTIONS
+      // ------------------------------------------------------
+
+      await handleStatusActions(
+        sock,
+        message,
+        sessionId
+      );
+
+      // ------------------------------------------------------
+      // 📥 SAVE / 📤 SEND / 🗂️ ANREJISTRE
+      // ------------------------------------------------------
 
       if (
         statusSystem &&
@@ -1018,17 +1043,3 @@ async function handleMessage(
 // ============================================================
 // EXPORTS
 // ============================================================
-
-module.exports = {
-  handleMessage,
-  getMessageText,
-  getQuotedMessage,
-  getSender,
-  getChatId,
-  isGroupMessage,
-  reactToCommand
-};
-
-// ╔════════════════════════════════════════════════════╗
-// ║             🚀 TECH BY TOPFEROS MD               ║
-// ╚════════════════════════════════════════════════════╝
