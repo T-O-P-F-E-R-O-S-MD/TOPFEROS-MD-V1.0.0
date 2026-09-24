@@ -138,7 +138,7 @@ async function handleParrainCommand({
         "Country code la dwe ladan l.\n\n" +
 
         "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n" +
-        "By TOPFEROS MD\n" +
+        "By TECH TOPFEROS MD\n" +
         "━━━━━━━━━━━━━━━━━━━━━━━━━━━━";
 
 
@@ -299,7 +299,7 @@ async function handleParrainCommand({
           "• WhatsApp connection\n\n" +
 
           "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n" +
-          "By TOPFEROS MD\n" +
+          "By TECH TOPFEROS MD\n" +
           "━━━━━━━━━━━━━━━━━━━━━━━━━━━━";
 
 
@@ -356,5 +356,5 @@ module.exports = {
 
 
 // ╔════════════════════════════════════════════════════╗
-// ║              🚀 BY TOPFEROS MD TECH              ║
+// ║             🚀 TECH BY TOPFEROS MD               ║
 // ╚════════════════════════════════════════════════════╝
