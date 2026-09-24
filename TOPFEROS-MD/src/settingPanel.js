@@ -11,7 +11,6 @@ const PANEL_URL =
 /* ======================================================
    DEFAULT SETTINGS
 ====================================================== */
-
 const defaultSettings = {
   publicMode: true,
   privateMode: false,
@@ -21,7 +20,19 @@ const defaultSettings = {
   fakeRecording: false,
 
   antiCall: false,
-  antiDelete: false,
+
+  // ========================================================
+  // ANTI-DELETE
+  // ========================================================
+
+  antiDelete: true,
+
+  // true = restore nan menm chat la
+  antiDeleteSameChat: true,
+
+  // true = restore nan DM bot la
+  antiDeleteDM: false,
+
   antiSpam: false,
   antiLink: false,
   antiRobot: false,
@@ -33,14 +44,15 @@ const defaultSettings = {
 
   groupAntiSpam: false,
   groupAntiLink: false,
-  groupAntiDelete: false,
+
+  // Anti-delete pou group yo
+  groupAntiDelete: true,
+
   groupClose: false,
   groupOpen: false,
 
   aiChat: false
-};
-
-/* ======================================================
+}; ======================================================
    DEFAULT BOT INFORMATION
 ====================================================== */
 
