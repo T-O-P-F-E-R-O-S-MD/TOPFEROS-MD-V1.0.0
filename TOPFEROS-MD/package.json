@@ -19,11 +19,10 @@
     "ai",
     "web-portal"
   ],
-  "author": "TOPFEROS TECH",
+  "author": "TOPFEROS MD TECH",
   "license": "MIT",
   "engines": {
-  "node": "22.x"
-}
+    "node": "22.x"
   },
   "dependencies": {
     "@whiskeysockets/baileys": "6.7.24",
