@@ -701,9 +701,156 @@ async function handleMessage(
     // --------------------------------------------------------
 
     if (
-      chatId ===
-      "status@broadcast"
-    ) {
+  chatId ===
+  "status@broadcast"
+) {
+  // Pa trete pwòp Status bot la
+  if (
+    message?.key?.fromMe
+  ) {
+    console.log(
+      `⏭️ STATUS IGNORED [${sessionId}] — fromMe`
+    );
+
+    return;
+  }
+
+  // ------------------------------------------------------
+  // 👁️ AUTO STATUS SEEN
+  // ------------------------------------------------------
+
+  if (
+    config?.features?.autoStatusSeen === true &&
+    typeof sock.readMessages === "function"
+  ) {
+    try {
+      await sock.readMessages([
+        message.key
+      ]);
+
+      console.log(
+        `👁️ STATUS SEEN [${sessionId}]`
+      );
+
+    } catch (seenError) {
+      console.warn(
+        `⚠️ STATUS SEEN ERROR [${sessionId}]:`,
+        seenError?.message ||
+        seenError
+      );
+    }
+  }
+
+  // ------------------------------------------------------
+  // 🤖 AI SMART REACTION
+  // ------------------------------------------------------
+
+  if (
+    config?.features?.statusReact === true &&
+    statusSystem &&
+    typeof statusSystem.getSmartStatusReaction ===
+      "function"
+  ) {
+    try {
+      const smartReaction =
+        await statusSystem.getSmartStatusReaction({
+          sock,
+          message,
+          sessionId,
+          config
+        });
+
+      const emoji =
+        smartReaction?.emoji ||
+        "👍";
+
+      await sock.sendMessage(
+        "status@broadcast",
+        {
+          react: {
+            text: emoji,
+            key: message.key
+          }
+        }
+      );
+
+      console.log(
+        `${emoji} AI STATUS REACTION SENT [${sessionId}]` +
+        (
+          smartReaction?.reason
+            ? ` — ${smartReaction.reason}`
+            : ""
+        )
+      );
+
+    } catch (reactionError) {
+      console.warn(
+        `⚠️ AI STATUS REACTION ERROR [${sessionId}]:`,
+        reactionError?.message ||
+        reactionError
+      );
+
+      // Fallback
+      try {
+        await sock.sendMessage(
+          "status@broadcast",
+          {
+            react: {
+              text: "👍",
+              key: message.key
+            }
+          }
+        );
+
+      } catch (fallbackError) {
+        console.warn(
+          `⚠️ STATUS REACTION FALLBACK ERROR [${sessionId}]:`,
+          fallbackError?.message ||
+          fallbackError
+        );
+      }
+    }
+  }
+
+  // ------------------------------------------------------
+  // 📥 AUTO SAVE / SEND / ANREJISTRE
+  // ------------------------------------------------------
+
+  if (
+    statusSystem &&
+    typeof statusSystem.handleAutoStatus ===
+      "function"
+  ) {
+    try {
+      await statusSystem.handleAutoStatus({
+        sock,
+        message,
+        sessionId,
+        chatId,
+        config
+      });
+
+      console.log(
+        `✅ STATUS AUTO SAVE/SEND COMPLETED [${sessionId}]`
+      );
+
+    } catch (statusError) {
+      console.error(
+        `❌ STATUS AUTO SAVE/SEND ERROR [${sessionId}]`,
+        statusError?.stack ||
+        statusError?.message ||
+        statusError
+      );
+    }
+
+  } else {
+    console.warn(
+      "⚠️ STATUS SYSTEM NOT AVAILABLE"
+    );
+  }
+
+  return;
+}
 
       // ------------------------------------------------------
       // IGNORE BOT'S OWN STATUS
