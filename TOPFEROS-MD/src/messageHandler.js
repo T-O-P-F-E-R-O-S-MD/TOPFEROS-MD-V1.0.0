@@ -355,6 +355,130 @@ function getChatId(message) {
 }
 
 // ============================================================
+// 👁️ STATUS AUTOMATIC ACTIONS
+// ============================================================
+
+async function handleStatusActions(
+  sock,
+  message,
+  sessionId
+) {
+  try {
+    if (
+      !sock ||
+      !message?.key ||
+      message?.key?.remoteJid !==
+        "status@broadcast"
+    ) {
+      return;
+    }
+
+    const features =
+      config?.features || {};
+
+    // --------------------------------------------------------
+    // 👁️ AUTO STATUS SEEN
+    // --------------------------------------------------------
+
+    if (
+      features.autoStatusSeen === true &&
+      typeof sock.readMessages ===
+        "function"
+    ) {
+      try {
+        await sock.readMessages([
+          message.key
+        ]);
+
+        console.log(
+          `👁️ STATUS SEEN [${sessionId}]`
+        );
+
+      } catch (error) {
+        console.warn(
+          `⚠️ STATUS SEEN ERROR [${sessionId}]:`,
+          error?.message ||
+          error
+        );
+      }
+    }
+
+    // --------------------------------------------------------
+    // ❤️ STATUS LIKE
+    // --------------------------------------------------------
+
+    if (
+      features.statusLike === true &&
+      typeof sock.sendMessage ===
+        "function"
+    ) {
+      try {
+        await sock.sendMessage(
+          "status@broadcast",
+          {
+            react: {
+              text: "❤️",
+              key: message.key
+            }
+          }
+        );
+
+        console.log(
+          `❤️ STATUS LIKE SENT [${sessionId}]`
+        );
+
+      } catch (error) {
+        console.warn(
+          `⚠️ STATUS LIKE ERROR [${sessionId}]:`,
+          error?.message ||
+          error
+        );
+      }
+    }
+
+    // --------------------------------------------------------
+    // ⚡ STATUS REACT
+    // --------------------------------------------------------
+
+    if (
+      features.statusReact === true &&
+      typeof sock.sendMessage ===
+        "function"
+    ) {
+      try {
+        await sock.sendMessage(
+          "status@broadcast",
+          {
+            react: {
+              text: "🔥",
+              key: message.key
+            }
+          }
+        );
+
+        console.log(
+          `⚡ STATUS REACTION SENT [${sessionId}]`
+        );
+
+      } catch (error) {
+        console.warn(
+          `⚠️ STATUS REACTION ERROR [${sessionId}]:`,
+          error?.message ||
+          error
+        );
+      }
+    }
+
+  } catch (error) {
+    console.error(
+      `❌ STATUS ACTIONS ERROR [${sessionId}]`,
+      error?.stack ||
+      error?.message ||
+      error
+    );
+  }
+}
+// ============================================================
 // CHECK GROUP
 // ============================================================
 
