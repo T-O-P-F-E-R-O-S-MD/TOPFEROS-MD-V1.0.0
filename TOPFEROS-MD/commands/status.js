@@ -4,107 +4,93 @@ const {
   downloadContentFromMessage
 } = require("@whiskeysockets/baileys");
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🖼️ TOPFEROS MD — STATUS / VIEW ONCE SYSTEM
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🤖 JWENN JID BOT LA
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ============================================================
+// 🦁 TOPFEROS MD — STATUS SYSTEM
+// ============================================================
+// Save / Send / Anrejistre Status = AUTOMATIC
+// Pa bezwen prefix.
+// View Once pa nan fichye sa a.
+// ============================================================
 
 function getBotJid(sock) {
-  if (!sock?.user?.id) {
-    return null;
-  }
+  if (!sock?.user?.id) return null;
 
-  const number =
-    sock.user.id.split(":")[0];
-
+  const number = String(sock.user.id).split(":")[0];
   return `${number}@s.whatsapp.net`;
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 👁️ JWENN VIEW ONCE
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function unwrapStatusMessage(message) {
+  let current = message?.message || message || null;
+  let safety = 0;
 
-function getViewOnceMessage(message) {
-  if (!message?.message) {
-    return null;
+  const wrappers = [
+    "ephemeralMessage",
+    "documentWithCaptionMessage",
+    "associatedChildMessage"
+  ];
+
+  while (current && safety < 8) {
+    safety++;
+
+    let found = false;
+
+    for (const key of wrappers) {
+      if (current[key]?.message) {
+        current = current[key].message;
+        found = true;
+        break;
+      }
+    }
+
+    if (!found) break;
   }
 
-  const msg = message.message;
-
-  if (msg.viewOnceMessageV2?.message) {
-    return msg.viewOnceMessageV2.message;
-  }
-
-  if (
-    msg.viewOnceMessageV2Extension?.message
-  ) {
-    return msg.viewOnceMessageV2Extension.message;
-  }
-
-  if (msg.viewOnceMessage?.message) {
-    return msg.viewOnceMessage.message;
-  }
-
-  return null;
+  return current;
 }
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 📱 JWENN MEDYA
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 function getMediaMessage(message) {
-  if (!message) {
-    return null;
-  }
+  const msg = unwrapStatusMessage(message);
 
-  if (message.imageMessage) {
+  if (!msg) return null;
+
+  if (msg.imageMessage) {
     return {
       type: "image",
-      media: message.imageMessage
+      media: msg.imageMessage
     };
   }
 
-  if (message.videoMessage) {
+  if (msg.videoMessage) {
     return {
       type: "video",
-      media: message.videoMessage
+      media: msg.videoMessage
     };
   }
 
-  if (message.audioMessage) {
+  if (msg.audioMessage) {
     return {
       type: "audio",
-      media: message.audioMessage
+      media: msg.audioMessage
     };
   }
 
-  if (message.documentMessage) {
+  if (msg.documentMessage) {
     return {
       type: "document",
-      media: message.documentMessage
+      media: msg.documentMessage
     };
   }
 
   return null;
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 📥 TELECHAJE MEDYA
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
 async function downloadMedia(media, type) {
-  if (!media || !type) {
-    return null;
-  }
+  if (!media || !type) return null;
 
-  const stream =
-    await downloadContentFromMessage(
-      media,
-      type
-    );
+  const stream = await downloadContentFromMessage(
+    media,
+    type
+  );
 
   const chunks = [];
 
@@ -115,9 +101,9 @@ async function downloadMedia(media, type) {
   return Buffer.concat(chunks);
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 📤 VOYE MEDYA NAN DM BOT LA
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ============================================================
+// 📤 SEND STATUS TO BOT DM
+// ============================================================
 
 async function sendMediaToBotDM({
   sock,
@@ -126,69 +112,50 @@ async function sendMediaToBotDM({
   buffer,
   caption
 }) {
-  const botJid =
-    getBotJid(sock);
+  const botJid = getBotJid(sock);
 
-  if (!botJid) {
-    return false;
-  }
+  if (!botJid) return false;
 
   if (type === "image") {
-    await sock.sendMessage(
-      botJid,
-      {
-        image: buffer,
-        caption
-      }
-    );
+    await sock.sendMessage(botJid, {
+      image: buffer,
+      caption
+    });
 
     return true;
   }
 
   if (type === "video") {
-    await sock.sendMessage(
-      botJid,
-      {
-        video: buffer,
-        caption,
-        mimetype:
-          media?.mimetype ||
-          "video/mp4"
-      }
-    );
+    await sock.sendMessage(botJid, {
+      video: buffer,
+      caption,
+      mimetype:
+        media?.mimetype || "video/mp4"
+    });
 
     return true;
   }
 
   if (type === "audio") {
-    await sock.sendMessage(
-      botJid,
-      {
-        audio: buffer,
-        mimetype:
-          media?.mimetype ||
-          "audio/mpeg",
-        ptt:
-          media?.ptt || false
-      }
-    );
+    await sock.sendMessage(botJid, {
+      audio: buffer,
+      mimetype:
+        media?.mimetype || "audio/mpeg",
+      ptt: media?.ptt || false
+    });
 
     return true;
   }
 
   if (type === "document") {
-    await sock.sendMessage(
-      botJid,
-      {
-        document: buffer,
-        mimetype:
-          media?.mimetype ||
-          "application/octet-stream",
-        fileName:
-          media?.fileName ||
-          "status"
-      }
-    );
+    await sock.sendMessage(botJid, {
+      document: buffer,
+      mimetype:
+        media?.mimetype ||
+        "application/octet-stream",
+      fileName:
+        media?.fileName || "status"
+    });
 
     return true;
   }
@@ -196,15 +163,70 @@ async function sendMediaToBotDM({
   return false;
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🖼️ SAVE STATUS
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ============================================================
+// 📝 TEXT STATUS
+// ============================================================
+
+function getStatusText(message) {
+  const msg = unwrapStatusMessage(message);
+
+  if (!msg) return "";
+
+  return (
+    msg.conversation ||
+    msg.extendedTextMessage?.text ||
+    msg.imageMessage?.caption ||
+    msg.videoMessage?.caption ||
+    msg.documentMessage?.caption ||
+    ""
+  );
+}
+
+async function sendTextStatusToBotDM({
+  sock,
+  message
+}) {
+  const botJid = getBotJid(sock);
+
+  if (!botJid) return false;
+
+  const text = getStatusText(message);
+
+  if (!text) return false;
+
+  const sender =
+    message?.key?.participant ||
+    message?.participant ||
+    "Unknown";
+
+  await sock.sendMessage(botJid, {
+    text:
+      "╭━━━〔 🖼️ STATUS SAVED 〕━━━╮\n" +
+      "┃\n" +
+      `┃ 👤 From: ${sender}\n` +
+      "┃\n" +
+      `┃ 📝 ${text}\n` +
+      "┃\n" +
+      "┃ 📥 Save: AUTO\n" +
+      "┃ 📤 Send: AUTO\n" +
+      "┃ 🗂️ Anrejistre: AUTO\n" +
+      "┃\n" +
+      "╰━━━━━━━━━━━━━━━━━━━━╯\n" +
+      "🦁 TOPFEROS MD"
+  });
+
+  return true;
+}
+
+// ============================================================
+// 📥 SAVE STATUS AUTOMATIC
+// ============================================================
 
 async function saveStatus(context) {
   const {
     sock,
     message
-  } = context;
+  } = context || {};
 
   if (!sock || !message?.message) {
     return false;
@@ -212,12 +234,14 @@ async function saveStatus(context) {
 
   try {
     const mediaData =
-      getMediaMessage(
-        message.message
-      );
+      getMediaMessage(message);
 
+    // TEXT STATUS
     if (!mediaData) {
-      return false;
+      return await sendTextStatusToBotDM({
+        sock,
+        message
+      });
     }
 
     const {
@@ -235,10 +259,23 @@ async function saveStatus(context) {
       return false;
     }
 
+    const sender =
+      message?.key?.participant ||
+      message?.participant ||
+      "Unknown";
+
     const caption =
-      media.caption ||
-      "🖼️ STATUS SAVED\n\n" +
-      "🤖 TOPFEROS MD";
+      media?.caption ||
+      "╭━━━〔 🖼️ STATUS SAVED 〕━━━╮\n" +
+      "┃\n" +
+      `┃ 👤 From: ${sender}\n` +
+      "┃\n" +
+      "┃ 📥 Save: AUTO\n" +
+      "┃ 📤 Send: AUTO\n" +
+      "┃ 🗂️ Anrejistre: AUTO\n" +
+      "┃\n" +
+      "╰━━━━━━━━━━━━━━━━━━━━╯\n" +
+      "🦁 TOPFEROS MD";
 
     return await sendMediaToBotDM({
       sock,
@@ -250,7 +287,7 @@ async function saveStatus(context) {
 
   } catch (error) {
     console.error(
-      "❌ STATUS SAVE ERROR:",
+      "❌ STATUS AUTO SAVE ERROR:",
       error
     );
 
@@ -258,208 +295,61 @@ async function saveStatus(context) {
   }
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🤖 DETEKTE STATUS OTOMATIKMAN
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ============================================================
+// 👁️ DETECT STATUS AUTOMATICALLY
+// ============================================================
 
 async function handleAutoStatus(context) {
   const {
     message
-  } = context;
-
-  if (!message?.key) {
-    return false;
-  }
+  } = context || {};
 
   if (
-    message.key.remoteJid !==
+    message?.key?.remoteJid !==
     "status@broadcast"
   ) {
     return false;
   }
 
-  return await saveStatus(
-    context
-  );
-}
+  const saved =
+    await saveStatus(context);
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 👁️ TRETE VIEW ONCE
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-async function processViewOnce(
-  context,
-  sourceMessage
-) {
-  const {
-    sock
-  } = context;
-
-  if (!sock || !sourceMessage) {
-    return false;
-  }
-
-  try {
-    const viewOnce =
-      getViewOnceMessage(
-        sourceMessage
-      );
-
-    if (!viewOnce) {
-      return false;
-    }
-
-    const mediaData =
-      getMediaMessage(
-        viewOnce
-      );
-
-    if (!mediaData) {
-      return false;
-    }
-
-    const {
-      type,
-      media
-    } = mediaData;
-
-    const buffer =
-      await downloadMedia(
-        media,
-        type
-      );
-
-    if (!buffer) {
-      return false;
-    }
-
-    return await sendMediaToBotDM({
-      sock,
-      type,
-      media,
-      buffer,
-      caption:
-        "👁️ VIEW ONCE PROCESSED\n\n" +
-        "🤖 TOPFEROS MD"
-    });
-
-  } catch (error) {
-    console.error(
-      "❌ VIEW ONCE ERROR:",
-      error
+  if (saved) {
+    console.log(
+      "✅ STATUS SAVED / SENT TO BOT DM"
     );
-
-    return false;
   }
+
+  return saved;
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 👁️ PREFIX VV2
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-async function handleVV2(context) {
-  const {
-    message
-  } = context;
-
-  if (!message) {
-    return false;
-  }
-
-  const viewOnce =
-    getViewOnceMessage(
-      message
-    );
-
-  if (!viewOnce) {
-    return false;
-  }
-
-  return await processViewOnce(
-    context,
-    message
-  );
-}
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🔁 REPLY / FORWARD VIEW ONCE
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-async function handleReplyViewOnce(context) {
-  const {
-    message
-  } = context;
-
-  if (!message?.message) {
-    return false;
-  }
-
-  const contextInfo =
-    message.message
-      ?.extendedTextMessage
-      ?.contextInfo;
-
-  if (!contextInfo) {
-    return false;
-  }
-
-  const quotedMessage =
-    contextInfo.quotedMessage;
-
-  if (!quotedMessage) {
-    return false;
-  }
-
-  const viewOnce =
-    getViewOnceMessage({
-      message:
-        quotedMessage
-    });
-
-  if (!viewOnce) {
-    return false;
-  }
-
-  return await processViewOnce(
-    context,
-    {
-      message:
-        quotedMessage
-    }
-  );
-}
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 📋 COMMAND STATUS
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ============================================================
+// ℹ️ STATUS INFO COMMAND
+// ============================================================
 
 async function execute(context) {
   const {
     sock,
     message
-  } = context;
+  } = context || {};
 
   const chatId =
     message?.key?.remoteJid;
 
-  if (!chatId) {
-    return;
-  }
+  if (!chatId) return;
 
   await sock.sendMessage(
     chatId,
     {
       text:
-        "╭━━━〔 🖼️ STATUS & MEDIA 〕━━━╮\n" +
+        "╭━━━〔 🖼️ STATUS 〕━━━╮\n" +
         "┃\n" +
-        "┃ 🖼️ Status Saver: READY\n" +
-        "┃ 📥 Save / Send: READY\n" +
+        "┃ 📥 Save: AUTOMATIC\n" +
+        "┃ 📤 Send: AUTOMATIC\n" +
+        "┃ 🗂️ Anrejistre: AUTOMATIC\n" +
+        "┃ 🚫 Pa bezwen prefix\n" +
         "┃\n" +
-        "┃ 👁️ View Once: READY\n" +
-        "┃ .vv2: READY\n" +
-        "┃ 👁️ Reply / Forward: READY\n" +
-        "┃\n" +
-        "╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯"
+        "╰━━━━━━━━━━━━━━━━━━━━╯"
     },
     {
       quoted: message
@@ -467,39 +357,18 @@ async function execute(context) {
   );
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 📦 EXPORT
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
 module.exports = {
   name: "status",
-
-  aliases: [
-    "savestatus",
-    "vostatus"
-  ],
-
+  aliases: ["savestatus"],
   description:
-    "Status Saver ak View Once system.",
-
-  usage:
-    ".status",
+    "Status Save / Send / Anrejistre otomatikman.",
+  usage: ".status",
 
   execute,
-
   saveStatus,
-
   handleAutoStatus,
-
-  handleVV2,
-
-  handleReplyViewOnce,
-
-  processViewOnce,
-
-  getViewOnceMessage,
-
   getMediaMessage,
-
-  downloadMedia
+  downloadMedia,
+  sendMediaToBotDM,
+  sendTextStatusToBotDM
 };
