@@ -931,7 +931,7 @@ async function sendAlert(
 ✉️ Message : ${preview}
 
 ________________________
-By TOPFEROS MD TECH`;
+By TECH TOPFEROS`;
 
   const mentions = [];
 
@@ -1235,5 +1235,5 @@ module.exports = {
 };
 
 // ╔════════════════════════════════════════════════════╗
-// ║          🚀 TECH BY TOPFEROS MD TECH              ║
+// ║             🚀 TECH BY TOPFEROS MD               ║
 // ╚════════════════════════════════════════════════════╝
