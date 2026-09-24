@@ -84,7 +84,7 @@ async function handleParrainCommand({
         "📱 Mete nimewo a ak country code la.\n\n" +
 
         "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n" +
-        "By TOPFEROS MD\n" +
+        "By TECH TOPFEROS MD\n" +
         "━━━━━━━━━━━━━━━━━━━━━━━━━━━━";
 
 
@@ -218,7 +218,7 @@ async function handleParrainCommand({
       "⏳ Li rete disponib jiskaske li itilize.\n\n" +
 
       "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n" +
-      "By TOPFEROS MD\n" +
+      "By TECH TOPFEROS MD\n" +
       "━━━━━━━━━━━━━━━━━━━━━━━━━━━━";
 
 
