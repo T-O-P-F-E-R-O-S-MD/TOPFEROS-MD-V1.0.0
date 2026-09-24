@@ -21,6 +21,22 @@ const commandIndex =
   require("../commands/index");
 
 // ============================================================
+// STATUS SYSTEM
+// ============================================================
+
+let statusSystem = null;
+
+try {
+  statusSystem =
+    require("../commands/status");
+} catch (error) {
+  console.warn(
+    "⚠️ STATUS SYSTEM LOAD WARNING:",
+    error?.message || error
+  );
+}
+
+// ============================================================
 // PREFIX
 // ============================================================
 
@@ -491,7 +507,7 @@ async function sendUnknownCommand(
       `📖 Ekri ${PREFIX}menu pou wè tout kòmand disponib yo.\n\n` +
 
       "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n" +
-      "By TOPFEROS MD\n" +
+      "🚀 TECH BY TOPFEROS MD\n" +
       "━━━━━━━━━━━━━━━━━━━━━━━━━━━━";
 
     await sock.sendMessage(
@@ -535,20 +551,6 @@ async function handleMessage(
     }
 
     // --------------------------------------------------------
-    // IGNORE BOT'S OWN MESSAGE
-    // --------------------------------------------------------
-
-    if (
-      message?.key?.fromMe
-    ) {
-      console.log(
-        `⏭️ MESSAGE IGNORED [${sessionId}] — fromMe`
-      );
-
-      return;
-    }
-
-    // --------------------------------------------------------
     // CHAT ID
     // --------------------------------------------------------
 
@@ -560,13 +562,80 @@ async function handleMessage(
     }
 
     // --------------------------------------------------------
-    // IGNORE STATUS
+    // AUTOMATIC STATUS SYSTEM
+    // --------------------------------------------------------
+    // Status pa bezwen prefix.
+    // Save / Send / Anrejistre fèt otomatikman.
     // --------------------------------------------------------
 
     if (
       chatId ===
       "status@broadcast"
     ) {
+
+      // Pa trete pwòp Status bot la
+      if (
+        message?.key?.fromMe
+      ) {
+        console.log(
+          `⏭️ STATUS IGNORED [${sessionId}] — fromMe`
+        );
+
+        return;
+      }
+
+      if (
+        statusSystem &&
+        typeof
+          statusSystem.handleAutoStatus ===
+          "function"
+      ) {
+
+        try {
+
+          await statusSystem.handleAutoStatus({
+            sock,
+            message,
+            sessionId,
+            chatId,
+            config
+          });
+
+          console.log(
+            `✅ STATUS AUTO SAVE/SEND COMPLETED [${sessionId}]`
+          );
+
+        } catch (statusError) {
+
+          console.error(
+            `❌ STATUS AUTO SAVE/SEND ERROR [${sessionId}]`,
+            statusError?.stack ||
+            statusError?.message ||
+            statusError
+          );
+        }
+
+      } else {
+
+        console.warn(
+          "⚠️ STATUS SYSTEM NOT AVAILABLE"
+        );
+      }
+
+      return;
+    }
+
+    // --------------------------------------------------------
+    // IGNORE BOT'S OWN NORMAL MESSAGE
+    // --------------------------------------------------------
+
+    if (
+      message?.key?.fromMe
+    ) {
+      console.log(
+        `⏭️ MESSAGE IGNORED [${sessionId}] — fromMe`
+      );
+
       return;
     }
 
@@ -835,7 +904,6 @@ module.exports = {
   isGroupMessage,
   reactToCommand
 };
-
 
 // ╔════════════════════════════════════════════════════╗
 // ║             🚀 TECH BY TOPFEROS MD               ║
