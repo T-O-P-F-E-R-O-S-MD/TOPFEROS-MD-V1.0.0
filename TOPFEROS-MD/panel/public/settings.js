@@ -1,22 +1,12 @@
 "use strict";
 
-// ╔════════════════════════════════════════════════════╗
-// ║              🤖 TOPFEROS MD V1.0.0               ║
-// ║          ⚙️ SETTINGS PANEL — MULTI-SESSION       ║
-// ║              🚀 TOPFEROS TECH                     ║
-// ╚════════════════════════════════════════════════════╝
-
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🖼️ LOGO
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//
-// Nouvo logo:
-// /assets/logo.png
-//
+// 🦁 TOPFEROS MD — SETTINGS PANEL
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-const LOGO_URL = "/assets/logo.png";
+const LOGO_URL =
+  "/assets/logo.png";
 
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -88,6 +78,8 @@ const settingNames = [
 
   "antiCall",
   "antiDelete",
+  "antiDeleteSameChat",
+  "antiDeleteDM",
   "antiSpam",
 
   "aiChat",
@@ -325,6 +317,9 @@ async function loadSettings() {
       });
 
 
+    enforceAntiDeleteDestination();
+
+
     showMessage(
       "",
       true
@@ -357,6 +352,9 @@ async function loadSettings() {
 
 function collectSettings() {
 
+  enforceAntiDeleteDestination();
+
+
   const settings = {};
 
 
@@ -380,6 +378,98 @@ function collectSettings() {
 
 
   return settings;
+}
+
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🗑️ ANTI DELETE DESTINATION
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+function enforceAntiDeleteDestination() {
+
+  const sameChat =
+    document.querySelector(
+      'input[data-setting="antiDeleteSameChat"]'
+    );
+
+  const dmBot =
+    document.querySelector(
+      'input[data-setting="antiDeleteDM"]'
+    );
+
+
+  if (!sameChat || !dmBot) {
+    return;
+  }
+
+
+  /*
+   * Si toude ON an menm tan,
+   * Same Chat rete ON epi DM Bot OFF.
+   */
+  if (
+    sameChat.checked &&
+    dmBot.checked
+  ) {
+
+    dmBot.checked = false;
+
+  }
+
+}
+
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🔄 SETUP ANTI DELETE DESTINATION
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+function setupAntiDeleteDestination() {
+
+  const sameChat =
+    document.querySelector(
+      'input[data-setting="antiDeleteSameChat"]'
+    );
+
+  const dmBot =
+    document.querySelector(
+      'input[data-setting="antiDeleteDM"]'
+    );
+
+
+  if (!sameChat || !dmBot) {
+    return;
+  }
+
+
+  sameChat.addEventListener(
+    "change",
+    () => {
+
+      if (sameChat.checked) {
+
+        dmBot.checked =
+          false;
+
+      }
+
+    }
+  );
+
+
+  dmBot.addEventListener(
+    "change",
+    () => {
+
+      if (dmBot.checked) {
+
+        sameChat.checked =
+          false;
+
+      }
+
+    }
+  );
+
 }
 
 
@@ -417,7 +507,9 @@ function collectBotInformation() {
 // 🔎 VALIDATE BOT INFORMATION
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-function validateBotInformation(bot) {
+function validateBotInformation(
+  bot
+) {
 
   if (!bot.name) {
 
@@ -469,7 +561,10 @@ function validateBotInformation(bot) {
 function disableSave() {
 
   if (saveButton) {
-    saveButton.disabled = true;
+
+    saveButton.disabled =
+      true;
+
   }
 
 }
@@ -482,7 +577,10 @@ function disableSave() {
 function enableSave() {
 
   if (saveButton) {
-    saveButton.disabled = false;
+
+    saveButton.disabled =
+      false;
+
   }
 
 }
@@ -587,10 +685,14 @@ async function saveSettings() {
     let result = {};
 
     try {
+
       result =
         await response.json();
+
     } catch {
+
       result = {};
+
     }
 
 
@@ -737,7 +839,7 @@ function setupFooter() {
     </div>
 
     <div class="footer-text">
-      By TOPFEROS TECH
+      By TOPFEROS MD TECH
     </div>
 
     <div class="footer-line">
@@ -814,15 +916,13 @@ async function monitorSettings() {
 
 async function initSettings() {
 
-  // 🖼️ Logo
   setupLogo();
 
-
-  // 🦶 Footer
   setupFooter();
 
+  setupAntiDeleteDestination();
 
-  // 🔐 Verify session
+
   const authenticated =
     await verifySession();
 
@@ -839,7 +939,6 @@ async function initSettings() {
   }
 
 
-  // 📥 Load settings
   await loadSettings();
 
 }
@@ -863,5 +962,5 @@ setInterval(
 
 
 // ╔════════════════════════════════════════════════════╗
-// ║                    By TOPFEROS TECH               ║
+// ║             🚀 TECH BY TOPFEROS MD               ║
 // ╚════════════════════════════════════════════════════╝
