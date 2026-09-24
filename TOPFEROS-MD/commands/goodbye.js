@@ -144,3 +144,7 @@ async function sendGoodbye({
 module.exports = {
   sendGoodbye
 };
+
+// ╔════════════════════════════════════════════════════╗
+// ║             🚀 TECH BY TOPFEROS MD               ║
+// ╚════════════════════════════════════════════════════╝
