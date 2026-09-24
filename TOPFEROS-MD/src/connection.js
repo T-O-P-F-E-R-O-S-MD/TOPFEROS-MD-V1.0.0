@@ -151,7 +151,7 @@ async function sendConnectedMessage(
 ╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯
 
 ╭━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╮
-│      🦁 By TOPFEROS MD 
+│  🦁  TECH BY TOPFEROS MD
 ╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯
 `;
 
