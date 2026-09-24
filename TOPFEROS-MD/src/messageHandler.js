@@ -578,7 +578,7 @@ async function sendCommandError(
       "• Service/API kòmand lan\n\n" +
 
       "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n" +
-      "By TOPFEROS MD\n" +
+      "🚀 TECH BY TOPFEROS MD\n" +
       "━━━━━━━━━━━━━━━━━━━━━━━━━━━━";
 
     await sock.sendMessage(
