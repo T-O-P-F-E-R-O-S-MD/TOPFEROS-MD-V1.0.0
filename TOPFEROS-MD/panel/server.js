@@ -217,6 +217,32 @@ function getPublicSessions() {
       );
     }
 
+    /*
+     * Fallback pou sessionManager ki pa gen
+     * getPublicSessions().
+     */
+
+    if (
+      typeof sessionManager.getSessions ===
+      "function"
+    ) {
+      const result =
+        sessionManager.getSessions();
+
+      if (Array.isArray(result)) {
+        return result;
+      }
+
+      if (
+        result &&
+        typeof result === "object"
+      ) {
+        return Object.values(
+          result
+        );
+      }
+    }
+
     return [];
   } catch (error) {
     console.error(
@@ -317,12 +343,221 @@ function requireSession(
 
 /*
 |--------------------------------------------------------------------------
+| FIND SESSION BY NUMBER
+|--------------------------------------------------------------------------
+*/
+
+function findSessionByNumber(
+  number
+) {
+  const normalized =
+    cleanNumberValue(
+      number
+    );
+
+  if (!normalized) {
+    return null;
+  }
+
+  try {
+    if (
+      settingsPanel &&
+      typeof settingsPanel.getSessionByNumber ===
+        "function"
+    ) {
+      const panelSession =
+        settingsPanel.getSessionByNumber(
+          normalized
+        );
+
+      if (
+        panelSession &&
+        panelSession.sessionId
+      ) {
+        return panelSession;
+      }
+    }
+  } catch (error) {
+    console.error(
+      "[TOPFEROS] getSessionByNumber panel:",
+      error?.message || error
+    );
+  }
+
+  try {
+    if (
+      typeof sessionManager.getSessionByNumber ===
+      "function"
+    ) {
+      const waSession =
+        sessionManager.getSessionByNumber(
+          normalized
+        );
+
+      if (waSession) {
+        return waSession;
+      }
+    }
+  } catch (error) {
+    console.error(
+      "[TOPFEROS] getSessionByNumber WA:",
+      error?.message || error
+    );
+  }
+
+  /*
+   * Fallback sou sessions yo.
+   */
+
+  const allSessions =
+    getPublicSessions();
+
+  for (
+    const session of allSessions
+  ) {
+    const sessionNumber =
+      cleanNumberValue(
+        session?.number ||
+        session?.phoneNumber ||
+        session?.user?.id
+      );
+
+    if (
+      sessionNumber ===
+      normalized
+    ) {
+      return session;
+    }
+  }
+
+  return null;
+}
+
+/*
+|--------------------------------------------------------------------------
+| FIND SESSION BY SETTINGS CODE
+|--------------------------------------------------------------------------
+*/
+
+function findSessionByCode(
+  code
+) {
+  const submitted =
+    String(
+      code || ""
+    )
+      .trim()
+      .toUpperCase();
+
+  if (!submitted) {
+    return null;
+  }
+
+  /*
+   * Premye opsyon:
+   * settingPanel.js gen sessions Map.
+   */
+
+  try {
+    if (
+      settingsPanel &&
+      settingsPanel.sessions instanceof Map
+    ) {
+      for (
+        const session of
+        settingsPanel.sessions.values()
+      ) {
+        if (
+          session &&
+          String(
+            session.code || ""
+          )
+            .trim()
+            .toUpperCase() ===
+            submitted
+        ) {
+          return session;
+        }
+      }
+    }
+  } catch (error) {
+    console.error(
+      "[TOPFEROS] Search settings code:",
+      error?.message || error
+    );
+  }
+
+  /*
+   * Fallback sou sessions WhatsApp.
+   */
+
+  const allSessions =
+    getPublicSessions();
+
+  for (
+    const session of allSessions
+  ) {
+    if (
+      String(
+        session?.code || ""
+      )
+        .trim()
+        .toUpperCase() ===
+      submitted
+    ) {
+      return session;
+    }
+  }
+
+  return null;
+}
+
+/*
+|--------------------------------------------------------------------------
 | HOME
 |--------------------------------------------------------------------------
 */
 
 app.get(
   "/",
+  (req, res) => {
+    return res.sendFile(
+      path.join(
+        PUBLIC_DIR,
+        "index.html"
+      )
+    );
+  }
+);
+
+/*
+|--------------------------------------------------------------------------
+| SETTINGS PAGE
+|--------------------------------------------------------------------------
+|
+| LINK FIKS:
+|
+| https://topferos-md-v1-0-0.onrender.com/setting
+|
+| Pa gen sessionId nan URL la.
+|
+|--------------------------------------------------------------------------
+*/
+
+app.get(
+  "/setting",
+  (req, res) => {
+    return res.sendFile(
+      path.join(
+        PUBLIC_DIR,
+        "index.html"
+      )
+    );
+  }
+);
+
+app.get(
+  "/setting/",
   (req, res) => {
     return res.sendFile(
       path.join(
@@ -503,10 +738,8 @@ app.post(
         );
 
       /*
-       * ================================================================
-       * IMPORTANT:
-       * Si session sa deja konekte, PA janm efase li.
-       * ================================================================
+       * Si session deja konekte,
+       * pa efase li.
        */
 
       let session =
@@ -527,21 +760,7 @@ app.post(
       }
 
       /*
-       * ================================================================
        * RESET ANCIEN SESSION
-       *
-       * Si session lan egziste men li pa konekte:
-       *
-       * - retire ansyen socket/session
-       * - retire auth state / credentials
-       * - retire ansyen Signal keys
-       * - pèmèt requestPairingCode() kreye yon nouvo session
-       *
-       * Sa evite reutilize yon auth state ki bay:
-       *
-       * Bad MAC
-       * Failed to decrypt message
-       * ================================================================
        */
 
       if (session) {
@@ -552,10 +771,6 @@ app.post(
         console.log(
           `[TOPFEROS] 🔄 Reset de l'ancien session avant nouveau pairing...`
         );
-
-        /*
-         * Invalid panel/session state anvan reset.
-         */
 
         try {
           if (
@@ -574,13 +789,6 @@ app.post(
               panelError
           );
         }
-
-        /*
-         * Retire session nan atravè connection.js.
-         *
-         * connection.removeSession() dwe retire
-         * auth directory la ansanm ak session memory state la.
-         */
 
         try {
           if (
@@ -618,10 +826,6 @@ app.post(
           });
         }
 
-        /*
-         * Verifye session lan vrèman disparèt.
-         */
-
         session =
           getConnectionSession(
             sessionId
@@ -639,9 +843,7 @@ app.post(
       }
 
       /*
-       * ================================================================
        * NOUVO PAIRING
-       * ================================================================
        */
 
       console.log(
@@ -665,12 +867,6 @@ app.post(
           sessionId,
           number
         );
-
-      /*
-       * ================================================================
-       * VERIFY RESULT
-       * ================================================================
-       */
 
       if (
         !result ||
@@ -843,6 +1039,21 @@ app.get(
 |--------------------------------------------------------------------------
 | VERIFY PANEL SESSION
 |--------------------------------------------------------------------------
+|
+| Nouvo sistèm:
+|
+| POST /api/verify
+|
+| {
+|   "number": "509XXXXXXXX",
+|   "code": "ABC123"
+| }
+|
+| Pa bezwen sessionId nan URL.
+|
+| Ansyen sistèm sessionId + code la toujou sipòte.
+|
+|--------------------------------------------------------------------------
 */
 
 app.post(
@@ -851,33 +1062,133 @@ app.post(
     try {
       const sessionId =
         req.body?.sessionId ||
-        req.body?.session;
+        req.body?.session ||
+        "";
+
+      const number =
+        cleanNumberValue(
+          req.body?.number ||
+          req.body?.ownerNumber ||
+          req.body?.phoneNumber ||
+          req.body?.phone ||
+          ""
+        );
 
       const code =
         req.body?.code ||
         req.body?.panelCode ||
+        req.body?.password ||
         "";
 
-      if (!sessionId) {
-        return res.status(400).json({
-          success: false,
-          verified: false,
-          error:
-            "sessionId obligatwa."
-        });
+      /*
+       * ================================================================
+       * NOUVO FASON:
+       * NUMBER + SETTINGS CODE
+       * ================================================================
+       */
+
+      let targetSession = null;
+      let resolvedSessionId =
+        sessionId;
+
+      if (
+        !sessionId &&
+        (number || code)
+      ) {
+        /*
+         * Si number la disponib,
+         * chèche session pa number.
+         */
+
+        if (number) {
+          targetSession =
+            findSessionByNumber(
+              number
+            );
+        }
+
+        /*
+         * Si pa jwenn li pa number,
+         * eseye code la.
+         */
+
+        if (
+          !targetSession &&
+          code
+        ) {
+          targetSession =
+            findSessionByCode(
+              code
+            );
+        }
+
+        if (
+          targetSession &&
+          targetSession.sessionId
+        ) {
+          resolvedSessionId =
+            targetSession.sessionId;
+        }
       }
 
-      const session =
-        getConnectionSession(
-          sessionId
-        );
+      /*
+       * Si sessionId te vini,
+       * chèche session nòmalman.
+       */
 
-      if (!session) {
+      if (
+        !targetSession &&
+        resolvedSessionId
+      ) {
+        targetSession =
+          getConnectionSession(
+            resolvedSessionId
+          );
+
+        /*
+         * Si se panel session lan ki genyen
+         * men WA session lan pa dirèkteman jwenn,
+         * eseye settingPanel.
+         */
+
+        if (
+          !targetSession &&
+          settingsPanel &&
+          typeof settingsPanel.getSession ===
+            "function"
+        ) {
+          targetSession =
+            settingsPanel.getSession(
+              resolvedSessionId
+            );
+        }
+      }
+
+      if (!targetSession) {
         return res.status(404).json({
           success: false,
           verified: false,
+          authenticated: false,
           error:
-            "Session introuvable."
+            "Bot/session introuvable."
+        });
+      }
+
+      /*
+       * Session ID final.
+       */
+
+      resolvedSessionId =
+        targetSession.sessionId ||
+        resolvedSessionId;
+
+      if (!resolvedSessionId) {
+        return res.status(400).json({
+          success: false,
+          verified: false,
+          authenticated: false,
+          error:
+            "Session ID pa disponib."
         });
       }
 
@@ -885,11 +1196,12 @@ app.post(
        * Bot la dwe konekte.
        */
 
-      if (
-        !isSessionConnected(
-          session
-        )
-      ) {
+      const connected =
+        isSessionConnected(
+          targetSession
+        );
+
+      if (!connected) {
         return res.status(403).json({
           success: false,
           verified: false,
@@ -914,19 +1226,49 @@ app.post(
        * Verifye code panel la.
        */
 
-      let authenticated = false;
+      let authenticated =
+        false;
 
       if (
         typeof settingsPanel.verifySession ===
         "function"
       ) {
-        authenticated =
-          Boolean(
-            await settingsPanel.verifySession(
-              sessionId,
-              code
-            )
+        const result =
+          await settingsPanel.verifySession(
+            resolvedSessionId,
+            code
           );
+
+        /*
+         * verifySession() ka retounen:
+         *
+         * true
+         *
+         * oswa:
+         *
+         * { success: true }
+         */
+
+        if (
+          result === true
+        ) {
+          authenticated =
+            true;
+        } else if (
+          result &&
+          typeof result ===
+            "object"
+        ) {
+          authenticated =
+            result.success === true ||
+            result.verified === true ||
+            result.authenticated === true;
+        } else {
+          authenticated =
+            Boolean(
+              result
+            );
+        }
       }
 
       if (!authenticated) {
@@ -940,17 +1282,30 @@ app.post(
         });
       }
 
+      /*
+       * Login reyisi.
+       */
+
       return res.json({
         success: true,
         verified: true,
         authenticated: true,
         connected: true,
-        sessionId,
+
+        sessionId:
+          resolvedSessionId,
+
+        number:
+          targetSession.number ||
+          number ||
+          "",
+
         session:
           publicSession(
-            session
+            targetSession
           )
       });
+
     } catch (error) {
       console.error(
         "[TOPFEROS] /api/verify:",
@@ -962,6 +1317,7 @@ app.post(
       return res.status(500).json({
         success: false,
         verified: false,
+        authenticated: false,
         error:
           "Erreur de vérification."
       });
@@ -1561,10 +1917,6 @@ app.post(
         });
       }
 
-      /*
-       * Invalid panel session/code anvan disconnect.
-       */
-
       if (
         settingsPanel &&
         typeof settingsPanel.setBotDisconnected ===
@@ -1772,6 +2124,10 @@ const server =
       );
 
       console.log(
+        `[TOPFEROS] SETTINGS URL: /setting`
+      );
+
+      console.log(
         `[TOPFEROS] PUBLIC DIR: ${PUBLIC_DIR}`
       );
 
@@ -1805,9 +2161,8 @@ server.on(
       error?.stack ||
         error?.message ||
         error
-    );
-  }
-);
+  );
+});
 
 /*
 |--------------------------------------------------------------------------
