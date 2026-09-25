@@ -130,15 +130,15 @@ async function execute(context) {
   const menu = `
 
 ╭──⋅──⋅─🦁─⋅──⋅──╮
-  💕 \`TOPFEROS MD V1.0.0\` 💕
+  💕 \*TOPFEROS MD V1.0.0\* 💕
 ╰──⋅──⋅─⋅─⋅─⋅──⋅──╯
 
-👤 \`ᴏᴡɴᴇʀ\`   : \`${ownerName}\`
-🤖 \`ʙᴏᴛ\`     : \`${botName}\`
-📦 \`ᴠᴇʀsɪᴏɴ\` : \`${version}\`
-📡 \`sᴛᴀᴛᴜs\`  : \`ONLINE\`
-🔑 \`ᴘʀᴇғɪx\`  : \`${prefix}\`
-⚙️ \`ᴍᴏᴅᴇ\`    : \`${mode}\`
+👤 \*ᴏᴡɴᴇʀ\*   : \`${ownerName}\`
+🤖 \*ʙᴏᴛ\*     : \`${botName}\`
+📦 \*ᴠᴇʀsɪᴏɴ\* : \`${version}\`
+📡 \*sᴛᴀᴛᴜs\*  : \`ONLINE\`
+🔑 \*ᴘʀᴇғɪx\*  : \`${prefix}\`
+⚙️ \*ᴍᴏᴅᴇ\*    : \`${mode}\`
 
 ⋆ ˚｡⋆୨୧˚ ˚୨୧⋆｡˚ ⋆⋆ ˚｡⋆୨୧˚
 
