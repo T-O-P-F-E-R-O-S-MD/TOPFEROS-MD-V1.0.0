@@ -495,10 +495,6 @@ async function createSocket(
             }
           );
 
-          sessionManager.endPairing(
-            cleanId
-          );
-
           console.log(
             `✅ WhatsApp CONNECTED: ${cleanId}`
           );
@@ -706,7 +702,7 @@ async function createSocket(
     }
   );
 
-    // ==========================================================
+  // ==========================================================
   // MESSAGES
   // ==========================================================
 
