@@ -1,388 +1,1656 @@
 "use strict";
 
-const config = require("../config");
-const settingPanel = require("../src/settingPanel");
+const crypto = require("crypto");
+const sessionManager = require("./sessionManager");
+
+const PANEL_URL =
+  process.env.SETTINGS_PANEL_URL ||
+  process.env.PANEL_URL ||
+  "https://topferos-md-v1-0-0.onrender.com";
+
+
+/* ======================================================
+   DEFAULT SETTINGS
+====================================================== */
+
+const defaultSettings = {
+
+  publicMode: true,
+  privateMode: false,
+
+  alwaysOnline: true,
+  fakeTyping: false,
+  fakeRecording: false,
+
+  antiCall: false,
+
+  antiDelete: false,
+  antiDeleteSameChat: true,
+  antiDeleteDM: false,
+
+  antiSpam: false,
+  antiLink: false,
+  antiRobot: false,
+
+  autoStatus: false,
+  statusReply: false,
+  statusLike: false,
+  statusReact: false,
+
+  groupAntiSpam: false,
+  groupAntiLink: false,
+  groupAntiDelete: false,
+
+  groupClose: false,
+  groupOpen: false,
+
+  aiChat: false
+
+};
+
+
+/* ======================================================
+   DEFAULT BOT INFORMATION
+====================================================== */
+
+const defaultBotInformation = {
+
+  name: "TOPFEROS MD",
+
+  number: "",
+
+  prefix: ".",
+
+  mode: "Public"
+
+};
+
+
+/* ======================================================
+   LOCAL PANEL SESSION CACHE
+====================================================== */
+
+const sessions = new Map();
+
 
 /* ======================================================
    HELPERS
 ====================================================== */
 
-function getSessionId(sock, message) {
+function normalizeNumber(number) {
+
+  return String(number || "")
+    .replace(/\D/g, "");
+
+}
+
+
+function getPhoneFromSocket(sock) {
+
   try {
-    const remoteJid = message?.key?.remoteJid;
 
-    // Try to find the bot panel session from its socket.
-    const session = settingPanel.getSessionBySocket(sock);
+    const jid =
+      sock?.user?.id || "";
 
-    if (session?.sessionId) {
-      return session.sessionId;
-    }
-
-    return null;
-  } catch (error) {
-    console.error(
-      "[TOPFEROS] Erè jwenn sessionId:",
-      error?.message || error
+    return normalizeNumber(
+      jid
+        .split(":")[0]
+        .split("@")[0]
     );
 
+  } catch {
+
+    return "";
+
+  }
+
+}
+
+
+function generateCode() {
+
+  const chars =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+
+  let code = "";
+
+  for (let i = 0; i < 6; i++) {
+
+    code += chars[
+      crypto.randomInt(
+        0,
+        chars.length
+      )
+    ];
+
+  }
+
+  return code;
+
+}
+
+
+function getPanelLink(sessionId) {
+
+  return `${PANEL_URL}/?session=${encodeURIComponent(
+    sessionId
+  )}`;
+
+}
+
+
+/* ======================================================
+   CHECK IF WHATSAPP SESSION IS CONNECTED
+====================================================== */
+
+function isBotConnected(session) {
+
+  if (!session) {
+    return false;
+  }
+
+  if (!session.socket) {
+    return false;
+  }
+
+  return true;
+
+}
+
+
+/* ======================================================
+   ENSURE PANEL SESSION
+====================================================== */
+
+function ensureSession(
+  sessionId,
+  number = "",
+  sock = null
+) {
+
+  if (!sessionId) {
     return null;
   }
-}
 
-function onOff(value) {
-  return value ? "✅ ON" : "❌ OFF";
-}
 
-function getDeleteDestination(settings) {
-  if (settings?.antiDeleteSameChat) {
-    return "📥 INBOX";
+  let session =
+    sessions.get(
+      String(sessionId)
+    );
+
+
+  const waSession =
+    sessionManager.getSession(
+      String(sessionId)
+    );
+
+
+  if (!waSession) {
+    return null;
   }
 
-  if (settings?.antiDeleteDM) {
-    return "📩 Sender";
-  }
 
-  return "❌ OFF";
-}
-
-function getMode(info, settings) {
-  if (settings?.privateMode) {
-    return "🔒 Private";
-  }
-
-  if (settings?.publicMode) {
-    return "🌐 Public";
-  }
-
-  return info?.mode || "Unknown";
-}
-
-function getSettingsUrl(session) {
-  /*
-   * IMPORTANT:
-   * The session parameter is necessary so the panel
-   * knows which WhatsApp bot session is being edited.
-   */
-
-  if (session?.link) {
-    return session.link;
-  }
-
-  const base =
-    process.env.SETTINGS_PANEL_URL ||
-    process.env.PANEL_URL ||
-    config?.settingsUrl ||
-    config?.panelUrl ||
-    "https://bot.topferos.store/settings";
-
-  return `${base.replace(/\/+$/, "")}/?session=${encodeURIComponent(
-    session.sessionId
-  )}`;
-}
+  const phoneNumber =
+    normalizeNumber(number) ||
+    normalizeNumber(
+      waSession.number
+    ) ||
+    getPhoneFromSocket(sock);
 
 
-/* ======================================================
-   FIRST MESSAGE
-   REAL BOT SETTINGS
-====================================================== */
+  if (!session) {
 
-function buildSettingsMessage(info, settings) {
-  const botName =
-    info?.name ||
-    config?.bot?.name ||
-    "TOPFEROS MD";
+    session = {
 
-  const number =
-    info?.number ||
-    config?.owner?.number ||
-    "Not Set";
+      sessionId:
+        String(sessionId),
 
-  const prefix =
-    info?.prefix ||
-    config?.bot?.prefix ||
-    ".";
+      number:
+        phoneNumber,
 
-  const mode =
-    getMode(info, settings);
+      code:
+        generateCode(),
 
-  return `╭━━━━━━━━━━━❀━━━━━━━━━━━╮
-       🦁 *BOT SETTINGS* 🐑
-      🐑 *${botName}* 🦁
-╰━━━━━━━━━━━❀━━━━━━━━━━━╯
+      authenticated:
+        false,
 
-┌─────── ⋆⋅☆⋅⋆ ──────────┐
-       ✨ *USER INFO* ✨
-└────────── ⋆⋅☆⋅⋆ ──────────┘
+      connected:
+        Boolean(sock),
 
-   🎀 *Name*   » ${botName}
-   📱 *Number* » ${number}
-   🎂 *Age*    » 24
-   📍 *From*   » TOPFEROS TECH
-   🔤 *Prefix* » ${prefix}
-   🌐 *Mode*   » ${mode}
+      createdAt:
+        Date.now(),
 
-┌─────── ⋆⋅☆⋅⋆ ──────────┐
-      🛡️ *PROTECTION* 🛡️
-└────────── ⋆⋅☆⋅⋆ ──────────┘
+      updatedAt:
+        Date.now(),
 
-   🔗 Anti Link         » ${onOff(settings?.antiLink)}
-   🤬 Anti Bad Words    » ❌ OFF
-   📞 Anti Call         » ${onOff(settings?.antiCall)}
-   ⛔ Auto Block        » ❌ OFF
-   🧭 Anti Bugs         » ❌ OFF
-   🛸 Anti Bot          » ${onOff(settings?.antiRobot)}
-   ⚽ Anti Bot Action   » 💥 Delete
+      settings: {
+        ...defaultSettings
+      },
 
-┌─────── ⋆⋅☆⋅⋆ ──────────┐
-       🗑️ *DELETE LOGS* 🗑️
-└────────── ⋆⋅☆⋅⋆ ──────────┘
+      botInformation: {
+        ...defaultBotInformation,
+        number:
+          phoneNumber
+      },
 
-   👀 Anti Delete       » ${onOff(settings?.antiDelete)}
-   📤 Delete Send       » ${getDeleteDestination(settings)}
+      socket:
+        sock || null
 
-┌─────── ⋆⋅☆⋅⋆ ──────────┐
-      📊 *STATUS SECTION* 📊
-└────────── ⋆⋅☆⋅⋆ ──────────┘
-
-   👁️ Status Read          » ${onOff(settings?.autoStatus)}
-   ❤️ Status React         » ${onOff(settings?.statusReact)}
-   😉 Status Custom React  » None
-   💬 Auto Save Contact    » ❌ OFF
-   📝 Contact Send Msg     » 📋 Default
-   📤 Status Msg Send      » ${onOff(settings?.statusReply)}
-
-┌─────── ⋆⋅☆⋅⋆ ──────────┐
-       🤖 *AUTOMATION* 🤖
-└────────── ⋆⋅☆⋅⋆ ──────────┘
-
-   🟢 Always Online      » ${onOff(settings?.alwaysOnline)}
-   ⌨️ Auto Typing        » ${onOff(settings?.fakeTyping)}
-   🎙️ Auto Recording     » ${onOff(settings?.fakeRecording)}
-   👁️ Auto Read Msg      » ${onOff(settings?.autoStatus)}
-
-┌─────── ⋆⋅☆⋅⋆ ──────────┐
-       ⚙️ *CONFIGS* ⚙️
-└────────── ⋆⋅☆⋅⋆ ──────────┘
-
-   💭 Custom Status  » Not Set
-   📵 Exclude Nums   » None
-
-┌─────── ⋆⋅☆⋅⋆ ──────────┐
-       🖼️ *MEDIA URLS* 🖼️
-└────────── ⋆⋅☆⋅⋆ ──────────┘
-
-   🎯 Alive Logo  » ${config?.bot?.logo ? "✅ Set" : "❌ Not Set"}
-   🎨 Menu Logo   » ${config?.bot?.logo ? "✅ Set" : "❌ Not Set"}
-   👑 Owner Logo  » ${config?.bot?.logo ? "✅ Set" : "❌ Not Set"}
-
-╭━━━━━━━━━━━❀━━━━━━━━━━━╮
-  ✨ *Owner Only Access* ✨
-     🌸 *Personal Chat* 🌸
-╰━━━━━━━━━━━❀━━━━━━━━━━━╯
-TOPFEROS-MD`;
-}
+    };
 
 
-/* ======================================================
-   SECOND MESSAGE
-   CODE + WEB LINKS
-====================================================== */
-
-function buildAccessMessage(session) {
-  const settingsUrl =
-    getSettingsUrl(session);
-
-  const contactSaveUrl =
-    `${settingsUrl.split("?")[0].replace(/\/+$/, "")}/contactsave`;
-
-  return `✧･ﾟ: *✧･ﾟ:* 🔐 *TOPFEROS MD V1.0.0* 🔐 *:･ﾟ✧*:･ﾟ✧
-
-   🌸 *Owner Number*
-   ╰┈➤ ${session.number || "Not Set"}
-
-   🌸 *Password*
-   ╰┈➤ ${session.code}
-
-   🌐 *Web Settings*
-   ╰┈➤ ${settingsUrl}
-
-   🌐 *Web Contact Save*
-   ╰┈➤ ${contactSaveUrl}
-╰┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈╯
-   💖 *Keep Safe & Don't Share* 💖
-
-======================
-TECH By TOPFEROS MD`;
-}
+    sessions.set(
+      String(sessionId),
+      session
+    );
 
 
-/* ======================================================
-   THIRD MESSAGE
-   3 LANGUAGES
-====================================================== */
+  } else {
 
-function buildInstructionsMessage() {
-  return `🇺🇸 *ENGLISH*
+    if (phoneNumber) {
 
-To change your bot settings, please click the web link in the message above and go to the web page. Use the ownerNumber and password provided in the message above to log in and change your bot settings. After submitting your settings on the website, your bot will update the new settings within 3 minutes. ✅
+      session.number =
+        phoneNumber;
 
+      session.botInformation.number =
+        phoneNumber;
 
-🇫🇷 *FRANÇAIS*
-
-Pour modifier les paramètres de votre bot, veuillez cliquer sur le lien web dans le message ci-dessus et accéder à la page web. Utilisez l’ownerNumber et le mot de passe indiqués dans le message ci-dessus pour vous connecter et modifier les paramètres de votre bot. Après avoir soumis les paramètres sur le site web, votre bot mettra à jour les nouveaux paramètres dans un délai de 3 minutes. ✅
-
-
-🇪🇸 *ESPAÑOL*
-
-Para cambiar la configuración de tu bot, haz clic en el enlace web del mensaje anterior y accede a la página web. Utiliza el ownerNumber y la contraseña que aparecen en el mensaje anterior para iniciar sesión y cambiar la configuración de tu bot. Después de enviar la configuración en el sitio web, tu bot actualizará los nuevos ajustes en un plazo de 3 minutos. ✅`;
-}
-
-
-/* ======================================================
-   COMMAND
-====================================================== */
-
-async function execute({ sock, message }) {
-  try {
-    const chatId =
-      message?.key?.remoteJid;
-
-    if (!chatId) {
-      return;
     }
 
-    /*
-     * Find the real WhatsApp session.
-     */
-    const sessionId =
-      getSessionId(sock, message);
 
-    if (!sessionId) {
-      await sock.sendMessage(
-        chatId,
-        {
-          text:
-            "❌ *TOPFEROS MD*\n\nBot session pa jwenn. Tanpri verifye koneksyon bot la."
-        },
-        {
-          quoted: message
-        }
-      );
+    if (sock) {
 
-      return;
+      session.socket =
+        sock;
+
+      session.connected =
+        true;
+
     }
 
-    /*
-     * Get REAL current settings.
-     */
-    const loaded =
-      settingPanel.loadSettings(
-        sessionId
+
+    session.updatedAt =
+      Date.now();
+
+  }
+
+
+  return session;
+
+}
+
+
+/* ======================================================
+   CREATE NEW PANEL SESSION
+====================================================== */
+
+function createNewSession(
+  sock = null,
+  number = "",
+  sessionId = null
+) {
+
+  let id =
+    sessionId;
+
+
+  if (!id && number) {
+
+    const normalized =
+      normalizeNumber(number);
+
+
+    const waSession =
+      sessionManager.getSessionByNumber(
+        normalized
       );
+
+
+    if (waSession) {
+
+      id =
+        waSession.sessionId;
+
+    }
+
+  }
+
+
+  if (!id && sock) {
+
+    const existing =
+      sessionManager.getSessionBySocket?.(
+        sock
+      );
+
+
+    if (existing) {
+
+      id =
+        existing.sessionId;
+
+    }
+
+  }
+
+
+  if (!id) {
+    return null;
+  }
+
+
+  return ensureSession(
+    id,
+    number,
+    sock
+  );
+
+}
+
+
+/* ======================================================
+   CREATE / GET SESSION FROM SOCKET
+====================================================== */
+
+function createSession(
+  sock,
+  sessionId = null
+) {
+
+  let id =
+    sessionId;
+
+
+  if (id) {
 
     const session =
-      settingPanel.getSession(
+      ensureSession(
+        id,
+        "",
+        sock
+      );
+
+
+    if (!session) {
+      return null;
+    }
+
+
+    return formatSession(
+      session
+    );
+
+  }
+
+
+  if (sock) {
+
+    const waSession =
+      sessionManager.getSessionBySocket?.(
+        sock
+      );
+
+
+    if (waSession) {
+
+      const session =
+        ensureSession(
+          waSession.sessionId,
+          waSession.number,
+          sock
+        );
+
+
+      return session
+        ? formatSession(session)
+        : null;
+
+    }
+
+
+    const number =
+      getPhoneFromSocket(sock);
+
+
+    if (number) {
+
+      const waSession =
+        sessionManager.getSessionByNumber(
+          number
+        );
+
+
+      if (waSession) {
+
+        const session =
+          ensureSession(
+            waSession.sessionId,
+            number,
+            sock
+          );
+
+
+        return session
+          ? formatSession(session)
+          : null;
+
+      }
+
+    }
+
+  }
+
+
+  return null;
+
+}
+
+
+/* ======================================================
+   FORMAT SESSION
+====================================================== */
+
+function formatSession(session) {
+
+  return {
+
+    sessionId:
+      session.sessionId,
+
+    number:
+      session.number,
+
+    code:
+      session.code,
+
+    link:
+      getPanelLink(
+        session.sessionId
+      ),
+
+    connected:
+      isBotConnected(session)
+
+  };
+
+}
+
+
+/* ======================================================
+   GET SESSION
+====================================================== */
+
+function getSession(sessionId) {
+
+  if (!sessionId) {
+    return null;
+  }
+
+
+  const id =
+    String(sessionId);
+
+
+  let session =
+    sessions.get(id);
+
+
+  if (!session) {
+
+    const waSession =
+      sessionManager.getSession(id);
+
+
+    if (!waSession) {
+      return null;
+    }
+
+
+    session =
+      ensureSession(
+        id,
+        waSession.number,
+        waSession.socket || null
+      );
+
+  }
+
+
+  return session || null;
+
+}
+
+
+/* ======================================================
+   GET SESSION BY NUMBER
+====================================================== */
+
+function getSessionByNumber(number) {
+
+  const normalized =
+    normalizeNumber(number);
+
+
+  if (!normalized) {
+    return null;
+  }
+
+
+  const waSession =
+    sessionManager.getSessionByNumber(
+      normalized
+    );
+
+
+  if (waSession) {
+
+    return ensureSession(
+      waSession.sessionId,
+      normalized,
+      waSession.socket || null
+    );
+
+  }
+
+
+  for (
+    const session of
+    sessions.values()
+  ) {
+
+    if (
+      session.number ===
+      normalized
+    ) {
+
+      return session;
+
+    }
+
+  }
+
+
+  return null;
+
+}
+
+
+/* ======================================================
+   GET SESSION BY SOCKET
+====================================================== */
+
+function getSessionBySocket(sock) {
+
+  if (!sock) {
+    return null;
+  }
+
+
+  const waSession =
+    sessionManager.getSessionBySocket?.(
+      sock
+    );
+
+
+  if (waSession) {
+
+    return ensureSession(
+      waSession.sessionId,
+      waSession.number,
+      sock
+    );
+
+  }
+
+
+  for (
+    const session of
+    sessions.values()
+  ) {
+
+    if (
+      session.socket ===
+      sock
+    ) {
+
+      return session;
+
+    }
+
+  }
+
+
+  return null;
+
+}
+
+
+/* ======================================================
+   BOT CONNECTED
+====================================================== */
+
+function setBotConnected(
+  sock,
+  sessionId = null
+) {
+
+  if (!sock) {
+    return null;
+  }
+
+
+  let id =
+    sessionId;
+
+
+  if (!id) {
+
+    const waSession =
+      sessionManager.getSessionBySocket?.(
+        sock
+      );
+
+
+    if (waSession) {
+
+      id =
+        waSession.sessionId;
+
+    }
+
+  }
+
+
+  if (!id) {
+
+    const number =
+      getPhoneFromSocket(sock);
+
+
+    if (number) {
+
+      const waSession =
+        sessionManager.getSessionByNumber(
+          number
+        );
+
+
+      if (waSession) {
+
+        id =
+          waSession.sessionId;
+
+      }
+
+    }
+
+  }
+
+
+  if (!id) {
+
+    console.error(
+      "❌ setBotConnected: WhatsApp session not found"
+    );
+
+    return null;
+
+  }
+
+
+  const session =
+    ensureSession(
+      id,
+      getPhoneFromSocket(sock),
+      sock
+    );
+
+
+  if (!session) {
+    return null;
+  }
+
+
+  session.code =
+    generateCode();
+
+
+  session.socket =
+    sock;
+
+
+  session.connected =
+    true;
+
+
+  session.authenticated =
+    false;
+
+
+  session.updatedAt =
+    Date.now();
+
+
+  return session;
+
+}
+
+
+/* ======================================================
+   BOT DISCONNECTED
+====================================================== */
+
+function setBotDisconnected(
+  sock,
+  remove = false,
+  sessionId = null
+) {
+
+  let session = null;
+
+
+  if (sessionId) {
+
+    session =
+      getSession(
         sessionId
       );
 
-    if (!loaded || !session) {
-      await sock.sendMessage(
-        chatId,
-        {
-          text:
-            "❌ *TOPFEROS MD*\n\nSettings session lan pa disponib."
-        },
-        {
-          quoted: message
-        }
+  }
+
+
+  if (!session && sock) {
+
+    session =
+      getSessionBySocket(
+        sock
       );
 
-      return;
+  }
+
+
+  if (!session) {
+    return false;
+  }
+
+
+  session.socket =
+    null;
+
+
+  session.connected =
+    false;
+
+
+  session.authenticated =
+    false;
+
+
+  session.code =
+    generateCode();
+
+
+  session.updatedAt =
+    Date.now();
+
+
+  if (remove) {
+
+    sessions.delete(
+      session.sessionId
+    );
+
+  }
+
+
+  return true;
+
+}
+
+
+/* ======================================================
+   VERIFY SETTINGS CODE
+====================================================== */
+
+function verifySession(
+  sessionId,
+  code
+) {
+
+  const session =
+    getSession(
+      sessionId
+    );
+
+
+  if (!session) {
+
+    return {
+
+      success:
+        false,
+
+      error:
+        "SESSION_NOT_FOUND"
+
+    };
+
+  }
+
+
+  if (
+    !isBotConnected(session)
+  ) {
+
+    session.authenticated =
+      false;
+
+
+    return {
+
+      success:
+        false,
+
+      error:
+        "BOT_NOT_CONNECTED"
+
+    };
+
+  }
+
+
+  const submitted =
+    String(code || "")
+      .trim()
+      .toUpperCase();
+
+
+  if (
+    !submitted ||
+    submitted !==
+      session.code
+  ) {
+
+    return {
+
+      success:
+        false,
+
+      error:
+        "INVALID_SETTINGS_CODE"
+
+    };
+
+  }
+
+
+  session.authenticated =
+    true;
+
+
+  session.updatedAt =
+    Date.now();
+
+
+  return {
+
+    success:
+      true,
+
+    session
+
+  };
+
+}
+
+
+/* ======================================================
+   AUTHENTICATION
+====================================================== */
+
+function isAuthenticated(
+  sessionId
+) {
+
+  const session =
+    getSession(
+      sessionId
+    );
+
+
+  if (!session) {
+    return false;
+  }
+
+
+  if (
+    !isBotConnected(session)
+  ) {
+
+    session.authenticated =
+      false;
+
+
+    return false;
+
+  }
+
+
+  return Boolean(
+    session.authenticated
+  );
+
+}
+
+
+/* ======================================================
+   LOGOUT PANEL
+====================================================== */
+
+function logoutSession(
+  sessionId
+) {
+
+  const session =
+    getSession(
+      sessionId
+    );
+
+
+  if (!session) {
+    return false;
+  }
+
+
+  session.authenticated =
+    false;
+
+
+  session.updatedAt =
+    Date.now();
+
+
+  return true;
+
+}
+
+
+/* ======================================================
+   GET SETTINGS
+====================================================== */
+
+function getSettings(
+  sessionId
+) {
+
+  const session =
+    getSession(
+      sessionId
+    );
+
+
+  if (!session) {
+    return null;
+  }
+
+
+  return {
+    ...session.settings
+  };
+
+}
+
+
+/* ======================================================
+   GET BOT INFORMATION
+====================================================== */
+
+function getBotInformation(
+  sessionId
+) {
+
+  const session =
+    getSession(
+      sessionId
+    );
+
+
+  if (!session) {
+    return null;
+  }
+
+
+  return {
+    ...session.botInformation
+  };
+
+}
+
+
+/* ======================================================
+   SET ONE SETTING
+====================================================== */
+
+function setSetting(
+  sessionId,
+  key,
+  value
+) {
+
+  const session =
+    getSession(
+      sessionId
+    );
+
+
+  if (!session) {
+    return false;
+  }
+
+
+  if (
+    !Object.prototype.hasOwnProperty.call(
+      defaultSettings,
+      key
+    )
+  ) {
+
+    return false;
+
+  }
+
+
+  session.settings[key] =
+    Boolean(value);
+
+
+  /*
+   * Public / Private mutually exclusive.
+   */
+
+  if (
+    key === "publicMode" &&
+    session.settings.publicMode
+  ) {
+
+    session.settings.privateMode =
+      false;
+
+  }
+
+
+  if (
+    key === "privateMode" &&
+    session.settings.privateMode
+  ) {
+
+    session.settings.publicMode =
+      false;
+
+  }
+
+
+  /*
+   * Anti Delete destination
+   * mutually exclusive.
+   */
+
+  if (
+    key === "antiDeleteSameChat" &&
+    session.settings.antiDeleteSameChat
+  ) {
+
+    session.settings.antiDeleteDM =
+      false;
+
+  }
+
+
+  if (
+    key === "antiDeleteDM" &&
+    session.settings.antiDeleteDM
+  ) {
+
+    session.settings.antiDeleteSameChat =
+      false;
+
+  }
+
+
+  /*
+   * Group Open / Close mutually exclusive.
+   */
+
+  if (
+    key === "groupClose" &&
+    session.settings.groupClose
+  ) {
+
+    session.settings.groupOpen =
+      false;
+
+  }
+
+
+  if (
+    key === "groupOpen" &&
+    session.settings.groupOpen
+  ) {
+
+    session.settings.groupClose =
+      false;
+
+  }
+
+
+  updateMode(session);
+
+
+  session.updatedAt =
+    Date.now();
+
+
+  return true;
+
+}
+
+
+/* ======================================================
+   APPLY SETTINGS
+====================================================== */
+
+function applySettings(
+  sessionId,
+  newSettings = {}
+) {
+
+  const session =
+    getSession(
+      sessionId
+    );
+
+
+  if (!session) {
+    return null;
+  }
+
+
+  for (
+    const key of
+    Object.keys(defaultSettings)
+  ) {
+
+    if (
+      Object.prototype.hasOwnProperty.call(
+        newSettings,
+        key
+      )
+    ) {
+
+      session.settings[key] =
+        Boolean(
+          newSettings[key]
+        );
+
     }
 
-    const info =
-      loaded.botInformation || {};
+  }
 
-    const settings =
-      loaded.settings || {};
 
-    /*
-     * MESSAGE 1
-     * Real settings.
-     */
+  /*
+   * Public / Private.
+   */
+
+  if (
+    session.settings.publicMode
+  ) {
+
+    session.settings.privateMode =
+      false;
+
+  }
+
+
+  if (
+    session.settings.privateMode
+  ) {
+
+    session.settings.publicMode =
+      false;
+
+  }
+
+
+  /*
+   * Anti Delete destination.
+   *
+   * Same Chat and DM Bot cannot
+   * be active at the same time.
+   */
+
+  if (
+    session.settings.antiDeleteSameChat
+  ) {
+
+    session.settings.antiDeleteDM =
+      false;
+
+  }
+
+
+  if (
+    session.settings.antiDeleteDM
+  ) {
+
+    session.settings.antiDeleteSameChat =
+      false;
+
+  }
+
+
+  /*
+   * Group Open / Close.
+   */
+
+  if (
+    session.settings.groupClose
+  ) {
+
+    session.settings.groupOpen =
+      false;
+
+  }
+
+
+  if (
+    session.settings.groupOpen
+  ) {
+
+    session.settings.groupClose =
+      false;
+
+  }
+
+
+  updateMode(session);
+
+
+  session.updatedAt =
+    Date.now();
+
+
+  return {
+    ...session.settings
+  };
+
+}
+
+
+/* ======================================================
+   UPDATE BOT MODE
+====================================================== */
+
+function updateMode(session) {
+
+  session.botInformation.mode =
+    session.settings.privateMode
+      ? "Private"
+      : "Public";
+
+}
+
+
+/* ======================================================
+   UPDATE BOT INFORMATION
+====================================================== */
+
+function updateBotInformation(
+  sessionId,
+  information = {}
+) {
+
+  const session =
+    getSession(
+      sessionId
+    );
+
+
+  if (!session) {
+    return null;
+  }
+
+
+  if (
+    typeof information.name ===
+    "string"
+  ) {
+
+    const name =
+      information.name.trim();
+
+
+    session.botInformation.name =
+      name ||
+      "TOPFEROS MD";
+
+  }
+
+
+  if (
+    typeof information.prefix ===
+    "string"
+  ) {
+
+    const prefix =
+      information.prefix.trim();
+
+
+    session.botInformation.prefix =
+      prefix ||
+      ".";
+
+  }
+
+
+  /*
+   * Number always comes from WhatsApp.
+   */
+
+  if (session.number) {
+
+    session.botInformation.number =
+      session.number;
+
+  }
+
+
+  updateMode(session);
+
+
+  session.updatedAt =
+    Date.now();
+
+
+  return {
+    ...session.botInformation
+  };
+
+}
+
+
+/* ======================================================
+   IS FEATURE ENABLED
+====================================================== */
+
+function isEnabled(
+  sessionId,
+  key
+) {
+
+  const session =
+    getSession(
+      sessionId
+    );
+
+
+  if (!session) {
+    return false;
+  }
+
+
+  if (
+    !Object.prototype.hasOwnProperty.call(
+      defaultSettings,
+      key
+    )
+  ) {
+
+    return false;
+
+  }
+
+
+  return Boolean(
+    session.settings[key]
+  );
+
+}
+
+
+/* ======================================================
+   LOAD SETTINGS
+====================================================== */
+
+function loadSettings(
+  sessionId
+) {
+
+  const session =
+    getSession(
+      sessionId
+    );
+
+
+  if (!session) {
+    return null;
+  }
+
+
+  updateMode(session);
+
+
+  return {
+
+    settings: {
+      ...session.settings
+    },
+
+    botInformation: {
+      ...session.botInformation
+    }
+
+  };
+
+}
+
+
+/* ======================================================
+   SEND SETTINGS PANEL LINK
+====================================================== */
+
+async function sendPanelLink(
+  sock,
+  jid,
+  quoted,
+  sessionId = null
+) {
+
+  if (!sock || !jid) {
+    return false;
+  }
+
+
+  const session =
+    createSession(
+      sock,
+      sessionId
+    );
+
+
+  if (!session) {
+
+    console.error(
+      "❌ sendPanelLink: session not found"
+    );
+
+    return false;
+
+  }
+
+
+  const text =
+`🦁 *TOPFEROS MD SETTINGS*
+
+🔐 *Settings Code:* ${session.code}
+
+🌐 *Settings Panel:*
+${session.link}
+
+⚠️ Pa pataje Settings Code ou ak lòt moun.`;
+
+
+  try {
+
     await sock.sendMessage(
-      chatId,
+      jid,
       {
-        text:
-          buildSettingsMessage(
-            info,
-            settings
-          )
+        text
       },
       {
-        quoted: message
+        quoted
       }
     );
 
-    /*
-     * MESSAGE 2
-     * Owner number + password + web links.
-     */
-    await sock.sendMessage(
-      chatId,
-      {
-        text:
-          buildAccessMessage(
-            session
-          )
-      }
-    );
 
-    /*
-     * MESSAGE 3
-     * English + French + Spanish.
-     */
-    await sock.sendMessage(
-      chatId,
-      {
-        text:
-          buildInstructionsMessage()
-      }
-    );
+    return true;
 
-    console.log(
-      `[TOPFEROS] .setting executed successfully for ${sessionId}`
-    );
 
   } catch (error) {
+
     console.error(
-      "[TOPFEROS] Erè .setting:",
+      "❌ sendPanelLink error:",
       error?.stack ||
       error?.message ||
       error
     );
+
+
+    return false;
+
   }
+
 }
 
 
 /* ======================================================
-   EXPORT
+   REMOVE PANEL SESSION
+====================================================== */
+
+function removeSession(
+  sessionId
+) {
+
+  if (!sessionId) {
+    return false;
+  }
+
+
+  return sessions.delete(
+    String(sessionId)
+  );
+
+}
+
+
+/* ======================================================
+   CLEAR ALL PANEL SESSIONS
+====================================================== */
+
+function clearSessions() {
+
+  sessions.clear();
+
+}
+
+
+/* ======================================================
+   LIST PANEL SESSIONS
+====================================================== */
+
+function listSessions() {
+
+  return Array.from(
+    sessions.values()
+  ).map(session => ({
+
+    sessionId:
+      session.sessionId,
+
+    number:
+      session.number,
+
+    authenticated:
+      Boolean(
+        session.authenticated
+      ),
+
+    connected:
+      Boolean(
+        session.connected &&
+        session.socket
+      ),
+
+    createdAt:
+      session.createdAt,
+
+    updatedAt:
+      session.updatedAt
+
+  }));
+
+}
+
+
+/* ======================================================
+   EXPORTS
 ====================================================== */
 
 module.exports = {
-  name: "setting",
 
-  aliases: [
-    "settings",
-    "config",
-    "configuration"
-  ],
+  PANEL_URL,
 
-  description:
-    "Montre vrè settings bot la ak Settings Panel.",
+  sessions,
 
-  usage:
-    ".setting",
+  defaultSettings,
+  defaultBotInformation,
 
-  execute
+  generateCode,
+
+  normalizeNumber,
+  getPhoneFromSocket,
+
+  createNewSession,
+  createSession,
+
+  setBotConnected,
+  setBotDisconnected,
+
+  getSession,
+  getSessionByNumber,
+  getSessionBySocket,
+
+  verifySession,
+  isAuthenticated,
+  logoutSession,
+
+  getSettings,
+  getBotInformation,
+
+  setSetting,
+  applySettings,
+  updateBotInformation,
+
+  isEnabled,
+  loadSettings,
+
+  sendPanelLink,
+
+  removeSession,
+  clearSessions,
+  listSessions
+
 };
+
+
+// ╔════════════════════════════════════════════════════╗
+// ║             🚀 TECH BY TOPFEROS MD               ║
