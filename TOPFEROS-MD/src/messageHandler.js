@@ -863,19 +863,19 @@ async function handleMessage(
     }
 
     // --------------------------------------------------------
-    // IGNORE BOT'S OWN NORMAL MESSAGE
-    // --------------------------------------------------------
+// BOT'S OWN NORMAL MESSAGE
+// --------------------------------------------------------
+// Pa bloke mesaj la isit la.
+// Sa pèmèt command parser la kontinye trete
+// mesaj ki soti nan pwòp kont bot la pandan tès yo.
 
-    if (
-      message?.key?.fromMe
-    ) {
-      console.log(
-        `⏭️ MESSAGE IGNORED [${sessionId}] — fromMe`
-      );
-
-      return;
-    }
-
+if (
+  message?.key?.fromMe
+) {
+  console.log(
+    `📤 MESSAGE FROM BOT ACCOUNT [${sessionId}]`
+  );
+}
     // --------------------------------------------------------
     // EXTRACT TEXT
     // --------------------------------------------------------
@@ -1033,110 +1033,4 @@ async function handleMessage(
       config
     };
 
-   // --------------------------------------------------------
-    // LOG COMMAND
-    // --------------------------------------------------------
-
-    console.log(
-      `🚀 EXECUTING COMMAND [${sessionId}]: ${PREFIX}${commandName}`
-    );
-
-    // --------------------------------------------------------
-    // REACTION
-    // --------------------------------------------------------
-
-    await reactToCommand(
-      sock,
-      message
-    );
-
-    // --------------------------------------------------------
-    // EXECUTE COMMAND
-    // --------------------------------------------------------
-
-    try {
-
-      await command.execute(
-        context
-      );
-
-      console.log(
-        `✅ COMMAND COMPLETED [${sessionId}]: ${PREFIX}${commandName}`
-      );
-
-    } catch (commandError) {
-
-      console.error(
-        `❌ COMMAND EXECUTION ERROR [${sessionId}] [${PREFIX}${commandName}]`,
-        commandError?.stack ||
-        commandError?.message ||
-        commandError
-      );
-
-      await sendCommandError(
-        sock,
-        chatId,
-        commandName,
-        commandError
-      );
-    }
-
-  } catch (error) {
-
-    console.error(
-      `❌ HANDLE MESSAGE ERROR [${
-        sessionId || "unknown"
-      }]`,
-      error?.stack ||
-      error?.message ||
-      error
-    );
-
-    // --------------------------------------------------------
-    // GLOBAL HANDLER ERROR RESPONSE
-    // --------------------------------------------------------
-
-    try {
-
-      const errorChatId =
-        getChatId(message);
-
-      if (
-        sock &&
-        errorChatId &&
-        errorChatId !== "status@broadcast"
-      ) {
-
-        await sock.sendMessage(
-          errorChatId,
-          {
-            text:
-              "❌ Yon erè rive pandan bot la t ap trete kòmand lan.\n\n" +
-              "🔧 Tanpri eseye ankò."
-          }
-        );
-      }
-
-    } catch (sendError) {
-
-      console.error(
-        "❌ GLOBAL ERROR RESPONSE FAILED:",
-        sendError?.message ||
-        sendError
-      );
-    }
-  }
-}
-
-// ============================================================
-// EXPORTS
-// ============================================================
-
-module.exports = {
-  handleMessage,
-  handleStatusActions,
-  getMessageText,
-  getQuotedMessage,
-  getSender,
-  getChatId
-};
+   
