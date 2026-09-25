@@ -381,15 +381,27 @@ async function startWhatsApp() {
     );
 
   } catch (err) {
-    error(
-      `WhatsApp connection error: ${
-        err?.message ||
-        err
-      }`
-    );
+  error(
+    `WhatsApp connection error: ${
+      err?.message ||
+      err
+    }`
+  );
 
-    throw err;
-  }
+  console.error(
+    "========== FULL WHATSAPP ERROR =========="
+  );
+
+  console.error(
+    err?.stack ||
+    err
+  );
+
+  console.error(
+    "=========================================="
+  );
+
+  throw err;
 }
 
 // ============================================================
