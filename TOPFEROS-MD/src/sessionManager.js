@@ -117,15 +117,56 @@ function hasCredentials(sessionId) {
     );
 
   try {
-    return (
-      fs.existsSync(
+    // --------------------------------------------------------
+    // Credentials file must exist
+    // --------------------------------------------------------
+
+    if (
+      !fs.existsSync(
         credsFile
-      ) &&
-      fs.statSync(
+      ) ||
+      !fs.statSync(
         credsFile
       ).isFile()
+    ) {
+      return false;
+    }
+
+    // --------------------------------------------------------
+    // IMPORTANT FIX:
+    // Verify that creds.json is valid JSON.
+    // This prevents a corrupted/empty creds.json from being
+    // treated as a valid WhatsApp session.
+    // --------------------------------------------------------
+
+    const content =
+      fs.readFileSync(
+        credsFile,
+        "utf8"
+      ).trim();
+
+    if (!content) {
+      console.warn(
+        `⚠️ EMPTY CREDS.JSON [${sessionId}]`
+      );
+
+      return false;
+    }
+
+    JSON.parse(
+      content
     );
-  } catch {
+
+    return true;
+
+  } catch (error) {
+
+    console.warn(
+      `⚠️ INVALID CREDS.JSON [${sessionId}]:`,
+      error?.message ||
+      error
+    );
+
     return false;
   }
 }
@@ -594,12 +635,16 @@ function getStoredSessionIds() {
       // ------------------------------------------------------
       // IMPORTANT:
       // Only restore real WhatsApp auth sessions.
-      // Empty folders are ignored.
+      // Empty or corrupted folders are ignored.
       // ------------------------------------------------------
 
       if (
         !hasCredentials(id)
       ) {
+        console.warn(
+          `⚠️ INVALID/EMPTY AUTH SESSION IGNORED [${id}]`
+        );
+
         continue;
       }
 
@@ -659,13 +704,19 @@ function restoreSession(
   }
 
   // ----------------------------------------------------------
-  // Do not restore an empty/incomplete auth folder.
-  // A valid Baileys stored session must have creds.json.
+  // Do not restore an empty/incomplete/corrupted auth folder.
+  // A valid Baileys stored session must have a valid creds.json.
   // ----------------------------------------------------------
 
   if (
-    !hasCredentials(cleanId)
+    !hasCredentials(
+      cleanId
+    )
   ) {
+    console.warn(
+      `⚠️ SESSION NOT RESTORED [${cleanId}] — invalid credentials`
+    );
+
     return null;
   }
 
