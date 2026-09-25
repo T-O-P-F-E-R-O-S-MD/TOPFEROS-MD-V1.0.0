@@ -1,27 +1,15 @@
-// ╔════════════════════════════════════════════════════╗
-// ║              🤖 TOPFEROS MD V1.0.0               ║
-// ╚════════════════════════════════════════════════════╝
 "use strict";
 
 const fs = require("fs");
 const path = require("path");
-
-// ============================================================
-// LOAD CONFIGURATION
-// ============================================================
-
 const config = require("./config");
-
-// ============================================================
-// GLOBAL SERVICES
-// ============================================================
 
 let connection = null;
 let panelServer = null;
 let shuttingDown = false;
 
 // ============================================================
-// CONSOLE COLORS
+// COLORS / LOGGING
 // ============================================================
 
 const colors = {
@@ -29,46 +17,29 @@ const colors = {
   red: "\x1b[31m",
   green: "\x1b[32m",
   yellow: "\x1b[33m",
-  blue: "\x1b[34m",
-  magenta: "\x1b[35m",
   cyan: "\x1b[36m",
-  white: "\x1b[37m",
+  magenta: "\x1b[35m",
   bold: "\x1b[1m"
 };
 
-// ============================================================
-// LOGGER
-// ============================================================
-
-function log(message, color = colors.white) {
-  console.log(
-    `${color}${message}${colors.reset}`
-  );
+function log(message, color = "") {
+  console.log(`${color}${message}${colors.reset}`);
 }
 
 function success(message) {
-  log(
-    `✅ ${message}`,
-    colors.green
-  );
+  log(`✅ ${message}`, colors.green);
 }
 
 function warning(message) {
-  log(
-    `⚠️ ${message}`,
-    colors.yellow
-  );
+  log(`⚠️ ${message}`, colors.yellow);
 }
 
 function error(message) {
-  log(
-    `❌ ${message}`,
-    colors.red
-  );
+  log(`❌ ${message}`, colors.red);
 }
 
 // ============================================================
-// REQUIRED DIRECTORIES
+// DIRECTORIES
 // ============================================================
 
 function createDirectories() {
@@ -89,39 +60,55 @@ function createDirectories() {
   ];
 
   for (const directory of directories) {
-    const directoryPath = path.join(
-      __dirname,
-      directory
-    );
+    const directoryPath = path.join(__dirname, directory);
 
     if (!fs.existsSync(directoryPath)) {
-      fs.mkdirSync(
-        directoryPath,
-        {
-          recursive: true
-        }
-      );
+      fs.mkdirSync(directoryPath, {
+        recursive: true
+      });
     }
   }
 
-  success(
-    "Project directories checked."
-  );
+  success("Project directories checked.");
 }
 
 // ============================================================
-// LOGO CHECK
+// CONFIGURATION
+// ============================================================
+
+function checkConfiguration() {
+  if (!config.bot) {
+    throw new Error("Bot configuration is missing.");
+  }
+
+  if (!config.bot.name) {
+    throw new Error("Bot name is missing.");
+  }
+
+  if (!config.bot.version) {
+    throw new Error("Bot version is missing.");
+  }
+
+  if (!config.bot.prefix) {
+    throw new Error("Bot prefix is missing.");
+  }
+
+  success(`Bot: ${config.bot.name}`);
+  success(`Version: ${config.bot.version}`);
+  success(`Prefix: ${config.bot.prefix}`);
+  success(`Mode: ${config.bot.mode || "default"}`);
+
+  if (config.bot.developer) {
+    success(`Developer: ${config.bot.developer}`);
+  }
+}
+
+// ============================================================
+// LOGO
 // ============================================================
 
 function checkLogo() {
-  if (
-    !config.bot ||
-    !config.bot.logo
-  ) {
-    warning(
-      "Bot logo path is not configured."
-    );
-
+  if (!config.bot?.logo) {
     return;
   }
 
@@ -131,74 +118,35 @@ function checkLogo() {
   );
 
   if (fs.existsSync(logoPath)) {
-    success(
-      `Bot logo found: ${config.bot.logo}`
-    );
+    success(`Bot logo found: ${config.bot.logo}`);
   } else {
-    warning(
-      `Bot logo not found: ${config.bot.logo}`
-    );
+    warning(`Bot logo not found: ${config.bot.logo}`);
   }
 }
 
 // ============================================================
-// CONFIGURATION CHECK
+// DATABASE
 // ============================================================
 
-function checkConfiguration() {
-  if (!config.bot) {
-    throw new Error(
-      "Bot configuration is missing."
-    );
-  }
-
-  if (!config.bot.name) {
-    throw new Error(
-      "Bot name is missing."
-    );
-  }
-
-  if (!config.bot.version) {
-    throw new Error(
-      "Bot version is missing."
-    );
-  }
-
-  if (!config.bot.prefix) {
-    throw new Error(
-      "Bot prefix is missing."
-    );
-  }
-
-  if (!config.bot.developer) {
-    throw new Error(
-      "Developer name is missing."
-    );
-  }
-
-  success(
-    `Bot: ${config.bot.name}`
+function prepareDatabase() {
+  const databasePath = path.resolve(
+    __dirname,
+    config.database?.path || "database/topferos.db"
   );
 
-  success(
-    `Version: ${config.bot.version}`
-  );
+  const databaseDirectory = path.dirname(databasePath);
 
-  success(
-    `Prefix: ${config.bot.prefix}`
-  );
+  if (!fs.existsSync(databaseDirectory)) {
+    fs.mkdirSync(databaseDirectory, {
+      recursive: true
+    });
+  }
 
-  success(
-    `Mode: ${config.bot.mode || "default"}`
-  );
-
-  success(
-    `Developer: ${config.bot.developer}`
-  );
+  success("Database directory ready.");
 }
 
 // ============================================================
-// OFFICIAL LINKS
+// LINKS
 // ============================================================
 
 function showLinks() {
@@ -206,43 +154,21 @@ function showLinks() {
     return;
   }
 
-  log("");
-
-  log(
-    "🔗 Official Links",
-    colors.cyan
-  );
-
-  log("");
-
   if (config.links.channel) {
-    log(
-      `📢 Channel: ${config.links.channel}`
-    );
+    log(`📢 Channel: ${config.links.channel}`, colors.cyan);
   }
 
   if (config.links.group) {
-    log(
-      `👥 Group: ${config.links.group}`
-    );
+    log(`👥 Group: ${config.links.group}`, colors.cyan);
   }
 
   if (config.links.web) {
-    log(
-      `🌐 Web: ${config.links.web}`
-    );
-  } else {
-    log(
-      "🌐 Web: Configured through Panel",
-      colors.yellow
-    );
+    log(`🌐 Web: ${config.links.web}`, colors.cyan);
   }
-
-  log("");
 }
 
 // ============================================================
-// OWNER INFORMATION
+// OWNER
 // ============================================================
 
 function showOwner() {
@@ -250,88 +176,17 @@ function showOwner() {
     return;
   }
 
-  log(
-    "👑 Owner Information",
-    colors.magenta
-  );
-
-  log("");
-
   if (config.owner.name) {
-    log(
-      `👤 Owner Name: ${config.owner.name}`
-    );
+    log(`👤 Owner: ${config.owner.name}`, colors.magenta);
   }
 
   if (config.owner.number) {
-    log(
-      `📱 Owner Number: ${config.owner.number}`
-    );
-  } else {
-    warning(
-      "Owner number is not configured."
-    );
+    log(`📱 Owner Number: ${config.owner.number}`, colors.magenta);
   }
-
-  log("");
 }
 
 // ============================================================
-// PANEL STATUS
-// ============================================================
-
-function showPanelStatus() {
-  if (
-    config.portal &&
-    config.portal.enabled === false
-  ) {
-    warning(
-      "Web Settings Panel is disabled."
-    );
-
-    return;
-  }
-
-  const port =
-    config.portal?.port ||
-    process.env.PORT ||
-    3000;
-
-  success(
-    `Web Settings Panel enabled on port ${port}.`
-  );
-}
-
-// ============================================================
-// DATABASE DIRECTORY
-// ============================================================
-
-function prepareDatabase() {
-  const databasePath = path.resolve(
-    __dirname,
-    config.database?.path ||
-      "database/topferos.db"
-  );
-
-  const databaseDirectory =
-    path.dirname(databasePath);
-
-  if (!fs.existsSync(databaseDirectory)) {
-    fs.mkdirSync(
-      databaseDirectory,
-      {
-        recursive: true
-      }
-    );
-  }
-
-  success(
-    "Database directory ready."
-  );
-}
-
-// ============================================================
-// START WHATSAPP CONNECTION
+// WHATSAPP
 // ============================================================
 
 async function startWhatsApp() {
@@ -348,32 +203,20 @@ async function startWhatsApp() {
   }
 
   try {
-    connection = require(
-      "./src/connection"
-    );
+    connection = require("./src/connection");
 
     if (!connection) {
       throw new Error(
-        "src/connection.js returned an empty module."
+        "connection.js returned an empty module."
       );
     }
 
-    if (
-      typeof connection.start !==
-      "function"
-    ) {
+    if (typeof connection.start !== "function") {
       throw new Error(
-        "connection.js does not expose a start() function."
+        "connection.js does not expose start()."
       );
     }
 
-    // IMPORTANT:
-    // connection.start() already restores
-    // all stored sessions.
-    //
-    // DO NOT call restoreStoredSessions()
-    // here again. Doing so can create duplicate
-    // sockets using the same Baileys auth state.
     await connection.start();
 
     success(
@@ -381,31 +224,20 @@ async function startWhatsApp() {
     );
 
   } catch (err) {
-  error(
-    `WhatsApp connection error: ${
-      err?.message ||
-      err
-    }`
-  );
+    error(
+      `WhatsApp connection error: ${
+        err?.message || err
+      }`
+    );
 
-  console.error(
-    "========== FULL WHATSAPP ERROR =========="
-  );
+    console.error(err?.stack || err);
 
-  console.error(
-    err?.stack ||
-    err
-  );
-
-  console.error(
-    "=========================================="
-  );
-
-  throw err;
+    throw err;
+  }
 }
 
 // ============================================================
-// LOAD WEB PANEL
+// PANEL
 // ============================================================
 
 async function startPanel() {
@@ -422,9 +254,7 @@ async function startPanel() {
   }
 
   try {
-    const panel = require(
-      "./panel/server"
-    );
+    const panel = require("./panel/server");
 
     if (!panel) {
       throw new Error(
@@ -441,8 +271,7 @@ async function startPanel() {
   } catch (err) {
     error(
       `Web Panel error: ${
-        err?.message ||
-        err
+        err?.message || err
       }`
     );
 
@@ -451,55 +280,44 @@ async function startPanel() {
 }
 
 // ============================================================
-// STARTUP BANNER
+// BANNER
 // ============================================================
 
 function showBanner() {
-  console.clear();
-
-  log("");
-
+  console.log("");
   log(
     "╔══════════════════════════════════════════════╗",
     colors.cyan
   );
-
   log(
     "║                                              ║",
     colors.cyan
   );
-
   log(
-    "║             🤖 TOPFEROS MD                   ║",
+    "║              🤖 TOPFEROS MD                 ║",
     colors.cyan
   );
-
   log(
-    "║                 V1.0.0                       ║",
+    "║                 V1.0.0                      ║",
     colors.cyan
   );
-
   log(
     "║                                              ║",
     colors.cyan
   );
-
   log(
-    "║             🚀 TOPFEROS TECH                 ║",
+    "║              🚀 TOPFEROS TECH               ║",
     colors.cyan
   );
-
   log(
     "║                                              ║",
     colors.cyan
   );
-
   log(
     "╚══════════════════════════════════════════════╝",
     colors.cyan
   );
-
-  log("");
+  console.log("");
 }
 
 // ============================================================
@@ -507,42 +325,24 @@ function showBanner() {
 // ============================================================
 
 function showSystemInformation() {
-  log("");
-
   log(
     "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
     colors.cyan
   );
 
-  log(
-    "📦 System Initialization",
-    colors.cyan
-  );
+  log("📦 System Initialization", colors.cyan);
+  log(`🟢 Node.js: ${process.version}`);
+  log(`🟢 Platform: ${process.platform}`);
+  log(`🟢 PID: ${process.pid}`);
 
   log(
     "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
     colors.cyan
   );
-
-  log("");
-
-  log(
-    `🟢 Node.js: ${process.version}`
-  );
-
-  log(
-    `🟢 Platform: ${process.platform}`
-  );
-
-  log(
-    `🟢 PID: ${process.pid}`
-  );
-
-  log("");
 }
 
 // ============================================================
-// MAIN START FUNCTION
+// START BOT
 // ============================================================
 
 async function startBot() {
@@ -554,29 +354,19 @@ async function startBot() {
       colors.bold
     );
 
-    log("");
-
     createDirectories();
-
     checkConfiguration();
-
     checkLogo();
-
     prepareDatabase();
-
     showOwner();
-
     showLinks();
-
-    showPanelStatus();
-
     showSystemInformation();
 
     await startWhatsApp();
 
     await startPanel();
 
-    log("");
+    console.log("");
 
     log(
       "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
@@ -592,7 +382,7 @@ async function startBot() {
       colors.green
     );
 
-    log("");
+    console.log("");
 
     log(
       "🌐 Panel is ready for Multi-Session connections.",
@@ -604,71 +394,55 @@ async function startBot() {
       colors.cyan
     );
 
-    log("");
-
   } catch (err) {
     error(
       `Startup failed: ${
-        err?.message ||
-        err
+        err?.message || err
       }`
     );
 
-    if (
-      process.env.NODE_ENV !==
-      "production"
-    ) {
-      console.error(err);
-    }
+    console.error(
+      err?.stack || err
+    );
 
     process.exit(1);
   }
 }
 
 // ============================================================
-// PROCESS ERROR HANDLING
+// ERROR HANDLING
 // ============================================================
 
 process.on(
   "uncaughtException",
-  err => {
+  (err) => {
     error(
       `Uncaught Exception: ${
-        err?.message ||
-        err
+        err?.message || err
       }`
     );
 
-    if (
-      process.env.NODE_ENV !==
-      "production"
-    ) {
-      console.error(err);
-    }
+    console.error(
+      err?.stack || err
+    );
   }
 );
 
 process.on(
   "unhandledRejection",
-  reason => {
+  (reason) => {
     error(
       `Unhandled Promise Rejection: ${
-        reason?.message ||
-        reason
+        reason?.message || reason
       }`
     );
 
-    if (
-      process.env.NODE_ENV !==
-      "production"
-    ) {
-      console.error(reason);
-    }
+    console.error(reason);
   }
 );
 
 // ============================================================
-// GRACEFUL SHUTDOWN
+// SHUTDOWN
 // ============================================================
 
 async function shutdown(signal) {
@@ -678,24 +452,16 @@ async function shutdown(signal) {
 
   shuttingDown = true;
 
-  log("");
-
   warning(
     `${signal} received.`
-  );
-
-  log(
-    "🛑 Shutting down TOPFEROS MD..."
   );
 
   try {
     if (
       connection &&
-      typeof connection.stop ===
-        "function"
+      typeof connection.stop === "function"
     ) {
       await connection.stop();
-
       success(
         "WhatsApp Multi-Sessions stopped."
       );
@@ -703,8 +469,7 @@ async function shutdown(signal) {
   } catch (err) {
     error(
       `WhatsApp shutdown error: ${
-        err?.message ||
-        err
+        err?.message || err
       }`
     );
   }
@@ -713,16 +478,13 @@ async function shutdown(signal) {
     if (
       panelServer &&
       panelServer.server &&
-      typeof panelServer.server.close ===
-        "function"
+      typeof panelServer.server.close === "function"
     ) {
-      await new Promise(
-        resolve => {
-          panelServer.server.close(
-            () => resolve()
-          );
-        }
-      );
+      await new Promise((resolve) => {
+        panelServer.server.close(() => {
+          resolve();
+        });
+      });
 
       success(
         "Web Panel server stopped."
@@ -731,41 +493,30 @@ async function shutdown(signal) {
   } catch (err) {
     error(
       `Panel shutdown error: ${
-        err?.message ||
-        err
+        err?.message || err
       }`
     );
   }
-
-  log("");
-
-  success(
-    "TOPFEROS MD shutdown completed."
-  );
 
   process.exit(0);
 }
 
 // ============================================================
-// PROCESS SIGNALS
+// SIGNALS
 // ============================================================
 
 process.on(
   "SIGINT",
-  () => {
-    shutdown("SIGINT");
-  }
+  () => shutdown("SIGINT")
 );
 
 process.on(
   "SIGTERM",
-  () => {
-    shutdown("SIGTERM");
-  }
+  () => shutdown("SIGTERM")
 );
 
 // ============================================================
-// RUN BOT
+// RUN
 // ============================================================
 
 startBot();
