@@ -1,1022 +1,760 @@
+// ╔════════════════════════════════════════════════════╗
+// ║              🤖 TOPFEROS MD V1.0.0               ║
+// ╚════════════════════════════════════════════════════╝
 "use strict";
 
+const fs = require("fs");
+const path = require("path");
+
 // ============================================================
-// 🦁 TOPFEROS MD
-// MESSAGE HANDLER
-// WhatsApp / Baileys
+// LOAD CONFIGURATION
 // ============================================================
 
-let config = {};
+const config = require("./config");
 
-try {
-  config = require("../config");
-} catch (error) {
-  console.warn(
-    "⚠️ CONFIG LOAD WARNING:",
-    error?.message || error
+// ============================================================
+// GLOBAL SERVICES
+// ============================================================
+
+let connection = null;
+let panelServer = null;
+let shuttingDown = false;
+
+// ============================================================
+// CONSOLE COLORS
+// ============================================================
+
+const colors = {
+  reset: "\x1b[0m",
+  red: "\x1b[31m",
+  green: "\x1b[32m",
+  yellow: "\x1b[33m",
+  blue: "\x1b[34m",
+  magenta: "\x1b[35m",
+  cyan: "\x1b[36m",
+  white: "\x1b[37m",
+  bold: "\x1b[1m"
+};
+
+// ============================================================
+// LOGGER
+// ============================================================
+
+function log(message, color = colors.white) {
+  console.log(
+    `${color}${message}${colors.reset}`
   );
 }
 
-const commandIndex =
-  require("../commands/index");
+function success(message) {
+  log(
+    `✅ ${message}`,
+    colors.green
+  );
+}
 
-// ============================================================
-// 🤖 STATUS SYSTEM
-// ============================================================
+function warning(message) {
+  log(
+    `⚠️ ${message}`,
+    colors.yellow
+  );
+}
 
-let statusSystem = null;
-
-try {
-  statusSystem =
-    require("../commands/status");
-} catch (error) {
-  console.warn(
-    "⚠️ STATUS SYSTEM LOAD WARNING:",
-    error?.message || error
+function error(message) {
+  log(
+    `❌ ${message}`,
+    colors.red
   );
 }
 
 // ============================================================
-// PREFIX
+// REQUIRED DIRECTORIES
 // ============================================================
 
-const PREFIX =
-  config?.bot?.prefix ||
-  config?.PREFIX ||
-  config?.prefix ||
-  ".";
-
-// ============================================================
-// UNWRAP WHATSAPP MESSAGE
-// ============================================================
-
-function unwrapMessageContent(messageContent) {
-  let current = messageContent;
-
-  if (!current) {
-    return null;
-  }
-
-  const wrapperKeys = [
-    "ephemeralMessage",
-    "viewOnceMessage",
-    "viewOnceMessageV2",
-    "viewOnceMessageV2Extension",
-    "documentWithCaptionMessage",
-    "editedMessage",
-    "associatedChildMessage"
+function createDirectories() {
+  const directories = [
+    "auth",
+    "auth/sessions",
+    "database",
+    "temp",
+    "downloads",
+    "uploads",
+    "logs",
+    "commands",
+    "features",
+    "services",
+    "utils",
+    "panel",
+    "panel/public"
   ];
 
-  let safety = 0;
-
-  while (
-    current &&
-    safety < 10
-  ) {
-    safety++;
-
-    let found = false;
-
-    for (
-      const key of wrapperKeys
-    ) {
-      if (
-        current[key] &&
-        typeof current[key] === "object"
-      ) {
-        current =
-          current[key].message ||
-          current[key];
-
-        found = true;
-        break;
-      }
-    }
-
-    if (!found) {
-      break;
-    }
-  }
-
-  return current || null;
-}
-
-// ============================================================
-// GET MESSAGE CONTENT
-// ============================================================
-
-function getMessageContent(message) {
-  return unwrapMessageContent(
-    message?.message
-  );
-}
-
-// ============================================================
-// GET MESSAGE TEXT
-// ============================================================
-
-function getMessageText(message) {
-  const msg =
-    getMessageContent(message);
-
-  if (!msg) {
-    return "";
-  }
-
-  if (
-    typeof msg.conversation === "string"
-  ) {
-    return msg.conversation;
-  }
-
-  if (
-    typeof msg.extendedTextMessage?.text ===
-      "string"
-  ) {
-    return msg.extendedTextMessage.text;
-  }
-
-  if (
-    typeof msg.imageMessage?.caption ===
-      "string"
-  ) {
-    return msg.imageMessage.caption;
-  }
-
-  if (
-    typeof msg.videoMessage?.caption ===
-      "string"
-  ) {
-    return msg.videoMessage.caption;
-  }
-
-  if (
-    typeof msg.documentMessage?.caption ===
-      "string"
-  ) {
-    return msg.documentMessage.caption;
-  }
-
-  if (
-    typeof msg.audioMessage?.caption ===
-      "string"
-  ) {
-    return msg.audioMessage.caption;
-  }
-
-  if (
-    typeof msg.buttonsResponseMessage
-      ?.selectedButtonId === "string"
-  ) {
-    return (
-      msg.buttonsResponseMessage
-        .selectedButtonId
+  for (const directory of directories) {
+    const directoryPath = path.join(
+      __dirname,
+      directory
     );
-  }
 
-  if (
-    typeof msg.listResponseMessage
-      ?.singleSelectReply
-      ?.selectedRowId === "string"
-  ) {
-    return (
-      msg.listResponseMessage
-        .singleSelectReply
-        .selectedRowId
-    );
-  }
-
-  if (
-    typeof msg.templateButtonReplyMessage
-      ?.selectedId === "string"
-  ) {
-    return (
-      msg.templateButtonReplyMessage
-        .selectedId
-    );
-  }
-
-  const interactive =
-    msg.interactiveResponseMessage;
-
-  if (interactive) {
-    try {
-      const nativeFlow =
-        interactive.nativeFlowResponseMessage;
-
-      if (
-        nativeFlow?.paramsJson
-      ) {
-        const parsed =
-          JSON.parse(
-            nativeFlow.paramsJson
-          );
-
-        return (
-          parsed?.id ||
-          parsed?.selectedId ||
-          parsed?.button_id ||
-          ""
-        );
-      }
-    } catch {}
-  }
-
-  for (
-    const value of
-    Object.values(msg)
-  ) {
-    if (
-      value &&
-      typeof value === "object"
-    ) {
-      if (
-        typeof value.text === "string"
-      ) {
-        return value.text;
-      }
-
-      if (
-        typeof value.caption === "string"
-      ) {
-        return value.caption;
-      }
-    }
-  }
-
-  return "";
-}
-
-// ============================================================
-// GET QUOTED MESSAGE
-// ============================================================
-
-function getQuotedMessage(message) {
-  const msg =
-    getMessageContent(message);
-
-  if (!msg) {
-    return null;
-  }
-
-  const contextTypes = [
-    msg.extendedTextMessage?.contextInfo,
-    msg.imageMessage?.contextInfo,
-    msg.videoMessage?.contextInfo,
-    msg.documentMessage?.contextInfo,
-    msg.audioMessage?.contextInfo
-  ];
-
-  for (
-    const context of contextTypes
-  ) {
-    if (context?.quotedMessage) {
-      return context.quotedMessage;
-    }
-  }
-
-  return null;
-}
-
-// ============================================================
-// GET SENDER
-// ============================================================
-
-function getSender(message) {
-  return (
-    message?.key?.participant ||
-    message?.participant ||
-    message?.key?.remoteJid ||
-    null
-  );
-}
-
-// ============================================================
-// GET CHAT ID
-// ============================================================
-
-function getChatId(message) {
-  return (
-    message?.key?.remoteJid ||
-    null
-  );
-}
-
-// ============================================================
-// 👁️ STATUS ACTIONS
-// ============================================================
-// IMPORTANT:
-// Pa gen ❤️ oswa 🔥 fixed reaction isit la.
-// AI/status system nan se sèl sistèm ki voye reaction.
-// ============================================================
-
-async function handleStatusActions(
-  sock,
-  message,
-  sessionId
-) {
-  try {
-    if (
-      !sock ||
-      !message?.key ||
-      message?.key?.remoteJid !==
-        "status@broadcast"
-    ) {
-      return;
-    }
-
-    const features =
-      config?.features || {};
-
-    // --------------------------------------------------------
-    // 👁️ AUTO STATUS SEEN
-    // --------------------------------------------------------
-
-    if (
-      features.autoStatusSeen === true &&
-      typeof sock.readMessages ===
-        "function"
-    ) {
-      try {
-        await sock.readMessages([
-          message.key
-        ]);
-
-        console.log(
-          `👁️ STATUS SEEN [${sessionId}]`
-        );
-
-      } catch (error) {
-        console.warn(
-          `⚠️ STATUS SEEN ERROR [${sessionId}]:`,
-          error?.message ||
-          error
-        );
-      }
-    }
-
-  } catch (error) {
-    console.error(
-      `❌ STATUS ACTIONS ERROR [${sessionId}]`,
-      error?.stack ||
-      error?.message ||
-      error
-    );
-  }
-}
-
-// ============================================================
-// CHECK GROUP
-// ============================================================
-
-function isGroupMessage(message) {
-  const chatId =
-    getChatId(message);
-
-  return (
-    typeof chatId === "string" &&
-    chatId.endsWith("@g.us")
-  );
-}
-
-// ============================================================
-// 🦁 REACT TO COMMAND
-// ============================================================
-
-async function reactToCommand(
-  sock,
-  message
-) {
-  try {
-    if (
-      !sock ||
-      !message?.key
-    ) {
-      return false;
-    }
-
-    const chatId =
-      getChatId(message);
-
-    if (!chatId) {
-      return false;
-    }
-
-    await sock.sendMessage(
-      chatId,
-      {
-        react: {
-          text: "🦁",
-          key: message.key
+    if (!fs.existsSync(directoryPath)) {
+      fs.mkdirSync(
+        directoryPath,
+        {
+          recursive: true
         }
-      }
-    );
-
-    console.log(
-      `🦁 COMMAND REACTION SENT [${chatId}]`
-    );
-
-    return true;
-
-  } catch (error) {
-    console.warn(
-      "⚠️ COMMAND REACTION ERROR:",
-      error?.message ||
-      error
-    );
-
-    return false;
-  }
-}
-
-// ============================================================
-// SEND COMMAND ERROR
-// ============================================================
-
-async function sendCommandError(
-  sock,
-  chatId,
-  commandName,
-  error
-) {
-  try {
-    if (
-      !sock ||
-      !chatId
-    ) {
-      return;
-    }
-
-    console.error(
-      `❌ COMMAND EXECUTION ERROR [${PREFIX}${commandName}]:`,
-      error?.stack ||
-      error?.message ||
-      error
-    );
-
-    const errorText =
-      "╭━━━━━━━━━━━━━━━━━━━━━━━━━━━━╮\n" +
-      "┃       ❌ COMMAND ERROR\n" +
-      "╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯\n\n" +
-
-      `⚙️ Kòmand: ${PREFIX}${commandName}\n\n` +
-
-      "Bot la jwenn kòmand lan, men li pa kapab fini ekzekisyon an.\n\n" +
-
-      "🔧 Verifye:\n" +
-      "• Paramèt kòmand lan\n" +
-      "• Configuration bot la\n" +
-      "• Permission bot la\n" +
-      "• Service/API kòmand lan\n\n" +
-
-      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n" +
-      "🚀 TECH BY TOPFEROS MD\n" +
-      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━";
-
-    await sock.sendMessage(
-      chatId,
-      {
-        text: errorText
-      }
-    );
-
-  } catch (sendError) {
-    console.error(
-      "❌ FAILED TO SEND COMMAND ERROR:",
-      sendError?.stack ||
-      sendError?.message ||
-      sendError
-    );
-  }
-}
-
-// ============================================================
-// UNKNOWN COMMAND
-// ============================================================
-
-async function sendUnknownCommand(
-  sock,
-  chatId,
-  commandName
-) {
-  try {
-    if (
-      !sock ||
-      !chatId
-    ) {
-      return;
-    }
-
-    const unknownText =
-      "╭━━━━━━━━━━━━━━━━━━━━━━━━━━━━╮\n" +
-      "┃       ❓ UNKNOWN COMMAND\n" +
-      "╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯\n\n" +
-
-      `❌ Kòmand ${PREFIX}${commandName} pa egziste.\n\n` +
-
-      `📖 Ekri ${PREFIX}menu pou wè tout kòmand disponib yo.\n\n` +
-
-      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n" +
-      "🚀 TECH BY TOPFEROS MD\n" +
-      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━";
-
-    await sock.sendMessage(
-      chatId,
-      {
-        text: unknownText
-      }
-    );
-
-  } catch (error) {
-    console.error(
-      "❌ UNKNOWN COMMAND RESPONSE ERROR:",
-      error?.message ||
-      error
-    );
-  }
-}
-
-// ============================================================
-// 🤖 HANDLE MESSAGE
-// ============================================================
-
-async function handleMessage(
-  sock,
-  message,
-  sessionId
-) {
-  try {
-
-    // --------------------------------------------------------
-    // BASIC VALIDATION
-    // --------------------------------------------------------
-
-    if (
-      !sock ||
-      !message ||
-      !sessionId
-    ) {
-      return;
-    }
-
-    // --------------------------------------------------------
-    // CHAT ID
-    // --------------------------------------------------------
-
-    const chatId =
-      getChatId(message);
-
-    if (!chatId) {
-      return;
-    }
-
-    // ========================================================
-    // 🖼️ WHATSAPP STATUS
-    // ========================================================
-
-    if (
-      chatId ===
-      "status@broadcast"
-    ) {
-
-      // ------------------------------------------------------
-      // IGNORE OWN STATUS
-      // ------------------------------------------------------
-
-      if (
-        message?.key?.fromMe
-      ) {
-        console.log(
-          `⏭️ STATUS IGNORED [${sessionId}] — fromMe`
-        );
-
-        return;
-      }
-
-      // ------------------------------------------------------
-      // 👁️ AUTO SEEN
-      // ------------------------------------------------------
-
-      if (
-        config?.features?.autoStatusSeen === true &&
-        typeof sock.readMessages ===
-          "function"
-      ) {
-        try {
-
-          await sock.readMessages([
-            message.key
-          ]);
-
-          console.log(
-            `👁️ STATUS SEEN [${sessionId}]`
-          );
-
-        } catch (seenError) {
-
-          console.warn(
-            `⚠️ STATUS SEEN ERROR [${sessionId}]:`,
-            seenError?.message ||
-            seenError
-          );
-        }
-      }
-
-      // ------------------------------------------------------
-      // 🤖 AI SMART STATUS REACTION
-      // ------------------------------------------------------
-      //
-      // ONE STATUS = ONE REACTION
-      //
-      // Pa gen ❤️ fixed.
-      // Pa gen 🔥 fixed.
-      // AI/status system chwazi emoji a.
-      // ------------------------------------------------------
-
-      if (
-        config?.features?.statusReact === true &&
-        statusSystem &&
-        typeof statusSystem.getSmartStatusReaction ===
-          "function"
-      ) {
-
-        let smartReaction = null;
-
-        try {
-
-          smartReaction =
-            await statusSystem.getSmartStatusReaction({
-              sock,
-              message,
-              sessionId,
-              config
-            });
-
-        } catch (reactionError) {
-
-          console.warn(
-            `⚠️ AI STATUS ANALYSIS ERROR [${sessionId}]:`,
-            reactionError?.message ||
-            reactionError
-          );
-        }
-
-        // ----------------------------------------------------
-        // CHOOSE EXACTLY ONE EMOJI
-        // ----------------------------------------------------
-
-        const emoji =
-          smartReaction?.emoji ||
-          "👍";
-
-        // ----------------------------------------------------
-        // SEND ONLY ONE REACTION
-        // ----------------------------------------------------
-
-        try {
-
-          await sock.sendMessage(
-            "status@broadcast",
-            {
-              react: {
-                text: emoji,
-                key: message.key
-              }
-            }
-          );
-
-          console.log(
-            `${emoji} AI STATUS REACTION SENT [${sessionId}]` +
-            (
-              smartReaction?.reason
-                ? ` — ${smartReaction.reason}`
-                : ""
-            )
-          );
-
-        } catch (sendReactionError) {
-
-          console.warn(
-            `⚠️ STATUS REACTION SEND ERROR [${sessionId}]:`,
-            sendReactionError?.message ||
-            sendReactionError
-          );
-        }
-      }
-
-      // ------------------------------------------------------
-      // 📥 AUTO STATUS SAVE / SEND / ANREJISTRE
-      // ------------------------------------------------------
-
-      if (
-        statusSystem &&
-        typeof statusSystem.handleAutoStatus ===
-          "function"
-      ) {
-
-        try {
-
-          await statusSystem.handleAutoStatus({
-            sock,
-            message,
-            sessionId,
-            chatId,
-            config
-          });
-
-          console.log(
-            `✅ STATUS AUTO SAVE/SEND COMPLETED [${sessionId}]`
-          );
-
-        } catch (statusError) {
-
-          console.error(
-            `❌ STATUS AUTO SAVE/SEND ERROR [${sessionId}]`,
-            statusError?.stack ||
-            statusError?.message ||
-            statusError
-          );
-        }
-
-      } else {
-
-        console.warn(
-          "⚠️ STATUS SYSTEM NOT AVAILABLE"
-        );
-      }
-
-      return;
-    }
-
-    // ========================================================
-    // IGNORE BOT'S OWN NORMAL MESSAGE
-    // ========================================================
-
-    if (
-      message?.key?.fromMe
-    ) {
-      console.log(
-        `⏭️ MESSAGE IGNORED [${sessionId}] — fromMe`
       );
+    }
+  }
 
-      return;
+  success(
+    "Project directories checked."
+  );
+}
+
+// ============================================================
+// LOGO CHECK
+// ============================================================
+
+function checkLogo() {
+  if (
+    !config.bot ||
+    !config.bot.logo
+  ) {
+    warning(
+      "Bot logo path is not configured."
+    );
+
+    return;
+  }
+
+  const logoPath = path.join(
+    __dirname,
+    config.bot.logo
+  );
+
+  if (fs.existsSync(logoPath)) {
+    success(
+      `Bot logo found: ${config.bot.logo}`
+    );
+  } else {
+    warning(
+      `Bot logo not found: ${config.bot.logo}`
+    );
+  }
+}
+
+// ============================================================
+// CONFIGURATION CHECK
+// ============================================================
+
+function checkConfiguration() {
+  if (!config.bot) {
+    throw new Error(
+      "Bot configuration is missing."
+    );
+  }
+
+  if (!config.bot.name) {
+    throw new Error(
+      "Bot name is missing."
+    );
+  }
+
+  if (!config.bot.version) {
+    throw new Error(
+      "Bot version is missing."
+    );
+  }
+
+  if (!config.bot.prefix) {
+    throw new Error(
+      "Bot prefix is missing."
+    );
+  }
+
+  if (!config.bot.developer) {
+    throw new Error(
+      "Developer name is missing."
+    );
+  }
+
+  success(
+    `Bot: ${config.bot.name}`
+  );
+
+  success(
+    `Version: ${config.bot.version}`
+  );
+
+  success(
+    `Prefix: ${config.bot.prefix}`
+  );
+
+  success(
+    `Mode: ${config.bot.mode || "default"}`
+  );
+
+  success(
+    `Developer: ${config.bot.developer}`
+  );
+}
+
+// ============================================================
+// OFFICIAL LINKS
+// ============================================================
+
+function showLinks() {
+  if (!config.links) {
+    return;
+  }
+
+  log("");
+
+  log(
+    "🔗 Official Links",
+    colors.cyan
+  );
+
+  log("");
+
+  if (config.links.channel) {
+    log(
+      `📢 Channel: ${config.links.channel}`
+    );
+  }
+
+  if (config.links.group) {
+    log(
+      `👥 Group: ${config.links.group}`
+    );
+  }
+
+  if (config.links.web) {
+    log(
+      `🌐 Web: ${config.links.web}`
+    );
+  } else {
+    log(
+      "🌐 Web: Configured through Panel",
+      colors.yellow
+    );
+  }
+
+  log("");
+}
+
+// ============================================================
+// OWNER INFORMATION
+// ============================================================
+
+function showOwner() {
+  if (!config.owner) {
+    return;
+  }
+
+  log(
+    "👑 Owner Information",
+    colors.magenta
+  );
+
+  log("");
+
+  if (config.owner.name) {
+    log(
+      `👤 Owner Name: ${config.owner.name}`
+    );
+  }
+
+  if (config.owner.number) {
+    log(
+      `📱 Owner Number: ${config.owner.number}`
+    );
+  } else {
+    warning(
+      "Owner number is not configured."
+    );
+  }
+
+  log("");
+}
+
+// ============================================================
+// PANEL STATUS
+// ============================================================
+
+function showPanelStatus() {
+  if (
+    config.portal &&
+    config.portal.enabled === false
+  ) {
+    warning(
+      "Web Settings Panel is disabled."
+    );
+
+    return;
+  }
+
+  const port =
+    config.portal?.port ||
+    process.env.PORT ||
+    3000;
+
+  success(
+    `Web Settings Panel enabled on port ${port}.`
+  );
+}
+
+// ============================================================
+// DATABASE DIRECTORY
+// ============================================================
+
+function prepareDatabase() {
+  const databasePath = path.resolve(
+    __dirname,
+    config.database?.path ||
+      "database/topferos.db"
+  );
+
+  const databaseDirectory =
+    path.dirname(databasePath);
+
+  if (!fs.existsSync(databaseDirectory)) {
+    fs.mkdirSync(
+      databaseDirectory,
+      {
+        recursive: true
+      }
+    );
+  }
+
+  success(
+    "Database directory ready."
+  );
+}
+
+// ============================================================
+// START WHATSAPP CONNECTION
+// ============================================================
+
+async function startWhatsApp() {
+  const connectionFile = path.join(
+    __dirname,
+    "src",
+    "connection.js"
+  );
+
+  if (!fs.existsSync(connectionFile)) {
+    throw new Error(
+      "src/connection.js was not found."
+    );
+  }
+
+  try {
+    connection = require(
+      "./src/connection"
+    );
+
+    if (!connection) {
+      throw new Error(
+        "src/connection.js returned an empty module."
+      );
     }
 
-    // ========================================================
-    // EXTRACT TEXT
-    // ========================================================
+    if (
+      typeof connection.start !==
+      "function"
+    ) {
+      throw new Error(
+        "connection.js does not expose a start() function."
+      );
+    }
 
-    const text =
-      String(
-        getMessageText(message) ||
-        ""
-      ).trim();
+    // IMPORTANT:
+    // connection.start() already restores
+    // all stored sessions.
+    //
+    // DO NOT call restoreStoredSessions()
+    // here again. Doing so can create duplicate
+    // sockets using the same Baileys auth state.
 
-    console.log(
-      `📝 MESSAGE [${sessionId}]: ${
-        text || "[MEDIA]"
+    await connection.start();
+
+    success(
+      "WhatsApp connection service started."
+    );
+
+  } catch (err) {
+    error(
+      `WhatsApp connection error: ${
+        err?.message ||
+        err
       }`
     );
 
-    // --------------------------------------------------------
-    // NO TEXT
-    // --------------------------------------------------------
-
-    if (!text) {
-      return;
-    }
-
-    // ========================================================
-    // PREFIX CHECK
-    // ========================================================
-
-    if (
-      !text.startsWith(PREFIX)
-    ) {
-      console.log(
-        `ℹ️ MESSAGE WITHOUT PREFIX [${sessionId}]: ${text}`
-      );
-
-      return;
-    }
-
-    // ========================================================
-    // REMOVE PREFIX
-    // ========================================================
-
-    const commandLine =
-      text
-        .slice(
-          PREFIX.length
-        )
-        .trim();
-
-    if (!commandLine) {
-      return;
-    }
-
-    // ========================================================
-    // SPLIT COMMAND
-    // ========================================================
-
-    const parts =
-      commandLine.split(
-        /\s+/
-      );
-
-    const commandName =
-      String(
-        parts.shift() || ""
-      ).toLowerCase();
-
-    const args =
-      parts;
-
-    console.log(
-      `🔎 COMMAND SEARCH [${sessionId}]: ${PREFIX}${commandName}`
-    );
-
-    // ========================================================
-    // FIND COMMAND
-    // ========================================================
-
-    const command =
-      commandIndex.getCommand(
-        commandName
-      );
-
-    if (!command) {
-
-      console.log(
-        `❓ UNKNOWN COMMAND [${sessionId}]: ${PREFIX}${commandName}`
-      );
-
-      await sendUnknownCommand(
-        sock,
-        chatId,
-        commandName
-      );
-
-      return;
-    }
-
-    console.log(
-      `✅ COMMAND FOUND [${sessionId}]: ${command.name}`
-    );
-
-    // ========================================================
-    // COMMAND TEXT
-    // ========================================================
-
-    const commandText =
-      args
-        .join(" ")
-        .trim();
-
-    // ========================================================
-    // MESSAGE CONTEXT
-    // ========================================================
-
-    const context = {
-
-      sock,
-
-      message,
-
-      msg:
-        message,
-
-      sessionId,
-
-      chatId,
-
-      sender:
-        getSender(message),
-
-      isGroup:
-        isGroupMessage(
-          message
-        ),
-
-      quoted:
-        getQuotedMessage(
-          message
-        ),
-
-      command:
-        commandName,
-
-      commandName,
-
-      args,
-
-      text:
-        commandText,
-
-      prefix:
-        PREFIX,
-
-      config
-    };
-
-    // ========================================================
-    // LOG COMMAND
-    // ========================================================
-
-    console.log(
-      `🚀 EXECUTING COMMAND [${sessionId}]: ${PREFIX}${commandName}`
-    );
-
-    // ========================================================
-    // COMMAND REACTION
-    // ========================================================
-
-    await reactToCommand(
-      sock,
-      message
-    );
-
-    // ========================================================
-    // EXECUTE COMMAND
-    // ========================================================
-
-    try {
-
-      await command.execute(
-        context
-      );
-
-      console.log(
-        `✅ COMMAND COMPLETED [${sessionId}]: ${PREFIX}${commandName}`
-      );
-
-    } catch (commandError) {
-
-      await sendCommandError(
-        sock,
-        chatId,
-        commandName,
-        commandError
-      );
-    }
-
-  } catch (error) {
-
-    // ========================================================
-    // GLOBAL HANDLER ERROR
-    // ========================================================
-
-    console.error(
-      `❌ HANDLE MESSAGE ERROR [${
-        sessionId || "unknown"
-      }]`,
-      error?.stack ||
-      error?.message ||
-      error
-    );
-
-    try {
-
-      const errorChatId =
-        getChatId(message);
-
-      if (
-        sock &&
-        errorChatId &&
-        errorChatId !==
-          "status@broadcast"
-      ) {
-
-        await sock.sendMessage(
-          errorChatId,
-          {
-            text:
-              "❌ Yon erè rive pandan bot la t ap trete kòmand lan.\n\n" +
-              "🔧 Tanpri eseye ankò."
-          }
-        );
-      }
-
-    } catch (sendError) {
-
-      console.error(
-        "❌ GLOBAL ERROR RESPONSE FAILED:",
-        sendError?.message ||
-        sendError
-      );
-    }
+    throw err;
   }
 }
 
 // ============================================================
-// EXPORTS
+// LOAD WEB PANEL
 // ============================================================
 
-module.exports = {
-  handleMessage,
-  handleStatusActions,
-  getMessageText,
-  getQuotedMessage,
-  getSender,
-  getChatId
-}; 
+async function startPanel() {
+  const panelFile = path.join(
+    __dirname,
+    "panel",
+    "server.js"
+  );
+
+  if (!fs.existsSync(panelFile)) {
+    throw new Error(
+      "panel/server.js was not found."
+    );
+  }
+
+  try {
+    const panel = require(
+      "./panel/server"
+    );
+
+    if (!panel) {
+      throw new Error(
+        "panel/server.js returned an empty module."
+      );
+    }
+
+    panelServer = panel;
+
+    success(
+      "TOPFEROS MD Web Panel loaded."
+    );
+
+  } catch (err) {
+    error(
+      `Web Panel error: ${
+        err?.message ||
+        err
+      }`
+    );
+
+    throw err;
+  }
+}
+
+// ============================================================
+// STARTUP BANNER
+// ============================================================
+
+function showBanner() {
+  console.clear();
+
+  log("");
+
+  log(
+    "╔══════════════════════════════════════════════╗",
+    colors.cyan
+  );
+
+  log(
+    "║                                              ║",
+    colors.cyan
+  );
+
+  log(
+    "║             🤖 TOPFEROS MD                   ║",
+    colors.cyan
+  );
+
+  log(
+    "║                 V1.0.0                       ║",
+    colors.cyan
+  );
+
+  log(
+    "║                                              ║",
+    colors.cyan
+  );
+
+  log(
+    "║             🚀 TOPFEROS TECH                 ║",
+    colors.cyan
+  );
+
+  log(
+    "║                                              ║",
+    colors.cyan
+  );
+
+  log(
+    "╚══════════════════════════════════════════════╝",
+    colors.cyan
+  );
+
+  log("");
+}
+
+// ============================================================
+// SYSTEM INFORMATION
+// ============================================================
+
+function showSystemInformation() {
+  log("");
+
+  log(
+    "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+    colors.cyan
+  );
+
+  log(
+    "📦 System Initialization",
+    colors.cyan
+  );
+
+  log(
+    "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+    colors.cyan
+  );
+
+  log("");
+
+  log(
+    `🟢 Node.js: ${process.version}`
+  );
+
+  log(
+    `🟢 Platform: ${process.platform}`
+  );
+
+  log(
+    `🟢 PID: ${process.pid}`
+  );
+
+  log("");
+}
+
+// ============================================================
+// MAIN START FUNCTION
+// ============================================================
+
+async function startBot() {
+  try {
+    showBanner();
+
+    log(
+      "🚀 Starting TOPFEROS MD...",
+      colors.bold
+    );
+
+    log("");
+
+    createDirectories();
+
+    checkConfiguration();
+
+    checkLogo();
+
+    prepareDatabase();
+
+    showOwner();
+
+    showLinks();
+
+    showPanelStatus();
+
+    showSystemInformation();
+
+    await startWhatsApp();
+
+    await startPanel();
+
+    log("");
+
+    log(
+      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+      colors.green
+    );
+
+    success(
+      "TOPFEROS MD initialization completed."
+    );
+
+    log(
+      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+      colors.green
+    );
+
+    log("");
+
+    log(
+      "🌐 Panel is ready for Multi-Session connections.",
+      colors.cyan
+    );
+
+    log(
+      "📱 Users can connect their WhatsApp numbers through the Panel.",
+      colors.cyan
+    );
+
+    log("");
+
+  } catch (err) {
+    error(
+      `Startup failed: ${
+        err?.message ||
+        err
+      }`
+    );
+
+    if (
+      process.env.NODE_ENV !==
+      "production"
+    ) {
+      console.error(err);
+    }
+
+    process.exit(1);
+  }
+}
+
+// ============================================================
+// PROCESS ERROR HANDLING
+// ============================================================
+
+process.on(
+  "uncaughtException",
+  err => {
+    error(
+      `Uncaught Exception: ${
+        err?.message ||
+        err
+      }`
+    );
+
+    if (
+      process.env.NODE_ENV !==
+      "production"
+    ) {
+      console.error(err);
+    }
+  }
+);
+
+process.on(
+  "unhandledRejection",
+  reason => {
+    error(
+      `Unhandled Promise Rejection: ${
+        reason?.message ||
+        reason
+      }`
+    );
+
+    if (
+      process.env.NODE_ENV !==
+      "production"
+    ) {
+      console.error(reason);
+    }
+  }
+);
+
+// ============================================================
+// GRACEFUL SHUTDOWN
+// ============================================================
+
+async function shutdown(signal) {
+  if (shuttingDown) {
+    return;
+  }
+
+  shuttingDown = true;
+
+  log("");
+
+  warning(
+    `${signal} received.`
+  );
+
+  log(
+    "🛑 Shutting down TOPFEROS MD..."
+  );
+
+  try {
+    if (
+      connection &&
+      typeof connection.stop ===
+        "function"
+    ) {
+      await connection.stop();
+
+      success(
+        "WhatsApp Multi-Sessions stopped."
+      );
+    }
+  } catch (err) {
+    error(
+      `WhatsApp shutdown error: ${
+        err?.message ||
+        err
+      }`
+    );
+  }
+
+  try {
+    if (
+      panelServer &&
+      panelServer.server &&
+      typeof panelServer.server.close ===
+        "function"
+    ) {
+      await new Promise(
+        resolve => {
+          panelServer.server.close(
+            () => resolve()
+          );
+        }
+      );
+
+      success(
+        "Web Panel server stopped."
+      );
+    }
+  } catch (err) {
+    error(
+      `Panel shutdown error: ${
+        err?.message ||
+        err
+      }`
+    );
+  }
+
+  log("");
+
+  success(
+    "TOPFEROS MD shutdown completed."
+  );
+
+  process.exit(0);
+}
+
+// ============================================================
+// PROCESS SIGNALS
+// ============================================================
+
+process.on(
+  "SIGINT",
+  () => {
+    shutdown("SIGINT");
+  }
+);
+
+process.on(
+  "SIGTERM",
+  () => {
+    shutdown("SIGTERM");
+  }
+);
+
+// ============================================================
+// RUN BOT
+// ============================================================
+
+startBot();
