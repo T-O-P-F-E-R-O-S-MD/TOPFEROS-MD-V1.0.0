@@ -10,7 +10,7 @@ const path = require("path");
 // LOAD CONFIGURATION
 // ============================================================
 
-const config = require("./config");
+const config = require("../config");
 
 // ============================================================
 // GLOBAL SERVICES
