@@ -1,7 +1,7 @@
 "use strict";
 
 // ============================================================
-// TOPFEROS MD
+// 🦁 TOPFEROS MD
 // MESSAGE HANDLER
 // WhatsApp / Baileys
 // ============================================================
@@ -21,7 +21,7 @@ const commandIndex =
   require("../commands/index");
 
 // ============================================================
-// STATUS SYSTEM
+// 🤖 STATUS SYSTEM
 // ============================================================
 
 let statusSystem = null;
@@ -165,10 +165,8 @@ function getMessageText(message) {
   }
 
   if (
-    typeof
-      msg.buttonsResponseMessage
-        ?.selectedButtonId ===
-      "string"
+    typeof msg.buttonsResponseMessage
+      ?.selectedButtonId === "string"
   ) {
     return (
       msg.buttonsResponseMessage
@@ -177,11 +175,9 @@ function getMessageText(message) {
   }
 
   if (
-    typeof
-      msg.listResponseMessage
-        ?.singleSelectReply
-        ?.selectedRowId ===
-      "string"
+    typeof msg.listResponseMessage
+      ?.singleSelectReply
+      ?.selectedRowId === "string"
   ) {
     return (
       msg.listResponseMessage
@@ -191,10 +187,8 @@ function getMessageText(message) {
   }
 
   if (
-    typeof
-      msg.templateButtonReplyMessage
-        ?.selectedId ===
-      "string"
+    typeof msg.templateButtonReplyMessage
+      ?.selectedId === "string"
   ) {
     return (
       msg.templateButtonReplyMessage
@@ -237,15 +231,13 @@ function getMessageText(message) {
       typeof value === "object"
     ) {
       if (
-        typeof value.text ===
-        "string"
+        typeof value.text === "string"
       ) {
         return value.text;
       }
 
       if (
-        typeof value.caption ===
-        "string"
+        typeof value.caption === "string"
       ) {
         return value.caption;
       }
@@ -267,64 +259,20 @@ function getQuotedMessage(message) {
     return null;
   }
 
-  const directContext =
-    msg.extendedTextMessage
-      ?.contextInfo;
+  const contextTypes = [
+    msg.extendedTextMessage?.contextInfo,
+    msg.imageMessage?.contextInfo,
+    msg.videoMessage?.contextInfo,
+    msg.documentMessage?.contextInfo,
+    msg.audioMessage?.contextInfo
+  ];
 
-  if (
-    directContext?.quotedMessage
+  for (
+    const context of contextTypes
   ) {
-    return (
-      directContext.quotedMessage
-    );
-  }
-
-  const imageContext =
-    msg.imageMessage
-      ?.contextInfo;
-
-  if (
-    imageContext?.quotedMessage
-  ) {
-    return (
-      imageContext.quotedMessage
-    );
-  }
-
-  const videoContext =
-    msg.videoMessage
-      ?.contextInfo;
-
-  if (
-    videoContext?.quotedMessage
-  ) {
-    return (
-      videoContext.quotedMessage
-    );
-  }
-
-  const documentContext =
-    msg.documentMessage
-      ?.contextInfo;
-
-  if (
-    documentContext?.quotedMessage
-  ) {
-    return (
-      documentContext.quotedMessage
-    );
-  }
-
-  const audioContext =
-    msg.audioMessage
-      ?.contextInfo;
-
-  if (
-    audioContext?.quotedMessage
-  ) {
-    return (
-      audioContext.quotedMessage
-    );
+    if (context?.quotedMessage) {
+      return context.quotedMessage;
+    }
   }
 
   return null;
@@ -355,7 +303,11 @@ function getChatId(message) {
 }
 
 // ============================================================
-// 👁️ STATUS AUTOMATIC ACTIONS
+// 👁️ STATUS ACTIONS
+// ============================================================
+// IMPORTANT:
+// Pa gen ❤️ oswa 🔥 fixed reaction isit la.
+// AI/status system nan se sèl sistèm ki voye reaction.
 // ============================================================
 
 async function handleStatusActions(
@@ -403,72 +355,6 @@ async function handleStatusActions(
       }
     }
 
-    // --------------------------------------------------------
-    // ❤️ STATUS LIKE
-    // --------------------------------------------------------
-
-    if (
-      features.statusLike === true &&
-      typeof sock.sendMessage ===
-        "function"
-    ) {
-      try {
-        await sock.sendMessage(
-          "status@broadcast",
-          {
-            react: {
-              text: "❤️",
-              key: message.key
-            }
-          }
-        );
-
-        console.log(
-          `❤️ STATUS LIKE SENT [${sessionId}]`
-        );
-
-      } catch (error) {
-        console.warn(
-          `⚠️ STATUS LIKE ERROR [${sessionId}]:`,
-          error?.message ||
-          error
-        );
-      }
-    }
-
-    // --------------------------------------------------------
-    // ⚡ STATUS REACT
-    // --------------------------------------------------------
-
-    if (
-      features.statusReact === true &&
-      typeof sock.sendMessage ===
-        "function"
-    ) {
-      try {
-        await sock.sendMessage(
-          "status@broadcast",
-          {
-            react: {
-              text: "🔥",
-              key: message.key
-            }
-          }
-        );
-
-        console.log(
-          `⚡ STATUS REACTION SENT [${sessionId}]`
-        );
-
-      } catch (error) {
-        console.warn(
-          `⚠️ STATUS REACTION ERROR [${sessionId}]:`,
-          error?.message ||
-          error
-        );
-      }
-    }
-
   } catch (error) {
     console.error(
       `❌ STATUS ACTIONS ERROR [${sessionId}]`,
@@ -494,7 +380,7 @@ function isGroupMessage(message) {
 }
 
 // ============================================================
-// REACT TO COMMAND
+// 🦁 REACT TO COMMAND
 // ============================================================
 
 async function reactToCommand(
@@ -533,7 +419,6 @@ async function reactToCommand(
     return true;
 
   } catch (error) {
-
     console.warn(
       "⚠️ COMMAND REACTION ERROR:",
       error?.message ||
@@ -555,13 +440,19 @@ async function sendCommandError(
   error
 ) {
   try {
-
     if (
       !sock ||
       !chatId
     ) {
       return;
     }
+
+    console.error(
+      `❌ COMMAND EXECUTION ERROR [${PREFIX}${commandName}]:`,
+      error?.stack ||
+      error?.message ||
+      error
+    );
 
     const errorText =
       "╭━━━━━━━━━━━━━━━━━━━━━━━━━━━━╮\n" +
@@ -589,12 +480,7 @@ async function sendCommandError(
       }
     );
 
-    console.log(
-      `📤 COMMAND ERROR RESPONSE SENT: ${PREFIX}${commandName}`
-    );
-
   } catch (sendError) {
-
     console.error(
       "❌ FAILED TO SEND COMMAND ERROR:",
       sendError?.stack ||
@@ -605,7 +491,7 @@ async function sendCommandError(
 }
 
 // ============================================================
-// UNKNOWN COMMAND RESPONSE
+// UNKNOWN COMMAND
 // ============================================================
 
 async function sendUnknownCommand(
@@ -614,7 +500,6 @@ async function sendUnknownCommand(
   commandName
 ) {
   try {
-
     if (
       !sock ||
       !chatId
@@ -643,7 +528,6 @@ async function sendUnknownCommand(
     );
 
   } catch (error) {
-
     console.error(
       "❌ UNKNOWN COMMAND RESPONSE ERROR:",
       error?.message ||
@@ -653,7 +537,7 @@ async function sendUnknownCommand(
 }
 
 // ============================================================
-// HANDLE MESSAGE
+// 🤖 HANDLE MESSAGE
 // ============================================================
 
 async function handleMessage(
@@ -686,26 +570,19 @@ async function handleMessage(
       return;
     }
 
-    // --------------------------------------------------------
-    // 🖼️ STATUS SYSTEM
-    // --------------------------------------------------------
-    // Status pa bezwen prefix.
-    //
-    // Lè yon Status rive:
-    // 👁️ Seen
-    // ❤️ Like
-    // ⚡ React
-    // 📥 Save
-    // 📤 Send
-    // 🗂️ Anrejistre
-    // --------------------------------------------------------
+    // ========================================================
+    // 🖼️ WHATSAPP STATUS
+    // ========================================================
 
     if (
       chatId ===
       "status@broadcast"
     ) {
 
-      // Pa trete pwòp Status bot la
+      // ------------------------------------------------------
+      // IGNORE OWN STATUS
+      // ------------------------------------------------------
+
       if (
         message?.key?.fromMe
       ) {
@@ -717,7 +594,7 @@ async function handleMessage(
       }
 
       // ------------------------------------------------------
-      // 👁️ AUTO STATUS SEEN
+      // 👁️ AUTO SEEN
       // ------------------------------------------------------
 
       if (
@@ -726,6 +603,7 @@ async function handleMessage(
           "function"
       ) {
         try {
+
           await sock.readMessages([
             message.key
           ]);
@@ -735,6 +613,7 @@ async function handleMessage(
           );
 
         } catch (seenError) {
+
           console.warn(
             `⚠️ STATUS SEEN ERROR [${sessionId}]:`,
             seenError?.message ||
@@ -744,7 +623,14 @@ async function handleMessage(
       }
 
       // ------------------------------------------------------
-      // 🤖 AI SMART REACTION
+      // 🤖 AI SMART STATUS REACTION
+      // ------------------------------------------------------
+      //
+      // ONE STATUS = ONE REACTION
+      //
+      // Pa gen ❤️ fixed.
+      // Pa gen 🔥 fixed.
+      // AI/status system chwazi emoji a.
       // ------------------------------------------------------
 
       if (
@@ -753,9 +639,12 @@ async function handleMessage(
         typeof statusSystem.getSmartStatusReaction ===
           "function"
       ) {
+
+        let smartReaction = null;
+
         try {
 
-          const smartReaction =
+          smartReaction =
             await statusSystem.getSmartStatusReaction({
               sock,
               message,
@@ -763,9 +652,28 @@ async function handleMessage(
               config
             });
 
-          const emoji =
-            smartReaction?.emoji ||
-            "👍";
+        } catch (reactionError) {
+
+          console.warn(
+            `⚠️ AI STATUS ANALYSIS ERROR [${sessionId}]:`,
+            reactionError?.message ||
+            reactionError
+          );
+        }
+
+        // ----------------------------------------------------
+        // CHOOSE EXACTLY ONE EMOJI
+        // ----------------------------------------------------
+
+        const emoji =
+          smartReaction?.emoji ||
+          "👍";
+
+        // ----------------------------------------------------
+        // SEND ONLY ONE REACTION
+        // ----------------------------------------------------
+
+        try {
 
           await sock.sendMessage(
             "status@broadcast",
@@ -786,40 +694,18 @@ async function handleMessage(
             )
           );
 
-        } catch (reactionError) {
+        } catch (sendReactionError) {
 
           console.warn(
-            `⚠️ AI STATUS REACTION ERROR [${sessionId}]:`,
-            reactionError?.message ||
-            reactionError
+            `⚠️ STATUS REACTION SEND ERROR [${sessionId}]:`,
+            sendReactionError?.message ||
+            sendReactionError
           );
-
-          // Fallback
-          try {
-
-            await sock.sendMessage(
-              "status@broadcast",
-              {
-                react: {
-                  text: "👍",
-                  key: message.key
-                }
-              }
-            );
-
-          } catch (fallbackError) {
-
-            console.warn(
-              `⚠️ STATUS REACTION FALLBACK ERROR [${sessionId}]:`,
-              fallbackError?.message ||
-              fallbackError
-            );
-          }
         }
       }
 
       // ------------------------------------------------------
-      // 📥 AUTO SAVE / SEND / ANREJISTRE
+      // 📥 AUTO STATUS SAVE / SEND / ANREJISTRE
       // ------------------------------------------------------
 
       if (
@@ -862,23 +748,23 @@ async function handleMessage(
       return;
     }
 
-    // --------------------------------------------------------
-// BOT'S OWN NORMAL MESSAGE
-// --------------------------------------------------------
-// Pa bloke mesaj la isit la.
-// Sa pèmèt command parser la kontinye trete
-// mesaj ki soti nan pwòp kont bot la pandan tès yo.
+    // ========================================================
+    // IGNORE BOT'S OWN NORMAL MESSAGE
+    // ========================================================
 
-if (
-  message?.key?.fromMe
-) {
-  console.log(
-    `📤 MESSAGE FROM BOT ACCOUNT [${sessionId}]`
-  );
-}
-    // --------------------------------------------------------
+    if (
+      message?.key?.fromMe
+    ) {
+      console.log(
+        `⏭️ MESSAGE IGNORED [${sessionId}] — fromMe`
+      );
+
+      return;
+    }
+
+    // ========================================================
     // EXTRACT TEXT
-    // --------------------------------------------------------
+    // ========================================================
 
     const text =
       String(
@@ -900,9 +786,9 @@ if (
       return;
     }
 
-    // --------------------------------------------------------
+    // ========================================================
     // PREFIX CHECK
-    // --------------------------------------------------------
+    // ========================================================
 
     if (
       !text.startsWith(PREFIX)
@@ -914,9 +800,9 @@ if (
       return;
     }
 
-    // --------------------------------------------------------
+    // ========================================================
     // REMOVE PREFIX
-    // --------------------------------------------------------
+    // ========================================================
 
     const commandLine =
       text
@@ -929,9 +815,9 @@ if (
       return;
     }
 
-    // --------------------------------------------------------
+    // ========================================================
     // SPLIT COMMAND
-    // --------------------------------------------------------
+    // ========================================================
 
     const parts =
       commandLine.split(
@@ -950,9 +836,9 @@ if (
       `🔎 COMMAND SEARCH [${sessionId}]: ${PREFIX}${commandName}`
     );
 
-    // --------------------------------------------------------
+    // ========================================================
     // FIND COMMAND
-    // --------------------------------------------------------
+    // ========================================================
 
     const command =
       commandIndex.getCommand(
@@ -978,18 +864,18 @@ if (
       `✅ COMMAND FOUND [${sessionId}]: ${command.name}`
     );
 
-    // --------------------------------------------------------
+    // ========================================================
     // COMMAND TEXT
-    // --------------------------------------------------------
+    // ========================================================
 
     const commandText =
       args
         .join(" ")
         .trim();
 
-    // --------------------------------------------------------
+    // ========================================================
     // MESSAGE CONTEXT
-    // --------------------------------------------------------
+    // ========================================================
 
     const context = {
 
@@ -1033,4 +919,104 @@ if (
       config
     };
 
-   
+    // ========================================================
+    // LOG COMMAND
+    // ========================================================
+
+    console.log(
+      `🚀 EXECUTING COMMAND [${sessionId}]: ${PREFIX}${commandName}`
+    );
+
+    // ========================================================
+    // COMMAND REACTION
+    // ========================================================
+
+    await reactToCommand(
+      sock,
+      message
+    );
+
+    // ========================================================
+    // EXECUTE COMMAND
+    // ========================================================
+
+    try {
+
+      await command.execute(
+        context
+      );
+
+      console.log(
+        `✅ COMMAND COMPLETED [${sessionId}]: ${PREFIX}${commandName}`
+      );
+
+    } catch (commandError) {
+
+      await sendCommandError(
+        sock,
+        chatId,
+        commandName,
+        commandError
+      );
+    }
+
+  } catch (error) {
+
+    // ========================================================
+    // GLOBAL HANDLER ERROR
+    // ========================================================
+
+    console.error(
+      `❌ HANDLE MESSAGE ERROR [${
+        sessionId || "unknown"
+      }]`,
+      error?.stack ||
+      error?.message ||
+      error
+    );
+
+    try {
+
+      const errorChatId =
+        getChatId(message);
+
+      if (
+        sock &&
+        errorChatId &&
+        errorChatId !==
+          "status@broadcast"
+      ) {
+
+        await sock.sendMessage(
+          errorChatId,
+          {
+            text:
+              "❌ Yon erè rive pandan bot la t ap trete kòmand lan.\n\n" +
+              "🔧 Tanpri eseye ankò."
+          }
+        );
+      }
+
+    } catch (sendError) {
+
+      console.error(
+        "❌ GLOBAL ERROR RESPONSE FAILED:",
+        sendError?.message ||
+        sendError
+      );
+    }
+  }
+}
+
+// ============================================================
+// EXPORTS
+// ============================================================
+
+module.exports = {
+  handleMessage,
+  handleStatusActions,
+  getMessageText,
+  getQuotedMessage,
+  getSender,
+  getChatId
+}; 
