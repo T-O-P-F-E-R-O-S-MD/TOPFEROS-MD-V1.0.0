@@ -131,9 +131,7 @@ function generateCode() {
 
 
 function getPanelLink(sessionId) {
-
   return `${PANEL_URL}/setting`;
-
 }
 
 
