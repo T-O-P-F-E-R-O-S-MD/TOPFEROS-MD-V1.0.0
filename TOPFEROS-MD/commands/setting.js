@@ -117,7 +117,7 @@ async function execute(context) {
     context?.msg;
 
   const args =
-    context?.args || []; {
+  context?.args || [];
 
   try {
 
