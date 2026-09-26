@@ -1054,16 +1054,16 @@ app.get(
 | Ansyen sistèm sessionId + code la toujou sipòte.
 |
 |--------------------------------------------------------------------------
-*/
-
 app.post(
   "/api/verify",
   async (req, res) => {
     try {
-      const sessionId =
-        req.body?.sessionId ||
-        req.body?.session ||
-        "";
+
+      /*
+       * ================================================================
+       * 1. RANPLI NUMBER AK CODE
+       * ================================================================
+       */
 
       const number =
         cleanNumberValue(
@@ -1075,13 +1075,540 @@ app.post(
         );
 
       const code =
-        req.body?.code ||
-        req.body?.panelCode ||
-        req.body?.password ||
-        "";
+        String(
+          req.body?.code ||
+          req.body?.panelCode ||
+          req.body?.password ||
+          ""
+        )
+          .trim()
+          .toUpperCase();
+
+
+      console.log(
+        "[TOPFEROS] 🔐 Settings login request:",
+        {
+          number,
+          code:
+            code
+              ? "******"
+              : ""
+        }
+      );
+
 
       /*
        * ================================================================
+       * 2. NUMBER OBLIGATWA
+       * ================================================================
+       */
+
+      if (!number) {
+
+        return res.status(400).json({
+          success: false,
+          verified: false,
+          authenticated: false,
+
+          error:
+            "WhatsApp Number obligatwa."
+        });
+
+      }
+
+
+      /*
+       * ================================================================
+       * 3. CODE OBLIGATWA
+       * ================================================================
+       */
+
+      if (!code) {
+
+        return res.status(400).json({
+          success: false,
+          verified: false,
+          authenticated: false,
+
+          error:
+            "Settings Code obligatwa."
+        });
+
+      }
+
+
+      /*
+       * ================================================================
+       * 4. VERIFY NUMBER FORMAT
+       * ================================================================
+       */
+
+      if (
+        !isValidPhoneNumber(
+          number
+        )
+      ) {
+
+        return res.status(400).json({
+          success: false,
+          verified: false,
+          authenticated: false,
+
+          error:
+            "WhatsApp Number la pa valid."
+        });
+
+      }
+
+
+      /*
+       * ================================================================
+       * 5. CHÈCHE SESSION WHATSAPP PA NUMBER
+       * ================================================================
+       */
+
+      let waSession = null;
+
+      try {
+
+        if (
+          sessionManager &&
+          typeof sessionManager.getSessionByNumber ===
+            "function"
+        ) {
+
+          waSession =
+            sessionManager.getSessionByNumber(
+              number
+            );
+
+        }
+
+      } catch (error) {
+
+        console.error(
+          "[TOPFEROS] ❌ Erè getSessionByNumber:",
+          error?.stack ||
+            error?.message ||
+            error
+        );
+
+      }
+
+
+      /*
+       * ================================================================
+       * 6. SI PA JWENN SESSION
+       * ================================================================
+       */
+
+      if (!waSession) {
+
+        console.log(
+          `[TOPFEROS] ❌ Pa gen WhatsApp session pou number ${number}`
+        );
+
+        return res.status(404).json({
+          success: false,
+          verified: false,
+          authenticated: false,
+
+          error:
+            "Pa jwenn okenn session WhatsApp pou nimewo sa a."
+        });
+
+      }
+
+
+      /*
+       * ================================================================
+       * 7. SESSION ID REYÈL
+       * ================================================================
+       */
+
+      const resolvedSessionId =
+        waSession.sessionId;
+
+
+      if (!resolvedSessionId) {
+
+        console.error(
+          "[TOPFEROS] ❌ WhatsApp session lan pa gen sessionId."
+        );
+
+        return res.status(500).json({
+          success: false,
+          verified: false,
+          authenticated: false,
+
+          error:
+            "Session ID pa disponib."
+        });
+
+      }
+
+
+      console.log(
+        `[TOPFEROS] ✅ Number ${number} -> ${resolvedSessionId}`
+      );
+
+
+      /*
+       * ================================================================
+       * 8. SESSION DWE KONEKTE
+       * ================================================================
+       */
+
+      const waConnected =
+        Boolean(
+          waSession.connected === true ||
+          waSession.status === "connected" ||
+          waSession.socket
+        );
+
+
+      if (!waConnected) {
+
+        console.log(
+          `[TOPFEROS] ❌ Session ${resolvedSessionId} pa konekte.`
+        );
+
+        return res.status(403).json({
+          success: false,
+          verified: false,
+          authenticated: false,
+
+          connected: false,
+
+          error:
+            "Bot la pa konekte sou WhatsApp."
+        });
+
+      }
+
+
+      /*
+       * ================================================================
+       * 9. CHÈCHE PANEL SESSION AVÈK MENM SESSION ID
+       * ================================================================
+       */
+
+      if (
+        !settingsPanel
+      ) {
+
+        return res.status(503).json({
+          success: false,
+          verified: false,
+          authenticated: false,
+
+          error:
+            "settingPanel.js pa disponib."
+        });
+
+      }
+
+
+      let panelSession = null;
+
+
+      try {
+
+        if (
+          typeof settingsPanel.getSession ===
+          "function"
+        ) {
+
+          panelSession =
+            settingsPanel.getSession(
+              resolvedSessionId
+            );
+
+        }
+
+      } catch (error) {
+
+        console.error(
+          "[TOPFEROS] ❌ Erè getSession panel:",
+          error?.stack ||
+            error?.message ||
+            error
+        );
+
+      }
+
+
+      /*
+       * ================================================================
+       * 10. SI PANEL SESSION PA EGZISTE
+       *     REKREYE LI AVÈK VRÈ SESSION WHATSAPP LA
+       * ================================================================
+       */
+
+      if (
+        !panelSession &&
+        typeof settingsPanel.createSession ===
+          "function"
+      ) {
+
+        try {
+
+          panelSession =
+            settingsPanel.createSession(
+              waSession.socket,
+              resolvedSessionId
+            );
+
+        } catch (error) {
+
+          console.error(
+            "[TOPFEROS] ❌ Erè createSession panel:",
+            error?.stack ||
+              error?.message ||
+              error
+          );
+
+        }
+
+      }
+
+
+      /*
+       * ================================================================
+       * 11. PANEL SESSION OBLIGATWA
+       * ================================================================
+       */
+
+      if (!panelSession) {
+
+        console.error(
+          `[TOPFEROS] ❌ Panel session pa jwenn pou ${resolvedSessionId}`
+        );
+
+        return res.status(404).json({
+          success: false,
+          verified: false,
+          authenticated: false,
+
+          error:
+            "Settings session pa jwenn pou nimewo sa a."
+        });
+
+      }
+
+
+      /*
+       * ================================================================
+       * 12. VERIFYE NUMBER LAN TOU
+       * ================================================================
+       */
+
+      const panelNumber =
+        cleanNumberValue(
+          panelSession.number ||
+          panelSession.botInformation?.number ||
+          ""
+        );
+
+
+      if (
+        panelNumber &&
+        panelNumber !== number
+      ) {
+
+        console.error(
+          `[TOPFEROS] ❌ Number mismatch: panel=${panelNumber}, login=${number}`
+        );
+
+        return res.status(401).json({
+          success: false,
+          verified: false,
+          authenticated: false,
+
+          error:
+            "WhatsApp Number lan pa koresponn ak session sa a."
+        });
+
+      }
+
+
+      /*
+       * ================================================================
+       * 13. VERIFYE SETTINGS CODE LA
+       * ================================================================
+       */
+
+      let verification = null;
+
+
+      if (
+        typeof settingsPanel.verifySession ===
+        "function"
+      ) {
+
+        verification =
+          await settingsPanel.verifySession(
+            resolvedSessionId,
+            code
+          );
+
+      }
+
+
+      /*
+       * ================================================================
+       * 14. CHECK RESULT
+       * ================================================================
+       */
+
+      const authenticated =
+        verification === true ||
+        (
+          verification &&
+          typeof verification === "object" &&
+          (
+            verification.success === true ||
+            verification.verified === true ||
+            verification.authenticated === true
+          )
+        );
+
+
+      if (!authenticated) {
+
+        console.log(
+          `[TOPFEROS] ❌ Invalid Settings Code pou ${number}`
+        );
+
+        return res.status(401).json({
+          success: false,
+          verified: false,
+          authenticated: false,
+
+          connected: true,
+
+          error:
+            "Settings Code la pa kòrèk pou nimewo sa a."
+        });
+
+      }
+
+
+      /*
+       * ================================================================
+       * 15. CHARGE SETTINGS YO
+       * ================================================================
+       */
+
+      let settings = {};
+
+      let botInformation = {};
+
+
+      try {
+
+        if (
+          typeof settingsPanel.getSettings ===
+          "function"
+        ) {
+
+          settings =
+            await settingsPanel.getSettings(
+              resolvedSessionId
+            ) || {};
+
+        }
+
+
+        if (
+          typeof settingsPanel.getBotInformation ===
+          "function"
+        ) {
+
+          botInformation =
+            await settingsPanel.getBotInformation(
+              resolvedSessionId
+            ) || {};
+
+        }
+
+      } catch (settingsError) {
+
+        console.error(
+          "[TOPFEROS] ⚠️ Erè loading settings:",
+          settingsError?.stack ||
+            settingsError?.message ||
+            settingsError
+        );
+
+      }
+
+
+      /*
+       * ================================================================
+       * 16. LOGIN REYISI
+       * ================================================================
+       */
+
+      console.log(
+        `[TOPFEROS] ✅ SETTINGS LOGIN SUCCESS: ${number} -> ${resolvedSessionId}`
+      );
+
+
+      return res.json({
+
+        success: true,
+
+        verified: true,
+
+        authenticated: true,
+
+        connected: true,
+
+        sessionId:
+          resolvedSessionId,
+
+        number:
+          number,
+
+        settings:
+          settings,
+
+        botInformation:
+          botInformation,
+
+        message:
+          "Settings login successful."
+
+      });
+
+
+    } catch (error) {
+
+      console.error(
+        "[TOPFEROS] ❌ /api/verify:",
+        error?.stack ||
+          error?.message ||
+          error
+      );
+
+
+      return res.status(500).json({
+
+        success: false,
+
+        verified: false,
+
+        authenticated: false,
+
+        error:
+          "Erreur de vérification."
+
+      });
+
+    }
+  }
+); ================================================================
        * NOUVO FASON:
        * NUMBER + SETTINGS CODE
        * ================================================================
