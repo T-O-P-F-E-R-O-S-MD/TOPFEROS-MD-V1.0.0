@@ -5,17 +5,20 @@ const {
 } = require("@whiskeysockets/baileys");
 
 // ============================================================
-// 🦁 TOPFEROS MD — STATUS SYSTEM
+// 🦁 TOPFEROS MD — AI STATUS LIKE SYSTEM
 // ============================================================
 // 👁️ Auto Seen
-// 🤖 AI Vision Reaction
-// ❤️ Status Reaction
+// 🤖 AI Vision
+// ❤️ AI Contextual Like
 //
-// ❌ Auto Save       = REMOVED
-// ❌ Auto Send       = REMOVED
-// ❌ Auto Anrejistre = REMOVED
+// ❌ Auto Save       = OFF
+// ❌ Auto Send       = OFF
+// ❌ Auto Anrejistre = OFF
 //
+// AI a chwazi 1 emoji nan STATUS_EMOJIS.
+// Emoji sa a se Like ki ale sou Status la.
 // ============================================================
+
 
 // ============================================================
 // STATUS SENDER
@@ -28,6 +31,7 @@ function getStatusSender(message) {
     "Unknown"
   );
 }
+
 
 // ============================================================
 // UNWRAP STATUS MESSAGE
@@ -73,6 +77,7 @@ function unwrapStatusMessage(message) {
   return current;
 }
 
+
 // ============================================================
 // GET MEDIA
 // ============================================================
@@ -116,11 +121,13 @@ function getMediaMessage(message) {
   return null;
 }
 
+
 // ============================================================
 // DOWNLOAD MEDIA
 // ============================================================
-// Sa itilize sèlman pou AI Vision ka li imaj Status la.
-// Li pa voye ni sove fichye a nan DM.
+// Sa sèvi sèlman pou AI Vision analize imaj la.
+// Li pa sove Status la.
+// Li pa voye Status la nan DM.
 // ============================================================
 
 async function downloadMedia(
@@ -146,12 +153,17 @@ async function downloadMedia(
   return Buffer.concat(chunks);
 }
 
+
 // ============================================================
-// 🤖 AI SMART STATUS REACTION
-// GROQ VISION
+// 🤖❤️ AI STATUS LIKE EMOJIS
+// ============================================================
+// AI a dwe chwazi egzakteman 1 emoji ladan lis sa a.
+// Nou pa retire ansyen emoji yo.
+// Nou ajoute lòt emoji pou AI a gen plis chwa.
 // ============================================================
 
 const STATUS_EMOJIS = [
+  // Original emojis
   "🥰",
   "💚",
   "😂",
@@ -214,8 +226,99 @@ const STATUS_EMOJIS = [
   "🌴",
   "🐶",
   "🐱",
-  "🍕"
+  "🍕",
+
+  // Extra emotion emojis
+  "😁",
+  "😅",
+  "😉",
+  "😘",
+  "😌",
+  "🤗",
+  "🥹",
+  "😮",
+  "😳",
+  "😴",
+  "🤒",
+  "🤯",
+  "😇",
+  "😏",
+  "🤭",
+  "🥺",
+  "🤤",
+  "😋",
+  "🤠",
+  "👀",
+  "🫡",
+  "🗿",
+
+  // Extra love emojis
+  "💖",
+  "💕",
+  "💓",
+  "💗",
+  "💙",
+  "💜",
+  "🖤",
+  "🤍",
+  "💛",
+  "🩷",
+  "🩵",
+  "🩶",
+  "💔",
+  "❤️‍🩹",
+  "💋",
+  "🌹",
+  "🌺",
+  "🌻",
+
+  // Celebration
+  "🙌",
+  "💯",
+  "👌",
+  "✌️",
+  "🤞",
+  "🎉",
+  "🎊",
+  "🥂",
+  "🍾",
+  "🏆",
+
+  // Music / entertainment
+  "🎶",
+  "🎵",
+  "🎸",
+  "📸",
+
+  // Sport
+  "⚽",
+  "🏀",
+
+  // Travel / nature
+  "✈️",
+  "🚗",
+  "🏖️",
+  "🌊",
+  "☀️",
+  "🌙",
+  "🌧️",
+  "❄️",
+
+  // Animals
+  "🐼",
+  "🦁",
+  "🐯",
+  "🐸",
+  "🐵",
+  "🦋",
+
+  // Food
+  "🍔",
+  "🍎",
+  "🍰",
+  "🍫"
 ];
+
 
 // ============================================================
 // IMAGE MIME
@@ -232,6 +335,7 @@ function getImageMime(media) {
     ? mime
     : "image/jpeg";
 }
+
 
 // ============================================================
 // GET STATUS TEXT
@@ -254,6 +358,7 @@ function getStatusText(message) {
     ""
   );
 }
+
 
 // ============================================================
 // EXTRACT JSON
@@ -284,8 +389,9 @@ function extractJsonObject(text) {
   }
 }
 
+
 // ============================================================
-// 🤖 ANALYZE STATUS IMAGE WITH GROQ VISION
+// 🤖 ANALYZE STATUS IMAGE WITH AI
 // ============================================================
 
 async function analyzeStatusWithAI({
@@ -347,36 +453,56 @@ async function analyzeStatusWithAI({
     getImageMime(media);
 
   const prompt = `
-You are the smart reaction engine of TOPFEROS MD WhatsApp bot.
+You are the smart contextual Like engine
+of TOPFEROS MD WhatsApp bot.
 
 Analyze the WhatsApp Status IMAGE itself.
-Do NOT rely only on the caption.
 
-Choose EXACTLY ONE emoji that best matches
-the main emotion, subject, action, or mood
-visible in the image.
+Your job is to choose the ONE emoji that
+should be used as the bot's Like on this Status.
 
-The reaction must feel natural for WhatsApp.
+Do NOT choose randomly.
+
+Look carefully at:
+- people
+- facial expressions
+- emotions
+- love
+- friendship
+- humor
+- celebration
+- sports
+- music
+- food
+- drinks
+- Haiti
+- nature
+- animals
+- travel
+- success
+- sadness
+- anger
+- cold
+- disgust
+- danger
+- beauty
+- general mood
+
+The caption may help, but the IMAGE is primary.
 
 Allowed emojis:
 ${STATUS_EMOJIS.join(" ")}
 
 Rules:
 - Return ONLY valid JSON.
-- Use exactly ONE emoji.
+- Return exactly ONE emoji.
 - The emoji MUST come from the allowed list.
 - Never invent another emoji.
-- Look at the actual image carefully.
-- Consider people, facial expressions, love,
-  friendship, humor, celebration, sports,
-  music, food, drinks, Haiti, nature,
-  animals, travel, success, sadness,
-  anger, cold, disgust, danger, beauty
-  and general mood.
-- If the image is neutral, use 👍.
-- The caption can help, but the image is primary.
+- Never return two emojis.
+- Choose the most natural WhatsApp reaction.
+- If the Status is neutral or unclear, use 👍.
 
-Optional caption:
+Caption:
 ${caption || "none"}
 
 Return exactly:
@@ -406,7 +532,7 @@ Return exactly:
                 role: "system",
 
                 content:
-                  "You select one contextual WhatsApp reaction from an allowed emoji list. Follow the JSON output format exactly."
+                  "Choose exactly one contextual WhatsApp Like emoji from the allowed list. Return valid JSON only."
               },
 
               {
@@ -494,7 +620,7 @@ Return exactly:
       reason:
         String(
           result?.reason ||
-          "AI contextual reaction"
+          "AI contextual Like"
         )
           .replace(
             /[\r\n]+/g,
@@ -514,8 +640,9 @@ Return exactly:
   }
 }
 
+
 // ============================================================
-// 🧠 SMART STATUS REACTION
+// 🧠 GET AI STATUS LIKE
 // ============================================================
 
 async function getSmartStatusReaction({
@@ -526,8 +653,8 @@ async function getSmartStatusReaction({
     const mediaData =
       getMediaMessage(message);
 
-    // Vision fèt pou IMAGE.
-    // Video/audio/document itilize fallback.
+    // Vision analize IMAGE.
+    // Lòt kalite Status itilize fallback 👍.
     if (
       mediaData?.type !==
       "image"
@@ -566,13 +693,13 @@ async function getSmartStatusReaction({
       result || {
         emoji: "👍",
         reason:
-          "AI pa t disponib; fallback reaction."
+          "AI pa disponib; fallback Like."
       }
     );
 
   } catch (error) {
     console.warn(
-      "⚠️ SMART STATUS REACTION ERROR:",
+      "⚠️ SMART STATUS LIKE ERROR:",
       error?.message ||
       error
     );
@@ -580,10 +707,11 @@ async function getSmartStatusReaction({
     return {
       emoji: "👍",
       reason:
-        "Fallback reaction."
+        "Fallback Like."
     };
   }
 }
+
 
 // ============================================================
 // .status COMMAND
@@ -609,8 +737,8 @@ async function execute(context) {
         "╭━━━〔 🖼️ STATUS 〕━━━╮\n" +
         "┃\n" +
         "┃ 👁️ Seen: AUTOMATIC\n" +
-        "┃ 🤖 AI Reaction: AUTOMATIC\n" +
-        "┃ ❤️ Contextual Reaction: AUTOMATIC\n" +
+        "┃ 🤖 AI Like: AUTOMATIC\n" +
+        "┃ ❤️ AI chwazi emoji a\n" +
         "┃ 📥 Save: OFF\n" +
         "┃ 📤 Send: OFF\n" +
         "┃ 🗂️ Anrejistre: OFF\n" +
@@ -624,6 +752,7 @@ async function execute(context) {
   );
 }
 
+
 // ============================================================
 // EXPORTS
 // ============================================================
@@ -634,7 +763,7 @@ module.exports = {
   aliases: [],
 
   description:
-    "Status AI Vision Reaction otomatikman.",
+    "AI chwazi emoji Like Status otomatikman.",
 
   usage:
     ".status",
