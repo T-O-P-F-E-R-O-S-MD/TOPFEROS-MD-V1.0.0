@@ -339,7 +339,15 @@ function getChatId(message) {
 }
 
 // ============================================================
-// 👁️ STATUS AUTOMATIC ACTIONS
+// 👁️🤖❤️ AI STATUS LIKE
+// ============================================================
+// Status la antre → AI analize li → AI chwazi 1 emoji
+// → emoji sa a voye kòm Like sou Status la.
+//
+// ❌ Pa gen 2nd reaction
+// ❌ Pa gen Save
+// ❌ Pa gen Send
+// ❌ Pa gen Enregistré
 // ============================================================
 
 async function handleStatusActions(
@@ -348,6 +356,7 @@ async function handleStatusActions(
   sessionId
 ) {
   try {
+
     if (
       !sock ||
       !message?.key ||
@@ -370,6 +379,7 @@ async function handleStatusActions(
         "function"
     ) {
       try {
+
         await sock.readMessages([
           message.key
         ]);
@@ -379,40 +389,9 @@ async function handleStatusActions(
         );
 
       } catch (error) {
+
         console.warn(
           `⚠️ STATUS SEEN ERROR [${sessionId}]:`,
-          error?.message || error
-        );
-      }
-    }
-
-    // --------------------------------------------------------
-    // ❤️ STATUS LIKE
-    // --------------------------------------------------------
-
-    if (
-      features.statusLike === true &&
-      typeof sock.sendMessage ===
-        "function"
-    ) {
-      try {
-        await sock.sendMessage(
-          "status@broadcast",
-          {
-            react: {
-              text: "❤️",
-              key: message.key
-            }
-          }
-        );
-
-        console.log(
-          `❤️ STATUS LIKE SENT [${sessionId}]`
-        );
-
-      } catch (error) {
-        console.warn(
-          `⚠️ STATUS LIKE ERROR [${sessionId}]:`,
           error?.message ||
           error
         );
@@ -420,39 +399,151 @@ async function handleStatusActions(
     }
 
     // --------------------------------------------------------
-    // ⚡ STATUS REACT
+    // 🤖❤️ AI AUTO LIKE
     // --------------------------------------------------------
 
     if (
-      features.statusReact === true &&
-      typeof sock.sendMessage ===
+      features.statusLike !== true ||
+      typeof sock.sendMessage !==
         "function"
     ) {
-      try {
-        await sock.sendMessage(
-          "status@broadcast",
-          {
-            react: {
-              text: "🔥",
-              key: message.key
-            }
-          }
-        );
-
-        console.log(
-          `⚡ STATUS REACTION SENT [${sessionId}]`
-        );
-
-      } catch (error) {
-        console.warn(
-          `⚠️ STATUS REACTION ERROR [${sessionId}]:`,
-          error?.message ||
-          error
-        );
-      }
+      return;
     }
+
+    let emoji = "👍";
+    let reason =
+      "Fallback Like";
+
+    // --------------------------------------------------------
+    // LOAD AI STATUS ENGINE
+    // --------------------------------------------------------
+
+    try {
+
+      const statusCommand =
+        require("../commands/status");
+
+      if (
+        typeof
+          statusCommand
+            .getSmartStatusReaction ===
+        "function"
+      ) {
+
+        const result =
+          await statusCommand
+            .getSmartStatusReaction({
+              message,
+              config
+            });
+
+        if (
+          result?.emoji &&
+          typeof result.emoji ===
+            "string"
+        ) {
+          emoji =
+            result.emoji.trim() ||
+            "👍";
+        }
+
+        if (
+          result?.reason
+        ) {
+          reason =
+            String(
+              result.reason
+            )
+              .replace(
+                /[\r\n]+/g,
+                " "
+              )
+              .slice(
+                0,
+                160
+              );
+        }
+      }
+
+    } catch (aiError) {
+
+      console.warn(
+        `⚠️ STATUS AI ERROR [${sessionId}]:`,
+        aiError?.message ||
+        aiError
+      );
+
+      // AI pa disponib:
+      // Like la toujou fèt ak fallback.
+      emoji = "👍";
+      reason =
+        "AI unavailable - fallback Like";
+    }
+
+    // --------------------------------------------------------
+    // 👤 STATUS OWNER
+    // --------------------------------------------------------
+
+    const statusParticipant =
+      message?.key?.participant ||
+      message?.participant ||
+      null;
+
+    // --------------------------------------------------------
+    // ❤️ SEND ONE AI-SELECTED LIKE
+    // --------------------------------------------------------
+
+    try {
+
+      const likeOptions = {
+        react: {
+          text: emoji,
+          key: message.key
+        }
+      };
+
+      // Sa ede WhatsApp asosye Like la
+      // ak moun ki poste Status la.
+      if (
+        statusParticipant
+      ) {
+        likeOptions.statusJidList = [
+          statusParticipant
+        ];
+      }
+
+      await sock.sendMessage(
+        "status@broadcast",
+        likeOptions
+      );
+
+      console.log(
+        `❤️ AI STATUS LIKE SENT [${sessionId}] → ${emoji}`
+      );
+
+      console.log(
+        `🧠 STATUS AI REASON [${sessionId}] → ${reason}`
+      );
+
+    } catch (likeError) {
+
+      console.warn(
+        `⚠️ STATUS LIKE ERROR [${sessionId}]:`,
+        likeError?.message ||
+        likeError
+      );
+    }
+
+    // --------------------------------------------------------
+    // IMPORTANT
+    // --------------------------------------------------------
+    // Pa gen statusReact isit la.
+    // Pa gen 2zyèm reaction.
+    // Pa gen save/send/enregistré.
+    // --------------------------------------------------------
 
   } catch (error) {
+
     console.error(
       `❌ STATUS ACTIONS ERROR [${sessionId}]`,
       error?.stack ||
@@ -485,6 +576,7 @@ async function reactToCommand(
   message
 ) {
   try {
+
     if (
       !sock ||
       !message?.key
@@ -669,22 +761,16 @@ async function handleMessage(
       return;
     }
 
-    // --------------------------------------------------------
-    // ❤️ WHATSAPP STATUS SYSTEM
-    // --------------------------------------------------------
-    // Status pa bezwen prefix.
+    // ========================================================
+    // 🤖❤️ REAL-TIME AI STATUS LIKE
+    // ========================================================
+    // Status la pa bezwen okenn kòmand.
     //
-    // Lè yon Status rive:
-    // 👁️ Seen
-    // ❤️ Like
-    // ⚡ React si statusReact aktive
+    // Lè messages.upsert resevwa:
+    // status@broadcast
     //
-    // IMPORTANT:
-    // ❌ Pa sove Status
-    // ❌ Pa voye Status nan DM
-    // ❌ Pa anrejistre Status
-    // ❌ Pa itilize send/save/enregistré pou sa
-    // --------------------------------------------------------
+    // Fonksyon an lanse imedyatman.
+    // ========================================================
 
     if (
       chatId ===
@@ -692,12 +778,13 @@ async function handleMessage(
     ) {
 
       // ------------------------------------------------------
-      // Pa trete pwòp Status bot la
+      // PA TRETE PWÒP STATUS BOT LA
       // ------------------------------------------------------
 
       if (
         message?.key?.fromMe
       ) {
+
         console.log(
           `⏭️ STATUS IGNORED [${sessionId}] — fromMe`
         );
@@ -706,123 +793,30 @@ async function handleMessage(
       }
 
       // ------------------------------------------------------
-      // 👁️ AUTO STATUS SEEN
+      // 🤖❤️ AI LIKE
       // ------------------------------------------------------
 
-      if (
-        config?.features?.autoStatusSeen === true &&
-        typeof sock.readMessages ===
-          "function"
-      ) {
-        try {
-          await sock.readMessages([
-            message.key
-          ]);
-
-          console.log(
-            `👁️ STATUS SEEN [${sessionId}]`
-          );
-
-        } catch (seenError) {
-          console.warn(
-            `⚠️ STATUS SEEN ERROR [${sessionId}]:`,
-            seenError?.message ||
-            seenError
-          );
-        }
-      }
-
-      // ------------------------------------------------------
-      // ❤️ AUTO STATUS LIKE
-      // ------------------------------------------------------
-
-      if (
-        config?.features?.statusLike === true &&
-        typeof sock.sendMessage ===
-          "function"
-      ) {
-        try {
-
-          await sock.sendMessage(
-            "status@broadcast",
-            {
-              react: {
-                text: "❤️",
-                key: message.key
-              }
-            }
-          );
-
-          console.log(
-            `❤️ STATUS LIKE SENT [${sessionId}]`
-          );
-
-        } catch (likeError) {
-
-          console.warn(
-            `⚠️ STATUS LIKE ERROR [${sessionId}]:`,
-            likeError?.message ||
-            likeError
-          );
-        }
-      }
-
-      // ------------------------------------------------------
-      // ⚡ STATUS REACTION
-      // ------------------------------------------------------
-      // Sa retepare si statusReact aktive nan config la.
-      // Li pa sove oswa voye Status la.
-
-      if (
-        config?.features?.statusReact === true &&
-        typeof sock.sendMessage ===
-          "function"
-      ) {
-        try {
-
-          await sock.sendMessage(
-            "status@broadcast",
-            {
-              react: {
-                text: "🔥",
-                key: message.key
-              }
-            }
-          );
-
-          console.log(
-            `⚡ STATUS REACTION SENT [${sessionId}]`
-          );
-
-        } catch (reactionError) {
-
-          console.warn(
-            `⚠️ STATUS REACTION ERROR [${sessionId}]:`,
-            reactionError?.message ||
-            reactionError
-          );
-        }
-      }
+      await handleStatusActions(
+        sock,
+        message,
+        sessionId
+      );
 
       // ------------------------------------------------------
       // IMPORTANT
       // ------------------------------------------------------
-      // Pa sove, pa voye, pa anrejistre Status otomatikman.
-      // Status la fini apre Like/Reaction yo.
+      // Status la pa antre nan command parser la.
+      //
+      // Sa vle di:
+      // .save
+      // .send
+      // .enregistré
+      //
+      // pa kapab deklanche Status Save.
       // ------------------------------------------------------
 
       return;
     }
-
-    // --------------------------------------------------------
-    // NOTE: DO NOT BLOCK fromMe HERE
-    // --------------------------------------------------------
-    // Messages sent from the bot's own WhatsApp account can
-    // still contain commands during testing (for example .ping
-    // or .menu). The prefix check below will ignore normal
-    // non-command messages, while commands can continue to the
-    // command handler.
-    // --------------------------------------------------------
 
     // --------------------------------------------------------
     // EXTRACT TEXT
@@ -855,6 +849,7 @@ async function handleMessage(
     if (
       !text.startsWith(PREFIX)
     ) {
+
       console.log(
         `ℹ️ MESSAGE WITHOUT PREFIX [${sessionId}]: ${text}`
       );
@@ -1052,7 +1047,8 @@ async function handleMessage(
       if (
         sock &&
         errorChatId &&
-        errorChatId !== "status@broadcast"
+        errorChatId !==
+          "status@broadcast"
       ) {
 
         await sock.sendMessage(
