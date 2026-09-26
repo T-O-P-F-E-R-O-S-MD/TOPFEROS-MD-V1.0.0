@@ -76,13 +76,78 @@ const groups = {
 
 document.addEventListener(
   "DOMContentLoaded",
-  () => {
-
-    showLanguage();
+  async () => {
 
     setupSettingsCodeInput();
 
     setupPhoneInput();
+
+    /*
+     * ============================================================
+     * SETTINGS LINK DIRECT
+     *
+     * https://topferos-md-v1-0-0.onrender.com/setting
+     *
+     * Lè moun antre sou /setting, pa voye li nan
+     * Language / Pairing / Parrain Code.
+     * Montre Settings Login dirèkteman.
+     * ============================================================
+     */
+
+    const currentPath =
+      window.location.pathname
+        .replace(/\/+$/, "");
+
+    if (
+      currentPath === "/setting"
+    ) {
+
+      hideAllScreens();
+
+      $("loginScreen")?.classList.remove(
+        "hidden"
+      );
+
+      return;
+
+    }
+
+
+    /*
+     * ============================================================
+     * ANSYEN LINK AVEC SESSION
+     *
+     * ?session=...
+     * ============================================================
+     */
+
+    if (sessionId) {
+
+      const valid =
+        await validateSession(
+          sessionId
+        );
+
+      if (valid) {
+
+        showSettingsLogin();
+
+        return;
+
+      }
+
+      sessionId = "";
+
+    }
+
+
+    /*
+     * ============================================================
+     * NORMAL HOME / PAIRING PAGE
+     * ============================================================
+     */
+
+    showLanguage();
 
     checkExistingConnection();
 
@@ -209,6 +274,11 @@ function setupPhoneInput() {
 
   const input =
     $("phoneNumber");
+
+  /*
+   * Pa gen input number sou Settings Login?
+   * Sa pa dwe bloke paj la.
+   */
 
   if (!input) {
     return;
@@ -468,6 +538,22 @@ async function requestPairingCode() {
 
 
     /* =========================
+       SAVE SESSION ID
+    ========================== */
+
+    if (
+      data.sessionId
+    ) {
+
+      sessionId =
+        String(
+          data.sessionId
+        );
+
+    }
+
+
+    /* =========================
        VALIDATE SERVER CODE
     ========================== */
 
@@ -688,10 +774,6 @@ async function copyPairingCode() {
 
   try {
 
-    /* =========================
-       MODERN CLIPBOARD
-    ========================== */
-
     if (
       navigator.clipboard &&
       window.isSecureContext
@@ -702,10 +784,6 @@ async function copyPairingCode() {
       );
 
     } else {
-
-      /* =========================
-         FALLBACK
-      ========================== */
 
       const textarea =
         document.createElement(
@@ -1316,6 +1394,20 @@ function showSettingsLogin() {
     "hidden"
   );
 
+
+  /*
+   * Netwaye ansyen mesaj login.
+   */
+
+  if (
+    $("loginMessage")
+  ) {
+
+    $("loginMessage").textContent =
+      "";
+
+  }
+
 }
 
 
@@ -1339,6 +1431,34 @@ function backToConnect() {
 
 
 /* =========================
+   GET SETTINGS LOGIN NUMBER
+========================= */
+
+function getSettingsLoginNumber() {
+
+  /*
+   * Sipòte plizyè non input pou pa kraze
+   * HTML aktyèl la.
+   */
+
+  const input =
+    $("ownerNumber") ||
+    $("settingsNumber") ||
+    $("loginNumber") ||
+    $("phoneNumber");
+
+
+  return (
+    input?.value
+      ?.trim()
+      .replace(/\D/g, "") ||
+    ""
+  );
+
+}
+
+
+/* =========================
    VERIFY SETTINGS
 ========================= */
 
@@ -1351,10 +1471,22 @@ async function verifySettings() {
       .toUpperCase() || "";
 
 
-  if (!sessionId) {
+  /*
+   * Sou nouvo /setting flow la,
+   * sessionId pa obligatwa.
+   *
+   * Server la ap jwenn session lan
+   * avèk number + settings code.
+   */
+
+  const loginNumber =
+    getSettingsLoginNumber();
+
+
+  if (!code) {
 
     showLoginMessage(
-      "❌ Session ID pa jwenn.",
+      "❌ Mete Settings Code la.",
       true
     );
 
@@ -1379,6 +1511,14 @@ async function verifySettings() {
   }
 
 
+  /*
+   * Si gen sessionId ansyen fason an,
+   * li ka toujou itilize.
+   *
+   * Men sou /setting nòmal,
+   * nou voye number + code.
+   */
+
   const button =
     $("verifyButton");
 
@@ -1396,6 +1536,40 @@ async function verifySettings() {
 
   try {
 
+    const body = {
+      code
+    };
+
+
+    /*
+     * Ajoute number si li disponib.
+     */
+
+    if (
+      loginNumber
+    ) {
+
+      body.number =
+        loginNumber;
+
+    }
+
+
+    /*
+     * Ajoute sessionId sèlman si URL la
+     * te gen ansyen ?session=...
+     */
+
+    if (
+      sessionId
+    ) {
+
+      body.sessionId =
+        sessionId;
+
+    }
+
+
     const response =
       await fetch(
         "/api/verify",
@@ -1407,10 +1581,9 @@ async function verifySettings() {
               "application/json"
           },
 
-          body: JSON.stringify({
-            sessionId,
-            code
-          })
+          body: JSON.stringify(
+            body
+          )
 
         }
       );
@@ -1426,7 +1599,8 @@ async function verifySettings() {
     ) {
 
       showLoginMessage(
-        "❌ Settings Code pa kòrèk.",
+        data.error ||
+          "❌ Settings Code pa kòrèk.",
         true
       );
 
@@ -1435,13 +1609,100 @@ async function verifySettings() {
     }
 
 
+    /*
+     * ============================================================
+     * SESSION ID SOTI SERVER
+     * ============================================================
+     */
+
+    if (
+      data.sessionId
+    ) {
+
+      sessionId =
+        String(
+          data.sessionId
+        );
+
+    }
+
+
+    /*
+     * ============================================================
+     * SETTINGS
+     * ============================================================
+     */
+
     settings =
-      data.settings || {};
+      data.settings ||
+      {};
 
 
     botInformation =
-      data.botInformation || {};
+      data.botInformation ||
+      {};
 
+
+    /*
+     * Si server la pa voye settings nan verify,
+     * chaje yo kounye a.
+     */
+
+    if (
+      sessionId
+    ) {
+
+      try {
+
+        const settingsResponse =
+          await fetch(
+            `/api/settings?sessionId=${encodeURIComponent(
+              sessionId
+            )}`,
+            {
+              cache:
+                "no-store"
+            }
+          );
+
+
+        const settingsData =
+          await settingsResponse.json();
+
+
+        if (
+          settingsResponse.ok &&
+          settingsData.success
+        ) {
+
+          settings =
+            settingsData.settings ||
+            settings;
+
+
+          botInformation =
+            settingsData.botInformation ||
+            botInformation;
+
+        }
+
+      } catch (settingsError) {
+
+        console.warn(
+          "Could not load settings after verification:",
+          settingsError
+        );
+
+      }
+
+    }
+
+
+    /*
+     * ============================================================
+     * OPEN DASHBOARD
+     * ============================================================
+     */
 
     openDashboard();
 
@@ -1662,7 +1923,7 @@ function renderSettings(
 
 
   for (
- const [key, label]
+    const [key, label]
     of list
   ) {
 
@@ -1895,6 +2156,23 @@ async function saveSettings() {
     prefix;
 
 
+  if (!sessionId) {
+
+    if (saveMessage) {
+
+      saveMessage.textContent =
+        "❌ Session bot la pa jwenn.";
+
+      saveMessage.className =
+        "message error";
+
+    }
+
+    return;
+
+  }
+
+
   if (saveButton) {
 
     saveButton.disabled =
@@ -1972,7 +2250,6 @@ async function saveSettings() {
       saveMessage.textContent =
         "✅ Settings yo sove avèk siksè.";
 
-
       saveMessage.className =
         "message success";
 
@@ -1991,7 +2268,6 @@ async function saveSettings() {
 
       saveMessage.textContent =
         "❌ Pa kapab sove settings yo.";
-
 
       saveMessage.className =
         "message error";
