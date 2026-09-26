@@ -9,20 +9,24 @@ const {
 // ============================================================
 // 👁️ Auto Seen
 // 🤖 AI Vision Reaction
-// 📥 Save
-// 📤 Send
-// 🗂️ Anrejistre
+// ❤️ Status Reaction
 //
-// View Once pa nan fichye sa a.
+// ❌ Auto Save       = REMOVED
+// ❌ Auto Send       = REMOVED
+// ❌ Auto Anrejistre = REMOVED
+//
 // ============================================================
 
-function getBotJid(sock) {
-  if (!sock?.user?.id) return null;
+// ============================================================
+// STATUS SENDER
+// ============================================================
 
-  const number =
-    String(sock.user.id).split(":")[0];
-
-  return `${number}@s.whatsapp.net`;
+function getStatusSender(message) {
+  return (
+    message?.key?.participant ||
+    message?.participant ||
+    "Unknown"
+  );
 }
 
 // ============================================================
@@ -114,6 +118,9 @@ function getMediaMessage(message) {
 
 // ============================================================
 // DOWNLOAD MEDIA
+// ============================================================
+// Sa itilize sèlman pou AI Vision ka li imaj Status la.
+// Li pa voye ni sove fichye a nan DM.
 // ============================================================
 
 async function downloadMedia(
@@ -209,18 +216,6 @@ const STATUS_EMOJIS = [
   "🐱",
   "🍕"
 ];
-
-// ============================================================
-// STATUS SENDER
-// ============================================================
-
-function getStatusSender(message) {
-  return (
-    message?.key?.participant ||
-    message?.participant ||
-    "Unknown"
-  );
-}
 
 // ============================================================
 // IMAGE MIME
@@ -334,8 +329,6 @@ async function analyzeStatusWithAI({
     getStatusText(message) ||
     "";
 
-  // WhatsApp Status image yo nòmalman piti,
-  // men pa voye fichye ki twò gwo bay Vision API.
   const maxBytes =
     18 * 1024 * 1024;
 
@@ -533,8 +526,8 @@ async function getSmartStatusReaction({
     const mediaData =
       getMediaMessage(message);
 
-    // Vision aktyèlman fèt pou IMAGE.
-    // Video/audio/document ap itilize fallback.
+    // Vision fèt pou IMAGE.
+    // Video/audio/document itilize fallback.
     if (
       mediaData?.type !==
       "image"
@@ -556,7 +549,7 @@ async function getSmartStatusReaction({
       return {
         emoji: "👍",
         reason:
-          "Imaj la pa t disponib."
+          "Imaj la pa disponib."
       };
     }
 
@@ -593,244 +586,6 @@ async function getSmartStatusReaction({
 }
 
 // ============================================================
-// 📤 SEND MEDIA TO BOT DM
-// ============================================================
-
-async function sendMediaToBotDM({
-  sock,
-  type,
-  media,
-  buffer,
-  caption
-}) {
-  const botJid =
-    getBotJid(sock);
-
-  if (!botJid) {
-    return false;
-  }
-
-  if (type === "image") {
-    await sock.sendMessage(
-      botJid,
-      {
-        image: buffer,
-        caption
-      }
-    );
-
-    return true;
-  }
-
-  if (type === "video") {
-    await sock.sendMessage(
-      botJid,
-      {
-        video: buffer,
-        caption,
-        mimetype:
-          media?.mimetype ||
-          "video/mp4"
-      }
-    );
-
-    return true;
-  }
-
-  if (type === "audio") {
-    await sock.sendMessage(
-      botJid,
-      {
-        audio: buffer,
-        mimetype:
-          media?.mimetype ||
-          "audio/mpeg",
-        ptt:
-          media?.ptt ||
-          false
-      }
-    );
-
-    return true;
-  }
-
-  if (type === "document") {
-    await sock.sendMessage(
-      botJid,
-      {
-        document: buffer,
-        mimetype:
-          media?.mimetype ||
-          "application/octet-stream",
-        fileName:
-          media?.fileName ||
-          "status"
-      }
-    );
-
-    return true;
-  }
-
-  return false;
-}
-
-// ============================================================
-// 📝 TEXT STATUS TO BOT DM
-// ============================================================
-
-async function sendTextStatusToBotDM({
-  sock,
-  message
-}) {
-  const botJid =
-    getBotJid(sock);
-
-  if (!botJid) {
-    return false;
-  }
-
-  const text =
-    getStatusText(message);
-
-  if (!text) {
-    return false;
-  }
-
-  const sender =
-    getStatusSender(message);
-
-  await sock.sendMessage(
-    botJid,
-    {
-      text:
-        "╭━━━〔 🖼️ STATUS SAVED 〕━━━╮\n" +
-        "┃\n" +
-        `┃ 👤 From: ${sender}\n` +
-        "┃\n" +
-        `┃ 📝 ${text}\n` +
-        "┃\n" +
-        "┃ 📥 Save: AUTO\n" +
-        "┃ 📤 Send: AUTO\n" +
-        "┃ 🗂️ Anrejistre: AUTO\n" +
-        "┃\n" +
-        "╰━━━━━━━━━━━━━━━━━━━━╯\n" +
-        "🦁 TOPFEROS MD"
-    }
-  );
-
-  return true;
-}
-
-// ============================================================
-// 📥 SAVE STATUS
-// ============================================================
-
-async function saveStatus(context) {
-  const {
-    sock,
-    message
-  } = context || {};
-
-  if (
-    !sock ||
-    !message?.message
-  ) {
-    return false;
-  }
-
-  try {
-    const mediaData =
-      getMediaMessage(message);
-
-    // -----------------------------
-    // TEXT STATUS
-    // -----------------------------
-    if (!mediaData) {
-      return await sendTextStatusToBotDM({
-        sock,
-        message
-      });
-    }
-
-    const buffer =
-      await downloadMedia(
-        mediaData.media,
-        mediaData.type
-      );
-
-    if (!buffer) {
-      return false;
-    }
-
-    const sender =
-      getStatusSender(message);
-
-    const caption =
-      mediaData.media?.caption ||
-      "";
-
-    const savedCaption =
-      "╭━━━〔 🖼️ STATUS SAVED 〕━━━╮\n" +
-      "┃\n" +
-      `┃ 👤 From: ${sender}\n` +
-      "┃\n" +
-      `┃ 📥 Save: AUTO\n` +
-      "┃ 📤 Send: AUTO\n" +
-      "┃ 🗂️ Anrejistre: AUTO\n" +
-      "┃\n" +
-      "╰━━━━━━━━━━━━━━━━━━━━╯\n" +
-      "🦁 TOPFEROS MD" +
-      (caption
-        ? `\n\n📝 ${caption}`
-        : "");
-
-    return await sendMediaToBotDM({
-      sock,
-      type:
-        mediaData.type,
-      media:
-        mediaData.media,
-      buffer,
-      caption:
-        savedCaption
-    });
-
-  } catch (error) {
-    console.error(
-      "❌ SAVE STATUS ERROR:",
-      error?.stack ||
-      error?.message ||
-      error
-    );
-
-    return false;
-  }
-}
-
-// ============================================================
-// 🔄 AUTO STATUS
-// ============================================================
-
-async function handleAutoStatus(
-  context
-) {
-  try {
-    return await saveStatus(
-      context
-    );
-  } catch (error) {
-    console.error(
-      "❌ AUTO STATUS ERROR:",
-      error?.stack ||
-      error?.message ||
-      error
-    );
-
-    return false;
-  }
-}
-
-// ============================================================
 // .status COMMAND
 // ============================================================
 
@@ -855,10 +610,11 @@ async function execute(context) {
         "┃\n" +
         "┃ 👁️ Seen: AUTOMATIC\n" +
         "┃ 🤖 AI Reaction: AUTOMATIC\n" +
-        "┃ 📥 Save: AUTOMATIC\n" +
-        "┃ 📤 Send: AUTOMATIC\n" +
-        "┃ 🗂️ Anrejistre: AUTOMATIC\n" +
-        "┃ 🚫 Pa bezwen prefix\n" +
+        "┃ ❤️ Contextual Reaction: AUTOMATIC\n" +
+        "┃ 📥 Save: OFF\n" +
+        "┃ 📤 Send: OFF\n" +
+        "┃ 🗂️ Anrejistre: OFF\n" +
+        "┃ 🚫 Pa bezwen prefix pou Status\n" +
         "┃\n" +
         "╰━━━━━━━━━━━━━━━━━━━━╯"
     },
@@ -875,21 +631,15 @@ async function execute(context) {
 module.exports = {
   name: "status",
 
-  aliases: [
-    "savestatus"
-  ],
+  aliases: [],
 
   description:
-    "Status Save / Send / Anrejistre + AI reaction otomatikman.",
+    "Status AI Vision Reaction otomatikman.",
 
   usage:
     ".status",
 
   execute,
-
-  saveStatus,
-
-  handleAutoStatus,
 
   getMediaMessage,
 
@@ -899,7 +649,7 @@ module.exports = {
 
   getSmartStatusReaction,
 
-  sendMediaToBotDM,
+  getStatusText,
 
-  sendTextStatusToBotDM
+  getStatusSender
 };
