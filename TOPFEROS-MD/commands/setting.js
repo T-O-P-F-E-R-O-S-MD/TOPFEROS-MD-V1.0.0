@@ -3,9 +3,10 @@
 const config = require("../config");
 const settingPanel = require("../src/settingPanel");
 
-/* ======================================================
-   HELPERS
-====================================================== */
+// ============================================================
+// TOPFEROS MD
+// SETTINGS COMMAND
+// ============================================================
 
 function cleanNumber(value) {
   return String(value || "")
@@ -14,24 +15,23 @@ function cleanNumber(value) {
     .replace(/\D/g, "");
 }
 
-/* ======================================================
-   FIND REAL PANEL SESSION
-====================================================== */
+// ============================================================
+// GET REAL PANEL SESSION
+// ============================================================
 
 function getRealSession(sock) {
   try {
+    // --------------------------------------------------------
+    // 1. TRY SOCKET
+    // --------------------------------------------------------
 
-    // 1. Find session by exact socket
     if (
-      typeof settingPanel.getSessionBySocket ===
-      "function"
+      typeof settingPanel.getSessionBySocket === "function"
     ) {
-
       const session =
         settingPanel.getSessionBySocket(sock);
 
       if (session?.sessionId) {
-
         console.log(
           `[TOPFEROS] Session found by socket: ${session.sessionId}`
         );
@@ -40,25 +40,21 @@ function getRealSession(sock) {
       }
     }
 
-    // 2. Fallback: find session by WhatsApp number
+    // --------------------------------------------------------
+    // 2. TRY WHATSAPP NUMBER
+    // --------------------------------------------------------
+
     const socketNumber =
-      cleanNumber(
-        sock?.user?.id
-      );
+      cleanNumber(sock?.user?.id);
 
     if (
       socketNumber &&
-      typeof settingPanel.getSessionByNumber ===
-        "function"
+      typeof settingPanel.getSessionByNumber === "function"
     ) {
-
       const session =
-        settingPanel.getSessionByNumber(
-          socketNumber
-        );
+        settingPanel.getSessionByNumber(socketNumber);
 
       if (session?.sessionId) {
-
         console.log(
           `[TOPFEROS] Session found by number: ${session.sessionId}`
         );
@@ -87,548 +83,312 @@ function getRealSession(sock) {
   }
 }
 
-/* ======================================================
-   ON / OFF
-====================================================== */
+// ============================================================
+// GET REAL PANEL LINK
+// ============================================================
 
-function onOff(value) {
-  return value
-    ? "✅ ON"
-    : "❌ OFF";
-}
-
-/* ======================================================
-   DELETE DESTINATION
-====================================================== */
-
-function getDeleteDestination(settings) {
+function getPanelLink(session) {
 
   if (
-    settings?.antiDeleteSameChat
+    session &&
+    typeof session.link === "string" &&
+    session.link.includes("/setting")
   ) {
-    return "📥 INBOX";
-  }
-
-  if (
-    settings?.antiDeleteDM
-  ) {
-    return "📩 Sender";
-  }
-
-  return "❌ OFF";
-}
-
-/* ======================================================
-   MODE
-====================================================== */
-
-function getMode(
-  info,
-  settings
-) {
-
-  if (
-    settings?.privateMode
-  ) {
-    return "🔒 Private";
-  }
-
-  if (
-    settings?.publicMode
-  ) {
-    return "🌐 Public";
-  }
-
-  return (
-    info?.mode ||
-    "Unknown"
-  );
-}
-
-/* ======================================================
-   REAL PANEL LINK
-====================================================== */
-
-function getSettingsUrl(session) {
-
-  /*
-   * IMPORTANT:
-   * Itilize vrè link sessionPanel la kreye.
-   * Pa konstwi yon lòt URL.
-   */
-
-  if (
-    session?.link &&
-    /^https?:\/\//i.test(
-      session.link
-    )
-  ) {
-
     return session.link;
   }
 
-  /*
-   * Si session.link pa disponib,
-   * nou itilize menm PANEL_URL
-   * settingPanel.js itilize a.
-   */
-
   const panelUrl =
-    settingPanel?.PANEL_URL ||
     process.env.SETTINGS_PANEL_URL ||
     process.env.PANEL_URL ||
-    "";
+    "https://topferos-md-v1-0-0.onrender.com";
 
-  if (
-    !panelUrl ||
-    !session?.sessionId
-  ) {
-    return "";
-  }
-
-  return (
-    `${String(panelUrl).replace(/\/+$/, "")}` +
-    `/?session=${encodeURIComponent(
-      session.sessionId
-    )}`
-  );
+  return `${panelUrl.replace(/\/+$/, "")}/setting`;
 }
 
-/* ======================================================
-   MESSAGE 1
-   REAL CURRENT SETTINGS
-====================================================== */
+// ============================================================
+// SETTINGS COMMAND
+// ============================================================
 
-function buildSettingsMessage(
-  info,
-  settings
-) {
-
-  const botName =
-    info?.name ||
-    config?.bot?.name ||
-    "TOPFEROS MD";
-
-  const number =
-    info?.number ||
-    config?.owner?.number ||
-    "Not Set";
-
-  const prefix =
-    info?.prefix ||
-    config?.bot?.prefix ||
-    ".";
-
-  const mode =
-    getMode(
-      info,
-      settings
-    );
-
-  return `╭━━━━━━━━━━━❀━━━━━━━━━━━╮
-       🦁 *BOT SETTINGS* 🐑
-      🐑 *${botName}* 🦁
-╰━━━━━━━━━━━❀━━━━━━━━━━━╯
-
-┌─────── ⋆⋅☆⋅⋆ ──────────┐
-       ✨ *USER INFO* ✨
-└────────── ⋆⋅☆⋅⋆ ──────────┘
-
-   🎀 *Name*   » ${botName}
-   📱 *Number* » ${number}
-   🎂 *Age*    » 24
-   📍 *From*   » TOPFEROS TECH
-   🔤 *Prefix* » ${prefix}
-   🌐 *Mode*   » ${mode}
-
-┌─────── ⋆⋅☆⋅⋆ ──────────┐
-      🛡️ *PROTECTION* 🛡️
-└────────── ⋆⋅☆⋅⋆ ──────────┘
-
-   🔗 Anti Link         » ${onOff(settings?.antiLink)}
-   🤬 Anti Bad Words    » ❌ OFF
-   📞 Anti Call         » ${onOff(settings?.antiCall)}
-   ⛔ Auto Block        » ❌ OFF
-   🧭 Anti Bugs         » ❌ OFF
-   🛸 Anti Bot          » ${onOff(settings?.antiRobot)}
-   ⚽ Anti Bot Action   » 💥 Delete
-
-┌─────── ⋆⋅☆⋅⋆ ──────────┐
-       🗑️ *DELETE LOGS* 🗑️
-└────────── ⋆⋅☆⋅⋆ ──────────┘
-
-   👀 Anti Delete       » ${onOff(settings?.antiDelete)}
-   📤 Delete Send       » ${getDeleteDestination(settings)}
-
-┌─────── ⋆⋅☆⋅⋆ ──────────┐
-      📊 *STATUS SECTION* 📊
-└────────── ⋆⋅☆⋅⋆ ──────────┘
-
-   👁️ Status Read          » ${onOff(settings?.autoStatus)}
-   ❤️ Status React         » ${onOff(settings?.statusReact)}
-   😉 Status Custom React  » None
-   💬 Auto Save Contact    » ❌ OFF
-   📝 Contact Send Msg     » 📋 Default
-   📤 Status Msg Send      » ${onOff(settings?.statusReply)}
-
-┌─────── ⋆⋅☆⋅⋆ ──────────┐
-       🤖 *AUTOMATION* 🤖
-└────────── ⋆⋅☆⋅⋆ ──────────┘
-
-   🟢 Always Online      » ${onOff(settings?.alwaysOnline)}
-   ⌨️ Auto Typing        » ${onOff(settings?.fakeTyping)}
-   🎙️ Auto Recording     » ${onOff(settings?.fakeRecording)}
-   👁️ Auto Read Msg      » ${onOff(settings?.autoStatus)}
-
-┌─────── ⋆⋅☆⋅⋆ ──────────┐
-       ⚙️ *CONFIGS* ⚙️
-└────────── ⋆⋅☆⋅⋆ ──────────┘
-
-   💭 Custom Status  » Not Set
-   📵 Exclude Nums   » None
-
-┌─────── ⋆⋅☆⋅⋆ ──────────┐
-       🖼️ *MEDIA URLS* 🖼️
-└────────── ⋆⋅☆⋅⋆ ──────────┘
-
-   🎯 Alive Logo  » ${config?.bot?.logo ? "✅ Set" : "❌ Not Set"}
-   🎨 Menu Logo   » ${config?.bot?.logo ? "✅ Set" : "❌ Not Set"}
-   👑 Owner Logo  » ${config?.bot?.logo ? "✅ Set" : "❌ Not Set"}
-
-╭━━━━━━━━━━━❀━━━━━━━━━━━╮
-  ✨ *Owner Only Access* ✨
-     🌸 *Personal Chat* 🌸
-╰━━━━━━━━━━━❀━━━━━━━━━━━╯
-
-🦁 *By TOPFEROS MD TECH*`;
-}
-
-/* ======================================================
-   MESSAGE 2
-====================================================== */
-
-function buildAccessMessage(
-  session
-) {
-
-  const settingsUrl =
-    getSettingsUrl(session);
-
-  /*
-   * Nou pa mete /contactsave paske
-   * pa gen route sa nan panel aktyèl la.
-   */
-
-  return `✧･ﾟ: *✧･ﾟ:* 🔐 *TOPFEROS MD V1.0.0* 🔐 *:･ﾟ✧*:･ﾟ✧
-
-   🌸 *Owner Number*
-   ╰┈➤ ${session?.number || "Not Set"}
-
-   🌸 *Password*
-   ╰┈➤ ${session?.code || "Not Set"}
-
-   🌐 *Web Settings*
-   ╰┈➤ ${settingsUrl || "Not Set"}
-
-╰┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈╯
-   💖 *Keep Safe & Don't Share* 💖
-
-🦁 *By TOPFEROS MD TECH*`;
-}
-
-/* ======================================================
-   COPY PASSWORD
-====================================================== */
-
-async function sendCopyPassword(
-  sock,
-  chatId,
-  session
-) {
-
-  const code =
-    String(
-      session?.code || ""
-    ).trim();
-
-  if (!code) {
-    return false;
-  }
+async function execute(sock, msg, args = []) {
 
   try {
 
-    await sock.sendMessage(
-      chatId,
-      {
-        interactiveMessage: {
-
-          header:
-            "🔐 TOPFEROS MD",
-
-          title:
-            "Settings Password",
-
-          footer:
-            "🦁 By TOPFEROS MD TECH",
-
-          buttons: [
-            {
-              name:
-                "cta_copy",
-
-              buttonParamsJson:
-                JSON.stringify({
-
-                  display_text:
-                    "📋 Copy Password",
-
-                  id:
-                    "copy_settings_password",
-
-                  copy_code:
-                    code
-
-                })
-            }
-          ]
-        }
-      }
-    );
-
-    console.log(
-      "[TOPFEROS] Copy Password button sent."
-    );
-
-    return true;
-
-  } catch (error) {
-
-    console.warn(
-      "[TOPFEROS] Copy button pa disponib:",
-      error?.message ||
-      error
-    );
-
-    /*
-     * Fallback:
-     * si WhatsApp pa sipòte bouton an,
-     * password la toujou disponib.
-     */
-
-    try {
-
-      await sock.sendMessage(
-        chatId,
-        {
-          text:
-            `📋 *Copy Password*\n\n` +
-            `\`${code}\``
-        }
-      );
-
-    } catch (
-      fallbackError
-    ) {
-
+    if (!sock) {
       console.error(
-        "[TOPFEROS] Copy fallback error:",
-        fallbackError?.message ||
-        fallbackError
+        "[TOPFEROS] Settings: socket manke."
       );
+
+      return;
     }
 
-    return false;
-  }
-}
+    const jid =
+      msg?.key?.remoteJid ||
+      msg?.from ||
+      msg?.chat;
 
-/* ======================================================
-   MESSAGE 3
-====================================================== */
+    if (!jid) {
+      console.error(
+        "[TOPFEROS] Settings: JID manke."
+      );
 
-function buildInstructionsMessage() {
+      return;
+    }
 
-  return `
-
-To change your bot settings, please click the web link in the message above and go to the web page. Use the ownerNumber and password provided in the message above to log in and change your bot settings. After submitting your settings on the website, your bot will update the new settings within 3 minutes. ✅
-
-
-
-Pour modifier les paramètres de votre bot, veuillez cliquer sur le lien web dans le message ci-dessus et accéder à la page web. Utilisez l’ownerNumber et le mot de passe indiqués dans le message ci-dessus pour vous connecter et modifier les paramètres de votre bot. Après avoir soumis les paramètres sur le site web, votre bot mettra à jour les nouveaux paramètres dans un délai de 3 minutes. ✅
-
-
-
-Para cambiar la configuración de tu bot, haz clic en el enlace web del mensaje anterior y accede a la página web. Utiliza el ownerNumber y la contraseña que aparecen en el mensaje anterior para iniciar sesión y cambiar la configuración de tu bot. Después de enviar la configuración en el sitio web, tu bot actualizará los nuevos ajustes en un plazo de 3 minutos. ✅
-
-🦁 *By TOPFEROS MD TECH*`;
-}
-
-/* ======================================================
-   COMMAND
-====================================================== */
-
-async function execute({
-  sock,
-  message
-}) {
-
-  const chatId =
-    message?.key?.remoteJid;
-
-  if (!chatId) {
-    return;
-  }
-
-  try {
-
-    /*
-     * FIND REAL SESSION
-     */
+    // --------------------------------------------------------
+    // FIND REAL SESSION
+    // --------------------------------------------------------
 
     const session =
       getRealSession(sock);
 
-    if (!session?.sessionId) {
+    if (!session) {
 
       await sock.sendMessage(
-        chatId,
+        jid,
         {
           text:
-            "❌ *TOPFEROS MD*\n\n" +
-            "Bot session lan pa jwenn.\n" +
-            "Tanpri verifye koneksyon bot la."
-        },
-        {
-          quoted: message
+`❌ *TOPFEROS MD*
+
+Pa jwenn session panel pou bot sa a.
+
+Tanpri verifye ke bot la konekte byen epi eseye ankò.`
         }
       );
 
       return;
     }
 
-    /*
-     * LOAD REAL SETTINGS
-     */
+    // --------------------------------------------------------
+    // SESSION DATA
+    // --------------------------------------------------------
 
-    const loaded =
-      settingPanel.loadSettings(
-        session.sessionId
-      );
-
-    if (!loaded) {
-
-      await sock.sendMessage(
-        chatId,
-        {
-          text:
-            "❌ *TOPFEROS MD*\n\n" +
-            "Settings session lan pa disponib."
-        },
-        {
-          quoted: message
-        }
-      );
-
-      return;
-    }
-
-    const info =
-      loaded.botInformation ||
-      {};
+    const sessionId =
+      session.sessionId;
 
     const settings =
-      loaded.settings ||
-      {};
+      session.settings || {};
 
-    /*
-     * MESSAGE 1
-     */
+    const botInformation =
+      session.botInformation || {};
+
+    const number =
+      cleanNumber(
+        session.number ||
+        botInformation.number ||
+        sock?.user?.id
+      );
+
+    const password =
+      session.code ||
+      "NOT_SET";
+
+    // --------------------------------------------------------
+    // REAL PANEL LINK
+    // --------------------------------------------------------
+
+    const panelLink =
+      getPanelLink(session);
+
+    // --------------------------------------------------------
+    // SETTINGS STATUS
+    // --------------------------------------------------------
+
+    const status = value =>
+      value ? "🟢 ON" : "🔴 OFF";
+
+    const mode =
+      settings.publicMode === false &&
+      settings.privateMode === true
+        ? "Private"
+        : "Public";
+
+    // --------------------------------------------------------
+    // SETTINGS INFORMATION
+    // --------------------------------------------------------
+
+    const settingsMessage =
+`╭━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╮
+┃     🦁 *TOPFEROS MD*         ┃
+┃        *SETTINGS*            ┃
+╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯
+
+👤 *Bot Name:* ${botInformation.name || config.bot?.name || "TOPFEROS MD"}
+📱 *Number:* ${number || "Not Set"}
+⚡ *Prefix:* ${botInformation.prefix || config.bot?.prefix || "."}
+🌐 *Mode:* ${mode}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚙️ *BOT SETTINGS*
+
+🔵 Always Online : ${status(settings.alwaysOnline)}
+⌨️ Fake Typing   : ${status(settings.fakeTyping)}
+🎙️ Fake Recording: ${status(settings.fakeRecording)}
+📞 Anti Call     : ${status(settings.antiCall)}
+🗑️ Anti Delete   : ${status(settings.antiDelete)}
+🛡️ Anti Spam     : ${status(settings.antiSpam)}
+🔗 Anti Link     : ${status(settings.antiLink)}
+🤖 Anti Robot    : ${status(settings.antiRobot)}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📱 *STATUS SETTINGS*
+
+👁️ Auto Status   : ${status(settings.autoStatus)}
+💬 Status Reply  : ${status(settings.statusReply)}
+❤️ Status Like   : ${status(settings.statusLike)}
+⚡ Status React  : ${status(settings.statusReact)}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+👥 *GROUP SETTINGS*
+
+🛡️ Group AntiSpam : ${status(settings.groupAntiSpam)}
+🔗 Group AntiLink : ${status(settings.groupAntiLink)}
+🗑️ Group AntiDelete: ${status(settings.groupAntiDelete)}
+🔒 Group Close    : ${status(settings.groupClose)}
+🔓 Group Open     : ${status(settings.groupOpen)}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🤖 AI Chat : ${status(settings.aiChat)}
+
+╭━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╮
+┃ 🦁 *By TOPFEROS MD TECH*     ┃
+╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯`;
+
+    // --------------------------------------------------------
+    // SEND SETTINGS INFORMATION
+    // --------------------------------------------------------
 
     await sock.sendMessage(
-      chatId,
+      jid,
       {
-        text:
-          buildSettingsMessage(
-            info,
-            settings
-          )
+        text: settingsMessage
       },
       {
-        quoted: message
+        quoted: msg
       }
     );
 
-    /*
-     * SMALL DELAY
-     */
+    // --------------------------------------------------------
+    // ACCESS INFORMATION
+    // --------------------------------------------------------
 
-    await new Promise(
-      resolve =>
-        setTimeout(
-          resolve,
-          350
-        )
-    );
+    const accessMessage =
+`╭━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╮
+┃      🔐 *PANEL ACCESS*       ┃
+╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯
 
-    /*
-     * MESSAGE 2
-     */
+📱 *Owner Number*
+└──➤ ${number || "Not Set"}
+
+🌸 *Password*
+└──➤ ${password}
+
+🌐 *Web Settings*
+└──➤ ${panelLink}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+💖 *Keep Safe & Don't Share* 💖
+
+╭━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╮
+┃ 🦁 *By TOPFEROS MD TECH*     ┃
+╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯`;
+
+    // --------------------------------------------------------
+    // SEND PANEL ACCESS
+    // --------------------------------------------------------
+
+    try {
+
+      await sock.sendMessage(
+        jid,
+        {
+          text: accessMessage
+        },
+        {
+          quoted: msg
+        }
+      );
+
+    } catch (error) {
+
+      console.error(
+        "[TOPFEROS] Access message error:",
+        error?.stack ||
+        error?.message ||
+        error
+      );
+
+    }
+
+    // --------------------------------------------------------
+    // COPY PASSWORD BUTTON
+    // --------------------------------------------------------
+
+    try {
+
+      await sock.sendMessage(
+        jid,
+        {
+          text: "📋 *Copy Password*\n\n" + password
+        },
+        {
+          quoted: msg
+        }
+      );
+
+    } catch (error) {
+
+      console.error(
+        "[TOPFEROS] Copy password message error:",
+        error?.stack ||
+        error?.message ||
+        error
+      );
+
+    }
+
+    // --------------------------------------------------------
+    // MULTI-LANGUAGE INSTRUCTIONS
+    // --------------------------------------------------------
+
+    const instructions =
+
+To change your bot settings, please click the web link in the message above and go to the web page. Use the ownerNumber and password provided in the message above to log in and change your bot settings. After submitting your settings on the website, your bot will update the new settings within 3 minutes. ✅
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Pour modifier les paramètres de votre bot, veuillez cliquer sur le lien web dans le message ci-dessus et accéder à la page web. Utilisez l’ownerNumber et le mot de passe indiqués dans le message ci-dessus pour vous connecter et modifier les paramètres de votre bot. Après avoir soumis les paramètres sur le site web, votre bot mettra à jour les nouveaux paramètres dans un délai de 3 minutes. ✅
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Para cambiar la configuración de tu bot, haz clic en el enlace web del mensaje anterior y accede a la página web. Utiliza el ownerNumber y la contraseña que aparecen en el mensaje anterior para iniciar sesión y cambiar la configuración de tu bot. Después de enviar la configuración en el sitio web, tu bot actualizará los nuevos ajustes en un plazo de 3 minutos. ✅
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🦁 *By TOPFEROS MD TECH*`;
 
     await sock.sendMessage(
-      chatId,
+      jid,
       {
-        text:
-          buildAccessMessage(
-            session
-          )
-      }
-    );
-
-    /*
-     * COPY PASSWORD
-     */
-
-    await new Promise(
-      resolve =>
-        setTimeout(
-          resolve,
-          350
-        )
-    );
-
-    await sendCopyPassword(
-      sock,
-      chatId,
-      session
-    );
-
-    /*
-     * MESSAGE 3
-     */
-
-    await new Promise(
-      resolve =>
-        setTimeout(
-          resolve,
-          350
-        )
-    );
-
-    await sock.sendMessage(
-      chatId,
+        text: instructions
+      },
       {
-        text:
-          buildInstructionsMessage()
+        quoted: msg
       }
     );
 
     console.log(
-      `[TOPFEROS] .setting OK | session=${session.sessionId} | number=${session.number}`
+      `[TOPFEROS] Settings sent successfully | Session: ${sessionId} | Number: ${number}`
     );
 
   } catch (error) {
 
     console.error(
-      "[TOPFEROS] ERÈ .setting:",
+      "[TOPFEROS] SETTINGS COMMAND ERROR:",
       error?.stack ||
       error?.message ||
       error
@@ -636,44 +396,40 @@ async function execute({
 
     try {
 
-      await sock.sendMessage(
-        chatId,
-        {
-          text:
-            "❌ *TOPFEROS MD*\n\n" +
-            "Gen yon erè pandan m ap prepare Settings Panel la."
-        }
-      );
+      const jid =
+        msg?.key?.remoteJid ||
+        msg?.from ||
+        msg?.chat;
+
+      if (jid) {
+
+        await sock.sendMessage(
+          jid,
+          {
+            text:
+`❌ *TOPFEROS MD*
+
+Yon erè rive pandan mwen t ap ouvri settings yo.
+
+Tanpri eseye ankò.`
+          }
+        );
+
+      }
 
     } catch {}
+
   }
 }
 
-/* ======================================================
-   EXPORT
-====================================================== */
+// ============================================================
+// EXPORT
+// ============================================================
 
 module.exports = {
-
-  name:
-    "setting",
-
+  name: "setting",
   aliases: [
-    "settings",
-    "config",
-    "configuration"
+    "settings"
   ],
-
-  description:
-    "Montre vrè settings bot la ak Settings Panel.",
-
-  usage:
-    ".setting",
-
   execute
-
 };
-
-// ╔════════════════════════════════════════════════════╗
-// ║             🦁 By TOPFEROS MD TECH               ║
-// ╚════════════════════════════════════════════════════╝
