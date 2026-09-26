@@ -109,7 +109,15 @@ function getPanelLink(session) {
 // SETTINGS COMMAND
 // ============================================================
 
-async function execute(sock, msg, args = []) {
+async function execute(context) {
+
+  const sock = context?.sock;
+  const msg =
+    context?.message ||
+    context?.msg;
+
+  const args =
+    context?.args || []; {
 
   try {
 
