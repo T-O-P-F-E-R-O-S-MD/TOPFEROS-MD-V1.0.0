@@ -1,22 +1,34 @@
 "use strict";
 
+const fs = require("fs");
+const os = require("os");
+const path = require("path");
+const crypto = require("crypto");
+const { execFile } = require("child_process");
+const { promisify } = require("util");
+
 const {
   downloadContentFromMessage
 } = require("@whiskeysockets/baileys");
+
+const execFileAsync = promisify(execFile);
 
 // ============================================================
 // 🦁 TOPFEROS MD — AI STATUS LIKE SYSTEM
 // ============================================================
 // 👁️ Auto Seen
-// 🤖 AI Vision
+// 📸 AI Vision PHOTO
+// 🎥 AI Vision VIDEO
 // ❤️ AI Contextual Like
+//
+// AI chwazi EGZAKTEMAN 1 emoji.
 //
 // ❌ Auto Save       = OFF
 // ❌ Auto Send       = OFF
 // ❌ Auto Anrejistre = OFF
 //
-// AI a chwazi 1 emoji nan STATUS_EMOJIS.
-// Emoji sa a se Like ki ale sou Status la.
+// Video yo analize atravè plizyè frame tanporè.
+// Frame yo efase apre analiz la.
 // ============================================================
 
 
@@ -47,22 +59,29 @@ function unwrapStatusMessage(message) {
 
   const wrappers = [
     "ephemeralMessage",
+    "viewOnceMessage",
+    "viewOnceMessageV2",
+    "viewOnceMessageV2Extension",
     "documentWithCaptionMessage",
     "associatedChildMessage"
   ];
 
   while (
     current &&
-    safety < 8
+    safety < 10
   ) {
     safety++;
 
     let found = false;
 
     for (const key of wrappers) {
-      if (current[key]?.message) {
+      if (
+        current[key] &&
+        typeof current[key] === "object"
+      ) {
         current =
-          current[key].message;
+          current[key].message ||
+          current[key];
 
         found = true;
         break;
@@ -123,11 +142,10 @@ function getMediaMessage(message) {
 
 
 // ============================================================
-// DOWNLOAD MEDIA
+// DOWNLOAD MEDIA TO MEMORY
 // ============================================================
-// Sa sèvi sèlman pou AI Vision analize imaj la.
-// Li pa sove Status la.
-// Li pa voye Status la nan DM.
+// Sa pa yon Save Status.
+// Li download kontni an sèlman an RAM pou analiz AI.
 // ============================================================
 
 async function downloadMedia(
@@ -138,32 +156,40 @@ async function downloadMedia(
     return null;
   }
 
-  const stream =
-    await downloadContentFromMessage(
-      media,
-      type
+  try {
+    const stream =
+      await downloadContentFromMessage(
+        media,
+        type
+      );
+
+    const chunks = [];
+
+    for await (const chunk of stream) {
+      chunks.push(chunk);
+    }
+
+    return Buffer.concat(chunks);
+
+  } catch (error) {
+
+    console.warn(
+      "⚠️ STATUS MEDIA DOWNLOAD ERROR:",
+      error?.message ||
+      error
     );
 
-  const chunks = [];
-
-  for await (const chunk of stream) {
-    chunks.push(chunk);
+    return null;
   }
-
-  return Buffer.concat(chunks);
 }
 
 
 // ============================================================
 // 🤖❤️ AI STATUS LIKE EMOJIS
 // ============================================================
-// AI a dwe chwazi egzakteman 1 emoji ladan lis sa a.
-// Nou pa retire ansyen emoji yo.
-// Nou ajoute lòt emoji pou AI a gen plis chwa.
-// ============================================================
 
 const STATUS_EMOJIS = [
-  // Original emojis
+  // Original
   "🥰",
   "💚",
   "😂",
@@ -228,7 +254,7 @@ const STATUS_EMOJIS = [
   "🐱",
   "🍕",
 
-  // Extra emotion emojis
+  // Emotion
   "😁",
   "😅",
   "😉",
@@ -252,7 +278,7 @@ const STATUS_EMOJIS = [
   "🫡",
   "🗿",
 
-  // Extra love emojis
+  // Love
   "💖",
   "💕",
   "💓",
@@ -391,18 +417,239 @@ function extractJsonObject(text) {
 
 
 // ============================================================
-// 🤖 ANALYZE STATUS IMAGE WITH AI
+// TEMP DIRECTORY
+// ============================================================
+
+async function createTempDirectory() {
+  const dir =
+    path.join(
+      os.tmpdir(),
+      `topferos-status-${crypto.randomBytes(6).toString("hex")}`
+    );
+
+  await fs.promises.mkdir(
+    dir,
+    {
+      recursive: true
+    }
+  );
+
+  return dir;
+}
+
+
+// ============================================================
+// DELETE TEMP DIRECTORY
+// ============================================================
+
+async function removeTempDirectory(dir) {
+  if (!dir) {
+    return;
+  }
+
+  try {
+    await fs.promises.rm(
+      dir,
+      {
+        recursive: true,
+        force: true
+      }
+    );
+  } catch (_) {}
+}
+
+
+// ============================================================
+// CHECK FFMPEG
+// ============================================================
+
+async function hasFFmpeg() {
+  try {
+    await execFileAsync(
+      "ffmpeg",
+      [
+        "-version"
+      ],
+      {
+        timeout: 5000
+      }
+    );
+
+    return true;
+
+  } catch (_) {
+    return false;
+  }
+}
+
+
+// ============================================================
+// EXTRACT VIDEO FRAMES
+// ============================================================
+// Nou pran 3 frame:
+// 00%
+// 50%
+// 90%
+//
+// Sa pèmèt AI wè diferan moman nan video a.
+// ============================================================
+
+async function extractVideoFrames(
+  videoBuffer
+) {
+  if (
+    !videoBuffer ||
+    !Buffer.isBuffer(videoBuffer)
+  ) {
+    return [];
+  }
+
+  const ffmpegAvailable =
+    await hasFFmpeg();
+
+  if (!ffmpegAvailable) {
+
+    console.warn(
+      "⚠️ STATUS VIDEO: ffmpeg pa disponib sou hosting lan."
+    );
+
+    return [];
+  }
+
+  let tempDir = null;
+
+  try {
+
+    tempDir =
+      await createTempDirectory();
+
+    const inputPath =
+      path.join(
+        tempDir,
+        "status.mp4"
+      );
+
+    const outputPattern =
+      path.join(
+        tempDir,
+        "frame-%02d.jpg"
+      );
+
+    await fs.promises.writeFile(
+      inputPath,
+      videoBuffer
+    );
+
+    // --------------------------------------------------------
+    // Extract 3 representative frames.
+    // FPS=1/3 means approximately one frame every 3 seconds,
+    // then -frames:v 3 limits it to 3 frames.
+    // --------------------------------------------------------
+
+    await execFileAsync(
+      "ffmpeg",
+      [
+        "-y",
+        "-i",
+        inputPath,
+        "-vf",
+        "fps=1/3,scale=768:-2",
+        "-frames:v",
+        "3",
+        "-q:v",
+        "5",
+        outputPattern
+      ],
+      {
+        timeout: 30000,
+        maxBuffer:
+          1024 * 1024
+      }
+    );
+
+    const files =
+      await fs.promises.readdir(
+        tempDir
+      );
+
+    const frameFiles =
+      files
+        .filter(
+          file =>
+            /^frame-\d+\.jpg$/i.test(
+              file
+            )
+        )
+        .sort();
+
+    const frames = [];
+
+    for (
+      const file of frameFiles
+    ) {
+
+      const framePath =
+        path.join(
+          tempDir,
+          file
+        );
+
+      const buffer =
+        await fs.promises.readFile(
+          framePath
+        );
+
+      if (
+        buffer &&
+        buffer.length
+      ) {
+        frames.push(buffer);
+      }
+    }
+
+    return frames;
+
+  } catch (error) {
+
+    console.warn(
+      "⚠️ STATUS VIDEO FRAME ERROR:",
+      error?.message ||
+      error
+    );
+
+    return [];
+
+  } finally {
+
+    await removeTempDirectory(
+      tempDir
+    );
+  }
+}
+
+
+// ============================================================
+// 🤖 ANALYZE STATUS WITH AI
 // ============================================================
 
 async function analyzeStatusWithAI({
   message,
   media,
   buffer,
+  buffers,
   config = {}
 }) {
+
+  const imageBuffers =
+    Array.isArray(buffers) &&
+    buffers.length
+      ? buffers
+      : buffer
+        ? [buffer]
+        : [];
+
   if (
-    !buffer ||
-    !Buffer.isBuffer(buffer)
+    !imageBuffers.length
   ) {
     return null;
   }
@@ -423,6 +670,7 @@ async function analyzeStatusWithAI({
     "qwen/qwen3.8-27b";
 
   if (!apiKey) {
+
     console.warn(
       "⚠️ STATUS AI: AI_API_KEY pa configure."
     );
@@ -438,25 +686,68 @@ async function analyzeStatusWithAI({
   const maxBytes =
     18 * 1024 * 1024;
 
-  if (buffer.length > maxBytes) {
-    console.warn(
-      "⚠️ STATUS AI: Imaj la twò gwo pou Vision."
-    );
+  for (
+    const item of imageBuffers
+  ) {
+    if (
+      !Buffer.isBuffer(item) ||
+      item.length > maxBytes
+    ) {
+      console.warn(
+        "⚠️ STATUS AI: Yon image/frame twò gwo."
+      );
 
-    return null;
+      return null;
+    }
   }
 
-  const base64 =
-    buffer.toString("base64");
+  // ----------------------------------------------------------
+  // CREATE IMAGE CONTENT
+  // ----------------------------------------------------------
 
-  const mime =
-    getImageMime(media);
+  const imageContents =
+    imageBuffers.map(
+      imageBuffer => ({
+        type: "image_url",
+
+        image_url: {
+          url:
+            `data:image/jpeg;base64,${imageBuffer.toString("base64")}`
+        }
+      })
+    );
+
+  const isVideo =
+    media?.mimetype &&
+    String(
+      media.mimetype
+    ).startsWith(
+      "video/"
+    );
 
   const prompt = `
 You are the smart contextual Like engine
 of TOPFEROS MD WhatsApp bot.
 
-Analyze the WhatsApp Status IMAGE itself.
+Analyze this WhatsApp Status carefully.
+
+${
+  isVideo
+    ? `
+This Status is a VIDEO.
+
+The images provided are representative
+frames extracted from the video.
+
+Use ALL frames together to understand
+the video's overall content and mood.
+`
+    : `
+This Status is a PHOTO.
+
+Analyze the image itself carefully.
+`
+}
 
 Your job is to choose the ONE emoji that
 should be used as the bot's Like on this Status.
@@ -486,30 +777,37 @@ Look carefully at:
 - disgust
 - danger
 - beauty
+- fashion
+- lifestyle
 - general mood
 
-The caption may help, but the IMAGE is primary.
+The caption can help,
+but visual content is primary.
 
 Allowed emojis:
 ${STATUS_EMOJIS.join(" ")}
 
-Rules:
+STRICT RULES:
 - Return ONLY valid JSON.
 - Return exactly ONE emoji.
 - The emoji MUST come from the allowed list.
 - Never invent another emoji.
 - Never return two emojis.
-- Choose the most natural WhatsApp reaction.
+- Never return an array.
+- Never return text outside JSON.
+- Choose the most natural contextual Like.
 - If the Status is neutral or unclear, use 👍.
 
 Caption:
 ${caption || "none"}
 
 Return exactly:
+
 {"emoji":"👍","reason":"short reason"}
 `;
 
   try {
+
     const response =
       await fetch(
         apiUrl,
@@ -524,54 +822,50 @@ Return exactly:
               `Bearer ${apiKey}`
           },
 
-          body: JSON.stringify({
-            model,
+          body:
+            JSON.stringify({
+              model,
 
-            messages: [
-              {
-                role: "system",
+              messages: [
+                {
+                  role: "system",
 
-                content:
-                  "Choose exactly one contextual WhatsApp Like emoji from the allowed list. Return valid JSON only."
+                  content:
+                    "You are TOPFEROS MD's contextual WhatsApp Status Like AI. Choose exactly one emoji from the provided allowed list and return valid JSON only."
+                },
+
+                {
+                  role: "user",
+
+                  content: [
+                    {
+                      type: "text",
+                      text: prompt
+                    },
+
+                    ...imageContents
+                  ]
+                }
+              ],
+
+              temperature:
+                0.2,
+
+              max_completion_tokens:
+                200,
+
+              response_format: {
+                type: "json_object"
               },
 
-              {
-                role: "user",
-
-                content: [
-                  {
-                    type: "text",
-                    text: prompt
-                  },
-
-                  {
-                    type: "image_url",
-
-                    image_url: {
-                      url:
-                        `data:${mime};base64,${base64}`
-                    }
-                  }
-                ]
-              }
-            ],
-
-            temperature: 0.2,
-
-            max_completion_tokens:
-              200,
-
-            response_format: {
-              type: "json_object"
-            },
-
-            reasoning_effort:
-              "none"
-          })
+              reasoning_effort:
+                "none"
+            })
         }
       );
 
     if (!response.ok) {
+
       const errorText =
         await response
           .text()
@@ -595,7 +889,9 @@ Return exactly:
       "";
 
     const result =
-      extractJsonObject(content);
+      extractJsonObject(
+        content
+      );
 
     const emoji =
       result?.emoji;
@@ -606,6 +902,7 @@ Return exactly:
         emoji
       )
     ) {
+
       console.warn(
         "⚠️ STATUS AI returned invalid emoji:",
         content
@@ -626,10 +923,14 @@ Return exactly:
             /[\r\n]+/g,
             " "
           )
-          .slice(0, 160)
+          .slice(
+            0,
+            160
+          )
     };
 
   } catch (error) {
+
     console.warn(
       "⚠️ STATUS AI ANALYSIS ERROR:",
       error?.message ||
@@ -649,55 +950,183 @@ async function getSmartStatusReaction({
   message,
   config = {}
 }) {
+
   try {
+
     const mediaData =
-      getMediaMessage(message);
-
-    // Vision analize IMAGE.
-    // Lòt kalite Status itilize fallback 👍.
-    if (
-      mediaData?.type !==
-      "image"
-    ) {
-      return {
-        emoji: "👍",
-        reason:
-          "Status la pa yon imaj Vision."
-      };
-    }
-
-    const buffer =
-      await downloadMedia(
-        mediaData.media,
-        mediaData.type
+      getMediaMessage(
+        message
       );
 
-    if (!buffer) {
+    if (!mediaData) {
+
       return {
         emoji: "👍",
         reason:
-          "Imaj la pa disponib."
+          "Status media pa disponib."
       };
     }
 
-    const result =
-      await analyzeStatusWithAI({
-        message,
-        media:
-          mediaData.media,
-        buffer,
-        config
-      });
+    // ========================================================
+    // 📸 PHOTO STATUS
+    // ========================================================
 
-    return (
-      result || {
+    if (
+      mediaData.type ===
+      "image"
+    ) {
+
+      const buffer =
+        await downloadMedia(
+          mediaData.media,
+          "image"
+        );
+
+      if (!buffer) {
+
+        return {
+          emoji: "👍",
+          reason:
+            "Foto a pa disponib."
+        };
+      }
+
+      const result =
+        await analyzeStatusWithAI({
+          message,
+          media:
+            mediaData.media,
+          buffer,
+          config
+        });
+
+      return (
+        result || {
+          emoji: "👍",
+          reason:
+            "AI pa disponib; fallback Like."
+        }
+      );
+    }
+
+
+    // ========================================================
+    // 🎥 VIDEO STATUS
+    // ========================================================
+
+    if (
+      mediaData.type ===
+      "video"
+    ) {
+
+      // ------------------------------------------------------
+      // FIRST: TRY WHATSAPP VIDEO THUMBNAIL
+      // ------------------------------------------------------
+
+      const thumbnail =
+        mediaData.media
+          ?.jpegThumbnail;
+
+      if (
+        thumbnail &&
+        Buffer.isBuffer(
+          thumbnail
+        )
+      ) {
+
+        const result =
+          await analyzeStatusWithAI({
+            message,
+
+            media:
+              mediaData.media,
+
+            buffers: [
+              thumbnail
+            ],
+
+            config
+          });
+
+        if (result) {
+          return result;
+        }
+      }
+
+      // ------------------------------------------------------
+      // SECOND: DOWNLOAD VIDEO TEMPORARILY
+      // ------------------------------------------------------
+
+      const videoBuffer =
+        await downloadMedia(
+          mediaData.media,
+          "video"
+        );
+
+      if (!videoBuffer) {
+
+        return {
+          emoji: "👍",
+          reason:
+            "Video a pa disponib; fallback Like."
+        };
+      }
+
+      // ------------------------------------------------------
+      // EXTRACT MULTIPLE FRAMES
+      // ------------------------------------------------------
+
+      const frames =
+        await extractVideoFrames(
+          videoBuffer
+        );
+
+      // ------------------------------------------------------
+      // AI ANALYZE FRAMES
+      // ------------------------------------------------------
+
+      if (
+        frames.length
+      ) {
+
+        const result =
+          await analyzeStatusWithAI({
+            message,
+
+            media:
+              mediaData.media,
+
+            buffers:
+              frames,
+
+            config
+          });
+
+        if (result) {
+          return result;
+        }
+      }
+
+      return {
         emoji: "👍",
         reason:
-          "AI pa disponib; fallback Like."
-      }
-    );
+          "Video a pa kapab analize; fallback Like."
+      };
+    }
+
+
+    // ========================================================
+    // OTHER MEDIA
+    // ========================================================
+
+    return {
+      emoji: "👍",
+      reason:
+        "Kalite Status sa a pa sipòte pou AI Vision."
+    };
 
   } catch (error) {
+
     console.warn(
       "⚠️ SMART STATUS LIKE ERROR:",
       error?.message ||
@@ -718,6 +1147,7 @@ async function getSmartStatusReaction({
 // ============================================================
 
 async function execute(context) {
+
   const {
     sock,
     message
@@ -737,8 +1167,9 @@ async function execute(context) {
         "╭━━━〔 🖼️ STATUS 〕━━━╮\n" +
         "┃\n" +
         "┃ 👁️ Seen: AUTOMATIC\n" +
-        "┃ 🤖 AI Like: AUTOMATIC\n" +
-        "┃ ❤️ AI chwazi emoji a\n" +
+        "┃ 📸 Photo AI Like: ON\n" +
+        "┃ 🎥 Video AI Like: ON\n" +
+        "┃ ❤️ AI chwazi 1 emoji\n" +
         "┃ 📥 Save: OFF\n" +
         "┃ 📤 Send: OFF\n" +
         "┃ 🗂️ Anrejistre: OFF\n" +
@@ -763,7 +1194,7 @@ module.exports = {
   aliases: [],
 
   description:
-    "AI chwazi emoji Like Status otomatikman.",
+    "AI chwazi emoji Like pou Foto ak Video Status otomatikman.",
 
   usage:
     ".status",
@@ -780,5 +1211,7 @@ module.exports = {
 
   getStatusText,
 
-  getStatusSender
+  getStatusSender,
+
+  extractVideoFrames
 };
