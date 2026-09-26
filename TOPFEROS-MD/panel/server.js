@@ -217,11 +217,6 @@ function getPublicSessions() {
       );
     }
 
-    /*
-     * Fallback pou sessionManager ki pa gen
-     * getPublicSessions().
-     */
-
     if (
       typeof sessionManager.getSessions ===
       "function"
@@ -297,7 +292,11 @@ function isSessionConnected(
 ) {
   return Boolean(
     session &&
-      session.connected === true
+      (
+        session.connected === true ||
+        session.status === "connected" ||
+        session.socket
+      )
   );
 }
 
@@ -359,6 +358,11 @@ function findSessionByNumber(
     return null;
   }
 
+  /*
+   * Premye chwa:
+   * settingsPanel.
+   */
+
   try {
     if (
       settingsPanel &&
@@ -384,6 +388,11 @@ function findSessionByNumber(
     );
   }
 
+  /*
+   * Dezyèm chwa:
+   * sessionManager.
+   */
+
   try {
     if (
       typeof sessionManager.getSessionByNumber ===
@@ -406,7 +415,7 @@ function findSessionByNumber(
   }
 
   /*
-   * Fallback sou sessions yo.
+   * Fallback.
    */
 
   const allSessions =
@@ -425,85 +434,6 @@ function findSessionByNumber(
     if (
       sessionNumber ===
       normalized
-    ) {
-      return session;
-    }
-  }
-
-  return null;
-}
-
-/*
-|--------------------------------------------------------------------------
-| FIND SESSION BY SETTINGS CODE
-|--------------------------------------------------------------------------
-*/
-
-function findSessionByCode(
-  code
-) {
-  const submitted =
-    String(
-      code || ""
-    )
-      .trim()
-      .toUpperCase();
-
-  if (!submitted) {
-    return null;
-  }
-
-  /*
-   * Premye opsyon:
-   * settingPanel.js gen sessions Map.
-   */
-
-  try {
-    if (
-      settingsPanel &&
-      settingsPanel.sessions instanceof Map
-    ) {
-      for (
-        const session of
-        settingsPanel.sessions.values()
-      ) {
-        if (
-          session &&
-          String(
-            session.code || ""
-          )
-            .trim()
-            .toUpperCase() ===
-            submitted
-        ) {
-          return session;
-        }
-      }
-    }
-  } catch (error) {
-    console.error(
-      "[TOPFEROS] Search settings code:",
-      error?.message || error
-    );
-  }
-
-  /*
-   * Fallback sou sessions WhatsApp.
-   */
-
-  const allSessions =
-    getPublicSessions();
-
-  for (
-    const session of allSessions
-  ) {
-    if (
-      String(
-        session?.code || ""
-      )
-        .trim()
-        .toUpperCase() ===
-      submitted
     ) {
       return session;
     }
@@ -539,7 +469,7 @@ app.get(
 |
 | https://topferos-md-v1-0-0.onrender.com/setting
 |
-| Pa gen sessionId nan URL la.
+| Pa gen sessionId nan URL.
 |
 |--------------------------------------------------------------------------
 */
@@ -737,11 +667,6 @@ app.post(
           number
         );
 
-      /*
-       * Si session deja konekte,
-       * pa efase li.
-       */
-
       let session =
         getConnectionSession(
           sessionId
@@ -768,10 +693,6 @@ app.post(
           `[TOPFEROS] ⚠️ Ancien session trouvé: ${sessionId}`
         );
 
-        console.log(
-          `[TOPFEROS] 🔄 Reset de l'ancien session avant nouveau pairing...`
-        );
-
         try {
           if (
             settingsPanel &&
@@ -779,6 +700,8 @@ app.post(
               "function"
           ) {
             await settingsPanel.setBotDisconnected(
+              null,
+              false,
               sessionId
             );
           }
@@ -803,14 +726,10 @@ app.post(
             console.log(
               `[TOPFEROS] ✅ Ancien session supprimé: ${sessionId}`
             );
-          } else {
-            console.warn(
-              "[TOPFEROS] ⚠️ connection.removeSession() pa disponib."
-            );
           }
         } catch (removeError) {
           console.error(
-            "[TOPFEROS] ❌ Erè pandan reset ancien session:",
+            "[TOPFEROS] ❌ Erè reset ancien session:",
             removeError?.stack ||
               removeError?.message ||
               removeError
@@ -824,21 +743,6 @@ app.post(
               removeError?.message ||
               String(removeError)
           });
-        }
-
-        session =
-          getConnectionSession(
-            sessionId
-          );
-
-        if (session) {
-          console.warn(
-            `[TOPFEROS] ⚠️ Session ${sessionId} toujou egziste apre reset.`
-          );
-        } else {
-          console.log(
-            `[TOPFEROS] ✅ Session ${sessionId} pa egziste ankò.`
-          );
         }
       }
 
@@ -872,10 +776,6 @@ app.post(
         !result ||
         !result.code
       ) {
-        console.error(
-          "[TOPFEROS] ❌ requestPairingCode() pa retounen code."
-        );
-
         return res.status(500).json({
           success: false,
           error:
@@ -883,28 +783,22 @@ app.post(
         });
       }
 
-      console.log(
-        `[TOPFEROS] ✅ NEW Pairing Code generated for ${number}`
-      );
-
       return res.json({
         success: true,
 
         sessionId:
-          result?.sessionId ||
+          result.sessionId ||
           sessionId,
 
         number:
-          result?.number ||
+          result.number ||
           number,
 
         code:
-          result?.code ||
-          null,
+          result.code,
 
         pairingCode:
-          result?.code ||
-          null,
+          result.code,
 
         message:
           "Nouveau pairing code généré avec succès."
@@ -1037,33 +931,26 @@ app.get(
 
 /*
 |--------------------------------------------------------------------------
-| VERIFY PANEL SESSION
+| VERIFY SETTINGS
 |--------------------------------------------------------------------------
 |
-| Nouvo sistèm:
+| SISTÈM FINAL:
 |
-| POST /api/verify
-|
-| {
-|   "number": "509XXXXXXXX",
-|   "code": "ABC123"
-| }
-|
-| Pa bezwen sessionId nan URL.
-|
-| Ansyen sistèm sessionId + code la toujou sipòte.
+| WhatsApp Number + Settings Code
+|              ↓
+|       getSessionByNumber()
+|              ↓
+|          sessionId
+|              ↓
+|     verifySession(sessionId, code)
 |
 |--------------------------------------------------------------------------
+*/
+
 app.post(
   "/api/verify",
   async (req, res) => {
     try {
-
-      /*
-       * ================================================================
-       * 1. RANPLI NUMBER AK CODE
-       * ================================================================
-       */
 
       const number =
         cleanNumberValue(
@@ -1086,61 +973,47 @@ app.post(
 
 
       console.log(
-        "[TOPFEROS] 🔐 Settings login request:",
+        "[TOPFEROS] 🔐 Settings login:",
         {
           number,
-          code:
-            code
-              ? "******"
-              : ""
+          hasCode:
+            Boolean(code)
         }
       );
 
 
       /*
-       * ================================================================
-       * 2. NUMBER OBLIGATWA
-       * ================================================================
+       * NUMBER
        */
 
       if (!number) {
-
         return res.status(400).json({
           success: false,
           verified: false,
           authenticated: false,
-
           error:
             "WhatsApp Number obligatwa."
         });
-
       }
 
 
       /*
-       * ================================================================
-       * 3. CODE OBLIGATWA
-       * ================================================================
+       * CODE
        */
 
       if (!code) {
-
         return res.status(400).json({
           success: false,
           verified: false,
           authenticated: false,
-
           error:
             "Settings Code obligatwa."
         });
-
       }
 
 
       /*
-       * ================================================================
-       * 4. VERIFY NUMBER FORMAT
-       * ================================================================
+       * NUMBER VALID
        */
 
       if (
@@ -1148,587 +1021,198 @@ app.post(
           number
         )
       ) {
-
         return res.status(400).json({
           success: false,
           verified: false,
           authenticated: false,
-
           error:
             "WhatsApp Number la pa valid."
         });
-
       }
 
 
       /*
-       * ================================================================
-       * 5. CHÈCHE SESSION WHATSAPP PA NUMBER
-       * ================================================================
+       * ==========================================================
+       * FIND SESSION BY NUMBER
+       * ==========================================================
        */
 
-      let waSession = null;
-
-      try {
-
-        if (
-          sessionManager &&
-          typeof sessionManager.getSessionByNumber ===
-            "function"
-        ) {
-
-          waSession =
-            sessionManager.getSessionByNumber(
-              number
-            );
-
-        }
-
-      } catch (error) {
-
-        console.error(
-          "[TOPFEROS] ❌ Erè getSessionByNumber:",
-          error?.stack ||
-            error?.message ||
-            error
+      const panelSession =
+        findSessionByNumber(
+          number
         );
 
-      }
 
-
-      /*
-       * ================================================================
-       * 6. SI PA JWENN SESSION
-       * ================================================================
-       */
-
-      if (!waSession) {
+      if (!panelSession) {
 
         console.log(
-          `[TOPFEROS] ❌ Pa gen WhatsApp session pou number ${number}`
+          `[TOPFEROS] ❌ Session pa jwenn pou number: ${number}`
         );
 
         return res.status(404).json({
           success: false,
           verified: false,
           authenticated: false,
-
           error:
             "Pa jwenn okenn session WhatsApp pou nimewo sa a."
         });
-
       }
 
 
       /*
-       * ================================================================
-       * 7. SESSION ID REYÈL
-       * ================================================================
+       * SESSION ID
        */
 
-      const resolvedSessionId =
-        waSession.sessionId;
+      const sessionId =
+        panelSession.sessionId;
 
 
-      if (!resolvedSessionId) {
-
-        console.error(
-          "[TOPFEROS] ❌ WhatsApp session lan pa gen sessionId."
-        );
+      if (!sessionId) {
 
         return res.status(500).json({
           success: false,
           verified: false,
           authenticated: false,
-
           error:
             "Session ID pa disponib."
         });
-
       }
 
 
       console.log(
-        `[TOPFEROS] ✅ Number ${number} -> ${resolvedSessionId}`
+        `[TOPFEROS] 🔎 Number ${number} -> ${sessionId}`
       );
 
 
       /*
-       * ================================================================
-       * 8. SESSION DWE KONEKTE
-       * ================================================================
+       * ==========================================================
+       * GET REAL PANEL SESSION
+       * ==========================================================
        */
 
-      const waConnected =
-        Boolean(
-          waSession.connected === true ||
-          waSession.status === "connected" ||
-          waSession.socket
-        );
+      let realPanelSession = null;
 
-
-      if (!waConnected) {
-
-        console.log(
-          `[TOPFEROS] ❌ Session ${resolvedSessionId} pa konekte.`
-        );
-
-        return res.status(403).json({
-          success: false,
-          verified: false,
-          authenticated: false,
-
-          connected: false,
-
-          error:
-            "Bot la pa konekte sou WhatsApp."
-        });
-
-      }
-
-
-      /*
-       * ================================================================
-       * 9. CHÈCHE PANEL SESSION AVÈK MENM SESSION ID
-       * ================================================================
-       */
 
       if (
-        !settingsPanel
+        settingsPanel &&
+        typeof settingsPanel.getSession ===
+          "function"
       ) {
 
-        return res.status(503).json({
-          success: false,
-          verified: false,
-          authenticated: false,
-
-          error:
-            "settingPanel.js pa disponib."
-        });
-
-      }
-
-
-      let panelSession = null;
-
-
-      try {
-
-        if (
-          typeof settingsPanel.getSession ===
-          "function"
-        ) {
-
-          panelSession =
-            settingsPanel.getSession(
-              resolvedSessionId
-            );
-
-        }
-
-      } catch (error) {
-
-        console.error(
-          "[TOPFEROS] ❌ Erè getSession panel:",
-          error?.stack ||
-            error?.message ||
-            error
-        );
+        realPanelSession =
+          settingsPanel.getSession(
+            sessionId
+          );
 
       }
 
 
       /*
-       * ================================================================
-       * 10. SI PANEL SESSION PA EGZISTE
-       *     REKREYE LI AVÈK VRÈ SESSION WHATSAPP LA
-       * ================================================================
+       * Si panel session poko kreye,
+       * kreye li avèk vrè WhatsApp socket la.
        */
 
       if (
-        !panelSession &&
+        !realPanelSession &&
+        settingsPanel &&
+        typeof settingsPanel.createNewSession ===
+          "function"
+      ) {
+
+        realPanelSession =
+          settingsPanel.createNewSession(
+            panelSession.socket || null,
+            number,
+            sessionId
+          );
+
+      }
+
+
+      /*
+       * Si li toujou pa egziste,
+       * eseye createSession().
+       */
+
+      if (
+        !realPanelSession &&
+        settingsPanel &&
         typeof settingsPanel.createSession ===
           "function"
       ) {
 
-        try {
-
-          panelSession =
-            settingsPanel.createSession(
-              waSession.socket,
-              resolvedSessionId
-            );
-
-        } catch (error) {
-
-          console.error(
-            "[TOPFEROS] ❌ Erè createSession panel:",
-            error?.stack ||
-              error?.message ||
-              error
+        realPanelSession =
+          settingsPanel.createSession(
+            panelSession.socket || null,
+            sessionId
           );
-
-        }
 
       }
 
 
       /*
-       * ================================================================
-       * 11. PANEL SESSION OBLIGATWA
-       * ================================================================
+       * SESSION PANEL OBLIGATWA
        */
 
-      if (!panelSession) {
+      if (!realPanelSession) {
 
-        console.error(
-          `[TOPFEROS] ❌ Panel session pa jwenn pou ${resolvedSessionId}`
+        console.log(
+          `[TOPFEROS] ❌ Panel session pa jwenn: ${sessionId}`
         );
 
         return res.status(404).json({
           success: false,
           verified: false,
           authenticated: false,
-
           error:
-            "Settings session pa jwenn pou nimewo sa a."
+            "Settings session pa jwenn."
         });
-
       }
 
 
       /*
-       * ================================================================
-       * 12. VERIFYE NUMBER LAN TOU
-       * ================================================================
+       * ==========================================================
+       * VERIFY NUMBER AK PANEL SESSION
+       * ==========================================================
        */
 
-      const panelNumber =
+      const sessionNumber =
         cleanNumberValue(
-          panelSession.number ||
-          panelSession.botInformation?.number ||
+          realPanelSession.number ||
+          realPanelSession.botInformation?.number ||
           ""
         );
 
 
       if (
-        panelNumber &&
-        panelNumber !== number
+        sessionNumber &&
+        sessionNumber !== number
       ) {
 
-        console.error(
-          `[TOPFEROS] ❌ Number mismatch: panel=${panelNumber}, login=${number}`
+        console.log(
+          `[TOPFEROS] ❌ Number mismatch: ${sessionNumber} !== ${number}`
         );
 
         return res.status(401).json({
           success: false,
           verified: false,
           authenticated: false,
-
           error:
             "WhatsApp Number lan pa koresponn ak session sa a."
         });
-
       }
 
 
       /*
-       * ================================================================
-       * 13. VERIFYE SETTINGS CODE LA
-       * ================================================================
-       */
-
-      let verification = null;
-
-
-      if (
-        typeof settingsPanel.verifySession ===
-        "function"
-      ) {
-
-        verification =
-          await settingsPanel.verifySession(
-            resolvedSessionId,
-            code
-          );
-
-      }
-
-
-      /*
-       * ================================================================
-       * 14. CHECK RESULT
-       * ================================================================
-       */
-
-      const authenticated =
-        verification === true ||
-        (
-          verification &&
-          typeof verification === "object" &&
-          (
-            verification.success === true ||
-            verification.verified === true ||
-            verification.authenticated === true
-          )
-        );
-
-
-      if (!authenticated) {
-
-        console.log(
-          `[TOPFEROS] ❌ Invalid Settings Code pou ${number}`
-        );
-
-        return res.status(401).json({
-          success: false,
-          verified: false,
-          authenticated: false,
-
-          connected: true,
-
-          error:
-            "Settings Code la pa kòrèk pou nimewo sa a."
-        });
-
-      }
-
-
-      /*
-       * ================================================================
-       * 15. CHARGE SETTINGS YO
-       * ================================================================
-       */
-
-      let settings = {};
-
-      let botInformation = {};
-
-
-      try {
-
-        if (
-          typeof settingsPanel.getSettings ===
-          "function"
-        ) {
-
-          settings =
-            await settingsPanel.getSettings(
-              resolvedSessionId
-            ) || {};
-
-        }
-
-
-        if (
-          typeof settingsPanel.getBotInformation ===
-          "function"
-        ) {
-
-          botInformation =
-            await settingsPanel.getBotInformation(
-              resolvedSessionId
-            ) || {};
-
-        }
-
-      } catch (settingsError) {
-
-        console.error(
-          "[TOPFEROS] ⚠️ Erè loading settings:",
-          settingsError?.stack ||
-            settingsError?.message ||
-            settingsError
-        );
-
-      }
-
-
-      /*
-       * ================================================================
-       * 16. LOGIN REYISI
-       * ================================================================
-       */
-
-      console.log(
-        `[TOPFEROS] ✅ SETTINGS LOGIN SUCCESS: ${number} -> ${resolvedSessionId}`
-      );
-
-
-      return res.json({
-
-        success: true,
-
-        verified: true,
-
-        authenticated: true,
-
-        connected: true,
-
-        sessionId:
-          resolvedSessionId,
-
-        number:
-          number,
-
-        settings:
-          settings,
-
-        botInformation:
-          botInformation,
-
-        message:
-          "Settings login successful."
-
-      });
-
-
-    } catch (error) {
-
-      console.error(
-        "[TOPFEROS] ❌ /api/verify:",
-        error?.stack ||
-          error?.message ||
-          error
-      );
-
-
-      return res.status(500).json({
-
-        success: false,
-
-        verified: false,
-
-        authenticated: false,
-
-        error:
-          "Erreur de vérification."
-
-      });
-
-    }
-  }
-); ================================================================
-       * NOUVO FASON:
-       * NUMBER + SETTINGS CODE
-       * ================================================================
-       */
-
-      let targetSession = null;
-      let resolvedSessionId =
-        sessionId;
-
-      if (
-        !sessionId &&
-        (number || code)
-      ) {
-        /*
-         * Si number la disponib,
-         * chèche session pa number.
-         */
-
-        if (number) {
-          targetSession =
-            findSessionByNumber(
-              number
-            );
-        }
-
-        /*
-         * Si pa jwenn li pa number,
-         * eseye code la.
-         */
-
-        if (
-          !targetSession &&
-          code
-        ) {
-          targetSession =
-            findSessionByCode(
-              code
-            );
-        }
-
-        if (
-          targetSession &&
-          targetSession.sessionId
-        ) {
-          resolvedSessionId =
-            targetSession.sessionId;
-        }
-      }
-
-      /*
-       * Si sessionId te vini,
-       * chèche session nòmalman.
+       * ==========================================================
+       * BOT CONNECTED
+       * ==========================================================
        */
 
       if (
-        !targetSession &&
-        resolvedSessionId
+        !realPanelSession.connected
       ) {
-        targetSession =
-          getConnectionSession(
-            resolvedSessionId
-          );
 
-        /*
-         * Si se panel session lan ki genyen
-         * men WA session lan pa dirèkteman jwenn,
-         * eseye settingPanel.
-         */
-
-        if (
-          !targetSession &&
-          settingsPanel &&
-          typeof settingsPanel.getSession ===
-            "function"
-        ) {
-          targetSession =
-            settingsPanel.getSession(
-              resolvedSessionId
-            );
-        }
-      }
-
-      if (!targetSession) {
-        return res.status(404).json({
-          success: false,
-          verified: false,
-          authenticated: false,
-          error:
-            "Bot/session introuvable."
-        });
-      }
-
-      /*
-       * Session ID final.
-       */
-
-      resolvedSessionId =
-        targetSession.sessionId ||
-        resolvedSessionId;
-
-      if (!resolvedSessionId) {
-        return res.status(400).json({
-          success: false,
-          verified: false,
-          authenticated: false,
-          error:
-            "Session ID pa disponib."
-        });
-      }
-
-      /*
-       * Bot la dwe konekte.
-       */
-
-      const connected =
-        isSessionConnected(
-          targetSession
-        );
-
-      if (!connected) {
         return res.status(403).json({
           success: false,
           verified: false,
@@ -1739,79 +1223,118 @@ app.post(
         });
       }
 
-      if (!settingsPanel) {
+
+      /*
+       * ==========================================================
+       * VERIFY SETTINGS CODE
+       * ==========================================================
+       */
+
+      if (
+        !settingsPanel ||
+        typeof settingsPanel.verifySession !==
+          "function"
+      ) {
+
         return res.status(503).json({
           success: false,
           verified: false,
           authenticated: false,
           error:
-            "settingPanel.js pa disponib."
+            "verifySession() pa disponib nan settingPanel.js."
         });
       }
 
+
+      const verification =
+        await settingsPanel.verifySession(
+          sessionId,
+          code
+        );
+
+
+      const authenticated =
+        verification === true ||
+        Boolean(
+          verification &&
+          typeof verification ===
+            "object" &&
+          (
+            verification.success === true ||
+            verification.verified === true ||
+            verification.authenticated === true
+          )
+        );
+
+
       /*
-       * Verifye code panel la.
+       * CODE PA BON
        */
 
-      let authenticated =
-        false;
-
-      if (
-        typeof settingsPanel.verifySession ===
-        "function"
-      ) {
-        const result =
-          await settingsPanel.verifySession(
-            resolvedSessionId,
-            code
-          );
-
-        /*
-         * verifySession() ka retounen:
-         *
-         * true
-         *
-         * oswa:
-         *
-         * { success: true }
-         */
-
-        if (
-          result === true
-        ) {
-          authenticated =
-            true;
-        } else if (
-          result &&
-          typeof result ===
-            "object"
-        ) {
-          authenticated =
-            result.success === true ||
-            result.verified === true ||
-            result.authenticated === true;
-        } else {
-          authenticated =
-            Boolean(
-              result
-            );
-        }
-      }
-
       if (!authenticated) {
+
+        console.log(
+          `[TOPFEROS] ❌ Settings Code pa valide pou ${number}`
+        );
+
         return res.status(401).json({
           success: false,
           verified: false,
           authenticated: false,
           connected: true,
           error:
-            "Code panel la pa valide."
+            "Settings Code la pa kòrèk pou nimewo sa a."
         });
       }
 
+
       /*
-       * Login reyisi.
+       * ==========================================================
+       * LOAD SETTINGS
+       * ==========================================================
        */
+
+      let settings = {};
+
+      let botInformation = {};
+
+
+      if (
+        typeof settingsPanel.getSettings ===
+          "function"
+      ) {
+
+        settings =
+          await settingsPanel.getSettings(
+            sessionId
+          ) || {};
+
+      }
+
+
+      if (
+        typeof settingsPanel.getBotInformation ===
+          "function"
+      ) {
+
+        botInformation =
+          await settingsPanel.getBotInformation(
+            sessionId
+          ) || {};
+
+      }
+
+
+      /*
+       * ==========================================================
+       * SUCCESS
+       * ==========================================================
+       */
+
+      console.log(
+        `[TOPFEROS] ✅ SETTINGS LOGIN SUCCESS: ${number} -> ${sessionId}`
+      );
+
 
       return res.json({
         success: true,
@@ -1819,23 +1342,22 @@ app.post(
         authenticated: true,
         connected: true,
 
-        sessionId:
-          resolvedSessionId,
+        sessionId,
 
-        number:
-          targetSession.number ||
-          number ||
-          "",
+        number,
 
-        session:
-          publicSession(
-            targetSession
-          )
+        settings,
+
+        botInformation,
+
+        message:
+          "Settings login successful."
       });
 
     } catch (error) {
+
       console.error(
-        "[TOPFEROS] /api/verify:",
+        "[TOPFEROS] ❌ /api/verify ERROR:",
         error?.stack ||
           error?.message ||
           error
@@ -1862,6 +1384,7 @@ app.get(
   "/api/settings",
   async (req, res) => {
     try {
+
       const sessionData =
         requireSession(
           req,
@@ -1877,6 +1400,7 @@ app.get(
         session
       } = sessionData;
 
+
       if (
         !isSessionConnected(
           session
@@ -1888,6 +1412,7 @@ app.get(
             "Bot la pa konekte. Settings yo pa disponib."
         });
       }
+
 
       if (
         !settingsPanel ||
@@ -1901,22 +1426,26 @@ app.get(
         });
       }
 
+
       const settings =
         await settingsPanel.getSettings(
           sessionId
         );
 
+
       let botInformation = {};
+
 
       if (
         typeof settingsPanel.getBotInformation ===
-        "function"
+          "function"
       ) {
         botInformation =
           await settingsPanel.getBotInformation(
             sessionId
           );
       }
+
 
       return res.json({
         success: true,
@@ -1928,7 +1457,9 @@ app.get(
         botInformation:
           botInformation || {}
       });
+
     } catch (error) {
+
       console.error(
         "[TOPFEROS] GET settings:",
         error?.stack ||
@@ -1955,9 +1486,11 @@ app.post(
   "/api/settings",
   async (req, res) => {
     try {
+
       const sessionId =
         req.body?.sessionId ||
         req.body?.session;
+
 
       if (!sessionId) {
         return res.status(400).json({
@@ -1967,10 +1500,12 @@ app.post(
         });
       }
 
+
       const session =
         getConnectionSession(
           sessionId
         );
+
 
       if (!session) {
         return res.status(404).json({
@@ -1979,6 +1514,7 @@ app.post(
             "Session introuvable."
         });
       }
+
 
       if (
         !isSessionConnected(
@@ -1992,6 +1528,7 @@ app.post(
         });
       }
 
+
       if (
         !settingsPanel ||
         typeof settingsPanel.applySettings !==
@@ -2004,18 +1541,22 @@ app.post(
         });
       }
 
+
       const updatedData = {
-        ...(req.body || {})
+        ...(req.body?.settings || req.body || {})
       };
+
 
       delete updatedData.sessionId;
       delete updatedData.session;
+
 
       const settings =
         await settingsPanel.applySettings(
           sessionId,
           updatedData
         );
+
 
       return res.json({
         success: true,
@@ -2024,7 +1565,9 @@ app.post(
         settings:
           settings || {}
       });
+
     } catch (error) {
+
       console.error(
         "[TOPFEROS] POST settings:",
         error?.stack ||
@@ -2052,6 +1595,7 @@ app.get(
   "/api/bot-information",
   async (req, res) => {
     try {
+
       const sessionData =
         requireSession(
           req,
@@ -2062,10 +1606,12 @@ app.get(
         return;
       }
 
+
       const {
         sessionId,
         session
       } = sessionData;
+
 
       if (
         !isSessionConnected(
@@ -2079,6 +1625,7 @@ app.get(
         });
       }
 
+
       if (
         !settingsPanel ||
         typeof settingsPanel.getBotInformation !==
@@ -2091,10 +1638,12 @@ app.get(
         });
       }
 
+
       const botInformation =
         await settingsPanel.getBotInformation(
           sessionId
         );
+
 
       return res.json({
         success: true,
@@ -2103,7 +1652,9 @@ app.get(
         botInformation:
           botInformation || {}
       });
+
     } catch (error) {
+
       console.error(
         "[TOPFEROS] bot-information:",
         error?.message || error
@@ -2128,9 +1679,11 @@ app.post(
   "/api/bot-information",
   async (req, res) => {
     try {
+
       const sessionId =
         req.body?.sessionId ||
         req.body?.session;
+
 
       if (!sessionId) {
         return res.status(400).json({
@@ -2140,10 +1693,12 @@ app.post(
         });
       }
 
+
       const session =
         getConnectionSession(
           sessionId
         );
+
 
       if (!session) {
         return res.status(404).json({
@@ -2152,6 +1707,7 @@ app.post(
             "Session introuvable."
         });
       }
+
 
       if (
         !isSessionConnected(
@@ -2165,6 +1721,7 @@ app.post(
         });
       }
 
+
       if (
         !settingsPanel ||
         typeof settingsPanel.updateBotInformation !==
@@ -2177,18 +1734,22 @@ app.post(
         });
       }
 
+
       const data = {
         ...(req.body || {})
       };
 
+
       delete data.sessionId;
       delete data.session;
+
 
       const botInformation =
         await settingsPanel.updateBotInformation(
           sessionId,
           data
         );
+
 
       return res.json({
         success: true,
@@ -2197,7 +1758,9 @@ app.post(
         botInformation:
           botInformation || {}
       });
+
     } catch (error) {
+
       console.error(
         "[TOPFEROS] update bot information:",
         error?.message || error
@@ -2223,13 +1786,16 @@ app.get(
   "/api/languages",
   (req, res) => {
     try {
+
       return res.json({
         success: true,
 
         languages:
           language.getLanguages()
       });
+
     } catch (error) {
+
       console.error(
         "[TOPFEROS] languages:",
         error?.message || error
@@ -2254,15 +1820,18 @@ app.get(
   "/api/language",
   (req, res) => {
     try {
+
       const selectedLanguage =
         req.query?.language ||
         req.query?.lang ||
         language.DEFAULT_LANGUAGE;
 
+
       const normalized =
         language.normalizeLanguage(
           selectedLanguage
         );
+
 
       return res.json({
         success: true,
@@ -2280,7 +1849,9 @@ app.get(
             normalized
           )
       });
+
     } catch (error) {
+
       console.error(
         "[TOPFEROS] GET language:",
         error?.message || error
@@ -2305,13 +1876,16 @@ app.post(
   "/api/language",
   async (req, res) => {
     try {
+
       const sessionId =
         req.body?.sessionId ||
         req.body?.session;
 
+
       const requestedLanguage =
         req.body?.language ||
         req.body?.lang;
+
 
       if (!sessionId) {
         return res.status(400).json({
@@ -2321,6 +1895,7 @@ app.post(
         });
       }
 
+
       if (!requestedLanguage) {
         return res.status(400).json({
           success: false,
@@ -2328,6 +1903,7 @@ app.post(
             "language obligatwa."
         });
       }
+
 
       if (
         !language.isSupportedLanguage(
@@ -2341,15 +1917,18 @@ app.post(
         });
       }
 
+
       const normalized =
         language.normalizeLanguage(
           requestedLanguage
         );
 
+
       const session =
         getConnectionSession(
           sessionId
         );
+
 
       if (!session) {
         return res.status(404).json({
@@ -2358,6 +1937,7 @@ app.post(
             "Session introuvable."
         });
       }
+
 
       if (
         !isSessionConnected(
@@ -2371,6 +1951,7 @@ app.post(
         });
       }
 
+
       if (
         settingsPanel &&
         typeof settingsPanel.setLanguage ===
@@ -2381,6 +1962,7 @@ app.post(
           normalized
         );
       }
+
 
       return res.json({
         success: true,
@@ -2399,7 +1981,9 @@ app.post(
             normalized
           )
       });
+
     } catch (error) {
+
       console.error(
         "[TOPFEROS] POST language:",
         error?.stack ||
@@ -2419,6 +2003,68 @@ app.post(
 
 /*
 |--------------------------------------------------------------------------
+| LOGOUT PANEL
+|--------------------------------------------------------------------------
+*/
+
+app.post(
+  "/api/logout",
+  async (req, res) => {
+    try {
+
+      const sessionId =
+        req.body?.sessionId ||
+        req.body?.session;
+
+
+      if (!sessionId) {
+        return res.status(400).json({
+          success: false,
+          error:
+            "sessionId obligatwa."
+        });
+      }
+
+
+      if (
+        settingsPanel &&
+        typeof settingsPanel.logoutSession ===
+          "function"
+      ) {
+        await settingsPanel.logoutSession(
+          sessionId
+        );
+      }
+
+
+      return res.json({
+        success: true,
+        sessionId,
+        message:
+          "Panel logout successful."
+      });
+
+    } catch (error) {
+
+      console.error(
+        "[TOPFEROS] logout:",
+        error?.stack ||
+          error?.message ||
+          error
+      );
+
+      return res.status(500).json({
+        success: false,
+        error:
+          error?.message ||
+          "Impossible de déconnecter le panel."
+      });
+    }
+  }
+);
+
+/*
+|--------------------------------------------------------------------------
 | DISCONNECT SESSION
 |--------------------------------------------------------------------------
 */
@@ -2427,14 +2073,17 @@ app.post(
   "/api/session/:sessionId/disconnect",
   async (req, res) => {
     try {
+
       const {
         sessionId
       } = req.params;
+
 
       const session =
         getConnectionSession(
           sessionId
         );
+
 
       if (!session) {
         return res.status(404).json({
@@ -2444,15 +2093,19 @@ app.post(
         });
       }
 
+
       if (
         settingsPanel &&
         typeof settingsPanel.setBotDisconnected ===
           "function"
       ) {
         await settingsPanel.setBotDisconnected(
+          session.socket || null,
+          false,
           sessionId
         );
       }
+
 
       if (
         !connection ||
@@ -2466,9 +2119,11 @@ app.post(
         });
       }
 
+
       await connection.stopSession(
         sessionId
       );
+
 
       return res.json({
         success: true,
@@ -2476,7 +2131,9 @@ app.post(
           "Session déconnectée.",
         sessionId
       });
+
     } catch (error) {
+
       console.error(
         "[TOPFEROS] disconnect:",
         error?.stack ||
@@ -2504,14 +2161,17 @@ app.delete(
   "/api/session/:sessionId",
   async (req, res) => {
     try {
+
       const {
         sessionId
       } = req.params;
+
 
       const session =
         getConnectionSession(
           sessionId
         );
+
 
       if (!session) {
         return res.status(404).json({
@@ -2520,6 +2180,7 @@ app.delete(
             "Session introuvable."
         });
       }
+
 
       if (
         settingsPanel &&
@@ -2530,6 +2191,7 @@ app.delete(
           sessionId
         );
       }
+
 
       if (
         !connection ||
@@ -2543,9 +2205,11 @@ app.delete(
         });
       }
 
+
       await connection.removeSession(
         sessionId
       );
+
 
       return res.json({
         success: true,
@@ -2553,7 +2217,9 @@ app.delete(
           "Session supprimée.",
         sessionId
       });
+
     } catch (error) {
+
       console.error(
         "[TOPFEROS] delete session:",
         error?.stack ||
@@ -2601,6 +2267,7 @@ app.use(
     res,
     next
   ) => {
+
     console.error(
       "[TOPFEROS] Express error:",
       error?.stack ||
@@ -2608,11 +2275,13 @@ app.use(
         error
     );
 
+
     if (
       res.headersSent
     ) {
       return next(error);
     }
+
 
     return res.status(500).json({
       success: false,
@@ -2634,6 +2303,7 @@ const server =
     PORT,
     HOST,
     () => {
+
       console.log(
         "=================================================="
       );
@@ -2680,16 +2350,20 @@ const server =
     }
   );
 
+
 server.on(
   "error",
   error => {
+
     console.error(
       "[TOPFEROS] ❌ Panel server error:",
       error?.stack ||
         error?.message ||
         error
-  );
-});
+    );
+
+  }
+);
 
 /*
 |--------------------------------------------------------------------------
