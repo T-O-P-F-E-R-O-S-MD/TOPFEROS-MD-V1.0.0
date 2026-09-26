@@ -356,14 +356,19 @@ Tanpri verifye ke bot la konekte byen epi eseye ankò.`
     // --------------------------------------------------------
 
     const instructions =
+`🇺🇸 *English*
 
 To change your bot settings, please click the web link in the message above and go to the web page. Use the ownerNumber and password provided in the message above to log in and change your bot settings. After submitting your settings on the website, your bot will update the new settings within 3 minutes. ✅
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+🇫🇷 *Français*
+
 Pour modifier les paramètres de votre bot, veuillez cliquer sur le lien web dans le message ci-dessus et accéder à la page web. Utilisez l’ownerNumber et le mot de passe indiqués dans le message ci-dessus pour vous connecter et modifier les paramètres de votre bot. Après avoir soumis les paramètres sur le site web, votre bot mettra à jour les nouveaux paramètres dans un délai de 3 minutes. ✅
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🇪🇸 *Español*
 
 Para cambiar la configuración de tu bot, haz clic en el enlace web del mensaje anterior y accede a la página web. Utiliza el ownerNumber y la contraseña que aparecen en el mensaje anterior para iniciar sesión y cambiar la configuración de tu bot. Después de enviar la configuración en el sitio web, tu bot actualizará los nuevos ajustes en un plazo de 3 minutos. ✅
 
