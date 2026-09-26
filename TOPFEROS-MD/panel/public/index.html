@@ -165,56 +165,69 @@
     </section>
 
 
-    <!-- =========================
-         SETTINGS LOGIN
-    ========================== -->
+    <!-- <!-- =========================
+     SETTINGS LOGIN
+========================= -->
 
-    <section
-      id="loginScreen"
-      class="screen hidden"
-    >
+<section
+  id="loginScreen"
+  class="screen hidden"
+>
 
-      <h2>🔐 SETTINGS LOGIN</h2>
+  <h2>🔐 SETTINGS LOGIN</h2>
 
-      <p class="description">
-        Enter your 6-character Settings Code.
-      </p>
+  <p class="description">
+    Enter your WhatsApp number and 6-character Settings Code.
+  </p>
 
-      <input
-        id="settingsCode"
-        type="text"
-        maxlength="6"
-        minlength="6"
-        autocomplete="off"
-        autocapitalize="characters"
-        placeholder="G7K2P9"
-      >
+  <!-- =========================
+       WHATSAPP NUMBER
+  ========================== -->
 
-      <button
-        id="verifyButton"
-        type="button"
-        onclick="verifySettings()"
-      >
-        🔓 VERIFY / CONNECT
-      </button>
+  <input
+    id="settingsNumber"
+    type="tel"
+    inputmode="numeric"
+    autocomplete="tel"
+    placeholder="📱 509XXXXXXXXXX"
+  >
 
-      <p
-        id="loginMessage"
-        class="message"
-      ></p>
+  <!-- =========================
+       SETTINGS CODE
+  ========================== -->
 
-      <button
-        type="button"
-        class="secondaryButton"
-        onclick="backToConnect()"
-      >
-        ← BACK TO CONNECT
-      </button>
+  <input
+    id="settingsCode"
+    type="text"
+    maxlength="6"
+    minlength="6"
+    autocomplete="off"
+    autocapitalize="characters"
+    placeholder="🔐 G7K2P9"
+  >
 
-    </section>
+  <button
+    id="verifyButton"
+    type="button"
+    onclick="verifySettings()"
+  >
+    🔓 CONNECT
+  </button>
 
+  <p
+    id="loginMessage"
+    class="message"
+  ></p>
 
-    <!-- =========================
+  <button
+    type="button"
+    class="secondaryButton"
+    onclick="backToConnect()"
+  >
+    ← BACK TO CONNECT
+  </button>
+
+</section> =========================
          DASHBOARD
     ========================== -->
 
