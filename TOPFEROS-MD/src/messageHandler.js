@@ -21,22 +21,6 @@ const commandIndex =
   require("../commands/index");
 
 // ============================================================
-// STATUS SYSTEM
-// ============================================================
-
-let statusSystem = null;
-
-try {
-  statusSystem =
-    require("../commands/status");
-} catch (error) {
-  console.warn(
-    "⚠️ STATUS SYSTEM LOAD WARNING:",
-    error?.message || error
-  );
-}
-
-// ============================================================
 // PREFIX
 // ============================================================
 
@@ -397,7 +381,7 @@ async function handleStatusActions(
       } catch (error) {
         console.warn(
           `⚠️ STATUS SEEN ERROR [${sessionId}]:`,
-          error?.message ||          error
+          error?.message || error
         );
       }
     }
@@ -686,17 +670,20 @@ async function handleMessage(
     }
 
     // --------------------------------------------------------
-    // 🖼️ STATUS SYSTEM
+    // ❤️ WHATSAPP STATUS SYSTEM
     // --------------------------------------------------------
     // Status pa bezwen prefix.
     //
     // Lè yon Status rive:
     // 👁️ Seen
     // ❤️ Like
-    // ⚡ React
-    // 📥 Save
-    // 📤 Send
-    // 🗂️ Anrejistre
+    // ⚡ React si statusReact aktive
+    //
+    // IMPORTANT:
+    // ❌ Pa sove Status
+    // ❌ Pa voye Status nan DM
+    // ❌ Pa anrejistre Status
+    // ❌ Pa itilize send/save/enregistré pou sa
     // --------------------------------------------------------
 
     if (
@@ -704,7 +691,10 @@ async function handleMessage(
       "status@broadcast"
     ) {
 
+      // ------------------------------------------------------
       // Pa trete pwòp Status bot la
+      // ------------------------------------------------------
+
       if (
         message?.key?.fromMe
       ) {
@@ -743,120 +733,83 @@ async function handleMessage(
       }
 
       // ------------------------------------------------------
-      // 🤖 AI SMART REACTION
+      // ❤️ AUTO STATUS LIKE
       // ------------------------------------------------------
 
       if (
-        config?.features?.statusReact === true &&
-        statusSystem &&
-        typeof statusSystem.getSmartStatusReaction ===
+        config?.features?.statusLike === true &&
+        typeof sock.sendMessage ===
           "function"
       ) {
         try {
-
-          const smartReaction =
-            await statusSystem.getSmartStatusReaction({
-              sock,
-              message,
-              sessionId,
-              config
-            });
-
-          const emoji =
-            smartReaction?.emoji ||
-            "👍";
 
           await sock.sendMessage(
             "status@broadcast",
             {
               react: {
-                text: emoji,
+                text: "❤️",
                 key: message.key
               }
             }
           );
 
           console.log(
-            `${emoji} AI STATUS REACTION SENT [${sessionId}]` +
-            (
-              smartReaction?.reason
-                ? ` — ${smartReaction.reason}`
-                : ""
-            )
+            `❤️ STATUS LIKE SENT [${sessionId}]`
+          );
+
+        } catch (likeError) {
+
+          console.warn(
+            `⚠️ STATUS LIKE ERROR [${sessionId}]:`,
+            likeError?.message ||
+            likeError
+          );
+        }
+      }
+
+      // ------------------------------------------------------
+      // ⚡ STATUS REACTION
+      // ------------------------------------------------------
+      // Sa retepare si statusReact aktive nan config la.
+      // Li pa sove oswa voye Status la.
+
+      if (
+        config?.features?.statusReact === true &&
+        typeof sock.sendMessage ===
+          "function"
+      ) {
+        try {
+
+          await sock.sendMessage(
+            "status@broadcast",
+            {
+              react: {
+                text: "🔥",
+                key: message.key
+              }
+            }
+          );
+
+          console.log(
+            `⚡ STATUS REACTION SENT [${sessionId}]`
           );
 
         } catch (reactionError) {
 
           console.warn(
-            `⚠️ AI STATUS REACTION ERROR [${sessionId}]:`,
+            `⚠️ STATUS REACTION ERROR [${sessionId}]:`,
             reactionError?.message ||
             reactionError
           );
-
-          // Fallback
-          try {
-
-            await sock.sendMessage(
-              "status@broadcast",
-              {
-                react: {
-                  text: "👍",
-                  key: message.key
-                }
-              }
-            );
-
-          } catch (fallbackError) {
-
-            console.warn(
-              `⚠️ STATUS REACTION FALLBACK ERROR [${sessionId}]:`,
-              fallbackError?.message ||
-              fallbackError
-            );
-          }
         }
       }
 
       // ------------------------------------------------------
-      // 📥 AUTO SAVE / SEND / ANREJISTRE
+      // IMPORTANT
       // ------------------------------------------------------
-
-      if (
-        statusSystem &&
-        typeof statusSystem.handleAutoStatus ===
-          "function"
-      ) {
-
-        try {
-
-          await statusSystem.handleAutoStatus({
-            sock,
-            message,
-            sessionId,
-            chatId,
-            config
-          });
-
-          console.log(
-            `✅ STATUS AUTO SAVE/SEND COMPLETED [${sessionId}]`
-          );
-
-        } catch (statusError) {
-
-          console.error(
-            `❌ STATUS AUTO SAVE/SEND ERROR [${sessionId}]`,
-            statusError?.stack ||
-            statusError?.message ||
-            statusError
-          );
-        }
-
-      } else {
-
-        console.warn(
-          "⚠️ STATUS SYSTEM NOT AVAILABLE"
-        );
-      }
+      // Pa sove, pa voye, pa anrejistre Status otomatikman.
+      // Status la fini apre Like/Reaction yo.
+      // ------------------------------------------------------
 
       return;
     }
@@ -868,7 +821,7 @@ async function handleMessage(
     // still contain commands during testing (for example .ping
     // or .menu). The prefix check below will ignore normal
     // non-command messages, while commands can continue to the
-    // command handler. This preserves the rest of the handler.
+    // command handler.
     // --------------------------------------------------------
 
     // --------------------------------------------------------
@@ -1028,7 +981,7 @@ async function handleMessage(
       config
     };
 
-   // --------------------------------------------------------
+    // --------------------------------------------------------
     // LOG COMMAND
     // --------------------------------------------------------
 
