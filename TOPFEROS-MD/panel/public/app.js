@@ -549,7 +549,7 @@ function $(id) {
 
 /* =========================
    SCREEN CONTROL
-========================= */
+============================
 
 function hideAllScreens() {
 
@@ -569,19 +569,17 @@ function hideAllScreens() {
     "hidden"
   );
 
-}
 
+  /*
+   * Main logo la retounen pou
+   * Language / Connect / Settings Login.
+   */
 
-function showLanguage() {
-
-  hideAllScreens();
-
-  $("languageScreen")?.classList.remove(
+  $("mainLogo")?.classList.remove(
     "hidden"
   );
 
 }
-
 
 /* =========================
    LANGUAGE
