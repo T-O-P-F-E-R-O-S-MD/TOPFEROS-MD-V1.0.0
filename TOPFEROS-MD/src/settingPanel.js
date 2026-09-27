@@ -41,10 +41,15 @@ const defaultSettings = {
   groupAntiLink: false,
   groupAntiDelete: false,
 
-  groupClose: false,
-  groupOpen: false,
+ groupClose: false,
+groupOpen: false,
 
-  aiChat: false
+adminGroupNumber: "",
+adminGroupLink: "",
+groupCloseTime: "",
+groupOpenTime: "",
+
+aiChat: false
 
 };
 
@@ -1172,25 +1177,53 @@ function applySettings(
 
 
   for (
-    const key of
-    Object.keys(defaultSettings)
+  const key of
+  Object.keys(defaultSettings)
+) {
+
+  if (
+    !Object.prototype.hasOwnProperty.call(
+      newSettings,
+      key
+    )
   ) {
 
-    if (
-      Object.prototype.hasOwnProperty.call(
-        newSettings,
-        key
-      )
-    ) {
-
-      session.settings[key] =
-        Boolean(
-          newSettings[key]
-        );
-
-    }
+    continue;
 
   }
+
+
+  // ========================================================
+  // 👥 GROUP MANAGEMENT TEXT / TIME VALUES
+  // ========================================================
+
+  if (
+    key === "adminGroupNumber" ||
+    key === "adminGroupLink" ||
+    key === "groupCloseTime" ||
+    key === "groupOpenTime"
+  ) {
+
+    session.settings[key] =
+      String(
+        newSettings[key] ?? ""
+      ).trim();
+
+    continue;
+
+  }
+
+
+  // ========================================================
+  // ⚙️ NORMAL BOOLEAN SETTINGS
+  // ========================================================
+
+  session.settings[key] =
+    Boolean(
+      newSettings[key]
+    );
+
+}
 
 
   /*
