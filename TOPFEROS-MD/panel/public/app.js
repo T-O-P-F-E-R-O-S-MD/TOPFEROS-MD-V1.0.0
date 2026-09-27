@@ -25,6 +25,350 @@ let pairingCooldownSeconds = 0;
 
 const PAIRING_COOLDOWN = 90;
 
+/* =========================
+   🤖 AI PANEL TRANSLATION
+========================= */
+
+let translationInProgress = false;
+
+const translationCache = new Map();
+
+async function translatePanelUI() {
+
+  if (
+    currentLanguage === "en" ||
+    translationInProgress
+  ) {
+    return;
+  }
+
+  translationInProgress = true;
+
+  try {
+
+    const elements = [];
+
+    /*
+     * Chèche tout eleman ki gen tèks vizib.
+     * Nou pa pran script/style.
+     */
+    document
+      .querySelectorAll(
+        "button, label, p, h1, h2, h3, h4, h5, h6, span, small, div"
+      )
+      .forEach(element => {
+
+        if (
+          element.closest("script") ||
+          element.closest("style") ||
+          element.classList.contains("slider") ||
+          element.classList.contains("hidden")
+        ) {
+          return;
+        }
+
+        const text =
+          element.textContent
+            ?.replace(/\s+/g, " ")
+            .trim();
+
+        if (
+          !text ||
+          text.length > 300
+        ) {
+          return;
+        }
+
+        /*
+         * Evite pran gwo parent containers
+         * ki gen plizyè lòt tèks ladan yo.
+         */
+        const hasElementChild =
+          Array.from(
+            element.children || []
+          ).some(child => {
+
+            const childText =
+              child.textContent
+                ?.replace(/\s+/g, " ")
+                .trim();
+
+            return (
+              childText &&
+              text.includes(childText) &&
+              childText !== text
+            );
+
+          });
+
+        if (
+          hasElementChild
+        ) {
+          return;
+        }
+
+        elements.push({
+          element,
+          text
+        });
+
+      });
+
+
+    /*
+     * Placeholder yo
+     */
+    document
+      .querySelectorAll(
+        "input[placeholder], textarea[placeholder]"
+      )
+      .forEach(element => {
+
+        const text =
+          element
+            .getAttribute("placeholder")
+            ?.trim();
+
+        if (!text) {
+          return;
+        }
+
+        elements.push({
+          element,
+          text,
+          type: "placeholder"
+        });
+
+      });
+
+
+    if (
+      !elements.length
+    ) {
+      return;
+    }
+
+
+    /*
+     * Cache
+     */
+    const textsToTranslate = [];
+
+    const uniqueTexts =
+      new Set();
+
+
+    for (
+      const item of elements
+    ) {
+
+      if (
+        translationCache.has(
+          `${currentLanguage}:${item.text}`
+        )
+      ) {
+        continue;
+      }
+
+      if (
+        !uniqueTexts.has(
+          item.text
+        )
+      ) {
+
+        uniqueTexts.add(
+          item.text
+        );
+
+        textsToTranslate.push(
+          item.text
+        );
+
+      }
+
+    }
+
+
+    /*
+     * AI API sèlman si gen nouvo tèks.
+     */
+    if (
+      textsToTranslate.length
+    ) {
+
+      const response =
+        await fetch(
+          "/api/translate",
+          {
+            method: "POST",
+
+            headers: {
+              "Content-Type":
+                "application/json"
+            },
+
+            body:
+              JSON.stringify({
+                language:
+                  currentLanguage,
+
+                texts:
+                  textsToTranslate
+              })
+          }
+        );
+
+
+      if (
+        response.ok
+      ) {
+
+        const data =
+          await response.json();
+
+
+        /*
+         * API a ka retounen:
+         *
+         * translations: [...]
+         *
+         * oswa
+         *
+         * translations: {
+         *   "English text": "Texte français"
+         * }
+         */
+
+        const translations =
+          data.translations;
+
+
+        if (
+          Array.isArray(
+            translations
+          )
+        ) {
+
+          textsToTranslate.forEach(
+            (
+              original,
+              index
+            ) => {
+
+              const translated =
+                translations[index];
+
+              if (
+                typeof translated ===
+                "string" &&
+                translated.trim()
+              ) {
+
+                translationCache.set(
+                  `${currentLanguage}:${original}`,
+                  translated.trim()
+                );
+
+              }
+
+            }
+          );
+
+        } else if (
+          translations &&
+          typeof translations ===
+            "object"
+        ) {
+
+          textsToTranslate.forEach(
+            original => {
+
+              const translated =
+                translations[original];
+
+              if (
+                typeof translated ===
+                "string" &&
+                translated.trim()
+              ) {
+
+                translationCache.set(
+                  `${currentLanguage}:${original}`,
+                  translated.trim()
+                );
+
+              }
+
+            }
+          );
+
+        }
+
+      }
+
+    }
+
+
+    /*
+     * Aplike translations yo.
+     */
+    for (
+      const item of elements
+    ) {
+
+      const translated =
+        translationCache.get(
+          `${currentLanguage}:${item.text}`
+        );
+
+
+      if (
+        !translated
+      ) {
+        continue;
+      }
+
+
+      if (
+        item.type ===
+        "placeholder"
+      ) {
+
+        item.element
+          .setAttribute(
+            "placeholder",
+            translated
+          );
+
+      } else {
+
+        item.element.textContent =
+          translated;
+
+      }
+
+    }
+
+  } catch (error) {
+
+    /*
+     * AI pa disponib:
+     * panel la rete nan lang orijinal li.
+     */
+    console.warn(
+      "⚠️ AI panel translation unavailable:",
+      error?.message ||
+      error
+    );
+
+  } finally {
+
+    translationInProgress =
+      false;
+
+  }
+
+}
 
 /* =========================
    SETTINGS GROUPS
