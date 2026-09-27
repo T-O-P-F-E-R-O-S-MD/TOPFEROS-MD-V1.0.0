@@ -798,59 +798,150 @@ app.post(
     req,
     res
   ) => {
+
     try {
 
-      const languageName =
+      const language =
         String(
           req.body?.language ||
-            "English"
-        ).trim();
+          "en"
+        )
+        .trim()
+        .toLowerCase();
 
-      const texts =
+
+      let texts =
         req.body?.texts;
+
+
+      /*
+       * ============================================================
+       * ACCEPT ARRAY OR OBJECT
+       * ============================================================
+       *
+       * app.js voye:
+       *
+       * [
+       *   "Public Mode",
+       *   "Private Mode"
+       * ]
+       *
+       * Men ansyen API a te itilize object.
+       *
+       * Nou sipòte tou de.
+       */
+
+      const inputWasArray =
+        Array.isArray(texts);
+
+
+      if (
+        inputWasArray
+      ) {
+
+        const converted =
+          {};
+
+        texts.forEach(
+          (
+            value,
+            index
+          ) => {
+
+            converted[
+              String(index)
+            ] =
+              String(
+                value ??
+                ""
+              );
+
+          }
+        );
+
+        texts =
+          converted;
+
+      }
+
 
       if (
         !texts ||
         typeof texts !==
           "object" ||
-        Array.isArray(
-          texts
-        )
+        Array.isArray(texts)
       ) {
+
         return res.status(400).json({
           success: false,
           error:
-            "texts dwe yon object."
+            "texts dwe yon array oswa object."
         });
+
       }
+
 
       const keys =
         Object.keys(
           texts
         );
 
+
+      /*
+       * Pa gen tèks.
+       */
+
       if (
         keys.length === 0
       ) {
+
         return res.json({
-          success: true,
-          ai: false,
-          cached: false,
-          language:
-            languageName,
-          translations: {}
+
+          success:
+            true,
+
+          ai:
+            false,
+
+          cached:
+            false,
+
+          language,
+
+          translations:
+            inputWasArray
+              ? []
+              : {}
+
         });
+
       }
+
+
+      /*
+       * Sekirite / limit.
+       */
 
       if (
         keys.length > 150
       ) {
+
         return res.status(400).json({
-          success: false,
+
+          success:
+            false,
+
           error:
             "Maksimòm 150 tèks pa request."
+
         });
+
       }
+
+
+      /*
+       * Netwaye tèks yo.
+       */
 
       const safeTexts =
         {};
@@ -858,31 +949,118 @@ app.post(
       for (
         const key of keys
       ) {
+
         safeTexts[key] =
           String(
             texts[key] ??
-              ""
+            ""
           );
+
       }
 
+
       /*
-       * English pa bezwen AI.
+       * ============================================================
+       * LANGUAGE NAME
+       * ============================================================
        */
+
+      let languageName =
+        "English";
+
+
       if (
-        languageName
-          .toLowerCase() ===
+        language ===
+        "fr" ||
+        language ===
+        "fra" ||
+        language ===
+        "french"
+      ) {
+
+        languageName =
+          "French";
+
+      } else if (
+        language ===
+        "es" ||
+        language ===
+        "spa" ||
+        language ===
+        "spanish"
+      ) {
+
+        languageName =
+          "Spanish";
+
+      } else if (
+        language ===
+        "en" ||
+        language ===
+        "eng" ||
+        language ===
         "english"
       ) {
+
+        languageName =
+          "English";
+
+      } else {
+
+        languageName =
+          language;
+
+      }
+
+
+      /*
+       * ============================================================
+       * ENGLISH
+       * ============================================================
+       *
+       * Pa bezwen rele AI si panel la deja English.
+       */
+
+      if (
+        languageName ===
+        "English"
+      ) {
+
+        const result =
+          inputWasArray
+            ? Object.values(
+                safeTexts
+              )
+            : safeTexts;
+
+
         return res.json({
-          success: true,
-          ai: false,
-          cached: true,
+
+          success:
+            true,
+
+          ai:
+            false,
+
+          cached:
+            true,
+
           language:
             languageName,
+
           translations:
-            safeTexts
+            result
+
         });
+
       }
+
+
+      /*
+       * ============================================================
+       * CACHE
+       * ============================================================
+       */
 
       const cacheKey =
         makeTranslationCacheKey(
@@ -890,25 +1068,56 @@ app.post(
           safeTexts
         );
 
+
       const cached =
         getCachedTranslation(
           cacheKey
         );
 
-      if (cached) {
+
+      if (
+        cached
+      ) {
+
+        const result =
+          inputWasArray
+            ? Object.values(
+                cached
+              )
+            : cached;
+
+
         return res.json({
-          success: true,
-          ai: true,
-          cached: true,
+
+          success:
+            true,
+
+          ai:
+            true,
+
+          cached:
+            true,
+
           language:
             languageName,
+
           translations:
-            cached
+            result
+
         });
+
       }
+
+
+      /*
+       * ============================================================
+       * AI TRANSLATION
+       * ============================================================
+       */
 
       let translated =
         null;
+
 
       try {
 
@@ -923,60 +1132,103 @@ app.post(
         console.warn(
           "[TOPFEROS] ⚠️ AI translation failed:",
           error?.message ||
-            error
+          error
         );
+
       }
 
+
       /*
+       * ============================================================
+       * FALLBACK
+       * ============================================================
+       *
        * Si AI pa disponib,
-       * kenbe English text yo.
-       * Panèl la pap kraze.
+       * nou retounen tèks orijinal yo.
        */
+
       if (
         !translated
       ) {
+
         translated =
           safeTexts;
+
       }
+
+
+      /*
+       * ============================================================
+       * SAVE CACHE
+       * ============================================================
+       */
 
       setCachedTranslation(
         cacheKey,
         translated
       );
 
+
+      /*
+       * ============================================================
+       * RESPONSE
+       * ============================================================
+       */
+
+      const result =
+        inputWasArray
+          ? Object.values(
+              translated
+            )
+          : translated;
+
+
       return res.json({
-        success: true,
+
+        success:
+          true,
 
         ai:
-          translated !==
-          safeTexts,
+          true,
 
-        cached: false,
+        cached:
+          false,
 
         language:
           languageName,
 
         translations:
-          translated
+          result
+
       });
+
 
     } catch (error) {
 
       console.error(
         "[TOPFEROS] ❌ /api/translate:",
         error?.stack ||
-          error?.message ||
-          error
+        error?.message ||
+        error
       );
 
+
       return res.status(500).json({
-        success: false,
-        ai: false,
+
+        success:
+          false,
+
+        ai:
+          false,
+
         error:
           error?.message ||
           "Translation service error."
+
       });
+
     }
+
   }
 );
 /*
