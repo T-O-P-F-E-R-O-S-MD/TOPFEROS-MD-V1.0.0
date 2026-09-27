@@ -13,6 +13,31 @@ let sessionId =
 
 let currentLanguage = "en";
 
+try {
+
+  const savedLanguage =
+    localStorage.getItem(
+      "topferos_settings_language"
+    );
+
+  if (
+    savedLanguage
+  ) {
+
+    currentLanguage =
+      savedLanguage;
+
+  }
+
+} catch (error) {
+
+  console.warn(
+    "Could not restore language:",
+    error
+  );
+
+}
+
 let settings = {};
 let botInformation = {};
 
@@ -566,28 +591,72 @@ async function selectLanguage(
   language
 ) {
 
+  /*
+   * ============================================================
+   * SAVE LANGUAGE
+   * ============================================================
+   */
+
   currentLanguage =
-    language;
+    String(
+      language || "en"
+    )
+      .trim()
+      .toLowerCase();
+
+
+  /*
+   * Kenbe lang lan pandan session/browser la.
+   */
+  try {
+
+    localStorage.setItem(
+      "topferos_settings_language",
+      currentLanguage
+    );
+
+  } catch (error) {
+
+    console.warn(
+      "Could not save language:",
+      error
+    );
+
+  }
+
+
+  /*
+   * ============================================================
+   * SEND LANGUAGE TO SERVER
+   * ============================================================
+   */
+
+  await sendLanguage(
+    currentLanguage
+  );
+
+
+  /*
+   * ============================================================
+   * LANGUAGE SCREEN DISPARAIT
+   * SETTINGS LOGIN PARÈT
+   * ============================================================
+   */
 
   hideAllScreens();
 
-  $("connectScreen")?.classList.remove(
+  $("loginScreen")?.classList.remove(
     "hidden"
   );
 
-  await sendLanguage(
-    language
-  );
 
   /*
-   * 🤖 AI TRANSLATION
-   *
-   * Tradui Connect Bot interface la
-   * apre lang lan fin chwazi.
+   * ============================================================
+   * TRADUI SETTINGS LOGIN
+   * ============================================================
    */
-  await translatePanelUI();
 
-  startConnectionMonitor();
+  await translatePanelUI();
 
 }
 
