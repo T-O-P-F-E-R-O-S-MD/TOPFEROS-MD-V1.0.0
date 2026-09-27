@@ -558,32 +558,6 @@
 
 
 
-        <!-- STATUS REACT -->
-
-        <div class="setting-row">
-
-          <div>
-            <strong>
-              Status React
-            </strong>
-          </div>
-
-
-          <label class="switch">
-
-            <input
-              type="checkbox"
-              data-setting="statusReact"
-            >
-
-            <span class="slider"></span>
-
-          </label>
-
-        </div>
-
-
-
         <!-- ANTI CALL -->
 
         <div class="setting-row">
@@ -846,49 +820,91 @@
 
         </div>
 
+      </div>
 
 
-        <!-- ADMIN GROUP -->
 
-        <div class="setting-row">
+      <!-- ==========================================================
+           👥 GROUP MANAGEMENT
+           ========================================================== -->
 
-          <div>
-            <strong>
-              Admin Group
-            </strong>
-          </div>
+      <div class="settings-box">
+
+        <h3>
+          👥 GROUP MANAGEMENT
+        </h3>
 
 
-          <label class="switch">
+        <p class="message">
+          Configure the group where the bot will manage
+          automatic closing and opening.
+        </p>
 
-            <input
-              type="checkbox"
-              data-setting="adminGroup"
-            >
 
-            <span class="slider"></span>
 
+        <!-- ========================================================
+             📱 ADMIN GROUP NUMBER
+             ======================================================== -->
+
+        <div class="info-field">
+
+          <label
+            for="adminGroupNumber"
+          >
+            Admin Group Number:
           </label>
 
+
+          <input
+            id="adminGroupNumber"
+            type="tel"
+            inputmode="numeric"
+            autocomplete="off"
+            placeholder="Example: 509XXXXXXXX"
+          >
+
         </div>
 
 
 
-        <!-- GROUP CONTROL -->
+        <!-- ========================================================
+             🔗 ADMIN GROUP LINK
+             ======================================================== -->
+
+        <div class="info-field">
+
+          <label
+            for="adminGroupLink"
+          >
+            Admin Group Link:
+          </label>
+
+
+          <input
+            id="adminGroupLink"
+            type="url"
+            autocomplete="off"
+            placeholder="https://chat.whatsapp.com/..."
+          >
+
+        </div>
+
+
+
+        <!-- ========================================================
+             🔒 AUTOMATIC GROUP CLOSE
+             ======================================================== -->
 
         <div class="settings-subtitle">
-          🔒 Group Control
+          🔒 AUTOMATIC GROUP CLOSE
         </div>
 
-
-
-        <!-- FERMETURE -->
 
         <div class="setting-row">
 
           <div>
             <strong>
-              Fermeture
+              Auto Close Group
             </strong>
           </div>
 
@@ -896,6 +912,7 @@
           <label class="switch">
 
             <input
+              id="groupClose"
               type="checkbox"
               data-setting="groupClose"
             >
@@ -908,13 +925,39 @@
 
 
 
-        <!-- OUVERTURE -->
+        <div class="info-field">
+
+          <label
+            for="groupCloseTime"
+          >
+            Close Time:
+          </label>
+
+
+          <input
+            id="groupCloseTime"
+            type="time"
+            value="22:00"
+          >
+
+        </div>
+
+
+
+        <!-- ========================================================
+             🔓 AUTOMATIC GROUP OPEN
+             ======================================================== -->
+
+        <div class="settings-subtitle">
+          🔓 AUTOMATIC GROUP OPEN
+        </div>
+
 
         <div class="setting-row">
 
           <div>
             <strong>
-              Ouverture
+              Auto Open Group
             </strong>
           </div>
 
@@ -922,6 +965,7 @@
           <label class="switch">
 
             <input
+              id="groupOpen"
               type="checkbox"
               data-setting="groupOpen"
             >
@@ -929,6 +973,25 @@
             <span class="slider"></span>
 
           </label>
+
+        </div>
+
+
+
+        <div class="info-field">
+
+          <label
+            for="groupOpenTime"
+          >
+            Open Time:
+          </label>
+
+
+          <input
+            id="groupOpenTime"
+            type="time"
+            value="06:00"
+          >
 
         </div>
 
@@ -966,7 +1029,7 @@
            ========================================================== -->
 
       <div class="footer">
-        TECH BY TOPFEROS MD 
+        TECH BY TOPFEROS MD
       </div>
 
     </section>
