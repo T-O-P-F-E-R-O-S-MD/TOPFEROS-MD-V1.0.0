@@ -441,19 +441,34 @@ document.addEventListener(
       window.location.pathname
         .replace(/\/+$/, "");
 
+    
     if (
-      currentPath === "/setting"
-    ) {
+  currentPath === "/setting"
+) {
 
-      hideAllScreens();
+  /*
+   * ============================================================
+   * SETTINGS PANEL FLOW
+   *
+   * /setting
+   *    ↓
+   * Language Selection
+   *    ↓
+   * Settings Login
+   *    ↓
+   * Number + Settings Code
+   *    ↓
+   * Verify
+   *    ↓
+   * Settings Dashboard
+   * ============================================================
+   */
 
-      $("loginScreen")?.classList.remove(
-        "hidden"
-      );
+  showLanguage();
 
-      return;
+  return;
 
-    }
+}
 
 
     /*
