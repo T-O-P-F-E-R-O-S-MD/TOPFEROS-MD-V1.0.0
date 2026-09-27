@@ -1286,14 +1286,15 @@ function getSwitches() {
 // ============================================================
 // 📤 COLLECT SETTINGS
 // ============================================================
-
 function collectSettings() {
 
   enforceAntiDeleteDestination();
 
-
   const collected = {};
 
+  // ========================================================
+  // ⚙️ SWITCH SETTINGS
+  // ========================================================
 
   getSwitches()
     .forEach(
@@ -1301,7 +1302,6 @@ function collectSettings() {
 
         const name =
           input.dataset.setting;
-
 
         if (
           settingNames.includes(
@@ -1316,6 +1316,37 @@ function collectSettings() {
 
       }
     );
+
+
+  // ========================================================
+  // 👥 GROUP MANAGEMENT
+  // ========================================================
+
+  collected.adminGroupNumber =
+    adminGroupNumberInput
+      ? adminGroupNumberInput.value
+          .trim()
+          .replace(/\D/g, "")
+      : "";
+
+
+  collected.adminGroupLink =
+    adminGroupLinkInput
+      ? adminGroupLinkInput.value
+          .trim()
+      : "";
+
+
+  collected.groupCloseTime =
+    groupCloseTimeInput
+      ? groupCloseTimeInput.value
+      : "";
+
+
+  collected.groupOpenTime =
+    groupOpenTimeInput
+      ? groupOpenTimeInput.value
+      : "";
 
 
   return collected;
