@@ -587,9 +587,141 @@ function showLanguage() {
    LANGUAGE
 ========================= */
 
-async function selectLanguage(
-  language
-) {
+async function selectLanguage(language) {
+
+  /*
+   * ============================================================
+   * SAVE SELECTED LANGUAGE
+   * ============================================================
+   */
+
+  currentLanguage =
+    String(
+      language || "en"
+    )
+      .trim()
+      .toLowerCase();
+
+
+  /*
+   * ============================================================
+   * CHECK CURRENT PAGE
+   *
+   * /setting = SETTINGS FLOW
+   * lòt route = CONNECT / PAIRING FLOW
+   * ============================================================
+   */
+
+  const currentPath =
+    window.location.pathname
+      .replace(/\/+$/, "");
+
+  const isSettingsPage =
+    currentPath === "/setting";
+
+
+  /*
+   * ============================================================
+   * SAVE LANGUAGE LOCALLY
+   * ============================================================
+   */
+
+  try {
+
+    localStorage.setItem(
+      "topferos_settings_language",
+      currentLanguage
+    );
+
+  } catch (error) {
+
+    console.warn(
+      "Could not save language:",
+      error
+    );
+
+  }
+
+
+  /*
+   * ============================================================
+   * SETTINGS PANEL
+   *
+   * /setting
+   *    ↓
+   * Language
+   *    ↓
+   * Settings Login
+   * ============================================================
+   */
+
+  if (isSettingsPage) {
+
+    hideAllScreens();
+
+    $("loginScreen")?.classList.remove(
+      "hidden"
+    );
+
+    await translatePanelUI();
+
+    return;
+  }
+
+
+  /*
+   * ============================================================
+   * NORMAL CONNECT / PAIRING
+   *
+   * Language
+   *    ↓
+   * Connect Bot
+   *    ↓
+   * Pairing Code
+   * ============================================================
+   */
+
+  hideAllScreens();
+
+  $("connectScreen")?.classList.remove(
+    "hidden"
+  );
+
+
+  /*
+   * Save language for normal connection flow.
+   */
+
+  try {
+
+    await sendLanguage(
+      currentLanguage
+    );
+
+  } catch (error) {
+
+    console.warn(
+      "Could not save language:",
+      error
+    );
+
+  }
+
+
+  /*
+   * Translate Connect interface.
+   */
+
+  await translatePanelUI();
+
+
+  /*
+   * Start connection monitoring.
+   */
+
+  startConnectionMonitor();
+
+}
 
   /*
    * ============================================================
