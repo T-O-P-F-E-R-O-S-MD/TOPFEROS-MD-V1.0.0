@@ -24,14 +24,195 @@
 
   <main class="container">
 
+
+    <!-- ============================================================
+         🌐 LANGUAGE PANEL
+         ============================================================ -->
+
     <section
-      id="settingsPanel"
-      class="card settings-screen"
+      id="languageScreen"
+      class="card hidden"
     >
 
-      <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      <div class="logo-container">
+
+        <img
+          class="logo"
+          src="/assets/logo.png"
+          alt="TOPFEROS MD Logo"
+          onerror="this.style.display='none';"
+        >
+
+      </div>
+
+
+      <h1>
+        🌐 LANGUAGE
+      </h1>
+
+
+      <p class="message">
+        Choose your language / Choisissez votre langue
+      </p>
+
+
+      <div class="language-buttons">
+
+        <button
+          type="button"
+          class="language-btn"
+          onclick="selectSettingsLanguage('en')"
+        >
+          🇬🇧 English
+        </button>
+
+
+        <button
+          type="button"
+          class="language-btn"
+          onclick="selectSettingsLanguage('fr')"
+        >
+          🇫🇷 Français
+        </button>
+
+
+        <button
+          type="button"
+          class="language-btn"
+          onclick="selectSettingsLanguage('es')"
+        >
+          🇪🇸 Español
+        </button>
+
+      </div>
+
+
+      <div class="footer">
+        Made in TOPFEROS TECH
+      </div>
+
+    </section>
+
+
+
+    <!-- ============================================================
+         🔐 SETTINGS LOGIN
+         ============================================================ -->
+
+    <section
+      id="loginScreen"
+      class="card hidden"
+    >
+
+      <div class="logo-container">
+
+        <img
+          class="logo"
+          src="/assets/logo.png"
+          alt="TOPFEROS MD Logo"
+          onerror="this.style.display='none';"
+        >
+
+      </div>
+
+
+      <h1 id="settingsLoginTitle">
+        🔐 SETTINGS
+      </h1>
+
+
+      <div class="settings-box">
+
+
+        <!-- NUMBER -->
+
+        <div class="info-field">
+
+          <label
+            id="settingsNumberLabel"
+            for="settingsNumber"
+          >
+            Number:
+          </label>
+
+
+          <input
+            id="settingsNumber"
+            type="tel"
+            inputmode="numeric"
+            autocomplete="off"
+            placeholder="Number"
+          >
+
+        </div>
+
+
+
+        <!-- SETTINGS CODE -->
+
+        <div class="info-field">
+
+          <label
+            id="settingsCodeLabel"
+            for="settingsCode"
+          >
+            Settings Code:
+          </label>
+
+
+          <input
+            id="settingsCode"
+            type="text"
+            maxlength="6"
+            autocomplete="one-time-code"
+            placeholder="6-character code"
+          >
+
+        </div>
+
+      </div>
+
+
+
+      <!-- VERIFY -->
+
+      <button
+        id="verifyButton"
+        class="next-button"
+        type="button"
+        onclick="verifySettings()"
+      >
+        🔓 VERIFY
+      </button>
+
+
+      <div
+        id="loginMessage"
+        class="message"
+      ></div>
+
+
+      <div class="footer">
+        Made in TOPFEROS TECH
+      </div>
+
+    </section>
+
+
+
+    <!-- ============================================================
+         ⚙️ SETTINGS PANEL
+         ============================================================ -->
+
+    <section
+      id="settingsPanel"
+      class="card settings-screen hidden"
+    >
+
+
+      <!-- ==========================================================
            🖼️ TOPFEROS MD LOGO
-           ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+           ========================================================== -->
 
       <div class="logo-container">
 
@@ -40,15 +221,21 @@
           class="logo"
           src="/assets/logo.png"
           alt="TOPFEROS MD Logo"
-          onerror="console.error('Logo TOPFEROS MD pa jwenn: /assets/logo.png'); this.style.display='none';"
+          onerror="
+            console.error(
+              'Logo TOPFEROS MD pa jwenn: /assets/logo.png'
+            );
+            this.style.display='none';
+          "
         >
 
       </div>
 
 
-      <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+      <!-- ==========================================================
            🤖 BOT INFORMATION
-           ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+           ========================================================== -->
 
       <div class="settings-title">
 
@@ -61,6 +248,7 @@
 
       <div class="settings-box">
 
+
         <!-- BOT NAME -->
 
         <div class="info-field">
@@ -68,6 +256,7 @@
           <label for="botName">
             Nom Bot:
           </label>
+
 
           <input
             id="botName"
@@ -79,6 +268,7 @@
         </div>
 
 
+
         <!-- AGE -->
 
         <div class="info-field">
@@ -86,6 +276,7 @@
           <label for="botAge">
             Âge:
           </label>
+
 
           <input
             id="botAge"
@@ -98,6 +289,7 @@
         </div>
 
 
+
         <!-- PREFIX -->
 
         <div class="info-field">
@@ -105,6 +297,7 @@
           <label for="botPrefix">
             Prefix:
           </label>
+
 
           <input
             id="botPrefix"
@@ -119,9 +312,10 @@
       </div>
 
 
-      <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+      <!-- ==========================================================
            ⚙️ BOT SETTINGS
-           ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+           ========================================================== -->
 
       <div class="settings-box">
 
@@ -140,6 +334,7 @@
             </strong>
           </div>
 
+
           <label class="switch">
 
             <input
@@ -154,6 +349,7 @@
         </div>
 
 
+
         <!-- PRIVATE MODE -->
 
         <div class="setting-row">
@@ -163,6 +359,7 @@
               Mode Private
             </strong>
           </div>
+
 
           <label class="switch">
 
@@ -178,6 +375,7 @@
         </div>
 
 
+
         <!-- ALWAYS ONLINE -->
 
         <div class="setting-row">
@@ -187,6 +385,7 @@
               Always Online
             </strong>
           </div>
+
 
           <label class="switch">
 
@@ -202,6 +401,7 @@
         </div>
 
 
+
         <!-- FAKE TYPING -->
 
         <div class="setting-row">
@@ -211,6 +411,7 @@
               Fake Typing
             </strong>
           </div>
+
 
           <label class="switch">
 
@@ -226,6 +427,7 @@
         </div>
 
 
+
         <!-- FAKE RECORDING -->
 
         <div class="setting-row">
@@ -235,6 +437,7 @@
               Fake Recording
             </strong>
           </div>
+
 
           <label class="switch">
 
@@ -250,6 +453,7 @@
         </div>
 
 
+
         <!-- AUTO REACT -->
 
         <div class="setting-row">
@@ -259,6 +463,7 @@
               Auto React
             </strong>
           </div>
+
 
           <label class="switch">
 
@@ -274,6 +479,7 @@
         </div>
 
 
+
         <!-- AUTO STATUS -->
 
         <div class="setting-row">
@@ -283,6 +489,7 @@
               Auto Status
             </strong>
           </div>
+
 
           <label class="switch">
 
@@ -298,6 +505,7 @@
         </div>
 
 
+
         <!-- STATUS REPLY -->
 
         <div class="setting-row">
@@ -307,6 +515,7 @@
               Status Reply
             </strong>
           </div>
+
 
           <label class="switch">
 
@@ -322,6 +531,7 @@
         </div>
 
 
+
         <!-- STATUS LIKE -->
 
         <div class="setting-row">
@@ -331,6 +541,7 @@
               Status Like
             </strong>
           </div>
+
 
           <label class="switch">
 
@@ -346,6 +557,7 @@
         </div>
 
 
+
         <!-- STATUS REACT -->
 
         <div class="setting-row">
@@ -355,6 +567,7 @@
               Status React
             </strong>
           </div>
+
 
           <label class="switch">
 
@@ -370,6 +583,7 @@
         </div>
 
 
+
         <!-- ANTI CALL -->
 
         <div class="setting-row">
@@ -379,6 +593,7 @@
               Anti Call
             </strong>
           </div>
+
 
           <label class="switch">
 
@@ -394,6 +609,7 @@
         </div>
 
 
+
         <!-- ANTI DELETE -->
 
         <div class="setting-row">
@@ -403,6 +619,7 @@
               Anti Delete
             </strong>
           </div>
+
 
           <label class="switch">
 
@@ -418,11 +635,13 @@
         </div>
 
 
+
         <!-- ANTI DELETE DESTINATION -->
 
         <div class="settings-subtitle">
           🗑️ ANTI DELETE DESTINATION
         </div>
+
 
 
         <!-- SAME CHAT -->
@@ -434,6 +653,7 @@
               Same Chat
             </strong>
           </div>
+
 
           <label class="switch">
 
@@ -449,6 +669,7 @@
         </div>
 
 
+
         <!-- DM BOT -->
 
         <div class="setting-row">
@@ -458,6 +679,7 @@
               DM Bot
             </strong>
           </div>
+
 
           <label class="switch">
 
@@ -473,6 +695,7 @@
         </div>
 
 
+
         <!-- ANTI SPAM -->
 
         <div class="setting-row">
@@ -482,6 +705,7 @@
               Anti Spam
             </strong>
           </div>
+
 
           <label class="switch">
 
@@ -497,6 +721,7 @@
         </div>
 
 
+
         <!-- AI CHAT -->
 
         <div class="setting-row">
@@ -506,6 +731,7 @@
               AI Chat
             </strong>
           </div>
+
 
           <label class="switch">
 
@@ -523,9 +749,10 @@
       </div>
 
 
-      <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+      <!-- ==========================================================
            👥 GROUP SETTINGS
-           ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+           ========================================================== -->
 
       <div class="settings-box">
 
@@ -534,11 +761,13 @@
         </h3>
 
 
+
         <!-- SECURITY -->
 
         <div class="settings-subtitle">
           🛡️ SECURITY
         </div>
+
 
 
         <!-- GROUP ANTI SPAM -->
@@ -550,6 +779,7 @@
               Anti Spam
             </strong>
           </div>
+
 
           <label class="switch">
 
@@ -565,6 +795,7 @@
         </div>
 
 
+
         <!-- GROUP ANTI LINK -->
 
         <div class="setting-row">
@@ -574,6 +805,7 @@
               Anti Link
             </strong>
           </div>
+
 
           <label class="switch">
 
@@ -589,6 +821,7 @@
         </div>
 
 
+
         <!-- GROUP ANTI DELETE -->
 
         <div class="setting-row">
@@ -598,6 +831,7 @@
               Anti Delete
             </strong>
           </div>
+
 
           <label class="switch">
 
@@ -613,6 +847,7 @@
         </div>
 
 
+
         <!-- ADMIN GROUP -->
 
         <div class="setting-row">
@@ -622,6 +857,7 @@
               Admin Group
             </strong>
           </div>
+
 
           <label class="switch">
 
@@ -637,11 +873,13 @@
         </div>
 
 
+
         <!-- GROUP CONTROL -->
 
         <div class="settings-subtitle">
           🔒 Group Control
         </div>
+
 
 
         <!-- FERMETURE -->
@@ -653,6 +891,7 @@
               Fermeture
             </strong>
           </div>
+
 
           <label class="switch">
 
@@ -668,6 +907,7 @@
         </div>
 
 
+
         <!-- OUVERTURE -->
 
         <div class="setting-row">
@@ -677,6 +917,7 @@
               Ouverture
             </strong>
           </div>
+
 
           <label class="switch">
 
@@ -694,9 +935,10 @@
       </div>
 
 
-      <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-           💾 SAVE SETTINGS
-           ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+
+      <!-- ==========================================================
+           💾 SAVE
+           ========================================================== -->
 
       <button
         id="saveSettings"
@@ -707,9 +949,10 @@
       </button>
 
 
-      <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-           📢 SETTINGS MESSAGE
-           ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+
+      <!-- ==========================================================
+           📢 MESSAGE
+           ========================================================== -->
 
       <div
         id="settingsMessage"
@@ -717,14 +960,13 @@
       ></div>
 
 
-      <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+      <!-- ==========================================================
            🦶 FOOTER
-           ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+           ========================================================== -->
 
       <div class="footer">
-
-        By TOPFEROS MD TECH
-
+        Made in TOPFEROS TECH
       </div>
 
     </section>
@@ -732,11 +974,12 @@
   </main>
 
 
-  <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-       📜 SETTINGS JAVASCRIPT
-       ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
 
-  <script src="/app.js"></script>
+  <!-- ============================================================
+       📜 SETTINGS JAVASCRIPT
+       ============================================================ -->
+
+  <script src="/settings.js"></script>
 
 </body>
 
