@@ -565,6 +565,14 @@ async function selectLanguage(
     language
   );
 
+  /*
+   * 🤖 AI TRANSLATION
+   *
+   * Tradui Connect Bot interface la
+   * apre lang lan fin chwazi.
+   */
+  await translatePanelUI();
+
   startConnectionMonitor();
 
 }
