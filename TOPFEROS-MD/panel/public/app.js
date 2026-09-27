@@ -396,7 +396,6 @@ const groups = {
     ["autoStatus", "Auto Status"],
     ["statusReply", "Status Reply"],
     ["statusLike", "Status Like"],
-    ["statusReact", "Status React"]
   ],
 
   group: [
