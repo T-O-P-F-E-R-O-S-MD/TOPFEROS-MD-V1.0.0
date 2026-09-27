@@ -35,7 +35,6 @@ const defaultSettings = {
   autoStatus: false,
   statusReply: false,
   statusLike: false,
-  statusReact: false,
 
   groupAntiSpam: false,
   groupAntiLink: false,
