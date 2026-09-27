@@ -2128,8 +2128,7 @@ function showLoginMessage(
 /* =========================
    OPEN DASHBOARD
 ========================= */
-
-function openDashboard() {
+async function openDashboard() {
 
   stopConnectionMonitor();
 
@@ -2173,6 +2172,16 @@ function openDashboard() {
     "aiSettings",
     groups.ai
   );
+
+
+  /*
+   * 🤖 AI TRANSLATION
+   *
+   * Nou tann dashboard la fin
+   * render settings yo avan AI
+   * tradui tout interface la.
+   */
+  await translatePanelUI();
 
 }
 
