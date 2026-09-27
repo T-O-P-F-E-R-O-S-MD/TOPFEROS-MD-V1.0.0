@@ -127,6 +127,27 @@ const botLogo =
   );
 
 
+const adminGroupNumberInput =
+  document.getElementById(
+    "adminGroupNumber"
+  );
+
+const adminGroupLinkInput =
+  document.getElementById(
+    "adminGroupLink"
+  );
+
+const groupCloseTimeInput =
+  document.getElementById(
+    "groupCloseTime"
+  );
+
+const groupOpenTimeInput =
+  document.getElementById(
+    "groupOpenTime"
+  );
+
+
 // ============================================================
 // ⚙️ SETTINGS KI PANEL LA SIPÒTE
 // ============================================================
@@ -144,7 +165,6 @@ const settingNames = [
   "autoStatus",
   "statusReply",
   "statusLike",
-  "statusReact",
 
   "antiCall",
   "antiDelete",
@@ -157,8 +177,6 @@ const settingNames = [
   "groupAntiSpam",
   "groupAntiLink",
   "groupAntiDelete",
-
-  "adminGroup",
 
   "groupClose",
   "groupOpen"
