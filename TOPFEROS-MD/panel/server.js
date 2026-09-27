@@ -444,22 +444,541 @@ function findSessionByNumber(
 
 /*
 |--------------------------------------------------------------------------
-| HOME
+| 🤖 AI PANEL TRANSLATION
+|--------------------------------------------------------------------------
+| Sèvi pou tou de panèl yo:
+| - Connect / Parrain Code
+| - Settings / Dashboard
+|
+| AI_API_KEY rete sou server la.
 |--------------------------------------------------------------------------
 */
 
-app.get(
-  "/",
-  (req, res) => {
-    return res.sendFile(
-      path.join(
-        PUBLIC_DIR,
-        "index.html"
+const translationCache =
+  new Map();
+
+const TRANSLATION_CACHE_LIMIT =
+  500;
+
+function makeTranslationCacheKey(
+  languageName,
+  texts
+) {
+  return JSON.stringify({
+    language:
+      String(
+        languageName ||
+          "English"
       )
+        .trim()
+        .toLowerCase(),
+
+    texts
+  });
+}
+
+function getCachedTranslation(
+  key
+) {
+  const cached =
+    translationCache.get(
+      key
+    );
+
+  if (!cached) {
+    return null;
+  }
+
+  // Mete l ankò kòm dènye item cache la
+  translationCache.delete(
+    key
+  );
+
+  translationCache.set(
+    key,
+    cached
+  );
+
+  return cached;
+}
+
+function setCachedTranslation(
+  key,
+  value
+) {
+  if (
+    translationCache.has(
+      key
+    )
+  ) {
+    translationCache.delete(
+      key
     );
   }
-);
 
+  translationCache.set(
+    key,
+    value
+  );
+
+  while (
+    translationCache.size >
+    TRANSLATION_CACHE_LIMIT
+  ) {
+    const firstKey =
+      translationCache.keys()
+        .next()
+        .value;
+
+    if (!firstKey) {
+      break;
+    }
+
+    translationCache.delete(
+      firstKey
+    );
+  }
+}
+
+function normalizeTranslation(
+  original,
+  translated
+) {
+  const result = {};
+
+  for (
+    const key of Object.keys(
+      original
+    )
+  ) {
+    const value =
+      translated &&
+      typeof translated[key] ===
+        "string"
+        ? translated[key].trim()
+        : "";
+
+    result[key] =
+      value ||
+      String(
+        original[key] ?? ""
+      );
+  }
+
+  return result;
+}
+
+function extractAIJSON(
+  content
+) {
+  if (
+    typeof content !==
+    "string"
+  ) {
+    return null;
+  }
+
+  const cleaned =
+    content
+      .trim()
+      .replace(
+        /^```json\s*/i,
+        ""
+      )
+      .replace(
+        /^```\s*/i,
+        ""
+      )
+      .replace(
+        /\s*```$/i,
+        ""
+      )
+      .trim();
+
+  try {
+    return JSON.parse(
+      cleaned
+    );
+  } catch {}
+
+  const first =
+    cleaned.indexOf(
+      "{"
+    );
+
+  const last =
+    cleaned.lastIndexOf(
+      "}"
+    );
+
+  if (
+    first === -1 ||
+    last === -1 ||
+    last <= first
+  ) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(
+      cleaned.slice(
+        first,
+        last + 1
+      )
+    );
+  } catch {
+    return null;
+  }
+}
+
+async function translateWithAI(
+  languageName,
+  texts
+) {
+  const apiUrl =
+    String(
+      process.env.AI_API_URL ||
+        ""
+    ).trim();
+
+  const apiKey =
+    String(
+      process.env.AI_API_KEY ||
+        ""
+    ).trim();
+
+  const model =
+    String(
+      process.env.AI_MODEL ||
+        ""
+    ).trim();
+
+  /*
+   * Si API configuration pa la,
+   * nou pa fè request.
+   */
+  if (
+    !apiUrl ||
+    !apiKey ||
+    !model
+  ) {
+    return null;
+  }
+
+  const prompt = [
+    "You are the official UI translator for TOPFEROS MD.",
+    `Translate the following web-panel texts into ${languageName}.`,
+    "",
+    "Rules:",
+    "- Return ONLY valid JSON.",
+    "- Keep exactly the same keys.",
+    "- Do not remove any key.",
+    "- Do not add any key.",
+    "- Preserve emojis.",
+    "- Preserve numbers.",
+    "- Preserve placeholders such as {name}, {number}, {code}.",
+    "- Do not translate WhatsApp command names such as .menu, .setting, .ping.",
+    "- Keep technical meaning accurate.",
+    "",
+    JSON.stringify(
+      texts
+    )
+  ].join("\n");
+
+  const response =
+    await fetch(
+      apiUrl,
+      {
+        method:
+          "POST",
+
+        headers: {
+          "Content-Type":
+            "application/json",
+
+          Authorization:
+            `Bearer ${apiKey}`
+        },
+
+        body:
+          JSON.stringify({
+            model,
+
+            temperature:
+              0.2,
+
+            messages: [
+              {
+                role:
+                  "system",
+
+                content:
+                  "Return only valid JSON."
+              },
+
+              {
+                role:
+                  "user",
+
+                content:
+                  prompt
+              }
+            ]
+          })
+      }
+    );
+
+  const raw =
+    await response.text();
+
+  let data = null;
+
+  try {
+    data =
+      JSON.parse(
+        raw
+      );
+  } catch {}
+
+  if (
+    !response.ok
+  ) {
+    throw new Error(
+      `AI HTTP ${response.status}: ${
+        data?.error?.message ||
+        raw.slice(
+          0,
+          300
+        )
+      }`
+    );
+  }
+
+  const content =
+    data?.choices?.[0]
+      ?.message?.content ||
+    data?.choices?.[0]
+      ?.text ||
+    data?.output_text ||
+    "";
+
+  const translated =
+    extractAIJSON(
+      content
+    );
+
+  if (
+    !translated ||
+    typeof translated !==
+      "object" ||
+    Array.isArray(
+      translated
+    )
+  ) {
+    throw new Error(
+      "AI pa retounen JSON valid."
+    );
+  }
+
+  return normalizeTranslation(
+    texts,
+    translated
+  );
+}
+
+/*
+|--------------------------------------------------------------------------
+| POST /api/translate
+|--------------------------------------------------------------------------
+*/
+
+app.post(
+  "/api/translate",
+  async (
+    req,
+    res
+  ) => {
+    try {
+
+      const languageName =
+        String(
+          req.body?.language ||
+            "English"
+        ).trim();
+
+      const texts =
+        req.body?.texts;
+
+      if (
+        !texts ||
+        typeof texts !==
+          "object" ||
+        Array.isArray(
+          texts
+        )
+      ) {
+        return res.status(400).json({
+          success: false,
+          error:
+            "texts dwe yon object."
+        });
+      }
+
+      const keys =
+        Object.keys(
+          texts
+        );
+
+      if (
+        keys.length === 0
+      ) {
+        return res.json({
+          success: true,
+          ai: false,
+          cached: false,
+          language:
+            languageName,
+          translations: {}
+        });
+      }
+
+      if (
+        keys.length > 150
+      ) {
+        return res.status(400).json({
+          success: false,
+          error:
+            "Maksimòm 150 tèks pa request."
+        });
+      }
+
+      const safeTexts =
+        {};
+
+      for (
+        const key of keys
+      ) {
+        safeTexts[key] =
+          String(
+            texts[key] ??
+              ""
+          );
+      }
+
+      /*
+       * English pa bezwen AI.
+       */
+      if (
+        languageName
+          .toLowerCase() ===
+        "english"
+      ) {
+        return res.json({
+          success: true,
+          ai: false,
+          cached: true,
+          language:
+            languageName,
+          translations:
+            safeTexts
+        });
+      }
+
+      const cacheKey =
+        makeTranslationCacheKey(
+          languageName,
+          safeTexts
+        );
+
+      const cached =
+        getCachedTranslation(
+          cacheKey
+        );
+
+      if (cached) {
+        return res.json({
+          success: true,
+          ai: true,
+          cached: true,
+          language:
+            languageName,
+          translations:
+            cached
+        });
+      }
+
+      let translated =
+        null;
+
+      try {
+
+        translated =
+          await translateWithAI(
+            languageName,
+            safeTexts
+          );
+
+      } catch (error) {
+
+        console.warn(
+          "[TOPFEROS] ⚠️ AI translation failed:",
+          error?.message ||
+            error
+        );
+      }
+
+      /*
+       * Si AI pa disponib,
+       * kenbe English text yo.
+       * Panèl la pap kraze.
+       */
+      if (
+        !translated
+      ) {
+        translated =
+          safeTexts;
+      }
+
+      setCachedTranslation(
+        cacheKey,
+        translated
+      );
+
+      return res.json({
+        success: true,
+
+        ai:
+          translated !==
+          safeTexts,
+
+        cached: false,
+
+        language:
+          languageName,
+
+        translations:
+          translated
+      });
+
+    } catch (error) {
+
+      console.error(
+        "[TOPFEROS] ❌ /api/translate:",
+        error?.stack ||
+          error?.message ||
+          error
+      );
+
+      return res.status(500).json({
+        success: false,
+        ai: false,
+        error:
+          error?.message ||
+          "Translation service error."
+      });
+    }
+  }
+);
 /*
 |--------------------------------------------------------------------------
 | SETTINGS PAGE
