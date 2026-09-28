@@ -6,18 +6,74 @@ const config = require("../config");
 // 🎵 TOPFEROS MD — PLAY COMMAND
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+function isValidUrl(value) {
+  if (!value || typeof value !== "string") {
+    return false;
+  }
+
+  try {
+    const url = new URL(value);
+
+    return (
+      url.protocol === "http:" ||
+      url.protocol === "https:"
+    );
+  } catch {
+    return false;
+  }
+}
+
+function cleanFileName(name) {
+  return String(name || "TOPFEROS-MD")
+    .replace(/[\\/:*?"<>|]/g, "")
+    .trim()
+    .slice(0, 80);
+}
+
+async function fetchWithTimeout(
+  url,
+  options = {},
+  timeout = 30000
+) {
+  const controller =
+    new AbortController();
+
+  const timer =
+    setTimeout(
+      () => controller.abort(),
+      timeout
+    );
+
+  try {
+    return await fetch(
+      url,
+      {
+        ...options,
+        signal:
+          controller.signal
+      }
+    );
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 async function execute(context) {
   const {
     sock,
     message,
     text = ""
-  } = context;
+  } = context || {};
 
   const chatId =
     message?.key?.remoteJid;
 
+  if (!sock || !message || !chatId) {
+    return;
+  }
+
   const query =
-    text.trim();
+    String(text || "").trim();
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   // ❌ VERIFY SEARCH
@@ -28,7 +84,9 @@ async function execute(context) {
       chatId,
       {
         text:
-          "❌ Tanpri ekri non mizik ou vle chèche a apre .play."
+          "❌ *TOPFEROS MD*\n\n" +
+          "Tanpri ekri non mizik ou vle chèche a apre `.play`.\n\n" +
+          "Egzanp: `.play Faded`"
       },
       {
         quoted: message
@@ -42,18 +100,49 @@ async function execute(context) {
   // 🔐 MUSIC API CONFIGURATION
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+  const music =
+    config.music || {};
+
   const apiUrl =
-    config.music?.apiUrl;
+    String(
+      music.apiUrl || ""
+    ).trim();
 
   const apiKey =
-    config.music?.apiKey;
+    String(
+      music.apiKey || ""
+    ).trim();
+
+  const timeout =
+    Number(
+      music.timeout
+    ) || 30000;
 
   if (!apiUrl || !apiKey) {
     await sock.sendMessage(
       chatId,
       {
         text:
-          "⚠️ Music API pa configure nan config.js."
+          "⚠️ *TOPFEROS MD*\n\n" +
+          "Music API pa configure.\n\n" +
+          "Verifye `MUSIC_API_URL` ak `MUSIC_API_KEY` nan `.env`."
+      },
+      {
+        quoted: message
+      }
+    );
+
+    return;
+  }
+
+  if (!isValidUrl(apiUrl)) {
+    await sock.sendMessage(
+      chatId,
+      {
+        text:
+          "❌ *TOPFEROS MD*\n\n" +
+          "Music API URL la pa valid.\n\n" +
+          "Verifye `MUSIC_API_URL` nan `.env`."
       },
       {
         quoted: message
@@ -74,54 +163,89 @@ async function execute(context) {
     );
 
     const apiResponse =
-      await fetch(apiUrl, {
-        method: "POST",
+      await fetchWithTimeout(
+        apiUrl,
+        {
+          method: "POST",
 
-        headers: {
-          "Content-Type":
-            "application/json",
+          headers: {
+            "Content-Type":
+              "application/json",
 
-          "Authorization":
-            `Bearer ${apiKey}`
+            "Accept":
+              "application/json",
+
+            "Authorization":
+              `Bearer ${apiKey}`
+          },
+
+          body:
+            JSON.stringify({
+              query
+            })
         },
-
-        body: JSON.stringify({
-          query
-        })
-      });
+        timeout
+      );
 
     if (!apiResponse.ok) {
       throw new Error(
-        `Music API Error: ${apiResponse.status}`
+        `Music API HTTP ${apiResponse.status}`
       );
     }
 
-    const data =
-      await apiResponse.json();
+    let data;
+
+    try {
+      data =
+        await apiResponse.json();
+    } catch {
+      throw new Error(
+        "Music API pa retounen JSON valid."
+      );
+    }
 
     const result =
-      data.result ||
-      data.data ||
+      data?.result ??
+      data?.data ??
       data;
 
+    if (
+      !result ||
+      typeof result !== "object"
+    ) {
+      throw new Error(
+        "Music API pa retounen yon rezilta valid."
+      );
+    }
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // 🎵 MUSIC INFORMATION
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
     const title =
-      result.title ||
-      result.name ||
-      query;
+      String(
+        result.title ||
+        result.name ||
+        query
+      ).trim();
 
     const artist =
-      result.artist ||
-      result.author ||
-      "Unknown Artist";
+      String(
+        result.artist ||
+        result.author ||
+        result.artistName ||
+        "Unknown Artist"
+      ).trim();
 
     const audioUrl =
       result.audioUrl ||
       result.downloadUrl ||
+      result.audio ||
       result.url;
 
-    if (!audioUrl) {
+    if (!isValidUrl(audioUrl)) {
       throw new Error(
-        "Music API pa retounen yon audio URL."
+        "Music API pa retounen yon audio URL valid."
       );
     }
 
@@ -133,6 +257,9 @@ async function execute(context) {
       config.bot?.developer ||
       "TOPFEROS TECH";
 
+    const fileName =
+      `${cleanFileName(title)}.mp3`;
+
     await sock.sendMessage(
       chatId,
       {
@@ -143,10 +270,10 @@ async function execute(context) {
         mimetype:
           "audio/mpeg",
 
-        fileName:
-          `${title}.mp3`,
+        fileName,
 
-        caption: `╭━━━〔 🎵 PLAY 〕━━━╮
+        caption:
+`╭━━━〔 🎵 PLAY 〕━━━╮
 ┃
 ┃ 🎶 *${title}*
 ┃ 👤 ${artist}
@@ -160,40 +287,43 @@ async function execute(context) {
       }
     );
 
-    await sock.sendPresenceUpdate(
-      "paused",
-      chatId
-    );
-
   } catch (error) {
     console.error(
       "❌ PLAY ERROR:",
-      error.message
+      error?.stack ||
+      error?.message ||
+      error
     );
 
-    await sock.sendPresenceUpdate(
-      "paused",
-      chatId
-    );
-
-    await sock.sendMessage(
-      chatId,
-      {
-        text: `╭━━━〔 🎵 PLAY 〕━━━╮
+    try {
+      await sock.sendMessage(
+        chatId,
+        {
+          text:
+`╭━━━〔 🎵 PLAY 〕━━━╮
 ┃
 ┃ ❌ Mwen pa kapab jwenn
 ┃    mizik la kounye a.
 ┃
-┃ ⚠️ Verifye Music API a.
+┃ ⚠️ Verifye Music API a
+┃    oswa eseye ankò pita.
 ┃
 ╰━━━━━━━━━━━━━━━━━━━━╯
 
 🚀 ${config.bot?.developer || "TOPFEROS TECH"}`
-      },
-      {
-        quoted: message
-      }
-    );
+        },
+        {
+          quoted: message
+        }
+      );
+    } catch (_) {}
+  } finally {
+    try {
+      await sock.sendPresenceUpdate(
+        "paused",
+        chatId
+      );
+    } catch (_) {}
   }
 }
 
@@ -203,8 +333,17 @@ async function execute(context) {
 
 module.exports = {
   name: "play",
-  aliases: ["song", "music"],
-  description: "Chèche epi voye yon mizik.",
-  usage: ".play <non mizik>",
+
+  aliases: [
+    "song",
+    "music"
+  ],
+
+  description:
+    "Chèche epi voye yon mizik.",
+
+  usage:
+    ".play <non mizik>",
+
   execute
 };
