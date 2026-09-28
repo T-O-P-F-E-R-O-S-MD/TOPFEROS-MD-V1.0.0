@@ -1117,16 +1117,15 @@ function setSetting(
 
   }
 
+if (
+  key === "antiDeleteSameChat" &&
+  session.settings.antiDeleteSameChat
+) {
 
-  if (
-    key === "groupOpen" &&
-    session.settings.groupOpen
-  ) {
+  session.settings.antiDeleteDM =
+    false;
 
-    session.settings.groupClose =
-      false;
-
-  }
+}
 
 
   updateMode(session);
