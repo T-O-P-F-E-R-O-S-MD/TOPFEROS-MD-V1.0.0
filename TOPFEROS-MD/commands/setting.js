@@ -416,8 +416,6 @@ async function execute({
   try {
     /* FIND REAL SESSION */
 
-    const session =
-      getRealSession(sock);
 
     if (!session?.sessionId) {
       await sock.sendMessage(
