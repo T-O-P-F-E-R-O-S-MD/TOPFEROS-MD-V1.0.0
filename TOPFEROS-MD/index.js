@@ -461,6 +461,8 @@ async function shutdown(signal) {
     `${signal} received.`
   );
 
+groupScheduler.stop();
+
   try {
     if (
       connection &&
