@@ -400,7 +400,11 @@ Para cambiar la configuración de tu bot, haz clic en el enlace web del mensaje 
 
 async function execute({
   sock,
-  message
+  message,
+  sessionId,
+  session,
+  settings,
+  botInformation
 }) {
   const chatId =
     message?.key?.remoteJid;
