@@ -982,47 +982,62 @@ async function handleMessage(
     // MESSAGE CONTEXT
     // --------------------------------------------------------
 
-    const context = {
+    const session =
+  settingPanel.getSession(
+    sessionId
+  );
 
-      sock,
+const context = {
 
-      message,
+  sock,
 
-      msg:
-        message,
+  message,
 
-      sessionId,
+  msg:
+    message,
 
-      chatId,
+  sessionId,
 
-      sender:
-        getSender(message),
+  session,
 
-      isGroup:
-        isGroupMessage(
-          message
-        ),
+  settings:
+    session?.settings ||
+    {},
 
-      quoted:
-        getQuotedMessage(
-          message
-        ),
+  botInformation:
+    session?.botInformation ||
+    {},
 
-      command:
-        commandName,
+  chatId,
 
-      commandName,
+  sender:
+    getSender(message),
 
-      args,
+  isGroup:
+    isGroupMessage(
+      message
+    ),
 
-      text:
-        commandText,
+  quoted:
+    getQuotedMessage(
+      message
+    ),
 
-      prefix:
-        PREFIX,
+  command:
+    commandName,
 
-      config
-    };
+  commandName,
+
+  args,
+
+  text:
+    commandText,
+
+  prefix:
+    PREFIX,
+
+  config
+};
 
     // --------------------------------------------------------
     // LOG COMMAND
