@@ -2,15 +2,6 @@
 
 const viewonce = require("./viewonce");
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 👁️ TOPFEROS MD — VV2 COMMAND
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// .vv2
-// → Pran View Once ki nan reply la
-// → Dekode li
-// → Voye li nan MENM CHAT la
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
 async function execute(context) {
   const {
     sock,
@@ -30,15 +21,12 @@ async function execute(context) {
 
   try {
     const processed =
-      await viewonce.handleVV2(
-        context
-      );
+      await viewonce.handleVV2(context);
 
     if (processed) {
       console.log(
         `[VV2] View Once decoded | chat=${chatId}`
       );
-
       return;
     }
 
@@ -47,7 +35,7 @@ async function execute(context) {
       {
         text:
           "❌ Mwen pa jwenn yon View Once pou dekode.\n\n" +
-          "👁️ Reply sou View Once la epi itilize:\n" +
+          "Reply sou View Once la epi itilize:\n" +
           "`.vv2`"
       },
       {
@@ -56,7 +44,6 @@ async function execute(context) {
     );
 
   } catch (error) {
-
     console.error(
       "❌ VV2 ERROR:",
       error?.stack ||
@@ -79,23 +66,11 @@ async function execute(context) {
   }
 }
 
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 📦 EXPORT
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
 module.exports = {
   name: "vv2",
-
-  aliases: [
-    "vv"
-  ],
-
+  aliases: ["vv"],
   description:
     "Dekode yon View Once nan menm chat la.",
-
-  usage:
-    ".vv2",
-
+  usage: ".vv2",
   execute
 };
