@@ -402,9 +402,7 @@ async function execute({
   sock,
   message,
   sessionId,
-  session,
-  settings,
-  botInformation
+  session
 }) {
   const chatId =
     message?.key?.remoteJid;
