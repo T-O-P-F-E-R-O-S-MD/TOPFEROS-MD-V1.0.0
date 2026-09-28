@@ -840,18 +840,6 @@ async function createSocket(
           );
         }
 
-        if (
-          update?.action ===
-            "remove" &&
-          goodbye?.sendGoodbye
-        ) {
-
-          await goodbye.sendGoodbye(
-            sock,
-            update
-          );
-        }
-
       } catch (error) {
 
         console.error(
