@@ -20,15 +20,55 @@ try {
 const commandIndex =
   require("../commands/index");
 
+const {
+  getBotInformation
+} = require("./settingPanel");
+
 // ============================================================
 // PREFIX
 // ============================================================
 
-const PREFIX =
-  config?.bot?.prefix ||
-  config?.PREFIX ||
-  config?.prefix ||
-  ".";
+function getCurrentPrefix(
+  sessionId
+) {
+
+  try {
+
+    const information =
+      getBotInformation(
+        sessionId
+      );
+
+    if (
+      information &&
+      typeof information.prefix ===
+        "string" &&
+      information.prefix.trim()
+    ) {
+
+      return information.prefix.trim();
+
+    }
+
+  } catch (error) {
+
+    console.warn(
+      "Could not get session prefix:",
+      error?.message ||
+      error
+    );
+
+  }
+
+
+  return (
+    config?.bot?.prefix ||
+    config?.PREFIX ||
+    config?.prefix ||
+    "."
+  );
+
+}
 
 // ============================================================
 // UNWRAP WHATSAPP MESSAGE
@@ -365,6 +405,11 @@ async function handleStatusActions(
     ) {
       return;
     }
+
+const PREFIX =
+  getCurrentPrefix(
+    sessionId
+  );
 
     const features =
       config?.features || {};
