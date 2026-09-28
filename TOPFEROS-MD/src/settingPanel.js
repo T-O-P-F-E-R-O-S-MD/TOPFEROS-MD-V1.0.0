@@ -1117,18 +1117,6 @@ function setSetting(
   }
 
 
-  /*
-   * Group Open / Close mutually exclusive.
-   */
-
-  if (
-    key === "groupClose" &&
-    session.settings.groupClose
-  ) {
-
-    session.settings.groupOpen =
-      false;
-
   }
 
 
