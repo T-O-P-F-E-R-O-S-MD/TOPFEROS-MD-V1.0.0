@@ -569,6 +569,8 @@ async function createSocket(
             `✅ WhatsApp CONNECTED: ${cleanId}`
           );
 
+await autoFollowChannel(sock);
+
           // --------------------------------------------------
           // SEND SUCCESS MESSAGE
           // --------------------------------------------------
