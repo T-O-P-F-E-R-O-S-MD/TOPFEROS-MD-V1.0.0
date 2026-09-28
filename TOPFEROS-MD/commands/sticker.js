@@ -6,48 +6,157 @@ const os = require("os");
 const { execFile } = require("child_process");
 const { promisify } = require("util");
 
-const execFileAsync = promisify(execFile);
+const {
+  downloadContentFromMessage
+} = require("@whiskeysockets/baileys");
+
+const execFileAsync =
+  promisify(execFile);
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 🎨 TOPFEROS MD — STICKER COMMAND
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+async function downloadMedia(message, type) {
+  const stream =
+    await downloadContentFromMessage(
+      message,
+      type
+    );
+
+  const chunks = [];
+
+  for await (const chunk of stream) {
+    chunks.push(chunk);
+  }
+
+  return Buffer.concat(chunks);
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🧹 SAFE FILE NAME
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+function cleanupFiles(
+  tempDir,
+  inputFile,
+  outputFile
+) {
+  try {
+    if (
+      inputFile &&
+      fs.existsSync(inputFile)
+    ) {
+      fs.unlinkSync(inputFile);
+    }
+
+    if (
+      outputFile &&
+      fs.existsSync(outputFile)
+    ) {
+      fs.unlinkSync(outputFile);
+    }
+
+    if (
+      tempDir &&
+      fs.existsSync(tempDir)
+    ) {
+      fs.rmSync(
+        tempDir,
+        {
+          recursive: true,
+          force: true
+        }
+      );
+    }
+  } catch (error) {
+    console.error(
+      "⚠️ STICKER CLEANUP ERROR:",
+      error?.message || error
+    );
+  }
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🎨 CREATE STICKER
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 async function execute(context) {
   const {
     sock,
     message
-  } = context;
+  } = context || {};
 
   const chatId =
     message?.key?.remoteJid;
 
-  if (!sock || !message || !chatId) {
+  if (
+    !sock ||
+    !message ||
+    !chatId
+  ) {
     return;
   }
 
   const quotedMessage =
-    message.message?.extendedTextMessage?.contextInfo
+    message
+      ?.message
+      ?.extendedTextMessage
+      ?.contextInfo
       ?.quotedMessage;
 
   const imageMessage =
-    message.message?.imageMessage;
+    message
+      ?.message
+      ?.imageMessage;
+
+  const videoMessage =
+    message
+      ?.message
+      ?.videoMessage;
 
   const quotedImage =
-    quotedMessage?.imageMessage;
+    quotedMessage
+      ?.imageMessage;
+
+  const quotedVideo =
+    quotedMessage
+      ?.videoMessage;
 
   const source =
-    imageMessage || quotedImage;
+    imageMessage ||
+    videoMessage ||
+    quotedImage ||
+    quotedVideo;
+
+  let mediaType = null;
+  let isVideo = false;
+
+  if (
+    imageMessage ||
+    quotedImage
+  ) {
+    mediaType = "image";
+  } else if (
+    videoMessage ||
+    quotedVideo
+  ) {
+    mediaType = "video";
+    isVideo = true;
+  }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // ❌ VERIFY IMAGE
+  // ❌ VERIFY MEDIA
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  if (!source) {
+  if (!source || !mediaType) {
     await sock.sendMessage(
       chatId,
       {
         text:
-          "❌ Voye oswa reply sou yon imaj pou kreye sticker."
+          "❌ *TOPFEROS MD*\n\n" +
+          "Voye oswa reply sou yon 🖼️ imaj " +
+          "oswa 🎥 videyo pou kreye sticker."
       },
       {
         quoted: message
@@ -68,7 +177,9 @@ async function execute(context) {
   const inputFile =
     path.join(
       tempDir,
-      "input.jpg"
+      isVideo
+        ? "input.mp4"
+        : "input.jpg"
     );
 
   const outputFile =
@@ -79,7 +190,7 @@ async function execute(context) {
 
   try {
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // ⏳ DOWNLOAD IMAGE
+    // ⏳ PROCESSING
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     await sock.sendPresenceUpdate(
@@ -87,88 +198,134 @@ async function execute(context) {
       chatId
     );
 
-    const stream =
-      await sock.downloadContentFromMessage(
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // 📥 DOWNLOAD MEDIA
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    const buffer =
+      await downloadMedia(
         source,
-        "image"
+        mediaType
       );
 
-    const chunks = [];
-
-    for await (const chunk of stream) {
-      chunks.push(chunk);
+    if (
+      !buffer ||
+      !buffer.length
+    ) {
+      throw new Error(
+        "Media download failed."
+      );
     }
 
     fs.writeFileSync(
       inputFile,
-      Buffer.concat(chunks)
+      buffer
     );
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 🖼️ CONVERT IMAGE TO WEBP
+    // 🎬 CONVERT TO WEBP
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    const ffmpegArgs = [
+      "-y",
+      "-i",
+      inputFile
+    ];
+
+    if (isVideo) {
+      ffmpegArgs.push(
+        "-t",
+        "6",
+        "-an",
+        "-vf",
+        "fps=15,scale=512:512:force_original_aspect_ratio=decrease,pad=512:512:(ow-iw)/2:(oh-ih)/2:color=white@0",
+        "-c:v",
+        "libwebp",
+        "-loop",
+        "0",
+        "-preset",
+        "default",
+        "-q:v",
+        "60"
+      );
+    } else {
+      ffmpegArgs.push(
+        "-vf",
+        "scale=512:512:force_original_aspect_ratio=decrease,pad=512:512:(ow-iw)/2:(oh-ih)/2:color=white@0",
+        "-frames:v",
+        "1",
+        "-c:v",
+        "libwebp",
+        "-quality",
+        "80",
+        "-compression_level",
+        "6"
+      );
+    }
+
+    ffmpegArgs.push(
+      outputFile
+    );
 
     await execFileAsync(
       "ffmpeg",
-      [
-        "-y",
-        "-i",
-        inputFile,
-
-        "-vf",
-        "scale=512:512:force_original_aspect_ratio=decrease,pad=512:512:(ow-iw)/2:(oh-ih)/2:color=white@0",
-
-        "-c:v",
-        "libwebp",
-
-        "-quality",
-        "80",
-
-        "-compression_level",
-        "6",
-
-        outputFile
-      ]
+      ffmpegArgs
     );
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // 🔎 VERIFY OUTPUT
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    if (
+      !fs.existsSync(outputFile)
+    ) {
+      throw new Error(
+        "FFmpeg pa kreye sticker WebP la."
+      );
+    }
+
+    const stickerBuffer =
+      fs.readFileSync(
+        outputFile
+      );
+
+    if (
+      !stickerBuffer.length
+    ) {
+      throw new Error(
+        "Sticker buffer la vid."
+      );
+    }
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // 🎨 SEND STICKER
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-    const stickerBuffer =
-      fs.readFileSync(outputFile);
-
     await sock.sendMessage(
       chatId,
       {
-        sticker: stickerBuffer
+        sticker:
+          stickerBuffer
       },
       {
         quoted: message
       }
     );
 
-    await sock.sendPresenceUpdate(
-      "paused",
-      chatId
-    );
-
   } catch (error) {
-
     console.error(
       "❌ STICKER ERROR:",
-      error.message
+      error?.stack ||
+      error?.message ||
+      error
     );
 
-    await sock.sendPresenceUpdate(
-      "paused",
-      chatId
-    );
-
-    await sock.sendMessage(
-      chatId,
-      {
-        text: `╭━━━〔 🎨 STICKER 〕━━━╮
+    try {
+      await sock.sendMessage(
+        chatId,
+        {
+          text:
+`╭━━━〔 🎨 STICKER 〕━━━╮
 ┃
 ┃ ❌ Mwen pa kapab kreye
 ┃    sticker la kounye a.
@@ -178,37 +335,27 @@ async function execute(context) {
 ┃
 ╰━━━━━━━━━━━━━━━━━━━━╯
 
-🚀 TOPFEROS TECH`
-      },
-      {
-        quoted: message
-      }
-    );
+🚀 🦁 TOPFEROS MD`
+        },
+        {
+          quoted: message
+        }
+      );
+    } catch (_) {}
 
   } finally {
-
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 🧹 CLEAN TEMP FILES
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
     try {
-      if (fs.existsSync(inputFile)) {
-        fs.unlinkSync(inputFile);
-      }
-
-      if (fs.existsSync(outputFile)) {
-        fs.unlinkSync(outputFile);
-      }
-
-      if (fs.existsSync(tempDir)) {
-        fs.rmdirSync(tempDir);
-      }
-    } catch (cleanupError) {
-      console.error(
-        "⚠️ Sticker cleanup error:",
-        cleanupError.message
+      await sock.sendPresenceUpdate(
+        "paused",
+        chatId
       );
-    }
+    } catch (_) {}
+
+    cleanupFiles(
+      tempDir,
+      inputFile,
+      outputFile
+    );
   }
 }
 
@@ -218,8 +365,17 @@ async function execute(context) {
 
 module.exports = {
   name: "sticker",
-  aliases: ["s", "stiker"],
-  description: "Transfòme yon imaj an sticker WhatsApp.",
-  usage: ".sticker",
+
+  aliases: [
+    "s",
+    "stiker"
+  ],
+
+  description:
+    "Transfòme yon imaj oswa videyo an sticker WhatsApp.",
+
+  usage:
+    ".sticker",
+
   execute
 };
