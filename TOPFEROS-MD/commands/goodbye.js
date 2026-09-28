@@ -3,10 +3,6 @@
 const fs = require("fs");
 const path = require("path");
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 👋 TOPFEROS MD — GOODBYE HANDLER
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
 const GOODBYE_FILE = path.join(
   __dirname,
   "..",
@@ -15,7 +11,7 @@ const GOODBYE_FILE = path.join(
 );
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 💾 LOAD SETTINGS
+// 💾 LOAD GOODBYE SETTINGS
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 function loadSettings() {
@@ -41,7 +37,7 @@ function loadSettings() {
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 👤 GET USER NUMBER
+// 👤 GET SENDER NUMBER
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 function getUserNumber(jid) {
@@ -49,7 +45,7 @@ function getUserNumber(jid) {
     return "Unknown";
   }
 
-  return jid
+  return String(jid)
     .split("@")[0]
     .split(":")[0];
 }
@@ -66,7 +62,7 @@ function formatMessage(
   const userNumber =
     getUserNumber(userJid);
 
-  return template
+  return String(template)
     .replace(
       /@user/gi,
       `@${userNumber}`
@@ -78,19 +74,87 @@ function formatMessage(
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 👋 SEND GOODBYE
+// 👋 GOODBYE COMMAND
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-async function sendGoodbye({
-  sock,
-  chatId,
-  userJid
-}) {
-  if (!sock || !chatId || !userJid) {
+async function execute(context) {
+  const {
+    sock,
+    message
+  } = context;
+
+  const chatId =
+    message?.key?.remoteJid;
+
+  if (
+    !sock ||
+    !chatId
+  ) {
+    return;
+  }
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 👥 GROUP ONLY
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  if (
+    !chatId.endsWith("@g.us")
+  ) {
+    await sock.sendMessage(
+      chatId,
+      {
+        text:
+          "❌ *Goodbye* disponib sèlman nan group."
+      },
+      {
+        quoted: message
+      }
+    );
+
     return;
   }
 
   try {
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // 📋 GROUP METADATA
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    const metadata =
+      await sock.groupMetadata(
+        chatId
+      );
+
+    /*
+     * announce === true
+     * = group la nan announcement/mute mode.
+     *
+     * Lè li mute, .goodbye pap voye mesaj.
+     */
+
+    if (
+      metadata?.announce === true
+    ) {
+
+      await sock.sendMessage(
+        chatId,
+        {
+          text:
+            "🔇 *TOPFEROS MD*\n\n" +
+            "Goodbye pa disponib pandan group la sou mute."
+        },
+        {
+          quoted: message
+        }
+      );
+
+      return;
+    }
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // 💾 LOAD SETTINGS
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
     const settings =
       loadSettings();
 
@@ -102,17 +166,48 @@ async function sendGoodbye({
       groupSettings.enabled !== true ||
       !groupSettings.message
     ) {
+
+      await sock.sendMessage(
+        chatId,
+        {
+          text:
+            "❌ *TOPFEROS MD*\n\n" +
+            "Pa gen mesaj Goodbye ki konfigire pou group sa a.\n\n" +
+            "Admin nan ka itilize:\n" +
+            "`.setgoodbye <mesaj>`"
+        },
+        {
+          quoted: message
+        }
+      );
+
       return;
     }
 
-    const metadata =
-      await sock.groupMetadata(
-        chatId
-      );
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // 📝 GET GROUP NAME
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     const groupName =
-      metadata.subject ||
+      metadata?.subject ||
       "Group";
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // 👤 GET PERSON WHO USED THE COMMAND
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    const userJid =
+      message?.key?.participant ||
+      message?.participant ||
+      message?.key?.remoteJid;
+
+    if (!userJid) {
+      return;
+    }
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // 📝 FORMAT MESSAGE
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     const text =
       formatMessage(
@@ -121,30 +216,68 @@ async function sendGoodbye({
         groupName
       );
 
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // 📤 SEND GOODBYE
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
     await sock.sendMessage(
       chatId,
       {
         text,
-        mentions: [userJid]
+        mentions: [
+          userJid
+        ]
+      },
+      {
+        quoted: message
       }
     );
 
-  } catch (error) {
-    console.error(
-      "❌ GOODBYE SEND ERROR:",
-      error.message
+    console.log(
+      `[GOODBYE] .goodbye sent | group=${chatId}`
     );
+
+  } catch (error) {
+
+    console.error(
+      "❌ GOODBYE COMMAND ERROR:",
+      error?.stack ||
+      error?.message ||
+      error
+    );
+
+    try {
+      await sock.sendMessage(
+        chatId,
+        {
+          text:
+            "❌ *TOPFEROS MD*\n\n" +
+            "Gen yon erè pandan Goodbye la t ap prepare."
+        },
+        {
+          quoted: message
+        }
+      );
+    } catch (_) {}
   }
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 📦 EXPORT
+// 📦 EXPORT COMMAND
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 module.exports = {
-  sendGoodbye
-};
+  name: "goodbye",
 
-// ╔════════════════════════════════════════════════════╗
-// ║             🚀 TECH BY TOPFEROS MD               ║
-// ╚════════════════════════════════════════════════════╝
+  aliases: [
+    "bye"
+  ],
+
+  description:
+    "Voye mesaj Goodbye configured pou group la.",
+
+  usage:
+    ".goodbye",
+
+  execute
+};
