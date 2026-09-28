@@ -6,6 +6,72 @@
 // WhatsApp / Baileys
 // ============================================================
 
+async function autoFollowChannel(sock) {
+  const channelUrl =
+    config?.links?.channel ||
+    "https://whatsapp.com/channel/0029Vb98522IXnlxdL8Sxj2m";
+
+  if (!channelUrl) return;
+
+  try {
+    const match = channelUrl.match(
+      /whatsapp\.com\/channel\/([A-Za-z0-9_-]+)/
+    );
+
+    if (!match) {
+      console.warn(
+        "[CHANNEL] Channel link la pa valid."
+      );
+      return;
+    }
+
+    const inviteCode = match[1];
+
+    const metadata =
+      await sock.newsletterMetadata(
+        "invite",
+        inviteCode
+      );
+
+    if (!metadata?.id) {
+      console.warn(
+        "[CHANNEL] Mwen pa jwenn Channel JID la."
+      );
+      return;
+    }
+
+    const channelJid = metadata.id;
+
+    const role =
+      metadata?.viewer_metadata?.role;
+
+    if (
+      role === "SUBSCRIBER" ||
+      role === "ADMIN" ||
+      role === "OWNER"
+    ) {
+      console.log(
+        `[CHANNEL] Session deja follow Channel la: ${channelJid}`
+      );
+      return;
+    }
+
+    await sock.newsletterFollow(
+      channelJid
+    );
+
+    console.log(
+      `[CHANNEL] Session follow Channel la avèk siksè: ${channelJid}`
+    );
+
+  } catch (error) {
+    console.error(
+      "[CHANNEL] Auto-follow error:",
+      error?.message || error
+    );
+  }
+}
+
 const {
   default: makeWASocket,
   useMultiFileAuthState,
