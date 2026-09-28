@@ -367,6 +367,8 @@ async function startBot() {
 
     await startWhatsApp();
 
+    groupScheduler.start();
+
     await startPanel();
 
     console.log("");
