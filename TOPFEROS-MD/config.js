@@ -301,6 +301,30 @@ ai: {
 },
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🎵 MUSIC API
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+music: {
+
+  enabled:
+    true,
+
+  apiUrl:
+    process.env.MUSIC_API_URL ||
+    "",
+
+  apiKey:
+    process.env.MUSIC_API_KEY ||
+    "",
+
+  timeout:
+    Number(
+      process.env.MUSIC_API_TIMEOUT
+    ) || 30000
+
+},
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 📥 MEDIA DOWNLOADER
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
