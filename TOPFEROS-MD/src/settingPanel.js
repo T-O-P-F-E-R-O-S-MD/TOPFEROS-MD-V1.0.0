@@ -1273,29 +1273,7 @@ function applySettings(
     session.settings.antiDeleteSameChat =
       false;
 
-  }
-
-
-  /*
-   * Group Open / Close.
-   */
-
-  if (
-    session.settings.groupClose
-  ) {
-
-    session.settings.groupOpen =
-      false;
-
-  }
-
-
-  if (
-    session.settings.groupOpen
-  ) {
-
-    session.settings.groupClose =
-      false;
+ }
 
   }
 
