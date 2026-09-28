@@ -1060,6 +1060,10 @@ function setSetting(
   }
 
 
+  /*
+   * Boolean settings.
+   */
+
   session.settings[key] =
     Boolean(value);
 
@@ -1115,6 +1119,14 @@ function setSetting(
       false;
 
   }
+
+
+  /*
+   * Group Open / Close
+   *
+   * Yo pa mutually exclusive.
+   * User kapab aktive toude.
+   */
 
 
   updateMode(
