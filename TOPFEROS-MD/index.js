@@ -4,6 +4,9 @@ const fs = require("fs");
 const path = require("path");
 const config = require("./config");
 
+const groupScheduler =
+  require("./services/groupScheduler");
+
 let connection = null;
 let panelServer = null;
 let shuttingDown = false;
