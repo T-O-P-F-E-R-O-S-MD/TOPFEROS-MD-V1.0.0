@@ -1114,8 +1114,6 @@ function setSetting(
     session.settings.antiDeleteSameChat =
       false;
 
-  }
-
 
   }
 
