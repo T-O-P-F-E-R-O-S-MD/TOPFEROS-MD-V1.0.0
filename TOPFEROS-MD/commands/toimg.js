@@ -6,37 +6,119 @@ const os = require("os");
 const { execFile } = require("child_process");
 const { promisify } = require("util");
 
-const execFileAsync = promisify(execFile);
+const {
+  downloadContentFromMessage
+} = require("@whiskeysockets/baileys");
+
+const execFileAsync =
+  promisify(execFile);
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 🖼️ TOPFEROS MD — TOIMG COMMAND
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+async function downloadSticker(
+  sticker
+) {
+  const stream =
+    await downloadContentFromMessage(
+      sticker,
+      "sticker"
+    );
+
+  const chunks = [];
+
+  for await (const chunk of stream) {
+    chunks.push(chunk);
+  }
+
+  return Buffer.concat(chunks);
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🧹 CLEAN TEMP FILES
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+function cleanupFiles(
+  tempDir,
+  inputFile,
+  outputFile
+) {
+  try {
+    if (
+      inputFile &&
+      fs.existsSync(inputFile)
+    ) {
+      fs.unlinkSync(inputFile);
+    }
+
+    if (
+      outputFile &&
+      fs.existsSync(outputFile)
+    ) {
+      fs.unlinkSync(outputFile);
+    }
+
+    if (
+      tempDir &&
+      fs.existsSync(tempDir)
+    ) {
+      fs.rmSync(
+        tempDir,
+        {
+          recursive: true,
+          force: true
+        }
+      );
+    }
+  } catch (error) {
+    console.error(
+      "⚠️ TOIMG CLEANUP ERROR:",
+      error?.message || error
+    );
+  }
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🖼️ CONVERT STICKER TO IMAGE
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 async function execute(context) {
   const {
     sock,
     message
-  } = context;
+  } = context || {};
 
   const chatId =
     message?.key?.remoteJid;
 
-  if (!sock || !message || !chatId) {
+  if (
+    !sock ||
+    !message ||
+    !chatId
+  ) {
     return;
   }
 
   const quotedMessage =
-    message.message?.extendedTextMessage?.contextInfo
+    message
+      ?.message
+      ?.extendedTextMessage
+      ?.contextInfo
       ?.quotedMessage;
 
   const stickerMessage =
-    message.message?.stickerMessage;
+    message
+      ?.message
+      ?.stickerMessage;
 
   const quotedSticker =
-    quotedMessage?.stickerMessage;
+    quotedMessage
+      ?.stickerMessage;
 
   const source =
-    stickerMessage || quotedSticker;
+    stickerMessage ||
+    quotedSticker;
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   // ❌ VERIFY STICKER
@@ -47,7 +129,9 @@ async function execute(context) {
       chatId,
       {
         text:
-          "❌ Voye oswa reply sou yon sticker pou transfòme li an imaj."
+          "❌ *TOPFEROS MD*\n\n" +
+          "Voye oswa reply sou yon sticker " +
+          "pou transfòme li an imaj."
       },
       {
         quoted: message
@@ -79,7 +163,7 @@ async function execute(context) {
 
   try {
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // ⏳ DOWNLOAD STICKER
+    // ⏳ PROCESSING
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     await sock.sendPresenceUpdate(
@@ -87,21 +171,27 @@ async function execute(context) {
       chatId
     );
 
-    const stream =
-      await sock.downloadContentFromMessage(
-        source,
-        "sticker"
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // 📥 DOWNLOAD STICKER
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    const stickerBuffer =
+      await downloadSticker(
+        source
       );
 
-    const chunks = [];
-
-    for await (const chunk of stream) {
-      chunks.push(chunk);
+    if (
+      !stickerBuffer ||
+      !stickerBuffer.length
+    ) {
+      throw new Error(
+        "Sticker download failed."
+      );
     }
 
     fs.writeFileSync(
       inputFile,
-      Buffer.concat(chunks)
+      stickerBuffer
     );
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -112,54 +202,80 @@ async function execute(context) {
       "ffmpeg",
       [
         "-y",
+
         "-i",
         inputFile,
+
         "-frames:v",
         "1",
+
+        "-c:v",
+        "png",
+
         outputFile
       ]
     );
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 📤 SEND IMAGE
+    // 🔎 VERIFY OUTPUT
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+    if (
+      !fs.existsSync(outputFile)
+    ) {
+      throw new Error(
+        "FFmpeg pa kreye imaj PNG la."
+      );
+    }
+
     const imageBuffer =
-      fs.readFileSync(outputFile);
+      fs.readFileSync(
+        outputFile
+      );
+
+    if (
+      !imageBuffer.length
+    ) {
+      throw new Error(
+        "Imaj PNG la vid."
+      );
+    }
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // 📤 SEND IMAGE
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     await sock.sendMessage(
       chatId,
       {
-        image: imageBuffer,
+        image:
+          imageBuffer,
+
         caption:
-          "🖼️ Sticker la transfòme an imaj avèk siksè.\n\n🚀 TOPFEROS TECH"
+          "🖼️ *TOPFEROS MD*\n\n" +
+          "✅ Sticker la transfòme " +
+          "an imaj avèk siksè.\n\n" +
+          "🚀 🦁 TOPFEROS MD"
       },
       {
         quoted: message
       }
     );
 
-    await sock.sendPresenceUpdate(
-      "paused",
-      chatId
-    );
-
   } catch (error) {
-
     console.error(
       "❌ TOIMG ERROR:",
-      error.message
+      error?.stack ||
+      error?.message ||
+      error
     );
 
-    await sock.sendPresenceUpdate(
-      "paused",
-      chatId
-    );
-
-    await sock.sendMessage(
-      chatId,
-      {
-        text: `╭━━━〔 🖼️ TOIMG 〕━━━╮
+    try {
+      await sock.sendMessage(
+        chatId,
+        {
+          text:
+`╭━━━〔 🖼️ TOIMG 〕━━━╮
 ┃
 ┃ ❌ Mwen pa kapab
 ┃    konvèti sticker la.
@@ -169,37 +285,27 @@ async function execute(context) {
 ┃
 ╰━━━━━━━━━━━━━━━━━━━━╯
 
-🚀 TOPFEROS TECH`
-      },
-      {
-        quoted: message
-      }
-    );
+🚀 🦁 TOPFEROS MD`
+        },
+        {
+          quoted: message
+        }
+      );
+    } catch (_) {}
 
   } finally {
-
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 🧹 CLEAN TEMP FILES
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
     try {
-      if (fs.existsSync(inputFile)) {
-        fs.unlinkSync(inputFile);
-      }
-
-      if (fs.existsSync(outputFile)) {
-        fs.unlinkSync(outputFile);
-      }
-
-      if (fs.existsSync(tempDir)) {
-        fs.rmdirSync(tempDir);
-      }
-    } catch (cleanupError) {
-      console.error(
-        "⚠️ Toimg cleanup error:",
-        cleanupError.message
+      await sock.sendPresenceUpdate(
+        "paused",
+        chatId
       );
-    }
+    } catch (_) {}
+
+    cleanupFiles(
+      tempDir,
+      inputFile,
+      outputFile
+    );
   }
 }
 
@@ -209,8 +315,17 @@ async function execute(context) {
 
 module.exports = {
   name: "toimg",
-  aliases: ["toimage", "img"],
-  description: "Transfòme yon sticker an imaj.",
-  usage: ".toimg",
+
+  aliases: [
+    "toimage",
+    "img"
+  ],
+
+  description:
+    "Transfòme yon sticker an imaj.",
+
+  usage:
+    ".toimg",
+
   execute
 };
