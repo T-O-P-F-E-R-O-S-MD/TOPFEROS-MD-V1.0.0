@@ -1242,7 +1242,51 @@ async function loadSettings() {
       );
 
 
-    enforceAntiDeleteDestination();
+if (
+  adminGroupNumberInput
+) {
+
+  adminGroupNumberInput.value =
+    settings.adminGroupNumber ||
+    "";
+
+}
+
+
+if (
+  adminGroupLinkInput
+) {
+
+  adminGroupLinkInput.value =
+    settings.adminGroupLink ||
+    "";
+
+}
+
+
+if (
+  groupCloseTimeInput
+) {
+
+  groupCloseTimeInput.value =
+    settings.groupCloseTime ||
+    "";
+
+}
+
+
+if (
+  groupOpenTimeInput
+) {
+
+  groupOpenTimeInput.value =
+    settings.groupOpenTime ||
+    "";
+
+}
+    
+
+enforceAntiDeleteDestination();
 
 
     return true;
