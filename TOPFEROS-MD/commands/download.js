@@ -6,18 +6,77 @@ const config = require("../config");
 // 📥 TOPFEROS MD — DOWNLOAD COMMAND
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+function isValidUrl(value) {
+  if (!value || typeof value !== "string") {
+    return false;
+  }
+
+  try {
+    const parsed =
+      new URL(value.trim());
+
+    return (
+      parsed.protocol === "http:" ||
+      parsed.protocol === "https:"
+    );
+  } catch {
+    return false;
+  }
+}
+
+function cleanFileName(name) {
+  return String(
+    name || "TOPFEROS-DOWNLOAD"
+  )
+    .replace(/[\\/:*?"<>|]/g, "")
+    .trim()
+    .slice(0, 100);
+}
+
+async function fetchWithTimeout(
+  url,
+  options = {},
+  timeout = 30000
+) {
+  const controller =
+    new AbortController();
+
+  const timer =
+    setTimeout(
+      () => controller.abort(),
+      timeout
+    );
+
+  try {
+    return await fetch(
+      url,
+      {
+        ...options,
+        signal:
+          controller.signal
+      }
+    );
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 async function execute(context) {
   const {
     sock,
     message,
     text = ""
-  } = context;
+  } = context || {};
 
   const chatId =
     message?.key?.remoteJid;
 
+  if (!sock || !message || !chatId) {
+    return;
+  }
+
   const url =
-    text.trim();
+    String(text || "").trim();
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   // ❌ VERIFY URL
@@ -28,7 +87,27 @@ async function execute(context) {
       chatId,
       {
         text:
-          "❌ Tanpri mete URL ou vle telechaje a apre .download."
+          "❌ *TOPFEROS MD*\n\n" +
+          "Tanpri mete URL ou vle telechaje a apre `.download`.\n\n" +
+          "Egzanp:\n" +
+          "`.download https://example.com/file`"
+      },
+      {
+        quoted: message
+      }
+    );
+
+    return;
+  }
+
+  if (!isValidUrl(url)) {
+    await sock.sendMessage(
+      chatId,
+      {
+        text:
+          "❌ *TOPFEROS MD*\n\n" +
+          "URL ou mete a pa valid.\n\n" +
+          "Tanpri verifye lyen an epi eseye ankò."
       },
       {
         quoted: message
@@ -42,18 +121,49 @@ async function execute(context) {
   // 🔐 DOWNLOAD API CONFIGURATION
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+  const download =
+    config.download || {};
+
   const apiUrl =
-    config.download?.apiUrl;
+    String(
+      download.apiUrl || ""
+    ).trim();
 
   const apiKey =
-    config.download?.apiKey;
+    String(
+      download.apiKey || ""
+    ).trim();
+
+  const timeout =
+    Number(
+      download.timeout
+    ) || 30000;
 
   if (!apiUrl || !apiKey) {
     await sock.sendMessage(
       chatId,
       {
         text:
-          "⚠️ Download API pa configure nan config.js."
+          "⚠️ *TOPFEROS MD*\n\n" +
+          "Download API pa configure.\n\n" +
+          "Verifye `DOWNLOAD_API_URL` ak `DOWNLOAD_API_KEY` nan `.env`."
+      },
+      {
+        quoted: message
+      }
+    );
+
+    return;
+  }
+
+  if (!isValidUrl(apiUrl)) {
+    await sock.sendMessage(
+      chatId,
+      {
+        text:
+          "❌ *TOPFEROS MD*\n\n" +
+          "Download API URL la pa valid.\n\n" +
+          "Verifye `DOWNLOAD_API_URL` nan `.env`."
       },
       {
         quoted: message
@@ -78,25 +188,33 @@ async function execute(context) {
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     const apiResponse =
-      await fetch(apiUrl, {
-        method: "POST",
+      await fetchWithTimeout(
+        apiUrl,
+        {
+          method: "POST",
 
-        headers: {
-          "Content-Type":
-            "application/json",
+          headers: {
+            "Content-Type":
+              "application/json",
 
-          "Authorization":
-            `Bearer ${apiKey}`
+            "Accept":
+              "application/json",
+
+            "Authorization":
+              `Bearer ${apiKey}`
+          },
+
+          body:
+            JSON.stringify({
+              url
+            })
         },
-
-        body: JSON.stringify({
-          url
-        })
-      });
+        timeout
+      );
 
     if (!apiResponse.ok) {
       throw new Error(
-        `Download API Error: ${apiResponse.status}`
+        `Download API HTTP ${apiResponse.status}`
       );
     }
 
@@ -104,32 +222,73 @@ async function execute(context) {
     // 📥 READ API RESPONSE
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-    const data =
-      await apiResponse.json();
+    let data;
+
+    try {
+      data =
+        await apiResponse.json();
+    } catch {
+      throw new Error(
+        "Download API pa retounen JSON valid."
+      );
+    }
 
     const result =
-      data.result ||
-      data.data ||
+      data?.result ??
+      data?.data ??
       data;
 
+    if (
+      !result ||
+      typeof result !== "object"
+    ) {
+      throw new Error(
+        "Download API pa retounen yon rezilta valid."
+      );
+    }
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // 📝 MEDIA INFORMATION
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
     const title =
-      result.title ||
-      result.name ||
-      "TOPFEROS DOWNLOAD";
+      String(
+        result.title ||
+        result.name ||
+        "TOPFEROS DOWNLOAD"
+      ).trim();
 
     const mediaUrl =
       result.downloadUrl ||
+      result.mediaUrl ||
       result.url ||
-      result.mediaUrl;
+      result.link;
 
     const mediaType =
-      result.type ||
-      result.mediaType ||
-      "document";
+      String(
+        result.type ||
+        result.mediaType ||
+        result.mimeType ||
+        "document"
+      )
+        .toLowerCase()
+        .trim();
 
-    if (!mediaUrl) {
+    const mimetype =
+      result.mimetype ||
+      result.mimeType ||
+      "application/octet-stream";
+
+    const fileName =
+      cleanFileName(
+        result.fileName ||
+        result.filename ||
+        title
+      );
+
+    if (!isValidUrl(mediaUrl)) {
       throw new Error(
-        "Download API pa retounen yon URL medya."
+        "Download API pa retounen yon URL medya valid."
       );
     }
 
@@ -141,7 +300,14 @@ async function execute(context) {
       config.bot?.developer ||
       "TOPFEROS TECH";
 
-    if (mediaType === "audio") {
+    const caption =
+      `📥 *${title}*\n\n` +
+      `🚀 ${developer}`;
+
+    if (
+      mediaType === "audio" ||
+      mediaType.startsWith("audio/")
+    ) {
       await sock.sendMessage(
         chatId,
         {
@@ -150,22 +316,26 @@ async function execute(context) {
           },
 
           mimetype:
-            result.mimetype ||
-            "audio/mpeg",
+            mimetype.startsWith("audio/")
+              ? mimetype
+              : "audio/mpeg",
 
           fileName:
-            result.fileName ||
-            `${title}.mp3`,
+            fileName.endsWith(".mp3")
+              ? fileName
+              : `${fileName}.mp3`,
 
-          caption:
-            `📥 *${title}*\n\n🚀 ${developer}`
+          caption
         },
         {
           quoted: message
         }
       );
 
-    } else if (mediaType === "video") {
+    } else if (
+      mediaType === "video" ||
+      mediaType.startsWith("video/")
+    ) {
       await sock.sendMessage(
         chatId,
         {
@@ -173,15 +343,22 @@ async function execute(context) {
             url: mediaUrl
           },
 
-          caption:
-            `📥 *${title}*\n\n🚀 ${developer}`
+          mimetype:
+            mimetype.startsWith("video/")
+              ? mimetype
+              : "video/mp4",
+
+          caption
         },
         {
           quoted: message
         }
       );
 
-    } else if (mediaType === "image") {
+    } else if (
+      mediaType === "image" ||
+      mediaType.startsWith("image/")
+    ) {
       await sock.sendMessage(
         chatId,
         {
@@ -189,8 +366,12 @@ async function execute(context) {
             url: mediaUrl
           },
 
-          caption:
-            `📥 *${title}*\n\n🚀 ${developer}`
+          mimetype:
+            mimetype.startsWith("image/")
+              ? mimetype
+              : "image/jpeg",
+
+          caption
         },
         {
           quoted: message
@@ -205,16 +386,11 @@ async function execute(context) {
             url: mediaUrl
           },
 
-          mimetype:
-            result.mimetype ||
-            "application/octet-stream",
+          mimetype,
 
-          fileName:
-            result.fileName ||
-            title,
+          fileName,
 
-          caption:
-            `📥 *${title}*\n\n🚀 ${developer}`
+          caption
         },
         {
           quoted: message
@@ -222,30 +398,20 @@ async function execute(context) {
       );
     }
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // ⏸️ STOP PROCESSING
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-    await sock.sendPresenceUpdate(
-      "paused",
-      chatId
-    );
-
   } catch (error) {
     console.error(
       "❌ DOWNLOAD ERROR:",
-      error.message
+      error?.stack ||
+      error?.message ||
+      error
     );
 
-    await sock.sendPresenceUpdate(
-      "paused",
-      chatId
-    );
-
-    await sock.sendMessage(
-      chatId,
-      {
-        text: `╭━━━〔 📥 DOWNLOAD 〕━━━╮
+    try {
+      await sock.sendMessage(
+        chatId,
+        {
+          text:
+`╭━━━〔 📥 DOWNLOAD 〕━━━╮
 ┃
 ┃ ❌ Download lan echwe.
 ┃
@@ -255,11 +421,20 @@ async function execute(context) {
 ╰━━━━━━━━━━━━━━━━━━━━╯
 
 🚀 ${config.bot?.developer || "TOPFEROS TECH"}`
-      },
-      {
-        quoted: message
-      }
-    );
+        },
+        {
+          quoted: message
+        }
+      );
+    } catch (_) {}
+
+  } finally {
+    try {
+      await sock.sendPresenceUpdate(
+        "paused",
+        chatId
+      );
+    } catch (_) {}
   }
 }
 
@@ -269,8 +444,16 @@ async function execute(context) {
 
 module.exports = {
   name: "download",
-  aliases: ["dl"],
-  description: "Telechaje yon medya oswa fichye apati yon URL.",
-  usage: ".download <url>",
+
+  aliases: [
+    "dl"
+  ],
+
+  description:
+    "Telechaje yon medya oswa fichye apati yon URL.",
+
+  usage:
+    ".download <url>",
+
   execute
 };
