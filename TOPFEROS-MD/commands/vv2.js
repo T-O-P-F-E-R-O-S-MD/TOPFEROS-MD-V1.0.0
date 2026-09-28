@@ -1,92 +1,98 @@
 "use strict";
 
-const status = require("./status");
+const viewonce = require("./viewonce");
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 👁️ TOPFEROS MD — VV2 COMMAND
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// .vv2
+// → Pran View Once ki nan reply la
+// → Dekode li
+// → Voye li nan MENM CHAT la
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 async function execute(context) {
   const {
     sock,
     message
-  } = context;
+  } = context || {};
 
   if (!sock || !message) {
     return;
   }
 
+  const chatId =
+    message?.key?.remoteJid;
+
+  if (!chatId) {
+    return;
+  }
+
   try {
     const processed =
-      await status.handleVV2(
+      await viewonce.handleVV2(
         context
       );
 
-    if (!processed) {
-      const chatId =
-        message?.key?.remoteJid;
-
-      if (!chatId) {
-        return;
-      }
-
-      await sock.sendMessage(
-        chatId,
-        {
-          text:
-            "❌ Mwen pa jwenn yon View Once pou trete.\n\n" +
-            "👁️ Reponn sou yon View Once epi itilize .vv2."
-        },
-        {
-          quoted: message
-        }
+    if (processed) {
+      console.log(
+        `[VV2] View Once decoded | chat=${chatId}`
       );
 
       return;
     }
 
-    console.log(
-      "✅ VV2: View Once trete avèk siksè."
+    await sock.sendMessage(
+      chatId,
+      {
+        text:
+          "❌ Mwen pa jwenn yon View Once pou dekode.\n\n" +
+          "👁️ Reply sou View Once la epi itilize:\n" +
+          "`.vv2`"
+      },
+      {
+        quoted: message
+      }
     );
 
   } catch (error) {
+
     console.error(
       "❌ VV2 ERROR:",
+      error?.stack ||
+      error?.message ||
       error
     );
 
-    const chatId =
-      message?.key?.remoteJid;
-
-    if (chatId) {
+    try {
       await sock.sendMessage(
         chatId,
         {
           text:
-            "❌ Gen yon erè pandan m t ap trete View Once la."
+            "❌ Gen yon erè pandan m t ap dekode View Once la."
         },
         {
           quoted: message
         }
       );
-    }
+    } catch (_) {}
   }
 }
 
+
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 📦 EXPORT COMMAND
+// 📦 EXPORT
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 module.exports = {
   name: "vv2",
 
   aliases: [
-    "vv",
-    "viewonce"
+    "vv"
   ],
 
   description:
-    "Trete yon View Once ki disponib pou bot la.",
+    "Dekode yon View Once nan menm chat la.",
 
   usage:
     ".vv2",
