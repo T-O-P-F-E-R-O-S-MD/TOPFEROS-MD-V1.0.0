@@ -84,10 +84,8 @@ number:
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 links: {
-
-// 📢 WhatsApp Channel
-channel:
-  "https://whatsapp.com/channel/0029Vb8mtECL7UVSGYQOdm13",
+  channel: "https://whatsapp.com/channel/0029Vb98522IXnlxdL8Sxj2m"
+},
 
 // 👥 WhatsApp Group
 group:
