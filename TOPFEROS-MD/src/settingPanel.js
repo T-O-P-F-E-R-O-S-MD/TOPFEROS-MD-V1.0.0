@@ -1251,8 +1251,6 @@ function applySettings(
 
  }
 
-  }
-
 
   updateMode(session);
 
