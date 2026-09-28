@@ -1098,7 +1098,7 @@ function setSetting(
   if (
     key === "antiDeleteSameChat" &&
     session.settings.antiDeleteSameChat
-  ) {
+  ) 
 
     session.settings.antiDeleteDM =
       false;
