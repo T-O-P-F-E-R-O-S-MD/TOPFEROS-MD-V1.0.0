@@ -1098,7 +1098,7 @@ function setSetting(
   if (
     key === "antiDeleteSameChat" &&
     session.settings.antiDeleteSameChat
-  ) 
+  ) {
 
     session.settings.antiDeleteDM =
       false;
@@ -1114,21 +1114,12 @@ function setSetting(
     session.settings.antiDeleteSameChat =
       false;
 
-
   }
 
-if (
-  key === "antiDeleteSameChat" &&
-  session.settings.antiDeleteSameChat
-) {
 
-  session.settings.antiDeleteDM =
-    false;
-
-}
-
-
-  updateMode(session);
+  updateMode(
+    session
+  );
 
 
   session.updatedAt =
