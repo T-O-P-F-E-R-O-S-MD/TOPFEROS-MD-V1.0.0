@@ -6,8 +6,7 @@ const aliases = new Map();
 
 const HELPERS = new Set([
   "index.js",
-  "welcome.js",
-  "goodbye.js"
+  "welcome.js"
 ]);
 
 function loadCommands() {
