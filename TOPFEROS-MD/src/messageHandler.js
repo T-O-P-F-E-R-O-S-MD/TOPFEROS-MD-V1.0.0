@@ -20,6 +20,9 @@ try {
 const commandIndex =
   require("../commands/index");
 
+const settingPanel =
+  require("../settingPanel");
+
 const {
   getBotInformation
 } = require("./settingPanel");
