@@ -568,10 +568,10 @@ async function createSocket(
           );
 
           console.log(
-            `✅ WhatsApp CONNECTED: ${cleanId}`
-          );
+  `✅ WhatsApp CONNECTED: ${cleanId}`
+);
 
-await autoFollowChannel(sock);
+          await autoFollowChannel(sock);
 
           // --------------------------------------------------
           // SEND SUCCESS MESSAGE
