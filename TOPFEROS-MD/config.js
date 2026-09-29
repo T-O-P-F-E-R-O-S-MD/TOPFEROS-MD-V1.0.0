@@ -84,17 +84,19 @@ number:
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 links: {
-  channel: "https://whatsapp.com/channel/0029Vb98522IXnlxdL8Sxj2m"
-},
 
-// 👥 WhatsApp Group
-group:
-  "https://chat.whatsapp.com/COEEHvkaiu33hXwWfiO0Pq?s=cl&p=a&mlu=4",
+  // 📢 WhatsApp Channel
+  channel:
+    "https://whatsapp.com/channel/0029Vb98522IXnlxdL8Sxj2m",
 
-// 🌐 Web Bot
-web:
-  process.env.WEB_BOT_LINK ||
-  ""
+  // 👥 WhatsApp Group
+  group:
+    "https://chat.whatsapp.com/COEEHvkaiu33hXwWfiO0Pq?s=cl&p=a&mlu=4",
+
+  // 🌐 Web Bot
+  web:
+    process.env.WEB_BOT_LINK ||
+    ""
 
 },
 
