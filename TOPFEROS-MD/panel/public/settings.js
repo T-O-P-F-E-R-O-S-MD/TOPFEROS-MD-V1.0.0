@@ -145,6 +145,7 @@ const groupCloseTimeInput =
 const groupOpenTimeInput =
   document.getElementById(
     "groupOpenTime"
+  );
 
 const groupBioEnabledInput =
   document.getElementById(
