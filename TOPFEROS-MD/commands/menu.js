@@ -231,8 +231,10 @@ async function execute(context) {
 
 *━━━━━━━━━━━━━━━━━━━━*
 
-</> ᴘᴏᴡᴇʀᴇᴅ ʙʏ TOPFEROS MD TECH 🦁
+🌐 *WEB BOT CONECT* :
+${config?.links?.web || "Web Bot link pa configuré"}
 
+</> ᴘᴏᴡᴇʀᴇᴅ ʙʏ TOPFEROS MD TECH 🦁
 `;
 
   // ==========================================================
