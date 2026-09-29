@@ -145,6 +145,15 @@ const groupCloseTimeInput =
 const groupOpenTimeInput =
   document.getElementById(
     "groupOpenTime"
+
+const groupBioEnabledInput =
+  document.getElementById(
+    "groupBioEnabled"
+  );
+
+const groupBioTextInput =
+  document.getElementById(
+    "groupBioText"
   );
 
 
@@ -180,6 +189,7 @@ const settingNames = [
 
   "groupClose",
   "groupOpen"
+  "groupBioEnabled"
 
 ];
 
