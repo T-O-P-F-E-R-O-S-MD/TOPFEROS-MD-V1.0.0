@@ -675,7 +675,8 @@ async function sendCommandError(
   sock,
   chatId,
   commandName,
-  error
+  error,
+  prefix = "."
 ) {
   try {
 
@@ -691,7 +692,7 @@ async function sendCommandError(
       "┃       ❌ COMMAND ERROR\n" +
       "╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯\n\n" +
 
-      `⚙️ Kòmand: ${PREFIX}${commandName}\n\n` +
+      `⚙️ Kòmand: ${prefix}${commandName}\n\n` +
 
       "Bot la jwenn kòmand lan, men li pa kapab fini ekzekisyon an.\n\n" +
 
@@ -713,7 +714,7 @@ async function sendCommandError(
     );
 
     console.log(
-      `📤 COMMAND ERROR RESPONSE SENT: ${PREFIX}${commandName}`
+      `📤 COMMAND ERROR RESPONSE SENT: ${prefix}${commandName}`
     );
 
   } catch (sendError) {
@@ -724,9 +725,9 @@ async function sendCommandError(
       sendError?.message ||
       sendError
     );
+
   }
 }
-
 // ============================================================
 // UNKNOWN COMMAND RESPONSE
 // ============================================================
