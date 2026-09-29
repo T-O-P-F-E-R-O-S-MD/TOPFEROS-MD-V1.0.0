@@ -189,7 +189,7 @@ const settingNames = [
   "groupAntiDelete",
 
   "groupClose",
-  "groupOpen"
+  "groupOpen",
   "groupBioEnabled"
 
 ];
