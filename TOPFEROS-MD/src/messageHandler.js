@@ -23,6 +23,7 @@ const commandIndex =
 const settingPanel =
   require("./settingPanel");
 
+const {
   getBotInformation
 } = require("./settingPanel");
 
