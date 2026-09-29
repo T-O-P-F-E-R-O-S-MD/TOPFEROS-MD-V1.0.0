@@ -1218,39 +1218,39 @@ async function loadSettings() {
 
 
     // ========================================================
-    // SETTINGS
-    // ========================================================
+// SETTINGS
+// ========================================================
 
-    settings =
-      result.settings ||
-      {};
-
-
-    getSwitches()
-      .forEach(
-        input => {
-
-          const name =
-            input.dataset.setting;
+settings =
+  result.settings ||
+  {};
 
 
-          if (
-            settingNames.includes(
-              name
-            ) &&
-            Object.prototype.hasOwnProperty.call(
-              settings,
-              name
-            )
-          ) {
+getSwitches()
+  .forEach(
+    input => {
 
-            input.checked =
-              settings[name] === true;
+      const name =
+        input.dataset.setting;
 
-          }
 
-        }
-      );
+      if (
+        settingNames.includes(
+          name
+        ) &&
+        Object.prototype.hasOwnProperty.call(
+          settings,
+          name
+        )
+      ) {
+
+        input.checked =
+          settings[name] === true;
+
+      }
+
+    }
+  );
 
 
 if (
@@ -1295,30 +1295,55 @@ if (
     "";
 
 }
-    
+
+
+// ========================================================
+// 📜 GROUP BIO / PRINSIP
+// ========================================================
+
+if (
+  groupBioEnabledInput
+) {
+
+  groupBioEnabledInput.checked =
+    settings.groupBioEnabled === true;
+
+}
+
+
+if (
+  groupBioTextInput
+) {
+
+  groupBioTextInput.value =
+    settings.groupBioText ||
+    "";
+
+}
+
 
 enforceAntiDeleteDestination();
 
 
-    return true;
+return true;
 
 
-  } catch (error) {
+} catch (error) {
 
-    console.error(
-      "❌ LOAD SETTINGS ERROR:",
-      error
-    );
-
-
-    showMessage(
-      "❌ Erè pandan chajman settings yo."
-    );
+  console.error(
+    "❌ LOAD SETTINGS ERROR:",
+    error
+  );
 
 
-    return false;
+  showMessage(
+    "❌ Erè pandan chajman settings yo."
+  );
 
-  }
+
+  return false;
+
+}
 
 }
 
@@ -1341,11 +1366,13 @@ function getSwitches() {
 // ============================================================
 // 📤 COLLECT SETTINGS
 // ============================================================
+
 function collectSettings() {
 
   enforceAntiDeleteDestination();
 
   const collected = {};
+
 
   // ========================================================
   // ⚙️ SWITCH SETTINGS
@@ -1404,829 +1431,16 @@ function collectSettings() {
       : "";
 
 
+  // ========================================================
+  // 📜 GROUP BIO / PRINSIP
+  // ========================================================
+
+  collected.groupBioText =
+    groupBioTextInput
+      ? groupBioTextInput.value.trim()
+      : "";
+
+
   return collected;
 
 }
-
-if (
-  groupBioEnabledInput
-) {
-
-  groupBioEnabledInput.checked =
-    settings.groupBioEnabled === true;
-
-}
-
-if (
-  groupBioTextInput
-) {
-
-  groupBioTextInput.value =
-    settings.groupBioText ||
-    "";
-
-}
-
-// ============================================================
-// 🗑️ ANTI DELETE DESTINATION
-// ============================================================
-
-function enforceAntiDeleteDestination() {
-
-  const sameChat =
-    document.querySelector(
-      'input[data-setting="antiDeleteSameChat"]'
-    );
-
-  const dmBot =
-    document.querySelector(
-      'input[data-setting="antiDeleteDM"]'
-    );
-
-
-  if (
-    !sameChat ||
-    !dmBot
-  ) {
-
-    return;
-
-  }
-
-
-  if (
-    sameChat.checked &&
-    dmBot.checked
-  ) {
-
-    dmBot.checked =
-      false;
-
-  }
-
-}
-
-
-// ============================================================
-// 🔄 SETUP ANTI DELETE
-// ============================================================
-
-function setupAntiDeleteDestination() {
-
-  const sameChat =
-    document.querySelector(
-      'input[data-setting="antiDeleteSameChat"]'
-    );
-
-  const dmBot =
-    document.querySelector(
-      'input[data-setting="antiDeleteDM"]'
-    );
-
-
-  if (
-    !sameChat ||
-    !dmBot
-  ) {
-
-    return;
-
-  }
-
-
-  sameChat.addEventListener(
-    "change",
-    () => {
-
-      if (
-        sameChat.checked
-      ) {
-
-        dmBot.checked =
-          false;
-
-      }
-
-    }
-  );
-
-
-  dmBot.addEventListener(
-    "change",
-    () => {
-
-      if (
-        dmBot.checked
-      ) {
-
-        sameChat.checked =
-          false;
-
-      }
-
-    }
-  );
-
-}
-
-
-// ============================================================
-// 🤖 BOT INFORMATION
-// ============================================================
-
-function collectBotInformation() {
-
-  return {
-
-    name:
-      botNameInput
-        ? botNameInput.value.trim()
-        : "",
-
-    age:
-      botAgeInput
-        ? Number(
-            botAgeInput.value
-          )
-        : 0,
-
-    prefix:
-      botPrefixInput
-        ? botPrefixInput.value.trim()
-        : "."
-
-  };
-
-}
-
-
-// ============================================================
-// 🔎 VALIDATE BOT INFORMATION
-// ============================================================
-
-function validateBotInformation(
-  bot
-) {
-
-  if (
-    !bot.name
-  ) {
-
-    showMessage(
-      "❌ Nom Bot pa ka vid."
-    );
-
-    botNameInput?.focus();
-
-    return false;
-
-  }
-
-
-  if (
-    !Number.isFinite(
-      bot.age
-    ) ||
-    bot.age < 0
-  ) {
-
-    showMessage(
-      "❌ Âge Bot la pa valid."
-    );
-
-    botAgeInput?.focus();
-
-    return false;
-
-  }
-
-
-  if (
-    !bot.prefix
-  ) {
-
-    showMessage(
-      "❌ Prefix pa ka vid."
-    );
-
-    botPrefixInput?.focus();
-
-    return false;
-
-  }
-
-
-  return true;
-
-}
-
-
-// ============================================================
-// 🔐 VERIFY CURRENT SESSION
-// ============================================================
-
-async function verifySession() {
-
-  if (
-    !sessionId
-  ) {
-
-    return false;
-
-  }
-
-
-  try {
-
-    const response =
-      await fetch(
-        `/api/auth?session=${encodeURIComponent(
-          sessionId
-        )}`,
-        {
-          method: "GET",
-          cache: "no-store"
-        }
-      );
-
-
-    if (
-      !response.ok
-    ) {
-
-      return false;
-
-    }
-
-
-    const result =
-      await response.json();
-
-
-    return (
-      result.success === true &&
-      result.connected === true
-    );
-
-  } catch (error) {
-
-    console.error(
-      "❌ SETTINGS AUTH ERROR:",
-      error
-    );
-
-    return false;
-
-  }
-
-}
-
-
-// ============================================================
-// 🔒 DISABLE SAVE
-// ============================================================
-
-function disableSave() {
-
-  if (
-    saveButton
-  ) {
-
-    saveButton.disabled =
-      true;
-
-  }
-
-}
-
-
-// ============================================================
-// 🔓 ENABLE SAVE
-// ============================================================
-
-function enableSave() {
-
-  if (
-    saveButton
-  ) {
-
-    saveButton.disabled =
-      false;
-
-  }
-
-}
-
-
-// ============================================================
-// 💾 SAVE SETTINGS
-// ============================================================
-
-async function saveSettings() {
-
-  showMessage("");
-
-
-  const authenticated =
-    await verifySession();
-
-
-  if (
-    !authenticated
-  ) {
-
-    showMessage(
-      "🔴 Bot la dekonekte oswa session la pa valid."
-    );
-
-    disableSave();
-
-    return;
-
-  }
-
-
-  const bot =
-    collectBotInformation();
-
-
-  if (
-    !validateBotInformation(
-      bot
-    )
-  ) {
-
-    return;
-
-  }
-
-
-  const collectedSettings =
-    collectSettings();
-
-
-  if (
-    saveButton
-  ) {
-
-    saveButton.disabled =
-      true;
-
-    saveButton.textContent =
-      "Saving...";
-
-  }
-
-
-  try {
-
-    const response =
-      await fetch(
-        "/api/settings",
-        {
-          method: "POST",
-
-          headers: {
-            "Content-Type":
-              "application/json"
-          },
-
-          body:
-            JSON.stringify({
-              sessionId,
-
-              bot,
-
-              settings:
-                collectedSettings
-
-            })
-
-        }
-      );
-
-
-    let result = {};
-
-    try {
-
-      result =
-        await response.json();
-
-    } catch {
-
-      result =
-        {};
-
-    }
-
-
-    if (
-      !response.ok ||
-      result.success !== true
-    ) {
-
-      showMessage(
-        result.message ||
-        "❌ Settings yo pa t sove."
-      );
-
-      return;
-
-    }
-
-
-    settings =
-      collectedSettings;
-
-
-    botInformation =
-      bot;
-
-
-    showMessage(
-      "✅ Settings yo sove avèk siksè.",
-      true
-    );
-
-
-  } catch (error) {
-
-    console.error(
-      "❌ SAVE SETTINGS ERROR:",
-      error
-    );
-
-
-    showMessage(
-      "❌ Pa kapab kontakte server panel la."
-    );
-
-
-  } finally {
-
-    if (
-      saveButton
-    ) {
-
-      saveButton.disabled =
-        false;
-
-      saveButton.textContent =
-        "SAVE ✅";
-
-    }
-
-  }
-
-}
-
-
-// ============================================================
-// 🖱️ SAVE BUTTON
-// ============================================================
-
-if (
-  saveButton
-) {
-
-  saveButton.addEventListener(
-    "click",
-    saveSettings
-  );
-
-}
-
-
-// ============================================================
-// 🖼️ SETUP LOGO
-// ============================================================
-
-function setupLogo() {
-
-  if (
-    !botLogo
-  ) {
-
-    return;
-
-  }
-
-
-  botLogo.src =
-    LOGO_URL;
-
-
-  botLogo.alt =
-    "TOPFEROS MD V1.0.0";
-
-
-  botLogo.style.display =
-    "block";
-
-
-  botLogo.onerror =
-    () => {
-
-      console.warn(
-        "⚠️ Logo pa kapab chaje:",
-        LOGO_URL
-      );
-
-    };
-
-}
-
-
-// ============================================================
-// 🦶 SETUP FOOTER
-// ============================================================
-
-function setupFooter() {
-
-  let footer =
-    document.querySelector(
-      ".footer"
-    );
-
-
-  if (
-    !footer
-  ) {
-
-    footer =
-      document.createElement(
-        "div"
-      );
-
-    footer.className =
-      "footer";
-
-
-    document.body.appendChild(
-      footer
-    );
-
-  }
-
-
-  /*
-   * ⚠️ TAG OFFISYÈL LA
-   */
-
-  footer.innerHTML = `
-    <div class="footer-line">
-      =========================
-    </div>
-
-    <div class="footer-text">
-      🦁 TECH BY TOPFEROS MD
-    </div>
-
-    <div class="footer-line">
-      =========================
-    </div>
-  `;
-
-
-  footer.style.width =
-    "100%";
-
-  footer.style.textAlign =
-    "center";
-
-  footer.style.marginTop =
-    "40px";
-
-  footer.style.padding =
-    "20px 10px";
-
-  footer.style.boxSizing =
-    "border-box";
-
-  footer.style.fontWeight =
-    "600";
-
-  footer.style.fontSize =
-    "14px";
-
-  footer.style.lineHeight =
-    "1.8";
-
-}
-
-
-// ============================================================
-// 🔄 MONITOR SESSION
-// ============================================================
-
-async function monitorSettings() {
-
-  /*
-   * Pa fè monitor pandan login.
-   */
-
-  if (
-    settingsPanel?.classList.contains(
-      "hidden"
-    )
-  ) {
-
-    return;
-
-  }
-
-
-  if (
-    !sessionId
-  ) {
-
-    disableSave();
-
-    return;
-
-  }
-
-
-  const authenticated =
-    await verifySession();
-
-
-  if (
-    !authenticated
-  ) {
-
-    showMessage(
-      "🔴 Bot la dekonekte oswa session la ekspire."
-    );
-
-    disableSave();
-
-    return;
-
-  }
-
-
-  enableSave();
-
-}
-
-
-// ============================================================
-// 🚀 INITIALIZE
-// ============================================================
-
-async function initSettings() {
-
-  setupLogo();
-
-  setupFooter();
-
-  setupAntiDeleteDestination();
-
-
-  /*
-   * Number input
-   */
-
-  if (
-    settingsNumberInput
-  ) {
-
-    settingsNumberInput.addEventListener(
-      "input",
-      event => {
-
-        event.target.value =
-          event.target.value
-            .replace(
-              /\D/g,
-              ""
-            );
-
-      }
-    );
-
-  }
-
-
-  /*
-   * Code input
-   */
-
-  if (
-    settingsCodeInput
-  ) {
-
-    settingsCodeInput.addEventListener(
-      "input",
-      event => {
-
-        event.target.value =
-          event.target.value
-            .toUpperCase()
-            .replace(
-              /[^A-Z0-9]/g,
-              ""
-            )
-            .slice(
-              0,
-              6
-            );
-
-      }
-    );
-
-
-    settingsCodeInput.addEventListener(
-      "keydown",
-      event => {
-
-        if (
-          event.key ===
-          "Enter"
-        ) {
-
-          verifySettings();
-
-        }
-
-      }
-    );
-
-  }
-
-
-  /*
-   * ========================================================
-   * SI USER DEJA CHWAZI LANG ANVAN
-   * ========================================================
-   */
-
-  if (
-    localStorage.getItem(
-      "topferos_settings_language"
-    )
-  ) {
-
-    currentLanguage =
-      localStorage.getItem(
-        "topferos_settings_language"
-      );
-
-  }
-
-
-  /*
-   * Premye ekran an toujou
-   * Language Panel la si pa gen
-   * verification deja fèt.
-   */
-
-  showLanguageScreen();
-
-
-  /*
-   * Si yon language deja chwazi,
-   * tradui Language Panel la tou.
-   */
-
-  await translatePanelUI();
-
-}
-
-
-// ============================================================
-// 🌐 GLOBAL FUNCTIONS
-// ============================================================
-
-window.selectSettingsLanguage =
-  selectSettingsLanguage;
-
-window.verifySettings =
-  verifySettings;
-
-window.saveSettings =
-  saveSettings;
-
-
-// ============================================================
-// 🚀 START
-// ============================================================
-
-initSettings();
-
-
-// ============================================================
-// ⏱️ AUTO CONNECTION CHECK
-// ============================================================
-
-setInterval(
-  monitorSettings,
-  5000
-);
-
-
-// ╔════════════════════════════════════════════════════╗
-// ║             🦁 TECH BY TOPFEROS MD               ║
-// ╚════════════════════════════════════════════════════╝
