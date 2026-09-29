@@ -1408,6 +1408,24 @@ function collectSettings() {
 
 }
 
+if (
+  groupBioEnabledInput
+) {
+
+  groupBioEnabledInput.checked =
+    settings.groupBioEnabled === true;
+
+}
+
+if (
+  groupBioTextInput
+) {
+
+  groupBioTextInput.value =
+    settings.groupBioText ||
+    "";
+
+}
 
 // ============================================================
 // 🗑️ ANTI DELETE DESTINATION
