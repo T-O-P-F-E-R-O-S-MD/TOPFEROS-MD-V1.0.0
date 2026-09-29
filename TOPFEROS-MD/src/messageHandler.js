@@ -1090,11 +1090,12 @@ const context = {
       );
 
       await sendCommandError(
-        sock,
-        chatId,
-        commandName,
-        commandError
-      );
+      sock,
+      chatId,
+      commandName,
+      commandError,
+      PREFIX
+    );
     }
 
   } catch (error) {
