@@ -326,19 +326,21 @@ async function sendAccessMessage(
           nativeFlowMessage: {
             buttons: [
               {
-                name: "cta_copy",
+                {
+  name: "cta_copy",
 
-                buttonParamsJson:
-                  JSON.stringify({
-                    display_text:
-                      "📋 Copy Password ✅",
+  buttonParamsJson:
+    JSON.stringify({
+      display_text:
+        "📋 COPY CODE",
 
-                    id:
-                      "copy_settings_password",
+      id:
+        "copy_settings_password",
 
-                    copy_code:
-                      code
-                  })
+      copy_code:
+        code
+    })
+}
               }
             ]
           }
