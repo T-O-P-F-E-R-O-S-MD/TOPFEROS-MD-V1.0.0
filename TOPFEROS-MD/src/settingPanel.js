@@ -48,6 +48,10 @@ adminGroupLink: "",
 groupCloseTime: "",
 groupOpenTime: "",
 
+// 📜 GROUP BIO / PRINSIP
+groupBioEnabled: false,
+groupBioText: "",
+
 aiChat: false
 
 };
@@ -1185,18 +1189,19 @@ function applySettings(
   // ========================================================
 
   if (
-    key === "adminGroupNumber" ||
-    key === "adminGroupLink" ||
-    key === "groupCloseTime" ||
-    key === "groupOpenTime"
-  ) {
+  key === "adminGroupNumber" ||
+  key === "adminGroupLink" ||
+  key === "groupCloseTime" ||
+  key === "groupOpenTime" ||
+  key === "groupBioText"
+) {
 
-    session.settings[key] =
-      String(
-        newSettings[key] ?? ""
-      ).trim();
+  session.settings[key] =
+    String(
+      newSettings[key] ?? ""
+    ).trim();
 
-    continue;
+  continue;
 
   }
 
