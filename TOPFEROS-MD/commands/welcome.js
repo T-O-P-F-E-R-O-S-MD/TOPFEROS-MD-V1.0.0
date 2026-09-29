@@ -210,6 +210,59 @@ and treat every member with respect.
 ╰━━━〔 🦁 TOPFEROS MD TECH 🐑 〕━━━╯`;
 }
 
+async function sendGroupBio(
+  sock,
+  groupJid
+) {
+  try {
+
+    const session =
+      settingPanel.getSessionBySocket?.(
+        sock
+      );
+
+    if (!session) {
+      return;
+    }
+
+    const enabled =
+      session.settings?.groupBioEnabled === true;
+
+    const text =
+      String(
+        session.settings?.groupBioText ||
+        ""
+      ).trim();
+
+    if (
+      !enabled ||
+      !text
+    ) {
+      return;
+    }
+
+    await sock.sendMessage(
+      groupJid,
+      {
+        text
+      }
+    );
+
+    console.log(
+      `[GROUP BIO] Sent after welcome | group=${groupJid}`
+    );
+
+  } catch (error) {
+
+    console.error(
+      "[GROUP BIO] Send error:",
+      error?.stack ||
+      error?.message ||
+      error
+    );
+
+  }
+}
 
 /* =====================================================
    👋 SEND WELCOME
