@@ -1,5 +1,8 @@
 "use strict";
 
+const config =
+  require("../config");
+
 const settingPanel =
   require("../src/settingPanel");
 
