@@ -420,31 +420,46 @@ async function sendWelcome(
     }
 
     try {
+
       await sock.sendMessage(
-  groupJid,
-  {
-    text: finalMessage,
+        groupJid,
+        {
+          text: finalMessage,
 
-    mentions: [
-      mention
-    ]
+          mentions: [
+            mention
+          ]
+        }
+      );
+
+      // 📜 BIO / PRINSIP
+      // Voye l apre CHAK welcome
+      await sendGroupBio(
+        sock,
+        groupJid
+      );
+
+      console.log(
+        `[WELCOME] Sent to ${participant} in ${groupJid}`
+      );
+
+    } catch (error) {
+
+      console.error(
+        `[WELCOME] Send error for ${participant}:`,
+        error?.stack ||
+        error?.message ||
+        error
+      );
+
+    }
   }
-);
 
-// 📜 BIO / PRINSIP
-// Voye l apre CHAK welcome
-await sendGroupBio(
-  sock,
-  groupJid
-);
+}
 
-console.log(
-  `[WELCOME] Sent to ${participant} in ${groupJid}`
-);
-
-/* =====================================================
-   📦 EXPORT
-===================================================== */
+// =====================================================
+// 📦 EXPORT
+// =====================================================
 
 module.exports = {
   sendWelcome
