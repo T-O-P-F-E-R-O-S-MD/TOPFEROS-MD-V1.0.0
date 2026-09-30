@@ -415,7 +415,9 @@ const PREFIX =
   );
 
     const runtimeSettings =
-  getRuntimeSettings(sessionId) || {};
+  settingPanel?.getSettings?.(
+    sessionId
+  ) || {};
 
 const features = {
   ...config?.features,
