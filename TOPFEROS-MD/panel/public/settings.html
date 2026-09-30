@@ -1,10 +1,7 @@
 <!DOCTYPE html>
-<html lang="en">
-
+<html lang="ht">
 <head>
-
   <meta charset="UTF-8">
-
   <meta
     name="viewport"
     content="width=device-width, initial-scale=1.0"
@@ -12,1095 +9,665 @@
 
   <title>TOPFEROS MD — Settings</title>
 
-  <link
-    rel="stylesheet"
-    href="/style.css"
-  >
+  <style>
+    * {
+      box-sizing: border-box;
+    }
 
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+      background: #080808;
+      color: #fff;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 520px;
+      margin: auto;
+      padding: 20px;
+    }
+
+    .panel {
+      background: #111;
+      border-radius: 18px;
+      padding: 20px;
+      box-shadow: 0 0 25px rgba(255,255,255,.08);
+    }
+
+    .logo {
+      display: block;
+      width: 110px;
+      height: 110px;
+      object-fit: cover;
+      margin: 0 auto 15px;
+      border-radius: 50%;
+    }
+
+    .title {
+      text-align: center;
+      font-size: 22px;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #aaa;
+      margin-bottom: 25px;
+    }
+
+    .section {
+      margin-top: 25px;
+    }
+
+    .section-title {
+      font-size: 15px;
+      font-weight: bold;
+      padding: 10px 0;
+      border-bottom: 1px solid #292929;
+      margin-bottom: 5px;
+    }
+
+    .setting {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 13px 0;
+      border-bottom: 1px solid #1d1d1d;
+    }
+
+    .setting-info {
+      padding-right: 10px;
+    }
+
+    .setting-name {
+      font-weight: bold;
+      font-size: 14px;
+    }
+
+    .setting-description {
+      color: #888;
+      font-size: 12px;
+      margin-top: 3px;
+    }
+
+    .switch {
+      position: relative;
+      width: 48px;
+      height: 25px;
+      flex-shrink: 0;
+    }
+
+    .switch input {
+      display: none;
+    }
+
+    .slider {
+      position: absolute;
+      inset: 0;
+      background: #333;
+      border-radius: 30px;
+      cursor: pointer;
+      transition: .25s;
+    }
+
+    .slider:before {
+      content: "";
+      position: absolute;
+      width: 19px;
+      height: 19px;
+      left: 3px;
+      top: 3px;
+      background: #fff;
+      border-radius: 50%;
+      transition: .25s;
+    }
+
+    .switch input:checked + .slider {
+      background: #16a34a;
+    }
+
+    .switch input:checked + .slider:before {
+      transform: translateX(23px);
+    }
+
+    .anti-delete-options {
+      display: none;
+      margin: 8px 0 12px 0;
+      padding: 12px;
+      background: #181818;
+      border-radius: 12px;
+    }
+
+    .anti-delete-options.active {
+      display: block;
+    }
+
+    .option {
+      padding: 9px 0;
+      font-size: 13px;
+    }
+
+    .save-btn {
+      width: 100%;
+      border: 0;
+      padding: 14px;
+      margin-top: 25px;
+      border-radius: 12px;
+      background: #16a34a;
+      color: #fff;
+      font-size: 15px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .save-btn:hover {
+      opacity: .9;
+    }
+
+    #settingsPanel {
+      display: none;
+    }
+  </style>
 </head>
-
 
 <body>
 
-  <main class="container">
+<div class="container">
 
+  <!-- =====================================================
+       🔐 ACCESS PANEL
+  ====================================================== -->
 
-    <!-- ============================================================
-         🌐 LANGUAGE PANEL
-         ============================================================ -->
+  <div
+    id="accessPanel"
+    class="panel"
+  >
 
-    <section
-      id="languageScreen"
-      class="card hidden"
+    <img
+      id="accessLogo"
+      class="logo"
+      src="/assets/logo.png"
+      alt="TOPFEROS MD"
     >
 
-      <div class="logo-container">
+    <div class="title">
+      🔐 PANEL ACCESS
+    </div>
 
-        <img
-          class="logo"
-          src="/assets/logo.png"
-          alt="TOPFEROS MD Logo"
-          onerror="this.style.display='none';"
-        >
+    <div class="subtitle">
+      Verify Number + Code
+    </div>
 
-      </div>
+    <div id="accessContent"></div>
 
-
-      <h1>
-        🌐 LANGUAGE
-      </h1>
-
-
-      <p class="message">
-        Choose your language / Choisissez votre langue
-      </p>
-
-
-      <div class="language-buttons">
-
-        <button
-          type="button"
-          class="language-btn"
-          onclick="selectSettingsLanguage('en')"
-        >
-          🇬🇧 English
-        </button>
-
-
-        <button
-          type="button"
-          class="language-btn"
-          onclick="selectSettingsLanguage('fr')"
-        >
-          🇫🇷 Français
-        </button>
-
-
-        <button
-          type="button"
-          class="language-btn"
-          onclick="selectSettingsLanguage('es')"
-        >
-          🇪🇸 Español
-        </button>
-
-      </div>
-
-
-      <div class="footer">
-        Made in TOPFEROS TECH
-      </div>
-
-    </section>
-
-
-
-    <!-- ============================================================
-         🔐 SETTINGS LOGIN
-         ============================================================ -->
-
-    <section
-      id="loginScreen"
-      class="card hidden"
-    >
-
-      <div class="logo-container">
-
-        <img
-          class="logo"
-          src="/assets/logo.png"
-          alt="TOPFEROS MD Logo"
-          onerror="this.style.display='none';"
-        >
-
-      </div>
-
-
-      <h1 id="settingsLoginTitle">
-        🔐 SETTINGS
-      </h1>
-
-
-      <div class="settings-box">
-
-
-        <!-- NUMBER -->
-
-        <div class="info-field">
-
-          <label
-            id="settingsNumberLabel"
-            for="settingsNumber"
-          >
-            Number:
-          </label>
-
-
-          <input
-            id="settingsNumber"
-            type="tel"
-            inputmode="numeric"
-            autocomplete="off"
-            placeholder="Number"
-          >
-
-        </div>
-
-
-
-        <!-- SETTINGS CODE -->
-
-        <div class="info-field">
-
-          <label
-            id="settingsCodeLabel"
-            for="settingsCode"
-          >
-            Settings Code:
-          </label>
-
-
-          <input
-            id="settingsCode"
-            type="text"
-            maxlength="6"
-            autocomplete="one-time-code"
-            placeholder="6-character code"
-          >
-
-        </div>
-
-      </div>
-
-
-
-      <!-- VERIFY -->
-
-      <button
-        id="verifyButton"
-        class="next-button"
-        type="button"
-        onclick="verifySettings()"
-      >
-        🔓 VERIFY
-      </button>
-
-
-      <div
-        id="loginMessage"
-        class="message"
-      ></div>
-
-
-      <div class="footer">
-        Made in TOPFEROS TECH
-      </div>
-
-    </section>
-
-
-
-    <!-- ============================================================
-         ⚙️ SETTINGS PANEL
-         ============================================================ -->
-
-    <section
-      id="settingsPanel"
-      class="card settings-screen hidden"
-    >
-
-
-      <!-- ==========================================================
-           🖼️ TOPFEROS MD LOGO
-           ========================================================== -->
-
-      <div class="logo-container">
-
-        <img
-          id="botLogo"
-          class="logo"
-          src="/assets/logo.png"
-          alt="TOPFEROS MD Logo"
-          onerror="
-            console.error(
-              'Logo TOPFEROS MD pa jwenn: /assets/logo.png'
-            );
-            this.style.display='none';
-          "
-        >
-
-      </div>
-
-
-
-      <!-- ==========================================================
-           🤖 BOT INFORMATION
-           ========================================================== -->
-
-      <div class="settings-title">
-
-        <h1>
-          🤖 BOT INFORMATION
-        </h1>
-
-      </div>
-
-
-      <div class="settings-box">
-
-
-        <!-- BOT NAME -->
-
-        <div class="info-field">
-
-          <label for="botName">
-            Nom Bot:
-          </label>
-
-
-          <input
-            id="botName"
-            type="text"
-            value="TOPFEROS MD"
-            autocomplete="off"
-          >
-
-        </div>
-
-
-
-        <!-- AGE -->
-
-        <div class="info-field">
-
-          <label for="botAge">
-            Âge:
-          </label>
-
-
-          <input
-            id="botAge"
-            type="number"
-            value="24"
-            min="0"
-            autocomplete="off"
-          >
-
-        </div>
-
-
-
-        <!-- PREFIX -->
-
-        <div class="info-field">
-
-          <label for="botPrefix">
-            Prefix:
-          </label>
-
-
-          <input
-            id="botPrefix"
-            type="text"
-            value="."
-            maxlength="5"
-            autocomplete="off"
-          >
-
-        </div>
-
-      </div>
-
-
-
-      <!-- ==========================================================
-           ⚙️ BOT SETTINGS
-           ========================================================== -->
-
-      <div class="settings-box">
-
-        <h3>
-          ⚙️ BOT SETTINGS
-        </h3>
-
-
-        <!-- PUBLIC MODE -->
-
-        <div class="setting-row">
-
-          <div>
-            <strong>
-              Mode Public
-            </strong>
-          </div>
-
-
-          <label class="switch">
-
-            <input
-              type="checkbox"
-              data-setting="publicMode"
-            >
-
-            <span class="slider"></span>
-
-          </label>
-
-        </div>
-
-
-
-        <!-- PRIVATE MODE -->
-
-        <div class="setting-row">
-
-          <div>
-            <strong>
-              Mode Private
-            </strong>
-          </div>
-
-
-          <label class="switch">
-
-            <input
-              type="checkbox"
-              data-setting="privateMode"
-            >
-
-            <span class="slider"></span>
-
-          </label>
-
-        </div>
-
-
-
-        <!-- ALWAYS ONLINE -->
-
-        <div class="setting-row">
-
-          <div>
-            <strong>
-              Always Online
-            </strong>
-          </div>
-
-
-          <label class="switch">
-
-            <input
-              type="checkbox"
-              data-setting="alwaysOnline"
-            >
-
-            <span class="slider"></span>
-
-          </label>
-
-        </div>
-
-
-
-        <!-- FAKE TYPING -->
-
-        <div class="setting-row">
-
-          <div>
-            <strong>
-              Fake Typing
-            </strong>
-          </div>
-
-
-          <label class="switch">
-
-            <input
-              type="checkbox"
-              data-setting="fakeTyping"
-            >
-
-            <span class="slider"></span>
-
-          </label>
-
-        </div>
-
-
-
-        <!-- FAKE RECORDING -->
-
-        <div class="setting-row">
-
-          <div>
-            <strong>
-              Fake Recording
-            </strong>
-          </div>
-
-
-          <label class="switch">
-
-            <input
-              type="checkbox"
-              data-setting="fakeRecording"
-            >
-
-            <span class="slider"></span>
-
-          </label>
-
-        </div>
-
-
-
-        <!-- AUTO REACT -->
-
-        <div class="setting-row">
-
-          <div>
-            <strong>
-              Auto React
-            </strong>
-          </div>
-
-
-          <label class="switch">
-
-            <input
-              type="checkbox"
-              data-setting="autoReact"
-            >
-
-            <span class="slider"></span>
-
-          </label>
-
-        </div>
-
-
-
-        <!-- AUTO STATUS -->
-
-        <div class="setting-row">
-
-          <div>
-            <strong>
-              Auto Status
-            </strong>
-          </div>
-
-
-          <label class="switch">
-
-            <input
-              type="checkbox"
-              data-setting="autoStatus"
-            >
-
-            <span class="slider"></span>
-
-          </label>
-
-        </div>
-
-
-
-        <!-- STATUS REPLY -->
-
-        <div class="setting-row">
-
-          <div>
-            <strong>
-              Status Reply
-            </strong>
-          </div>
-
-
-          <label class="switch">
-
-            <input
-              type="checkbox"
-              data-setting="statusReply"
-            >
-
-            <span class="slider"></span>
-
-          </label>
-
-        </div>
-
-
-
-        <!-- STATUS LIKE -->
-
-        <div class="setting-row">
-
-          <div>
-            <strong>
-              Status Like
-            </strong>
-          </div>
-
-
-          <label class="switch">
-
-            <input
-              type="checkbox"
-              data-setting="statusLike"
-            >
-
-            <span class="slider"></span>
-
-          </label>
-
-        </div>
-
-
-
-        <!-- ANTI CALL -->
-
-        <div class="setting-row">
-
-          <div>
-            <strong>
-              Anti Call
-            </strong>
-          </div>
-
-
-          <label class="switch">
-
-            <input
-              type="checkbox"
-              data-setting="antiCall"
-            >
-
-            <span class="slider"></span>
-
-          </label>
-
-        </div>
-
-
-
-        <!-- ANTI DELETE -->
-
-        <div class="setting-row">
-
-          <div>
-            <strong>
-              Anti Delete
-            </strong>
-          </div>
-
-
-          <label class="switch">
-
-            <input
-              type="checkbox"
-              data-setting="antiDelete"
-            >
-
-            <span class="slider"></span>
-
-          </label>
-
-        </div>
-
-
-
-        <!-- ANTI DELETE DESTINATION -->
-
-        <div class="settings-subtitle">
-          🗑️ ANTI DELETE DESTINATION
-        </div>
-
-
-
-        <!-- SAME CHAT -->
-
-        <div class="setting-row">
-
-          <div>
-            <strong>
-              Same Chat
-            </strong>
-          </div>
-
-
-          <label class="switch">
-
-            <input
-              type="checkbox"
-              data-setting="antiDeleteSameChat"
-            >
-
-            <span class="slider"></span>
-
-          </label>
-
-        </div>
-
-
-
-        <!-- DM BOT -->
-
-        <div class="setting-row">
-
-          <div>
-            <strong>
-              DM Bot
-            </strong>
-          </div>
-
-
-          <label class="switch">
-
-            <input
-              type="checkbox"
-              data-setting="antiDeleteDM"
-            >
-
-            <span class="slider"></span>
-
-          </label>
-
-        </div>
-
-
-
-        <!-- ANTI SPAM -->
-
-        <div class="setting-row">
-
-          <div>
-            <strong>
-              Anti Spam
-            </strong>
-          </div>
-
-
-          <label class="switch">
-
-            <input
-              type="checkbox"
-              data-setting="antiSpam"
-            >
-
-            <span class="slider"></span>
-
-          </label>
-
-        </div>
-
-
-
-        <!-- AI CHAT -->
-
-        <div class="setting-row">
-
-          <div>
-            <strong>
-              AI Chat
-            </strong>
-          </div>
-
-
-          <label class="switch">
-
-            <input
-              type="checkbox"
-              data-setting="aiChat"
-            >
-
-            <span class="slider"></span>
-
-          </label>
-
-        </div>
-
-      </div>
-
-
-
-      <!-- ==========================================================
-           👥 GROUP SETTINGS
-           ========================================================== -->
-
-      <div class="settings-box">
-
-        <h3>
-          👥 GROUP SETTINGS
-        </h3>
-
-
-
-        <!-- SECURITY -->
-
-        <div class="settings-subtitle">
-          🛡️ SECURITY
-        </div>
-
-
-
-        <!-- GROUP ANTI SPAM -->
-
-        <div class="setting-row">
-
-          <div>
-            <strong>
-              Anti Spam
-            </strong>
-          </div>
-
-
-          <label class="switch">
-
-            <input
-              type="checkbox"
-              data-setting="groupAntiSpam"
-            >
-
-            <span class="slider"></span>
-
-          </label>
-
-        </div>
-
-
-
-        <!-- GROUP ANTI LINK -->
-
-        <div class="setting-row">
-
-          <div>
-            <strong>
-              Anti Link
-            </strong>
-          </div>
-
-
-          <label class="switch">
-
-            <input
-              type="checkbox"
-              data-setting="groupAntiLink"
-            >
-
-            <span class="slider"></span>
-
-          </label>
-
-        </div>
-
-
-
-        <!-- GROUP ANTI DELETE -->
-
-        <div class="setting-row">
-
-          <div>
-            <strong>
-              Anti Delete
-            </strong>
-          </div>
-
-
-          <label class="switch">
-
-            <input
-              type="checkbox"
-              data-setting="groupAntiDelete"
-            >
-
-            <span class="slider"></span>
-
-          </label>
-
-        </div>
-
-      </div>
-
-
-
-      <!-- ==========================================================
-           👥 GROUP MANAGEMENT
-           ========================================================== -->
-
-      <div class="settings-box">
-
-        <h3>
-          👥 GROUP MANAGEMENT
-        </h3>
-
-
-        <p class="message">
-          Configure the group where the bot will manage
-          automatic closing and opening.
-        </p>
-
-
-
-        <!-- ========================================================
-             📱 ADMIN GROUP NUMBER
-             ======================================================== -->
-
-        <div class="info-field">
-
-          <label
-            for="adminGroupNumber"
-          >
-            Admin Group Number:
-          </label>
-
-
-          <input
-            id="adminGroupNumber"
-            type="tel"
-            inputmode="numeric"
-            autocomplete="off"
-            placeholder="Example: 509XXXXXXXX"
-          >
-
-        </div>
-
-
-
-        <!-- ========================================================
-             🔗 ADMIN GROUP LINK
-             ======================================================== -->
-
-        <div class="info-field">
-
-          <label
-            for="adminGroupLink"
-          >
-            Admin Group Link:
-          </label>
-
-
-          <input
-            id="adminGroupLink"
-            type="url"
-            autocomplete="off"
-            placeholder="https://chat.whatsapp.com/..."
-          >
-
-        </div>
-
-
-<!-- ========================================================
-     📜 GROUP BIO / PRINSIP
-     ======================================================== -->
-
-<div class="settings-subtitle">
-  📜 GROUP BIO / PRINSIP
-</div>
-
-<div class="setting-row">
-
-  <div>
-    <strong>
-      Bio / Prensip Enforcement
-    </strong>
-
-    <p class="message">
-      Lè li ON, bot la ap voye Bio/Prensip la apre chak welcome
-      epi li ap aplike entèdiksyon li detekte yo.
-    </p>
   </div>
 
-  <label class="switch">
 
-    <input
-      id="groupBioEnabled"
-      type="checkbox"
-      data-setting="groupBioEnabled"
+  <!-- =====================================================
+       ⚙️ SETTINGS PANEL
+  ====================================================== -->
+
+  <div
+    id="settingsPanel"
+    class="panel"
+  >
+
+    <img
+      id="botLogo"
+      class="logo"
+      src="/assets/logo.png"
+      alt="TOPFEROS MD SETTINGS"
     >
 
-    <span class="slider"></span>
+    <div class="title">
+      ⚙️ TOPFEROS MD SETTINGS
+    </div>
 
-  </label>
-
-</div>
-
-<div class="info-field">
-
-  <label for="groupBioText">
-    Bio / Prensip Group:
-  </label>
-
-  <textarea
-    id="groupBioText"
-    rows="8"
-    autocomplete="off"
-    placeholder="Egzanp:
-
-📜 PRINSIP GROUP
-
-❌ Pa voye lyen.
-❌ Pa fè spam.
-❌ Pa fè piblisite.
-❌ Pa joure lòt manm.
-❌ Pa voye kontni +18."
-  ></textarea>
-
-</div>
-
-        <!-- ========================================================
-             🔒 AUTOMATIC GROUP CLOSE
-             ======================================================== -->
-
-        <div class="settings-subtitle">
-          🔒 AUTOMATIC GROUP CLOSE
-        </div>
+    <div class="subtitle">
+      Bot Configuration Panel
+    </div>
 
 
-        <div class="setting-row">
+    <!-- ===================================================
+         BOT SETTINGS
+    ==================================================== -->
 
-          <div>
-            <strong>
-              Auto Close Group
-            </strong>
-          </div>
+    <div class="section">
 
-
-          <label class="switch">
-
-            <input
-              id="groupClose"
-              type="checkbox"
-              data-setting="groupClose"
-            >
-
-            <span class="slider"></span>
-
-          </label>
-
-        </div>
-
-
-
-        <div class="info-field">
-
-          <label
-            for="groupCloseTime"
-          >
-            Close Time:
-          </label>
-
-
-          <input
-            id="groupCloseTime"
-            type="time"
-            value="22:00"
-          >
-
-        </div>
-
-
-
-        <!-- ========================================================
-             🔓 AUTOMATIC GROUP OPEN
-             ======================================================== -->
-
-        <div class="settings-subtitle">
-          🔓 AUTOMATIC GROUP OPEN
-        </div>
-
-
-        <div class="setting-row">
-
-          <div>
-            <strong>
-              Auto Open Group
-            </strong>
-          </div>
-
-
-          <label class="switch">
-
-            <input
-              id="groupOpen"
-              type="checkbox"
-              data-setting="groupOpen"
-            >
-
-            <span class="slider"></span>
-
-          </label>
-
-        </div>
-
-
-
-        <div class="info-field">
-
-          <label
-            for="groupOpenTime"
-          >
-            Open Time:
-          </label>
-
-
-          <input
-            id="groupOpenTime"
-            type="time"
-            value="06:00"
-          >
-
-        </div>
-
+      <div class="section-title">
+        ⚙️ BOT SETTINGS
       </div>
 
 
+      <div class="setting">
+        <div class="setting-info">
+          <div class="setting-name">
+            🌐 Public Mode
+          </div>
+          <div class="setting-description">
+            Bot lan disponib pou tout moun
+          </div>
+        </div>
 
-      <!-- ==========================================================
-           💾 SAVE
-           ========================================================== -->
-
-      <button
-        id="saveSettings"
-        class="next-button"
-        type="button"
-      >
-        SAVE ✅
-      </button>
+        <label class="switch">
+          <input
+            type="checkbox"
+            data-setting="publicMode"
+          >
+          <span class="slider"></span>
+        </label>
+      </div>
 
 
+      <div class="setting">
+        <div class="setting-info">
+          <div class="setting-name">
+            🔒 Private Mode
+          </div>
+          <div class="setting-description">
+            Bot lan travay an mode prive
+          </div>
+        </div>
 
-      <!-- ==========================================================
-           📢 MESSAGE
-           ========================================================== -->
+        <label class="switch">
+          <input
+            type="checkbox"
+            data-setting="privateMode"
+          >
+          <span class="slider"></span>
+        </label>
+      </div>
+
+
+      <div class="setting">
+        <div class="setting-info">
+          <div class="setting-name">
+            🟢 Always Online
+          </div>
+        </div>
+
+        <label class="switch">
+          <input
+            type="checkbox"
+            data-setting="alwaysOnline"
+          >
+          <span class="slider"></span>
+        </label>
+      </div>
+
+
+      <div class="setting">
+        <div class="setting-info">
+          <div class="setting-name">
+            ⌨️ Fake Typing
+          </div>
+        </div>
+
+        <label class="switch">
+          <input
+            type="checkbox"
+            data-setting="fakeTyping"
+          >
+          <span class="slider"></span>
+        </label>
+      </div>
+
+
+      <div class="setting">
+        <div class="setting-info">
+          <div class="setting-name">
+            🎙️ Fake Recording
+          </div>
+        </div>
+
+        <label class="switch">
+          <input
+            type="checkbox"
+            data-setting="fakeRecording"
+          >
+          <span class="slider"></span>
+        </label>
+      </div>
+
+
+      <div class="setting">
+        <div class="setting-info">
+          <div class="setting-name">
+            👁️ Auto Status Seen
+          </div>
+          <div class="setting-description">
+            Wè status otomatikman san Like
+          </div>
+        </div>
+
+        <label class="switch">
+          <input
+            type="checkbox"
+            data-setting="autoStatusSeen"
+          >
+          <span class="slider"></span>
+        </label>
+      </div>
+
+
+      <div class="setting">
+        <div class="setting-info">
+          <div class="setting-name">
+            ❤️ Auto Like Status
+          </div>
+          <div class="setting-description">
+            Wè epi Like status otomatikman
+          </div>
+        </div>
+
+        <label class="switch">
+          <input
+            type="checkbox"
+            data-setting="statusLike"
+          >
+          <span class="slider"></span>
+        </label>
+      </div>
+
+
+      <div class="setting">
+        <div class="setting-info">
+          <div class="setting-name">
+            📞 Anti Call
+          </div>
+        </div>
+
+        <label class="switch">
+          <input
+            type="checkbox"
+            data-setting="antiCall"
+          >
+          <span class="slider"></span>
+        </label>
+      </div>
+
+
+      <!-- ===============================================
+           🗑️ ANTI DELETE
+      ================================================ -->
+
+      <div class="setting">
+
+        <div class="setting-info">
+          <div class="setting-name">
+            🗑️ Anti Delete
+          </div>
+
+          <div class="setting-description">
+            Chwazi kote mesaj efase a dwe retounen
+          </div>
+        </div>
+
+        <label class="switch">
+          <input
+            id="antiDeleteSwitch"
+            type="checkbox"
+            data-setting="antiDelete"
+          >
+          <span class="slider"></span>
+        </label>
+
+      </div>
+
 
       <div
-        id="settingsMessage"
-        class="message"
-      ></div>
+        id="antiDeleteOptions"
+        class="anti-delete-options"
+      >
 
+        <div class="option">
+          <label>
+            <input
+              type="radio"
+              name="antiDeleteDestination"
+              value="sameChat"
+              checked
+            >
+            📥 Same Chat
+          </label>
+        </div>
 
+        <div class="option">
+          <label>
+            <input
+              type="radio"
+              name="antiDeleteDestination"
+              value="private"
+            >
+            📩 Prive
+          </label>
+        </div>
 
-      <!-- ==========================================================
-           🦶 FOOTER
-           ========================================================== -->
-
-      <div class="footer">
-        TECH BY TOPFEROS MD
       </div>
 
-    </section>
 
-  </main>
+      <div class="setting">
+        <div class="setting-info">
+          <div class="setting-name">
+            🚫 Anti Spam
+          </div>
+        </div>
+
+        <label class="switch">
+          <input
+            type="checkbox"
+            data-setting="antiSpam"
+          >
+          <span class="slider"></span>
+        </label>
+      </div>
 
 
+      <div class="setting">
+        <div class="setting-info">
+          <div class="setting-name">
+            🤖 AI Chat
+          </div>
+        </div>
 
-  <!-- ============================================================
-       📜 SETTINGS JAVASCRIPT
-       ============================================================ -->
+        <label class="switch">
+          <input
+            type="checkbox"
+            data-setting="aiChat"
+          >
+          <span class="slider"></span>
+        </label>
+      </div>
 
-  <script src="/settings.js"></script>
+    </div>
+
+
+    <!-- ===================================================
+         👥 GROUP SECURITY
+    ==================================================== -->
+
+    <div class="section">
+
+      <div class="section-title">
+        👥 GROUP SECURITY
+      </div>
+
+
+      <div class="setting">
+        <div class="setting-info">
+          <div class="setting-name">
+            🚫 Group Anti Spam
+          </div>
+        </div>
+
+        <label class="switch">
+          <input
+            type="checkbox"
+            data-setting="groupAntiSpam"
+          >
+          <span class="slider"></span>
+        </label>
+      </div>
+
+
+      <div class="setting">
+        <div class="setting-info">
+          <div class="setting-name">
+            🔗 Group Anti Link
+          </div>
+        </div>
+
+        <label class="switch">
+          <input
+            type="checkbox"
+            data-setting="groupAntiLink"
+          >
+          <span class="slider"></span>
+        </label>
+      </div>
+
+
+      <div class="setting">
+        <div class="setting-info">
+          <div class="setting-name">
+            🗑️ Group Anti Delete
+          </div>
+        </div>
+
+        <label class="switch">
+          <input
+            type="checkbox"
+            data-setting="groupAntiDelete"
+          >
+          <span class="slider"></span>
+        </label>
+      </div>
+
+    </div>
+
+
+    <!-- ===================================================
+         🔒 GROUP AUTOMATION
+    ==================================================== -->
+
+    <div class="section">
+
+      <div class="section-title">
+        🔒 GROUP AUTOMATION
+      </div>
+
+
+      <div class="setting">
+        <div class="setting-info">
+          <div class="setting-name">
+            🔐 Auto Close Group
+          </div>
+        </div>
+
+        <label class="switch">
+          <input
+            type="checkbox"
+            data-setting="groupClose"
+          >
+          <span class="slider"></span>
+        </label>
+      </div>
+
+
+      <div class="setting">
+        <div class="setting-info">
+          <div class="setting-name">
+            🔓 Auto Open Group
+          </div>
+        </div>
+
+        <label class="switch">
+          <input
+            type="checkbox"
+            data-setting="groupOpen"
+          >
+          <span class="slider"></span>
+        </label>
+      </div>
+
+
+      <div class="setting">
+        <div class="setting-info">
+          <div class="setting-name">
+            📜 Group Bio
+          </div>
+        </div>
+
+        <label class="switch">
+          <input
+            type="checkbox"
+            data-setting="groupBioEnabled"
+          >
+          <span class="slider"></span>
+        </label>
+      </div>
+
+    </div>
+
+
+    <!-- ===================================================
+         💾 SAVE
+    ==================================================== -->
+
+    <button
+      id="saveSettings"
+      class="save-btn"
+      type="button"
+    >
+      💾 SAVE SETTINGS
+    </button>
+
+  </div>
+
+</div>
+
+
+<script>
+  // ========================================================
+  // 🗑️ ANTI DELETE OPTIONS
+  // ========================================================
+
+  const antiDeleteSwitch =
+    document.getElementById(
+      "antiDeleteSwitch"
+    );
+
+  const antiDeleteOptions =
+    document.getElementById(
+      "antiDeleteOptions"
+    );
+
+  if (antiDeleteSwitch) {
+
+    antiDeleteSwitch.addEventListener(
+      "change",
+      function () {
+
+        if (this.checked) {
+
+          antiDeleteOptions
+            ?.classList
+            .add("active");
+
+        } else {
+
+          antiDeleteOptions
+            ?.classList
+            .remove("active");
+        }
+
+      }
+    );
+  }
+</script>
 
 </body>
-
 </html>
