@@ -322,29 +322,19 @@ async function sendAccessMessage(
           body: {
             text
           },
-          
-           nativeFlowMessage: {
-  buttons: [
-    {
-      name: "cta_copy",
-
-      buttonParamsJson:
-        JSON.stringify({
-          display_text:
-            "📋 COPY CODE",
-
-          id:
-            "copy_settings_password",
-
-          copy_code:
-            code
-        })
-    }
-  ]
-      }
-        ]
-       }
-     }
+          nativeFlowMessage: {
+            buttons: [
+              {
+                name: "cta_copy",
+                buttonParamsJson: JSON.stringify({
+                  display_text: "📋 COPY CODE",
+                  id: "copy_settings_password",
+                  copy_code: code
+                })
+              }
+            ]
+          }
+        }
       },
       {
         quoted
@@ -362,12 +352,7 @@ async function sendAccessMessage(
       error
     );
 
-    /*
-     * Fallback:
-     * Menm si WhatsApp pa aksepte
-     * interactive message la, voye
-     * PANEL ACCESS la toujou.
-     */
+    // Fallback: voye mesaj nòmal si button interactive la pa mache.
     await sock.sendMessage(
       chatId,
       {
@@ -379,7 +364,6 @@ async function sendAccessMessage(
     );
   }
 }
-
 /* ======================================================
    MESSAGE 3
 ====================================================== */
