@@ -172,7 +172,7 @@ const settingNames = [
   "fakeRecording",
   "autoReact",
 
-  "autoStatus",
+  "autoStatusseen",
   "statusReply",
   "statusLike",
 
@@ -973,6 +973,73 @@ async function verifySettings() {
 
     }
 
+// ============================================================
+// ✅ VERIFICATION SUCCESS → SHOW SETTINGS PANEL
+// ============================================================
+
+function showVerifiedSettingsPanel() {
+  const accessPanel =
+    document.getElementById("accessPanel");
+
+  const settingsPanel =
+    document.getElementById("settingsPanel");
+
+  const accessLogo =
+    document.getElementById("accessLogo");
+
+  const settingsLogo =
+    document.getElementById("botLogo");
+
+  // ----------------------------------------------------------
+  // 🔐 HIDE PANEL ACCESS COMPLETELY
+  // ----------------------------------------------------------
+
+  if (accessPanel) {
+    accessPanel.style.display = "none";
+  }
+
+  if (accessLogo) {
+    accessLogo.style.display = "none";
+  }
+
+  // ----------------------------------------------------------
+  // ⚙️ SHOW SETTINGS PANEL
+  // ----------------------------------------------------------
+
+  if (settingsPanel) {
+    settingsPanel.style.display = "block";
+  }
+
+  // ----------------------------------------------------------
+  // 🦁 SHOW SETTINGS LOGO
+  // ----------------------------------------------------------
+
+  if (settingsLogo) {
+    settingsLogo.src =
+      "/assets/logo.png";
+
+    settingsLogo.alt =
+      "TOPFEROS MD SETTINGS";
+
+    settingsLogo.style.display =
+      "block";
+  }
+
+  // ----------------------------------------------------------
+  // ⚙️ LOAD SETTINGS
+  // ----------------------------------------------------------
+
+  if (
+    typeof loadSettings ===
+    "function"
+  ) {
+    loadSettings();
+  }
+
+  console.log(
+    "✅ NUMBER + CODE VERIFIED → SETTINGS PANEL SHOWN"
+  );
+}
 
     // ========================================================
     // SESSION ID
