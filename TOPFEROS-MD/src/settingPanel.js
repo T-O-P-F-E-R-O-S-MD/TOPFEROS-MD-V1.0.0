@@ -32,30 +32,33 @@ const defaultSettings = {
   antiLink: false,
   antiRobot: false,
 
+  // STATUS
+  autoStatusSeen: false,
   autoStatus: false,
   statusReply: false,
   statusLike: false,
 
+  // GROUP SECURITY
   groupAntiSpam: false,
   groupAntiLink: false,
   groupAntiDelete: false,
 
- groupClose: false,
-groupOpen: false,
+  // GROUP AUTOMATION
+  groupClose: false,
+  groupOpen: false,
 
-adminGroupNumber: "",
-adminGroupLink: "",
-groupCloseTime: "",
-groupOpenTime: "",
+  adminGroupNumber: "",
+  adminGroupLink: "",
+  groupCloseTime: "",
+  groupOpenTime: "",
 
-// 📜 GROUP BIO / PRINSIP
-groupBioEnabled: false,
-groupBioText: "",
+  // GROUP BIO / PRINSIP
+  groupBioEnabled: false,
+  groupBioText: "",
 
-aiChat: false
+  aiChat: false
 
 };
-
 
 /* ======================================================
    DEFAULT BOT INFORMATION
