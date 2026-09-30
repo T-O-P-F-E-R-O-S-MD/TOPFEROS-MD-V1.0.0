@@ -646,41 +646,28 @@ async function reactToCommand(
     }
 
     await sock.sendMessage(
-  chatId,
-  {
-    interactiveMessage: {
-      header: {
-        title: "🔐 PANEL ACCESS",
-        hasMediaAttachment: false
-      },
-
-      body: {
-        text: text
-      },
-
-      footer: {
-        text: "🦁 TOPFEROS MD TECH"
-      },
-
-      buttons: [
-        {
-          name: "cta_copy",
-
-          buttonParamsJson:
-            JSON.stringify({
-              display_text: "📋 COPY CODE",
-              id: "copy_settings_password",
-              copy_code: code
-            })
+      chatId,
+      {
+        react: {
+          text: "🦁",
+          key: message.key
         }
-      ]
-    }
-  },
-  {
-    quoted: quoted
-  }
-);
+      }
+    );
 
+    return true;
+
+  } catch (error) {
+
+    console.warn(
+      "⚠️ REACT TO COMMAND ERROR:",
+      error?.message ||
+      error
+    );
+
+    return false;
+  }
+}
 // ============================================================
 // SEND COMMAND ERROR
 // ============================================================
@@ -739,7 +726,6 @@ async function sendCommandError(
       sendError?.message ||
       sendError
     );
-
   }
 }
 // ============================================================
