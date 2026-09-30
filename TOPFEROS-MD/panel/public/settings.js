@@ -978,7 +978,7 @@ async function verifySettings() {
 
 function showVerifiedSettingsPanel() {
   const accessPanel =
-    document.getElementById("accessPanel");
+  document.getElementById("loginScreen");
 
   const settingsPanel =
     document.getElementById("settingsPanel");
