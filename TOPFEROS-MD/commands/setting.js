@@ -3,6 +3,11 @@
 const config = require("../config");
 const settingPanel = require("../src/settingPanel");
 
+const {
+  proto,
+  generateWAMessageFromContent
+} = require("@whiskeysockets/baileys");
+
 /* ======================================================
    HELPERS
 ====================================================== */
