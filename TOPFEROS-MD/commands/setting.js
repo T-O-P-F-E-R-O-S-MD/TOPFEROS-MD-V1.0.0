@@ -280,10 +280,9 @@ function buildAccessText(session) {
 ╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯`;
 }
 
-/* ======================================================
-   SEND PANEL ACCESS
-   SAME MESSAGE + COPY BUTTON
-====================================================== */
+// ============================================================
+// 🔐 SEND PANEL ACCESS + COPY CODE
+// ============================================================
 
 async function sendAccessMessage(
   sock,
@@ -291,77 +290,149 @@ async function sendAccessMessage(
   session,
   quoted
 ) {
-  const code =
-    String(
-      session?.code ||
-      ""
-    ).trim();
-
-  const text =
-    buildAccessText(session);
-
-  if (!code) {
-    await sock.sendMessage(
-      chatId,
-      {
-        text
-      },
-      {
-        quoted
-      }
-    );
-
-    return;
-  }
-
   try {
-    await sock.sendMessage(
-      chatId,
-      {
-        interactiveMessage: {
-          body: {
-            text
-          },
-          nativeFlowMessage: {
-            buttons: [
-              {
-                name: "cta_copy",
-                buttonParamsJson: JSON.stringify({
-                  display_text: "📋 COPY CODE",
-                  id: "copy_settings_password",
-                  copy_code: code
-                })
-              }
-            ]
-          }
+
+    if (
+      !sock ||
+      !chatId
+    ) {
+      return;
+    }
+
+    const code =
+      String(
+        session?.code ||
+        ""
+      ).trim();
+
+    const text =
+      buildAccessText(session);
+
+    // --------------------------------------------------------
+    // SI PA GEN CODE → MESAJ NORMAL
+    // --------------------------------------------------------
+
+    if (!code) {
+
+      await sock.sendMessage(
+        chatId,
+        {
+          text
+        },
+        {
+          quoted
         }
-      },
+      );
+
+      console.warn(
+        "[TOPFEROS] PANEL CODE EMPTY"
+      );
+
+      return;
+    }
+
+    // --------------------------------------------------------
+    // COPY CODE BUTTON
+    // --------------------------------------------------------
+
+    const messageContent =
+      proto.Message.InteractiveMessage.create({
+        body: {
+          text
+        },
+
+        footer: {
+          text: "🦁 TOPFEROS MD TECH"
+        },
+
+        nativeFlowMessage: {
+          buttons: [
+            {
+              name: "cta_copy",
+
+              buttonParamsJson:
+                JSON.stringify({
+                  display_text:
+                    "📋 COPY CODE",
+
+                  id:
+                    "copy_settings_password",
+
+                  copy_code:
+                    code
+                })
+            }
+          ]
+        }
+      });
+
+    const generatedMessage =
+      generateWAMessageFromContent(
+        chatId,
+        {
+          viewOnceMessage: {
+            message: {
+              interactiveMessage:
+                messageContent
+            }
+          }
+        },
+        {
+          userJid:
+            sock?.user?.id,
+          quoted
+        }
+      );
+
+    await sock.relayMessage(
+      chatId,
+      generatedMessage.message,
       {
-        quoted
+        messageId:
+          generatedMessage.key.id
       }
     );
 
     console.log(
-      "[TOPFEROS] PANEL ACCESS + Copy Password sent."
+      "[TOPFEROS] PANEL ACCESS + COPY CODE SENT:",
+      code
     );
 
   } catch (error) {
-    console.warn(
-      "[TOPFEROS] Interactive Copy button error:",
+
+    console.error(
+      "[TOPFEROS] COPY CODE ERROR:",
+      error?.stack ||
       error?.message ||
       error
     );
 
-    // Fallback: voye mesaj nòmal si button interactive la pa mache.
-    await sock.sendMessage(
-      chatId,
-      {
-        text
-      },
-      {
-        quoted
-      }
-    );
+    // --------------------------------------------------------
+    // FALLBACK
+    // --------------------------------------------------------
+
+    try {
+
+      await sock.sendMessage(
+        chatId,
+        {
+          text:
+            buildAccessText(session)
+        },
+        {
+          quoted
+        }
+      );
+
+    } catch (fallbackError) {
+
+      console.error(
+        "[TOPFEROS] PANEL FALLBACK ERROR:",
+        fallbackError?.stack ||
+        fallbackError?.message ||
+        fallbackError
+      );
+    }
   }
 }
 /* ======================================================
