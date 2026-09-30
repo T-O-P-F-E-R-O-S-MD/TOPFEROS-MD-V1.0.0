@@ -414,9 +414,13 @@ const PREFIX =
     sessionId
   );
 
-    const features =
-      config?.features || {};
+    const runtimeSettings =
+  getRuntimeSettings(sessionId) || {};
 
+const features = {
+  ...config?.features,
+  ...runtimeSettings
+};
     // --------------------------------------------------------
     // 👁️ AUTO STATUS SEEN
     // --------------------------------------------------------
