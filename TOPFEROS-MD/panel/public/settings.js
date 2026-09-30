@@ -1086,17 +1086,10 @@ function showVerifiedSettingsPanel() {
 
 
     // ========================================================
-    // OPEN SETTINGS DIRECTLY
-    // ========================================================
+// OPEN SETTINGS AFTER VERIFICATION
+// ========================================================
 
-    showSettingsPanel();
-
-
-    /*
-     * Logo Settings Panel la rete.
-     */
-
-    setupLogo();
+showVerifiedSettingsPanel();
 
 
     /*
