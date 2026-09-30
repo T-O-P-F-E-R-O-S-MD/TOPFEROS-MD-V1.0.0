@@ -679,6 +679,7 @@ async function reactToCommand(
   {
     quoted: quoted
   }
+);
 
 // ============================================================
 // SEND COMMAND ERROR
