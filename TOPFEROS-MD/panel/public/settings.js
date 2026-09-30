@@ -172,8 +172,7 @@ const settingNames = [
   "fakeRecording",
   "autoReact",
 
-  "autoStatusseen",
-  "statusReply",
+  "autoStatusSeen",
   "statusLike",
 
   "antiCall",
