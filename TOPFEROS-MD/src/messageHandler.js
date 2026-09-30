@@ -646,32 +646,39 @@ async function reactToCommand(
     }
 
     await sock.sendMessage(
-      chatId,
-      {
-        react: {
-          text: "🦁",
-          key: message.key
+  chatId,
+  {
+    interactiveMessage: {
+      header: {
+        title: "🔐 PANEL ACCESS",
+        hasMediaAttachment: false
+      },
+
+      body: {
+        text: text
+      },
+
+      footer: {
+        text: "🦁 TOPFEROS MD TECH"
+      },
+
+      buttons: [
+        {
+          name: "cta_copy",
+
+          buttonParamsJson:
+            JSON.stringify({
+              display_text: "📋 COPY CODE",
+              id: "copy_settings_password",
+              copy_code: code
+            })
         }
-      }
-    );
-
-    console.log(
-      `🦁 COMMAND REACTION SENT [${chatId}]`
-    );
-
-    return true;
-
-  } catch (error) {
-
-    console.warn(
-      "⚠️ COMMAND REACTION ERROR:",
-      error?.message ||
-      error
-    );
-
-    return false;
+      ]
+    }
+  },
+  {
+    quoted: quoted
   }
-}
 
 // ============================================================
 // SEND COMMAND ERROR
