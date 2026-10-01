@@ -1514,6 +1514,87 @@ function getSwitches() {
 
 }
 
+// ============================================================
+// 🗑️ ANTI DELETE DESTINATION
+// ============================================================
+
+function enforceAntiDeleteDestination() {
+
+  const antiDelete =
+    document.getElementById("antiDelete");
+
+  const options =
+    document.getElementById(
+      "antiDeleteOptions"
+    );
+
+  const sameChat =
+    document.getElementById(
+      "antiDeleteSameChat"
+    );
+
+  const privateChat =
+    document.getElementById(
+      "antiDeletePrivate"
+    );
+
+  if (!antiDelete || !options) {
+    return;
+  }
+
+  // Show options only when Anti Delete is ON
+  options.style.display =
+    antiDelete.checked
+      ? "block"
+      : "none";
+
+  // If Anti Delete is OFF,
+  // remove the selected destination.
+  if (!antiDelete.checked) {
+
+    if (sameChat) {
+      sameChat.checked = false;
+    }
+
+    if (privateChat) {
+      privateChat.checked = false;
+    }
+
+    return;
+  }
+
+  // Default destination: Same Chat
+  if (
+    sameChat &&
+    privateChat &&
+    !sameChat.checked &&
+    !privateChat.checked
+  ) {
+
+    sameChat.checked = true;
+
+  }
+
+}
+
+
+// ============================================================
+// 🗑️ ANTI DELETE CHANGE EVENT
+// ============================================================
+
+const antiDeleteInput =
+  document.getElementById(
+    "antiDelete"
+  );
+
+if (antiDeleteInput) {
+
+  antiDeleteInput.addEventListener(
+    "change",
+    enforceAntiDeleteDestination
+  );
+
+}
 
 // ============================================================
 // 📤 COLLECT SETTINGS
