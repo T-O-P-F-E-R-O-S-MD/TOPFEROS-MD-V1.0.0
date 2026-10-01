@@ -63,7 +63,6 @@ async function execute(context) {
 
 module.exports = {
   name: "alive",
-  aliases: ["online", "status"],
   description: "Verifye si TOPFEROS MD online.",
   execute
 };
