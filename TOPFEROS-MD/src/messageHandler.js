@@ -735,7 +735,8 @@ async function sendCommandError(
 async function sendUnknownCommand(
   sock,
   chatId,
-  commandName
+  commandName,
+  prefix
 ) {
   try {
 
