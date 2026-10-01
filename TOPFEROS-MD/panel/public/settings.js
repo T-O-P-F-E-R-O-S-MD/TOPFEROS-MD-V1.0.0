@@ -1396,8 +1396,31 @@ if (
     settings.groupBioText ||
     "";
 
+  }
+
+  return true;
+
+} catch (error) {
+
+  console.error(
+    "❌ LOAD SETTINGS ERROR:",
+    error
+  );
+
+  showMessage(
+    "❌ Erè pandan chajman settings yo."
+  );
+
+  return false;
+
 }
 
+}
+
+
+// ============================================================
+// 🗑️ ANTI DELETE DESTINATION
+// ============================================================
 
 function enforceAntiDeleteDestination() {
 
