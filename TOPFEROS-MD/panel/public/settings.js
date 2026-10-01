@@ -1447,99 +1447,6 @@ getSwitches()
 
 function enforceAntiDeleteDestination() {
 
-  const antiDeleteInput =
-    document.getElementById(
-      "antiDelete"
-    );
-
-  const options =
-    document.getElementById(
-      "antiDeleteOptions"
-    );
-
-  if (!options) {
-    return;
-  }
-
-  const enabled =
-    antiDeleteInput?.checked === true;
-
-  options.style.display =
-    enabled
-      ? "block"
-      : "none";
-
-  if (antiDeleteModeInput) {
-
-    antiDeleteModeInput.disabled =
-      !enabled;
-
-  }
-
-}
-
-document
-  .getElementById("antiDelete")
-  ?.addEventListener(
-    "change",
-    enforceAntiDeleteDestination
-  );
-
-if (botOriginInput) {
-
-  botOriginInput.value =
-    bot.origin ||
-    "Haiti";
-
-}
-
-if (botFooterInput) {
-
-  botFooterInput.value =
-    bot.footer ||
-    "TOPFEROS MD BOT";
-
-}
-
-if (botModeInput) {
-
-  botModeInput.value =
-    bot.mode ||
-    "public";
-
-}
-
-if (ownerNumberInput) {
-
-  ownerNumberInput.value =
-    bot.ownerNumber ||
-    "";
-
-  ownerNumberInput.readOnly =
-    true;
-
-}
-
-// ============================================================
-// 🔎 GET SWITCHES
-// ============================================================
-
-function getSwitches() {
-
-  return Array.from(
-    document.querySelectorAll(
-      "input[data-setting]"
-    )
-  );
-
-}
-
-// ============================================================
-// 🗑️ ANTI DELETE DESTINATION
-// ============================================================
-
-function enforceAntiDeleteDestination() {
-
   const antiDelete =
     document.getElementById("antiDelete");
 
@@ -1597,7 +1504,6 @@ function enforceAntiDeleteDestination() {
 
 }
 
-
 // ============================================================
 // 🗑️ ANTI DELETE CHANGE EVENT
 // ============================================================
@@ -1616,6 +1522,7 @@ if (antiDeleteInput) {
 
 }
 
+
 // ============================================================
 // 📤 COLLECT SETTINGS
 // ============================================================
@@ -1624,19 +1531,60 @@ function collectSettings() {
 
   const collected = {};
 
+
   // ========================================================
-  // 🗑️ ANTI DELETE MODE
+  // ⚙️ SWITCH SETTINGS
   // ========================================================
 
-  const deleteMode =
-    antiDeleteModeInput?.value ||
-    "currentChat";
+  getSwitches()
+    .forEach(
+      input => {
 
-  collected.antiDeleteDM =
-    deleteMode === "privateChat";
+        const name =
+          input.dataset.setting;
 
-  collected.antiDeleteSameChat =
-    deleteMode === "currentChat";
+        if (
+          settingNames.includes(
+            name
+          )
+        ) {
+
+          collected[name] =
+            input.checked;
+
+        }
+
+      }
+    );
+
+
+  // ========================================================
+  // 🗑️ ANTI DELETE DESTINATION
+  // ========================================================
+
+  const antiDeleteSameChat =
+    document.getElementById(
+      "antiDeleteSameChat"
+    );
+
+  const antiDeletePrivate =
+    document.getElementById(
+      "antiDeletePrivate"
+    );
+
+  if (
+    antiDeletePrivate?.checked
+  ) {
+
+    collected.antiDeleteDestination =
+      "private";
+
+  } else {
+
+    collected.antiDeleteDestination =
+      "sameChat";
+
+  }
 
 
   // ========================================================
