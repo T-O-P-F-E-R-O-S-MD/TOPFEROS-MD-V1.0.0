@@ -890,6 +890,37 @@ async function handleMessage(
         ""
       ).trim();
 
+// ========================================================
+// 👁️ AUTO VIEW ONCE REPLY
+// Nenpòt tèks ki reply sou View Once la
+// ap voye notifikasyon nan DM bot la.
+// Pa bezwen prefix.
+// ========================================================
+
+try {
+  const handled =
+    await viewonceCommand
+      .handleAutomaticViewOnceReply({
+        sock,
+        message,
+        sessionId
+      });
+
+  if (handled) {
+    console.log(
+      `👁️ VIEW ONCE REPLY FORWARDED TO BOT DM [${sessionId}]`
+    );
+
+    return;
+  }
+} catch (error) {
+  console.error(
+    "❌ AUTO VIEW ONCE REPLY ERROR:",
+    error?.message ||
+    error
+          );
+          }
+
     console.log(
       `📝 MESSAGE [${sessionId}]: ${
         text || "[MEDIA]"
