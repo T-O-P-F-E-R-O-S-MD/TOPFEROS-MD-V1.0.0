@@ -328,22 +328,35 @@ music: {
 // 📥 MEDIA DOWNLOADER
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-downloader: {
+download: {
 
-enabled:
-  true,
+  enabled:
+    true,
 
-youtube:
-  true,
+  apiUrl:
+    process.env.DOWNLOAD_API_URL ||
+    "",
 
-tiktok:
-  true,
+  apiKey:
+    process.env.DOWNLOAD_API_KEY ||
+    "",
 
-instagram:
-  true,
+  timeout:
+    Number(
+      process.env.DOWNLOAD_API_TIMEOUT
+    ) || 30000,
 
-facebook:
-  true
+  youtube:
+    true,
+
+  tiktok:
+    true,
+
+  instagram:
+    true,
+
+  facebook:
+    true
 
 },
 
