@@ -1625,28 +1625,6 @@ function collectSettings() {
   const collected = {};
 
   // ========================================================
-  // ⚙️ SWITCH SETTINGS
-  // ========================================================
-
-  getSwitches()
-    .forEach(input => {
-
-      const name =
-        input.dataset.setting;
-
-      if (
-        settingNames.includes(name)
-      ) {
-
-        collected[name] =
-          input.checked;
-
-      }
-
-    });
-
-
-  // ========================================================
   // 🗑️ ANTI DELETE MODE
   // ========================================================
 
