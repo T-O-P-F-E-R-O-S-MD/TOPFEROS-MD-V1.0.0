@@ -685,6 +685,121 @@ async function execute(context) {
 }
 
 
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 👁️ AUTO VIEW ONCE REPLY → BOT DM
+// Pa dekode ni telechaje View Once la.
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+function isViewOnceMessage(message) {
+  const msg =
+    message?.message ||
+    message ||
+    null;
+
+  if (!msg) {
+    return false;
+  }
+
+  const wrappers = [
+    "viewOnceMessage",
+    "viewOnceMessageV2",
+    "viewOnceMessageV2Extension"
+  ];
+
+  function check(content, depth = 0) {
+    if (
+      !content ||
+      typeof content !== "object" ||
+      depth > 8
+    ) {
+      return false;
+    }
+
+    for (const key of wrappers) {
+      if (content[key]) {
+        return true;
+      }
+    }
+
+    for (const value of Object.values(content)) {
+      if (
+        value &&
+        typeof value === "object" &&
+        check(value, depth + 1)
+      ) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  return check(msg);
+}
+
+async function handleAutomaticViewOnceReply(context) {
+  const {
+    sock,
+    message
+  } = context || {};
+
+  if (!sock || !message) {
+    return false;
+  }
+
+  // Pa trete pwòp mesaj bot la
+  if (message?.key?.fromMe) {
+    return false;
+  }
+
+  const quoted =
+    getQuotedMessage(message);
+
+  if (!quoted) {
+    return false;
+  }
+
+  if (!isViewOnceMessage(quoted)) {
+    return false;
+  }
+
+  const replyText =
+    String(
+      message?.message?.conversation ||
+      message?.message?.extendedTextMessage?.text ||
+      ""
+    ).trim();
+
+  if (!replyText) {
+    return false;
+  }
+
+  const botJid =
+    getBotJid(sock);
+
+  if (!botJid) {
+    return false;
+  }
+
+  await sock.sendMessage(
+    botJid,
+    {
+      text:
+`╭━━━〔 👁️ VIEW ONCE REPLY 〕━━━╮
+┃
+┃ 💬 ${replyText}
+┃
+╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯
+
+🦁 TECH By TOPFEROS MD`
+    }
+  );
+
+  return true;
+}
+
+
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 📦 EXPORT
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
