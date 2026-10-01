@@ -822,7 +822,6 @@ module.exports = {
 
   handleReplyForward,
 
-  handleVV2
+handleVV2,
 
 handleAutomaticViewOnceReply
-};
