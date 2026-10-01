@@ -195,16 +195,12 @@ const settingNames = [
   "alwaysOnline",
   "fakeTyping",
   "fakeRecording",
-  "autoReact",
 
-  "autoStatus",
-  "statusReply",
+  "autoStatusSeen",
   "statusLike",
 
   "antiCall",
   "antiDelete",
-  "antiDeleteSameChat",
-  "antiDeleteDM",
   "antiSpam",
 
   "aiChat",
@@ -215,6 +211,7 @@ const settingNames = [
 
   "groupClose",
   "groupOpen",
+
   "groupBioEnabled"
 
 ];
