@@ -752,9 +752,9 @@ async function sendUnknownCommand(
       "┃       ❓ UNKNOWN COMMAND\n" +
       "╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯\n\n" +
 
-      `❌ Kòmand ${PREFIX}${commandName} pa egziste.\n\n` +
+     `❌ Kòmand ${prefix}${commandName} pa egziste.\n\n` +
 
-      `📖 Ekri ${PREFIX}menu pou wè tout kòmand disponib yo.\n\n` +
+`📖 Ekri ${prefix}menu pou wè tout kòmand disponib yo.\n\n` +
 
       "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n" +
       "🚀 TECH BY TOPFEROS MD\n" +
