@@ -194,7 +194,7 @@ const settingNames = [
   "fakeRecording",
 
   "autoStatusSeen",
-  "autoStatusLike",
+  "statusLike",
 
   "antiCall",
   "antiDelete",
