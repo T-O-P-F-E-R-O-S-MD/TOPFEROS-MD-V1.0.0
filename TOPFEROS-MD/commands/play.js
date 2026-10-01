@@ -12,7 +12,7 @@ function isValidUrl(value) {
   }
 
   try {
-    const url = new URL(value);
+    const url = new URL(value.trim());
 
     return (
       url.protocol === "http:" ||
@@ -57,6 +57,73 @@ async function fetchWithTimeout(
     clearTimeout(timer);
   }
 }
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🎯 EXTRACT AUDIO URL
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+function getAudioUrl(result = {}) {
+  const direct =
+    result.audioUrl ||
+    result.audio_url ||
+    result.downloadUrl ||
+    result.download_url ||
+    result.musicUrl ||
+    result.music_url ||
+    result.audio ||
+    result.mediaUrl ||
+    result.media_url ||
+    result.url ||
+    result.link;
+
+  if (isValidUrl(direct)) {
+    return direct;
+  }
+
+  // Support links object
+  if (
+    result.links &&
+    typeof result.links === "object"
+  ) {
+    const links = result.links;
+
+    const link =
+      links.audio ||
+      links.mp3 ||
+      links.download ||
+      links.audioUrl ||
+      links.downloadUrl ||
+      links.url;
+
+    if (isValidUrl(link)) {
+      return link;
+    }
+  }
+
+  // Support nested media object
+  if (
+    result.media &&
+    typeof result.media === "object"
+  ) {
+    const media = result.media;
+
+    const link =
+      media.audio ||
+      media.url ||
+      media.downloadUrl ||
+      media.download_url;
+
+    if (isValidUrl(link)) {
+      return link;
+    }
+  }
+
+  return null;
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🚀 EXECUTE
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 async function execute(context) {
   const {
@@ -193,6 +260,10 @@ async function execute(context) {
       );
     }
 
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // 📥 READ API RESPONSE
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
     let data;
 
     try {
@@ -226,6 +297,8 @@ async function execute(context) {
       String(
         result.title ||
         result.name ||
+        result.song ||
+        result.track ||
         query
       ).trim();
 
@@ -234,20 +307,27 @@ async function execute(context) {
         result.artist ||
         result.author ||
         result.artistName ||
+        result.artist_name ||
+        result.creator ||
         "Unknown Artist"
       ).trim();
 
     const audioUrl =
-      result.audioUrl ||
-      result.downloadUrl ||
-      result.audio ||
-      result.url;
+      getAudioUrl(result);
 
     if (!isValidUrl(audioUrl)) {
       throw new Error(
         "Music API pa retounen yon audio URL valid."
       );
     }
+
+    const mimetype =
+      String(
+        result.mimetype ||
+        result.mimeType ||
+        result.mime ||
+        "audio/mpeg"
+      ).trim();
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // 🎵 SEND AUDIO
@@ -268,7 +348,9 @@ async function execute(context) {
         },
 
         mimetype:
-          "audio/mpeg",
+          mimetype.startsWith("audio/")
+            ? mimetype
+            : "audio/mpeg",
 
         fileName,
 
@@ -317,6 +399,7 @@ async function execute(context) {
         }
       );
     } catch (_) {}
+
   } finally {
     try {
       await sock.sendPresenceUpdate(
