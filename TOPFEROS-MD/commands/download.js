@@ -12,8 +12,7 @@ function isValidUrl(value) {
   }
 
   try {
-    const parsed =
-      new URL(value.trim());
+    const parsed = new URL(value.trim());
 
     return (
       parsed.protocol === "http:" ||
@@ -32,6 +31,48 @@ function cleanFileName(name) {
     .trim()
     .slice(0, 100);
 }
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🎯 DETECT MEDIA TYPE
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+function detectMediaType(mediaUrl, result = {}) {
+  const explicitType =
+    result.type ||
+    result.mediaType ||
+    result.mimeType ||
+    result.mime ||
+    "";
+
+  if (String(explicitType).trim()) {
+    return String(explicitType)
+      .toLowerCase()
+      .trim();
+  }
+
+  const value =
+    String(mediaUrl || "")
+      .split("?")[0]
+      .toLowerCase();
+
+  if (/\.(mp4|mkv|mov|webm|avi|m4v)$/i.test(value)) {
+    return "video";
+  }
+
+  if (/\.(mp3|m4a|aac|ogg|opus|wav|flac)$/i.test(value)) {
+    return "audio";
+  }
+
+  if (/\.(jpg|jpeg|png|gif|webp)$/i.test(value)) {
+    return "image";
+  }
+
+  return "document";
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ⏱️ FETCH WITH TIMEOUT
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 async function fetchWithTimeout(
   url,
@@ -60,6 +101,10 @@ async function fetchWithTimeout(
     clearTimeout(timer);
   }
 }
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🚀 EXECUTE
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 async function execute(context) {
   const {
@@ -260,29 +305,32 @@ async function execute(context) {
 
     const mediaUrl =
       result.downloadUrl ||
+      result.download_url ||
       result.mediaUrl ||
+      result.media_url ||
+      result.media ||
+      result.fileUrl ||
+      result.file_url ||
       result.url ||
       result.link;
 
     const mediaType =
-      String(
-        result.type ||
-        result.mediaType ||
-        result.mimeType ||
-        "document"
-      )
-        .toLowerCase()
-        .trim();
+      detectMediaType(
+        mediaUrl,
+        result
+      );
 
     const mimetype =
       result.mimetype ||
       result.mimeType ||
+      result.mime ||
       "application/octet-stream";
 
     const fileName =
       cleanFileName(
         result.fileName ||
         result.filename ||
+        result.file_name ||
         title
       );
 
@@ -304,6 +352,10 @@ async function execute(context) {
       `📥 *${title}*\n\n` +
       `🚀 ${developer}`;
 
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // 🎵 AUDIO
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
     if (
       mediaType === "audio" ||
       mediaType.startsWith("audio/")
@@ -321,7 +373,9 @@ async function execute(context) {
               : "audio/mpeg",
 
           fileName:
-            fileName.endsWith(".mp3")
+            fileName
+              .toLowerCase()
+              .endsWith(".mp3")
               ? fileName
               : `${fileName}.mp3`,
 
@@ -331,6 +385,10 @@ async function execute(context) {
           quoted: message
         }
       );
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // 🎥 VIDEO
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     } else if (
       mediaType === "video" ||
@@ -355,6 +413,10 @@ async function execute(context) {
         }
       );
 
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // 🖼️ IMAGE
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
     } else if (
       mediaType === "image" ||
       mediaType.startsWith("image/")
@@ -377,6 +439,10 @@ async function execute(context) {
           quoted: message
         }
       );
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // 📄 DOCUMENT
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     } else {
       await sock.sendMessage(
