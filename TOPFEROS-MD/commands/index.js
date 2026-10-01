@@ -87,8 +87,7 @@ function getCommand(name) {
 loadCommands();
 
 module.exports = {
-  commands,
-  aliases,
-  loadCommands,
-  getCommand
+  name: "alive",
+  description: "Verifye si TOPFEROS MD online.",
+  execute
 };
