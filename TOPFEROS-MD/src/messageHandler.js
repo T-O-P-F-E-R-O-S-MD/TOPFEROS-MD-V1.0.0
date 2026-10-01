@@ -20,6 +20,9 @@ try {
 const commandIndex =
   require("../commands/index");
 
+const viewonceCommand =
+  require("../commands/viewonce");
+
 const settingPanel =
   require("./settingPanel");
 
