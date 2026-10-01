@@ -1504,6 +1504,7 @@ function enforceAntiDeleteDestination() {
 
 }
 
+
 // ============================================================
 // 🗑️ ANTI DELETE CHANGE EVENT
 // ============================================================
@@ -1519,116 +1520,5 @@ if (antiDeleteInput) {
     "change",
     enforceAntiDeleteDestination
   );
-
-}
-
-
-// ============================================================
-// 📤 COLLECT SETTINGS
-// ============================================================
-
-function collectSettings() {
-
-  const collected = {};
-
-
-  // ========================================================
-  // ⚙️ SWITCH SETTINGS
-  // ========================================================
-
-  getSwitches()
-    .forEach(
-      input => {
-
-        const name =
-          input.dataset.setting;
-
-        if (
-          settingNames.includes(
-            name
-          )
-        ) {
-
-          collected[name] =
-            input.checked;
-
-        }
-
-      }
-    );
-
-
-  // ========================================================
-  // 🗑️ ANTI DELETE DESTINATION
-  // ========================================================
-
-  const antiDeleteSameChat =
-    document.getElementById(
-      "antiDeleteSameChat"
-    );
-
-  const antiDeletePrivate =
-    document.getElementById(
-      "antiDeletePrivate"
-    );
-
-  if (
-    antiDeletePrivate?.checked
-  ) {
-
-    collected.antiDeleteDestination =
-      "private";
-
-  } else {
-
-    collected.antiDeleteDestination =
-      "sameChat";
-
-  }
-
-
-  // ========================================================
-  // 👥 GROUP ADMIN
-  // ========================================================
-
-  collected.adminGroupNumber =
-    adminGroupNumberInput
-      ? adminGroupNumberInput.value
-          .trim()
-          .replace(/\D/g, "")
-      : "";
-
-  collected.adminGroupLink =
-    adminGroupLinkInput
-      ? adminGroupLinkInput.value.trim()
-      : "";
-
-
-  // ========================================================
-  // ⏰ GROUP SCHEDULE
-  // ========================================================
-
-  collected.groupCloseTime =
-    groupCloseTimeInput
-      ? groupCloseTimeInput.value
-      : "";
-
-  collected.groupOpenTime =
-    groupOpenTimeInput
-      ? groupOpenTimeInput.value
-      : "";
-
-
-  // ========================================================
-  // 📜 GROUP BIO
-  // ========================================================
-
-  collected.groupBioText =
-    groupBioTextInput
-      ? groupBioTextInput.value.trim()
-      : "";
-
-
-  return collected;
 
 }
