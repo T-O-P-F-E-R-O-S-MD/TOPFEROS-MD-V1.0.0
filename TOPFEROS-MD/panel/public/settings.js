@@ -121,6 +121,31 @@ const botPrefixInput =
     "botPrefix"
   );
 
+const botOriginInput =
+  document.getElementById(
+    "botOrigin"
+  );
+
+const botFooterInput =
+  document.getElementById(
+    "botFooter"
+  );
+
+const botModeInput =
+  document.getElementById(
+    "botMode"
+  );
+
+const ownerNumberInput =
+  document.getElementById(
+    "ownerNumber"
+  );
+
+const antiDeleteModeInput =
+  document.getElementById(
+    "antiDeleteMode"
+  );
+
 const botLogo =
   document.getElementById(
     "botLogo"
@@ -164,21 +189,19 @@ const groupBioTextInput =
 
 const settingNames = [
 
-  "publicMode",
-  "privateMode",
-
   "alwaysOnline",
   "fakeTyping",
   "fakeRecording",
-  "autoReact",
 
   "autoStatusSeen",
   "statusLike",
 
   "antiCall",
+
   "antiDelete",
   "antiDeleteSameChat",
   "antiDeleteDM",
+
   "antiSpam",
 
   "aiChat",
@@ -188,11 +211,9 @@ const settingNames = [
   "groupAntiDelete",
 
   "groupClose",
-  "groupOpen",
-  "groupBioEnabled"
+  "groupOpen"
 
 ];
-
 
 // ============================================================
 // 🖥️ SCREEN CONTROL
@@ -1381,31 +1402,80 @@ if (
 }
 
 
-enforceAntiDeleteDestination();
+function enforceAntiDeleteDestination() {
 
+  const antiDeleteInput =
+    document.getElementById(
+      "antiDelete"
+    );
 
-return true;
+  const options =
+    document.getElementById(
+      "antiDeleteOptions"
+    );
 
+  if (!options) {
+    return;
+  }
 
-} catch (error) {
+  const enabled =
+    antiDeleteInput?.checked === true;
 
-  console.error(
-    "❌ LOAD SETTINGS ERROR:",
-    error
-  );
+  options.style.display =
+    enabled
+      ? "block"
+      : "none";
 
+  if (antiDeleteModeInput) {
 
-  showMessage(
-    "❌ Erè pandan chajman settings yo."
-  );
+    antiDeleteModeInput.disabled =
+      !enabled;
 
-
-  return false;
+  }
 
 }
 
+document
+  .getElementById("antiDelete")
+  ?.addEventListener(
+    "change",
+    enforceAntiDeleteDestination
+  );
+
+if (botOriginInput) {
+
+  botOriginInput.value =
+    bot.origin ||
+    "Haiti";
+
 }
 
+if (botFooterInput) {
+
+  botFooterInput.value =
+    bot.footer ||
+    "TOPFEROS MD BOT";
+
+}
+
+if (botModeInput) {
+
+  botModeInput.value =
+    bot.mode ||
+    "public";
+
+}
+
+if (ownerNumberInput) {
+
+  ownerNumberInput.value =
+    bot.ownerNumber ||
+    "";
+
+  ownerNumberInput.readOnly =
+    true;
+
+}
 
 // ============================================================
 // 🔎 GET SWITCHES
@@ -1428,39 +1498,47 @@ function getSwitches() {
 
 function collectSettings() {
 
-  enforceAntiDeleteDestination();
-
   const collected = {};
-
 
   // ========================================================
   // ⚙️ SWITCH SETTINGS
   // ========================================================
 
   getSwitches()
-    .forEach(
-      input => {
+    .forEach(input => {
 
-        const name =
-          input.dataset.setting;
+      const name =
+        input.dataset.setting;
 
-        if (
-          settingNames.includes(
-            name
-          )
-        ) {
+      if (
+        settingNames.includes(name)
+      ) {
 
-          collected[name] =
-            input.checked;
-
-        }
+        collected[name] =
+          input.checked;
 
       }
-    );
+
+    });
 
 
   // ========================================================
-  // 👥 GROUP MANAGEMENT
+  // 🗑️ ANTI DELETE MODE
+  // ========================================================
+
+  const deleteMode =
+    antiDeleteModeInput?.value ||
+    "currentChat";
+
+  collected.antiDeleteDM =
+    deleteMode === "privateChat";
+
+  collected.antiDeleteSameChat =
+    deleteMode === "currentChat";
+
+
+  // ========================================================
+  // 👥 GROUP ADMIN
   // ========================================================
 
   collected.adminGroupNumber =
@@ -1470,19 +1548,20 @@ function collectSettings() {
           .replace(/\D/g, "")
       : "";
 
-
   collected.adminGroupLink =
     adminGroupLinkInput
-      ? adminGroupLinkInput.value
-          .trim()
+      ? adminGroupLinkInput.value.trim()
       : "";
 
+
+  // ========================================================
+  // ⏰ GROUP SCHEDULE
+  // ========================================================
 
   collected.groupCloseTime =
     groupCloseTimeInput
       ? groupCloseTimeInput.value
       : "";
-
 
   collected.groupOpenTime =
     groupOpenTimeInput
@@ -1491,7 +1570,7 @@ function collectSettings() {
 
 
   // ========================================================
-  // 📜 GROUP BIO / PRINSIP
+  // 📜 GROUP BIO
   // ========================================================
 
   collected.groupBioText =
