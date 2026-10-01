@@ -968,10 +968,11 @@ async function handleMessage(
       );
 
       await sendUnknownCommand(
-        sock,
-        chatId,
-        commandName
-      );
+  sock,
+  chatId,
+  commandName,
+  prefix
+);
 
       return;
     }
