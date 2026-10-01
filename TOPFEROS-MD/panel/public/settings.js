@@ -194,16 +194,14 @@ const settingNames = [
   "fakeRecording",
 
   "autoStatusSeen",
-  "statusLike",
+  "autoStatusLike",
 
   "antiCall",
-
   "antiDelete",
   "antiDeleteSameChat",
   "antiDeleteDM",
 
   "antiSpam",
-
   "aiChat",
 
   "groupAntiSpam",
@@ -214,7 +212,6 @@ const settingNames = [
   "groupOpen"
 
 ];
-
 // ============================================================
 // 🖥️ SCREEN CONTROL
 // ============================================================
