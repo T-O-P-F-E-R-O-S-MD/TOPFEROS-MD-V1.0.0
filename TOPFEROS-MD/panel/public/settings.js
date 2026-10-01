@@ -1420,6 +1420,26 @@ if (
 
 }
 
+getSwitches()
+  .forEach(
+    input => {
+
+      const name =
+        input.dataset.setting;
+
+      if (
+        settingNames.includes(
+          name
+        )
+      ) {
+
+        collected[name] =
+          input.checked;
+
+      }
+
+    }
+  );
 
 // ============================================================
 // 🗑️ ANTI DELETE DESTINATION
