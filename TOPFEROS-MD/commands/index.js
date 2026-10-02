@@ -15,10 +15,21 @@ const path = require("path");
 const commands = new Map();
 const aliases = new Map();
 
-// Fichye ki pa dwe chaje kòm command
+// ============================================================
+// FILES THAT MUST NOT LOAD AS COMMANDS
+// ============================================================
+//
+// viewonce.js = sistèm View Once entèn
+// parrain.js  = ansyen command ki ranplase pa .pair
+//
+// Yo pa dwe parèt kòm commands.
+// ============================================================
+
 const HELPERS = new Set([
   "index.js",
-  "welcome.js"
+  "welcome.js",
+  "viewonce.js",
+  "parrain.js"
 ]);
 
 // ============================================================
@@ -60,7 +71,7 @@ function loadCommands() {
 
     try {
 
-      // Clear require cache so commands can be reloaded
+      // Clear require cache
       delete require.cache[
         require.resolve(fullPath)
       ];
@@ -141,11 +152,12 @@ function loadCommands() {
           continue;
         }
 
-        // Pa kite yon alias ranplase yon vrè command
+        // Pa kite alias ranplase yon vrè command
         if (
           commands.has(aliasName) ||
           aliases.has(aliasName)
         ) {
+
           console.warn(
             `⚠️ ALIAS SKIP [${aliasName}] — deja itilize`
           );
