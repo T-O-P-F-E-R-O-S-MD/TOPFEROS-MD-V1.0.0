@@ -50,6 +50,45 @@ try {
 
 const app = express();
 
+const { exec } = require('child_process');
+
+// API pou telechaje mizik ak videyo via yt-dlp
+app.post('/api/download', (req, res) => {
+    const { url, type } = req.body; // type ka 'audio' oswa 'video'
+
+    if (!url) {
+        return res.status(400).json({ status: false, message: "Ou dwe voye yon lyen." });
+    }
+
+    let command = '';
+    if (type === 'audio') {
+        // Jwenn pi bon odyo epi fòse kòd la ba li fòma mp3 nòmal
+        command = `yt-dlp -f "bestaudio" -g "${url}"`;
+    } else {
+        // Jwenn pi bon videyo MP4 ki gen odyo ansanm
+        command = `yt-dlp -f "best[ext=mp4]/best" -g "${url}"`;
+    }
+
+    exec(command, (error, stdout) => {
+        if (error) {
+            console.error(`yt-dlp error: ${error.message}`);
+            return res.status(500).json({ status: false, message: "Sèvè a pa ka trete lyen sa a." });
+        }
+
+        const directUrl = stdout.trim();
+        if (!directUrl) {
+            return res.status(404).json({ status: false, message: "Pa jwenn lyen telechajman dirèk." });
+        }
+
+        return res.json({
+            status: true,
+            type: type || 'video',
+            download_url: directUrl
+        });
+    });
+});
+
+
 /*
 |--------------------------------------------------------------------------
 | SERVER
