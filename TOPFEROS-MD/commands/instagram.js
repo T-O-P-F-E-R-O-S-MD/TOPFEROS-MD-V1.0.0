@@ -1,126 +1,204 @@
-const axios = require('axios');
+"use strict";
+
+const axios = require("axios");
+const config = require("../config");
 
 module.exports = {
-  name: 'instagram',
-  aliases: ['ig', 'insta', 'igdl'],
-  category: 'download',
-  description: 'Download media from Instagram',
+  name: "instagram",
+  aliases: ["ig", "insta"],
+  category: "downloader",
+  description: "Télécharger une vidéo ou une image Instagram.",
+  usage: ".instagram <lien Instagram>",
 
-  async execute({ sock, msg, args }) {
-    const url = args[0];
+  async execute({ sock, message, args, text }) {
+    const jid = message.key.remoteJid;
+    const url = String(text || args?.join(" ") || "").trim();
 
     if (!url) {
       return sock.sendMessage(
-        msg.key.remoteJid,
-        { text: '❌ Utilisation : .instagram <URL Instagram>' },
-        { quoted: msg }
+        jid,
+        {
+          text: "❌ Utilisation : *.instagram <lien Instagram>*"
+        },
+        { quoted: message }
       );
     }
 
-    if (!/^https?:\/\/([a-z0-9-]+\.)?instagram\.com\//i.test(url)) {
-      return sock.sendMessage(
-        msg.key.remoteJid,
-        { text: '❌ Veuillez fournir une URL Instagram valide.' },
-        { quoted: msg }
-      );
-    }
-
-    const apiUrl = process.env.DOWNLOAD_API_URL;
-    const apiKey = process.env.DOWNLOAD_API_KEY;
-    const timeout = Number(process.env.DOWNLOAD_API_TIMEOUT || 30000);
-
-    if (!apiUrl || !apiKey) {
-      return sock.sendMessage(
-        msg.key.remoteJid,
-        { text: '❌ L’API de téléchargement n’est pas configurée sur le serveur.' },
-        { quoted: msg }
-      );
-    }
+    let parsedUrl;
 
     try {
-      await sock.sendMessage(
-        msg.key.remoteJid,
-        { text: '⏳ Préparation de votre contenu Instagram...' },
-        { quoted: msg }
+      parsedUrl = new URL(url);
+    } catch {
+      return sock.sendMessage(
+        jid,
+        { text: "❌ Le lien fourni est invalide." },
+        { quoted: message }
       );
+    }
 
-      const response = await axios.get(apiUrl, {
-        params: { url },
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          Accept: 'application/json'
+    const hostname = parsedUrl.hostname.toLowerCase();
+
+    if (!hostname.includes("instagram.com")) {
+      return sock.sendMessage(
+        jid,
+        { text: "❌ Veuillez envoyer un lien Instagram valide." },
+        { quoted: message }
+      );
+    }
+
+    const apiUrl = config?.download?.apiUrl;
+    const apiKey = config?.download?.apiKey;
+    const timeout = Number(config?.download?.timeout) || 30000;
+
+    if (!apiUrl) {
+      return sock.sendMessage(
+        jid,
+        { text: "❌ Le service de téléchargement n'est pas configuré." },
+        { quoted: message }
+      );
+    }
+
+    await sock.sendMessage(
+      jid,
+      {
+        text: "⏳ Téléchargement du contenu Instagram en cours..."
+      },
+      { quoted: message }
+    );
+
+    try {
+      const headers = {
+        "Content-Type": "application/json",
+        Accept: "application/json"
+      };
+
+      if (apiKey) {
+        headers.Authorization = `Bearer ${apiKey}`;
+      }
+
+      const response = await axios.post(
+        apiUrl,
+        {
+          url,
+          type: "auto"
         },
-        timeout
-      });
-
-      const medias = Array.isArray(response.data?.medias)
-        ? response.data.medias
-        : [];
-
-      const media = medias.find(item =>
-        item?.url &&
-        (
-          item?.type === 'video' ||
-          item?.type === 'image' ||
-          item?.mime?.startsWith('video/') ||
-          item?.mime?.startsWith('image/') ||
-          /\.(mp4|mkv|webm|mov|jpg|jpeg|png|webp)(\?|$)/i.test(item.url)
-        )
+        {
+          headers,
+          timeout,
+          validateStatus: () => true
+        }
       );
 
-      if (!media?.url) {
+      if (response.status < 200 || response.status >= 300) {
+        console.error(
+          "INSTAGRAM API ERROR:",
+          response.status,
+          response.data
+        );
+
         return sock.sendMessage(
-          msg.key.remoteJid,
-          { text: '❌ Aucun média n’a été trouvé pour cette publication Instagram.' },
-          { quoted: msg }
+          jid,
+          {
+            text: "❌ Impossible de télécharger ce contenu Instagram."
+          },
+          { quoted: message }
         );
       }
 
-      const isVideo =
-        media.type === 'video' ||
-        media.mime?.startsWith('video/') ||
-        /\.(mp4|mkv|webm|mov)(\?|$)/i.test(media.url);
+      const data = response.data || {};
+      const result = data.result ?? data.data ?? data;
 
-      if (isVideo) {
-        await sock.sendMessage(
-          msg.key.remoteJid,
-          {
-            video: { url: media.url },
-            mimetype: media.mime || 'video/mp4',
-            fileName: `${media.title || 'instagram-video'}.mp4`,
-            caption: media.title
-              ? `🎬 ${media.title}`
-              : '🎬 Vidéo Instagram'
-          },
-          { quoted: msg }
+      const mediaUrl =
+        result?.downloadUrl ||
+        result?.download_url ||
+        result?.mediaUrl ||
+        result?.media_url ||
+        result?.videoUrl ||
+        result?.video_url ||
+        result?.imageUrl ||
+        result?.image_url ||
+        result?.fileUrl ||
+        result?.file_url ||
+        result?.media ||
+        result?.url ||
+        result?.link;
+
+      if (!mediaUrl || typeof mediaUrl !== "string") {
+        console.error(
+          "INSTAGRAM INVALID RESPONSE:",
+          JSON.stringify(data, null, 2)
         );
-      } else {
-        await sock.sendMessage(
-          msg.key.remoteJid,
+
+        return sock.sendMessage(
+          jid,
           {
-            image: { url: media.url },
-            mimetype: media.mime || 'image/jpeg',
-            fileName: `${media.title || 'instagram-image'}.jpg`,
-            caption: media.title
-              ? `🖼️ ${media.title}`
-              : '🖼️ Image Instagram'
+            text: "❌ Aucun fichier n'a été trouvé pour ce lien."
           },
-          { quoted: msg }
+          { quoted: message }
         );
       }
+
+      const title =
+        result?.title ||
+        result?.filename ||
+        "TOPFEROS MD";
+
+      const mime = String(
+        result?.mimeType ||
+        result?.mime ||
+        ""
+      ).toLowerCase();
+
+      const type = String(
+        result?.type ||
+        ""
+      ).toLowerCase();
+
+      if (
+        type.includes("image") ||
+        mime.startsWith("image/")
+      ) {
+        await sock.sendMessage(
+          jid,
+          {
+            image: { url: mediaUrl },
+            caption: "✨ Téléchargé avec succès par *TOPFEROS MD*"
+          },
+          { quoted: message }
+        );
+
+        return;
+      }
+
+      await sock.sendMessage(
+        jid,
+        {
+          video: { url: mediaUrl },
+          mimetype: mime || "video/mp4",
+          fileName: `${title}.mp4`,
+          caption: "✨ Téléchargé avec succès par *TOPFEROS MD*"
+        },
+        { quoted: message }
+      );
 
     } catch (error) {
       console.error(
-        '[INSTAGRAM]',
-        error?.response?.data || error.message
+        "INSTAGRAM ERROR:",
+        error?.response?.data ||
+        error?.stack ||
+        error?.message ||
+        error
       );
 
-      await sock.sendMessage(
-        msg.key.remoteJid,
-        {
-          text: '❌ Impossible de télécharger ce contenu Instagram pour le moment.'
-        },
-        { quoted: msg }
+      const errorMessage =
+        error?.code === "ECONNABORTED"
+          ? "❌ Le téléchargement a pris trop de temps."
+          : "❌ Une erreur est survenue pendant le téléchargement Instagram.";
+
+      return sock.sendMessage(
+        jid,
+        { text: errorMessage },
+        { quoted: message }
       );
     }
   }
