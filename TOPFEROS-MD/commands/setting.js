@@ -243,7 +243,7 @@ function buildSettingsMessage(info, settings) {
 
 /* ======================================================
    PANEL ACCESS MESSAGE
-   PASSWORD + BUTTON IN SAME MESSAGE
+   PASSWORD + COPY BUTTON
 ====================================================== */
 
 function buildAccessText(session) {
@@ -263,31 +263,26 @@ function buildAccessText(session) {
     getSettingsUrl() ||
     "Not Set";
 
-  return `╭━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╮
-┃      🔐 PANEL ACCESS         ┃
-╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯
+  return `🦁✧･ﾟ: *✧･ﾟ:* 🔐 *TOPFEROS MD LOGIN* 🔐 *:･ﾟ✧*:･ﾟ✧🐑
 
-📱 Owner Number
-└──➤ ${ownerNumber}
+   🌸 *Owner Number*
+   ╰┈➤ ${ownerNumber}
 
-🐊 Password
-└──➤ ${password}
+   🌸 *Password*
+   ╰┈➤ ${password}
 
-🌐 Web Settings
-└──➤ ${settingsUrl}
+   🌐 *Web Settings*
+   ╰┈➤ ${settingsUrl}
+   ╰┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈╯
+   ✨ *Keep Safe & Don't Share* ✨
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-🐴 Keep Safe & Don't Share 🐴
-
-╭━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╮
-┃ 🦁 By TOPFEROS MD TECH       ┃
-╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯`;
+TACH By TOPFEROS MD
+_________________________________`;
 }
 
-// ============================================================
-// 🔐 SEND PANEL ACCESS + COPY CODE
-// ============================================================
+/* ======================================================
+   SEND PANEL ACCESS + COPY PASSWORD
+====================================================== */
 
 async function sendAccessMessage(
   sock,
@@ -313,9 +308,9 @@ async function sendAccessMessage(
     const text =
       buildAccessText(session);
 
-    // --------------------------------------------------------
-    // SI PA GEN CODE → MESAJ NORMAL
-    // --------------------------------------------------------
+    /* ---------------------------------------------------
+       SI PA GEN CODE
+    --------------------------------------------------- */
 
     if (!code) {
 
@@ -336,9 +331,10 @@ async function sendAccessMessage(
       return;
     }
 
-    // --------------------------------------------------------
-    // COPY CODE BUTTON
-    // --------------------------------------------------------
+    /* ---------------------------------------------------
+       COPY PASSWORD BUTTON
+       User klike → WhatsApp kopye code A7K29P
+    --------------------------------------------------- */
 
     const messageContent =
       proto.Message.InteractiveMessage.create({
@@ -347,7 +343,8 @@ async function sendAccessMessage(
         },
 
         footer: {
-          text: "🦁 TOPFEROS MD TECH"
+          text:
+            "🦁 TOPFEROS MD TECH"
         },
 
         nativeFlowMessage: {
@@ -358,7 +355,7 @@ async function sendAccessMessage(
               buttonParamsJson:
                 JSON.stringify({
                   display_text:
-                    "📋 COPY CODE",
+                    "📋 Copy password",
 
                   id:
                     "copy_settings_password",
@@ -399,22 +396,22 @@ async function sendAccessMessage(
     );
 
     console.log(
-      "[TOPFEROS] PANEL ACCESS + COPY CODE SENT:",
+      "[TOPFEROS] PANEL ACCESS + COPY PASSWORD SENT:",
       code
     );
 
   } catch (error) {
 
     console.error(
-      "[TOPFEROS] COPY CODE ERROR:",
+      "[TOPFEROS] COPY PASSWORD ERROR:",
       error?.stack ||
       error?.message ||
       error
     );
 
-    // --------------------------------------------------------
-    // FALLBACK
-    // --------------------------------------------------------
+    /* ---------------------------------------------------
+       FALLBACK SI BUTTON NAN PA SIPÒTE
+    --------------------------------------------------- */
 
     try {
 
@@ -440,6 +437,7 @@ async function sendAccessMessage(
     }
   }
 }
+
 /* ======================================================
    MESSAGE 3
 ====================================================== */
@@ -476,6 +474,7 @@ async function execute({
   try {
 
     if (!session?.sessionId) {
+
       await sock.sendMessage(
         chatId,
         {
@@ -492,7 +491,9 @@ async function execute({
       return;
     }
 
-    /* LOAD REAL SETTINGS */
+    /* ---------------------------------------------------
+       LOAD REAL SETTINGS
+    --------------------------------------------------- */
 
     const loaded =
       settingPanel.loadSettings(
@@ -500,6 +501,7 @@ async function execute({
       );
 
     if (!loaded) {
+
       await sock.sendMessage(
         chatId,
         {
@@ -523,7 +525,9 @@ async function execute({
       loaded.settings ||
       {};
 
-    /* MESSAGE 1 */
+    /* ---------------------------------------------------
+       MESSAGE 1
+    --------------------------------------------------- */
 
     await sock.sendMessage(
       chatId,
@@ -547,9 +551,10 @@ async function execute({
         )
     );
 
-    /* MESSAGE 2
-       PANEL ACCESS + COPY BUTTON
-       NAN MENM MESAJ */
+    /* ---------------------------------------------------
+       MESSAGE 2
+       LOGIN + COPY PASSWORD
+    --------------------------------------------------- */
 
     await sendAccessMessage(
       sock,
@@ -566,7 +571,9 @@ async function execute({
         )
     );
 
-    /* MESSAGE 3 */
+    /* ---------------------------------------------------
+       MESSAGE 3
+    --------------------------------------------------- */
 
     await sock.sendMessage(
       chatId,
@@ -581,6 +588,7 @@ async function execute({
     );
 
   } catch (error) {
+
     console.error(
       "[TOPFEROS] ERÈ .setting:",
       error?.stack ||
@@ -589,6 +597,7 @@ async function execute({
     );
 
     try {
+
       await sock.sendMessage(
         chatId,
         {
@@ -597,6 +606,7 @@ async function execute({
             "Gen yon erè pandan m ap prepare Settings Panel la."
         }
       );
+
     } catch {}
   }
 }
