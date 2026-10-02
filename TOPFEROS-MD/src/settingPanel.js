@@ -15,48 +15,75 @@ const PANEL_URL =
 
 const defaultSettings = {
 
+  // ======================================================
+  // MODE
+  // ======================================================
+
   publicMode: true,
   privateMode: false,
+
+
+  // ======================================================
+  // SYSTEM AUTOMATION
+  // ======================================================
 
   alwaysOnline: true,
   fakeTyping: false,
   fakeRecording: false,
 
+  aiChat: false,
+
+  autoReply: false,
+  autoStatusSeen: false,
+  autoStatus: false,
+  autoStatusLike: false,
+  statusLike: false,
+  autoReact: false,
+
+
+  // ======================================================
+  // ANTI SYSTEM
+  // ======================================================
+
   antiCall: false,
+  antiCallMode: "ALL",
 
   antiDelete: false,
+  antiDeleteMode: "same_chat",
   antiDeleteSameChat: true,
   antiDeleteDM: false,
+  antiDeleteDestination: "same_chat",
 
   antiSpam: false,
+
+  antiBug: false,
+  antiBot: false,
+
   antiLink: false,
   antiRobot: false,
 
-  // STATUS
-  autoStatusSeen: false,
-  autoStatus: false,
-  statusReply: false,
-  statusLike: false,
 
-  // GROUP SECURITY
+  // ======================================================
+  // GROUP AUTOMATION
+  // ======================================================
+
   groupAntiSpam: false,
   groupAntiLink: false,
   groupAntiDelete: false,
 
-  // GROUP AUTOMATION
   groupClose: false,
   groupOpen: false,
 
   adminGroupNumber: "",
   adminGroupLink: "",
+
+  groupTimeZone: "UTC-04:00",
+
   groupCloseTime: "",
   groupOpenTime: "",
 
-  // GROUP BIO / PRINSIP
   groupBioEnabled: false,
-  groupBioText: "",
-
-  aiChat: false
+  groupBioText: ""
 
 };
 
