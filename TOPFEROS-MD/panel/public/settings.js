@@ -189,29 +189,35 @@ const groupBioTextInput =
 
 const settingNames = [
 
+  // BASIC MODE
   "publicMode",
   "privateMode",
 
+  // SYSTEM AUTOMATION
   "alwaysOnline",
   "fakeTyping",
   "fakeRecording",
-
-  "autoStatusSeen",
-  "statusLike",
-
-  "antiCall",
-  "antiDelete",
-  "antiSpam",
-
   "aiChat",
+  "autoReply",
+  "autoStatusSeen",
+  "autoStatusLike",
+  "autoReact",
 
+  // ANTI SYSTEM
+  "antiDelete",
+  "antiDeleteSameChat",
+  "antiDeleteDM",
+  "antiSpam",
+  "antiCall",
+  "antiBug",
+  "antiBot",
+
+  // GROUP AUTOMATION
   "groupAntiSpam",
   "groupAntiLink",
   "groupAntiDelete",
-
   "groupClose",
   "groupOpen",
-
   "groupBioEnabled"
 
 ];
