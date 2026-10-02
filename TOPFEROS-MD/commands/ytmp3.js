@@ -1,96 +1,181 @@
-const axios = require('axios');
+"use strict";
+
+const axios = require("axios");
+const config = require("../config");
 
 module.exports = {
-  name: 'ytmp3',
-  aliases: ['ytaudio', 'yta'],
-  category: 'download',
-  description: 'Download audio from YouTube',
+  name: "ytmp3",
+  aliases: ["ytaudio", "yta"],
+  category: "downloader",
+  description: "Télécharger l'audio d'une vidéo YouTube.",
+  usage: ".ytmp3 <lien YouTube>",
 
-  async execute({ sock, msg, args }) {
-    const url = args[0];
+  async execute({ sock, message, args, text }) {
+    const jid = message.key.remoteJid;
+    const url = String(text || args?.join(" ") || "").trim();
 
     if (!url) {
       return sock.sendMessage(
-        msg.key.remoteJid,
-        { text: '❌ Utilisation : .ytmp3 <URL YouTube>' },
-        { quoted: msg }
+        jid,
+        {
+          text: "❌ Utilisation : *.ytmp3 <lien YouTube>*"
+        },
+        { quoted: message }
       );
     }
 
-    if (!/^https?:\/\/(www\.)?(youtube\.com|youtu\.be)\//i.test(url)) {
-      return sock.sendMessage(
-        msg.key.remoteJid,
-        { text: '❌ Veuillez fournir une URL YouTube valide.' },
-        { quoted: msg }
-      );
-    }
-
-    const apiUrl = process.env.DOWNLOAD_API_URL;
-    const apiKey = process.env.DOWNLOAD_API_KEY;
-    const timeout = Number(process.env.DOWNLOAD_API_TIMEOUT || 30000);
-
-    if (!apiUrl || !apiKey) {
-      return sock.sendMessage(
-        msg.key.remoteJid,
-        { text: '❌ L’API de téléchargement n’est pas configurée sur le serveur.' },
-        { quoted: msg }
-      );
-    }
+    let parsedUrl;
 
     try {
-      await sock.sendMessage(
-        msg.key.remoteJid,
-        { text: '⏳ Préparation de votre audio...' },
-        { quoted: msg }
+      parsedUrl = new URL(url);
+    } catch {
+      return sock.sendMessage(
+        jid,
+        { text: "❌ Le lien fourni est invalide." },
+        { quoted: message }
       );
+    }
 
-      const response = await axios.get(apiUrl, {
-        params: { url },
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          Accept: 'application/json'
+    const hostname = parsedUrl.hostname.toLowerCase();
+
+    if (
+      !hostname.includes("youtube.com") &&
+      !hostname.includes("youtu.be")
+    ) {
+      return sock.sendMessage(
+        jid,
+        { text: "❌ Veuillez envoyer un lien YouTube valide." },
+        { quoted: message }
+      );
+    }
+
+    const apiUrl = config?.download?.apiUrl;
+    const apiKey = config?.download?.apiKey;
+    const timeout = Number(config?.download?.timeout) || 30000;
+
+    if (!apiUrl) {
+      return sock.sendMessage(
+        jid,
+        { text: "❌ Le service de téléchargement n'est pas configuré." },
+        { quoted: message }
+      );
+    }
+
+    await sock.sendMessage(
+      jid,
+      {
+        text: "⏳ Téléchargement audio YouTube en cours..."
+      },
+      { quoted: message }
+    );
+
+    try {
+      const headers = {
+        "Content-Type": "application/json",
+        Accept: "application/json"
+      };
+
+      if (apiKey) {
+        headers.Authorization = `Bearer ${apiKey}`;
+      }
+
+      const response = await axios.post(
+        apiUrl,
+        {
+          url,
+          type: "audio"
         },
-        timeout
-      });
-
-      const medias = Array.isArray(response.data?.medias)
-        ? response.data.medias
-        : [];
-
-      const audio = medias.find(media =>
-        media?.type === 'audio' ||
-        media?.mime?.startsWith('audio/') ||
-        /\.(mp3|m4a|aac|ogg|wav)(\?|$)/i.test(media?.url || '')
+        {
+          headers,
+          timeout,
+          validateStatus: () => true
+        }
       );
 
-      if (!audio?.url) {
+      if (response.status < 200 || response.status >= 300) {
+        console.error(
+          "YTMP3 API ERROR:",
+          response.status,
+          response.data
+        );
+
         return sock.sendMessage(
-          msg.key.remoteJid,
-          { text: '❌ Aucun fichier audio n’a été trouvé pour cette vidéo.' },
-          { quoted: msg }
+          jid,
+          {
+            text: "❌ Impossible de télécharger cet audio YouTube."
+          },
+          { quoted: message }
         );
       }
 
+      const data = response.data || {};
+      const result = data.result ?? data.data ?? data;
+
+      const mediaUrl =
+        result?.downloadUrl ||
+        result?.download_url ||
+        result?.mediaUrl ||
+        result?.media_url ||
+        result?.fileUrl ||
+        result?.file_url ||
+        result?.media ||
+        result?.url ||
+        result?.link;
+
+      if (!mediaUrl || typeof mediaUrl !== "string") {
+        console.error(
+          "YTMP3 INVALID RESPONSE:",
+          JSON.stringify(data, null, 2)
+        );
+
+        return sock.sendMessage(
+          jid,
+          {
+            text: "❌ Aucun audio n'a été trouvé pour ce lien."
+          },
+          { quoted: message }
+        );
+      }
+
+      const title =
+        result?.title ||
+        result?.filename ||
+        "TOPFEROS MD";
+
+      const mime =
+        result?.mimeType ||
+        result?.mime ||
+        "audio/mpeg";
+
       await sock.sendMessage(
-        msg.key.remoteJid,
+        jid,
         {
-          audio: { url: audio.url },
-          mimetype: audio.mime || 'audio/mpeg',
-          fileName: `${audio.title || 'youtube-audio'}.mp3`
+          audio: { url: mediaUrl },
+          mimetype: mime,
+          fileName: `${title}.mp3`,
+          ptt: false
         },
-        { quoted: msg }
+        { quoted: message }
       );
 
     } catch (error) {
       console.error(
-        '[YTMP3]',
-        error?.response?.data || error.message
+        "YTMP3 ERROR:",
+        error?.response?.data ||
+        error?.stack ||
+        error?.message ||
+        error
       );
 
-      await sock.sendMessage(
-        msg.key.remoteJid,
-        { text: '❌ Impossible de télécharger cet audio pour le moment.' },
-        { quoted: msg }
+      const errorMessage =
+        error?.code === "ECONNABORTED"
+          ? "❌ Le téléchargement a pris trop de temps."
+          : "❌ Une erreur est survenue pendant le téléchargement audio.";
+
+      return sock.sendMessage(
+        jid,
+        { text: errorMessage },
+        { quoted: message }
       );
     }
   }
