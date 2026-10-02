@@ -1,223 +1,289 @@
 "use strict";
 
-const axios = require("axios");
 const config = require("../config");
 
-module.exports = {
-  name: "download",
-  aliases: ["dl", "d"],
-  category: "downloader",
-  description: "Télécharger une vidéo, une image ou un audio depuis un lien.",
-  usage: ".download <url>",
-
-  async execute({ sock, message, args, text }) {
-    const jid = message.key.remoteJid;
-    const url = String(text || args?.join(" ") || "").trim();
-
-    if (!url) {
-      return sock.sendMessage(
-        jid,
-        {
-          text: "❌ Utilisation : *.download <lien>*\n\nEnvoyez un lien valide à télécharger."
-        },
-        { quoted: message }
+function validUrl(value) {
+  try {
+    const url =
+      new URL(
+        String(value || "").trim()
       );
-    }
 
-    try {
-      new URL(url);
-    } catch {
-      return sock.sendMessage(
-        jid,
-        { text: "❌ Le lien fourni est invalide." },
-        { quoted: message }
-      );
-    }
-
-    await sock.sendMessage(
-      jid,
-      {
-        text: "⏳ *TOPFEROS MD* traite votre lien. Veuillez patienter..."
-      },
-      { quoted: message }
+    return /^https?:$/.test(
+      url.protocol
     );
 
-    const apiUrl = config?.download?.apiUrl;
-    const apiKey = config?.download?.apiKey;
-    const timeout = Number(config?.download?.timeout) || 30000;
+  } catch {
+    return false;
+  }
+}
 
-    if (!apiUrl) {
-      return sock.sendMessage(
-        jid,
-        { text: "❌ Le service de téléchargement n'est pas configuré." },
-        { quoted: message }
-      );
+function pickMedia(data, type) {
+
+  const values = [
+    data?.downloadUrl,
+    data?.download_url,
+    data?.mediaUrl,
+    data?.media_url,
+    data?.url,
+    data?.link,
+
+    data?.result?.downloadUrl,
+    data?.result?.download_url,
+    data?.result?.url,
+
+    data?.data?.downloadUrl,
+    data?.data?.download_url,
+    data?.data?.url
+  ];
+
+  if (type === "audio") {
+    values.unshift(
+      data?.audioUrl,
+      data?.audio_url,
+      data?.musicUrl,
+      data?.music_url,
+      data?.result?.audioUrl,
+      data?.data?.audioUrl
+    );
+  }
+
+  for (const value of values) {
+    if (validUrl(value)) {
+      return value;
     }
+  }
 
-    try {
-      const headers = {
-        "Content-Type": "application/json",
-        Accept: "application/json"
-      };
+  return null;
+}
 
-      if (apiKey) {
-        headers.Authorization = `Bearer ${apiKey}`;
-      }
+async function requestDownload(
+  url,
+  type,
+  timeout
+) {
+  const controller =
+    new AbortController();
 
-      const response = await axios.post(
-        apiUrl,
-        { url },
+  const timer =
+    setTimeout(
+      () => controller.abort(),
+      timeout
+    );
+
+  try {
+
+    const response =
+      await fetch(
+        config.download.apiUrl,
         {
-          headers,
-          timeout,
-          validateStatus: () => true
+          method: "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json",
+
+            "Accept":
+              "application/json",
+
+            "Authorization":
+              `Bearer ${config.download.apiKey}`
+          },
+
+          body:
+            JSON.stringify({
+              url,
+              type
+            }),
+
+          signal:
+            controller.signal
         }
       );
 
-      if (response.status < 200 || response.status >= 300) {
-        console.error(
-          "DOWNLOAD API ERROR:",
-          response.status,
-          response.data
-        );
+    const raw =
+      await response.text();
 
-        return sock.sendMessage(
-          jid,
-          {
-            text: "❌ Le service de téléchargement n'a pas pu traiter ce lien."
-          },
-          { quoted: message }
-        );
+    let data;
+
+    try {
+      data =
+        JSON.parse(raw);
+    } catch {
+      data = {};
+    }
+
+    if (!response.ok) {
+      throw new Error(
+        `Download API HTTP ${response.status}: ` +
+        raw.slice(0, 250)
+      );
+    }
+
+    return data;
+
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function execute({
+  sock,
+  message,
+  text = ""
+}) {
+  const jid =
+    message?.key?.remoteJid;
+
+  const url =
+    String(text || "").trim();
+
+  if (!jid) return;
+
+  if (!url) {
+    return sock.sendMessage(
+      jid,
+      {
+        text:
+          "❌ Voye URL la.\n\n" +
+          "Egzanp:\n" +
+          ".download https://..."
+      },
+      {
+        quoted: message
       }
+    );
+  }
 
-      const data = response.data || {};
-      const result = data.result ?? data.data ?? data;
-
-      const mediaUrl =
-        result?.downloadUrl ||
-        result?.download_url ||
-        result?.mediaUrl ||
-        result?.media_url ||
-        result?.fileUrl ||
-        result?.file_url ||
-        result?.media ||
-        result?.url ||
-        result?.link;
-
-      if (!mediaUrl || typeof mediaUrl !== "string") {
-        console.error(
-          "DOWNLOAD API INVALID RESPONSE:",
-          JSON.stringify(data, null, 2)
-        );
-
-        return sock.sendMessage(
-          jid,
-          {
-            text: "❌ Aucun fichier téléchargeable n'a été trouvé."
-          },
-          { quoted: message }
-        );
+  if (!validUrl(url)) {
+    return sock.sendMessage(
+      jid,
+      {
+        text:
+          "❌ URL la pa valid."
+      },
+      {
+        quoted: message
       }
+    );
+  }
 
-      const type = String(
-        result?.type ||
-        result?.mimeType ||
-        result?.mime ||
-        ""
-      ).toLowerCase();
-
-      const mime = String(
-        result?.mimeType ||
-        result?.mime ||
-        ""
-      ).toLowerCase();
-
-      const title =
-        result?.title ||
-        result?.filename ||
-        "TOPFEROS MD";
-
-      if (
-        type.includes("audio") ||
-        mime.startsWith("audio/")
-      ) {
-        await sock.sendMessage(
-          jid,
-          {
-            audio: { url: mediaUrl },
-            mimetype: mime || "audio/mpeg",
-            fileName: `${title}.mp3`,
-            ptt: false
-          },
-          { quoted: message }
-        );
-
-        return;
+  if (
+    !config.download?.apiUrl ||
+    !config.download?.apiKey
+  ) {
+    return sock.sendMessage(
+      jid,
+      {
+        text:
+          "⚠️ DOWNLOAD_API_URL ak " +
+          "DOWNLOAD_API_KEY pa configure " +
+          "sou Render."
+      },
+      {
+        quoted: message
       }
+    );
+  }
 
-      if (
-        type.includes("image") ||
-        mime.startsWith("image/")
-      ) {
-        await sock.sendMessage(
-          jid,
-          {
-            image: { url: mediaUrl },
-            caption: "✨ Téléchargé avec succès par *TOPFEROS MD*"
-          },
-          { quoted: message }
-        );
+  const type =
+    /\.(mp3|m4a|wav|aac|ogg)(\?|$)/i.test(url)
+      ? "audio"
+      : "video";
 
-        return;
-      }
+  try {
 
-      if (
-        type.includes("video") ||
-        mime.startsWith("video/")
-      ) {
-        await sock.sendMessage(
-          jid,
-          {
-            video: { url: mediaUrl },
-            mimetype: mime || "video/mp4",
-            caption: "✨ Téléchargé avec succès par *TOPFEROS MD*"
-          },
-          { quoted: message }
-        );
+    const data =
+      await requestDownload(
+        url,
+        type,
+        Number(
+          config.download.timeout
+        ) || 30000
+      );
 
-        return;
-      }
+    const media =
+      pickMedia(
+        data,
+        type
+      );
+
+    if (!media) {
+      throw new Error(
+        "No media URL returned"
+      );
+    }
+
+    if (type === "audio") {
 
       await sock.sendMessage(
         jid,
         {
-          document: { url: mediaUrl },
-          fileName: `${title}.bin`,
-          mimetype: mime || "application/octet-stream",
-          caption: "✨ Téléchargé avec succès par *TOPFEROS MD*"
+          audio: {
+            url: media
+          },
+
+          mimetype:
+            "audio/mpeg"
         },
-        { quoted: message }
+        {
+          quoted: message
+        }
       );
 
-    } catch (error) {
-      console.error(
-        "DOWNLOAD ERROR:",
-        error?.response?.data ||
-        error?.stack ||
-        error?.message ||
-        error
-      );
+    } else {
 
-      const messageText =
-        error?.code === "ECONNABORTED"
-          ? "❌ Le téléchargement a pris trop de temps."
-          : "❌ Une erreur est survenue pendant le téléchargement.";
-
-      return sock.sendMessage(
+      await sock.sendMessage(
         jid,
-        { text: messageText },
-        { quoted: message }
+        {
+          video: {
+            url: media
+          },
+
+          mimetype:
+            "video/mp4"
+        },
+        {
+          quoted: message
+        }
       );
     }
+
+  } catch (e) {
+
+    console.error(
+      "[DOWNLOAD]",
+      e?.stack || e
+    );
+
+    await sock.sendMessage(
+      jid,
+      {
+        text:
+          "❌ Download la echwe.\n\n" +
+          "Verifye API provider la epi " +
+          "asire response la gen " +
+          "downloadUrl, mediaUrl oswa url."
+      },
+      {
+        quoted: message
+      }
+    );
   }
+}
+
+module.exports = {
+  name: "download",
+
+  aliases: [
+    "dl"
+  ],
+
+  description:
+    "Download media soti nan URL.",
+
+  usage:
+    ".download <url>",
+
+  execute
 };
