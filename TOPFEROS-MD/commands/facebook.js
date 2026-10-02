@@ -1,104 +1,183 @@
-const axios = require('axios');
+"use strict";
+
+const axios = require("axios");
+const config = require("../config");
 
 module.exports = {
-  name: 'facebook',
-  aliases: ['fb', 'fbdl'],
-  category: 'download',
-  description: 'Download video from Facebook',
+  name: "facebook",
+  aliases: ["fb", "fbdl"],
+  category: "downloader",
+  description: "Télécharger une vidéo Facebook.",
+  usage: ".facebook <lien Facebook>",
 
-  async execute({ sock, msg, args }) {
-    const url = args[0];
+  async execute({ sock, message, args, text }) {
+    const jid = message.key.remoteJid;
+    const url = String(text || args?.join(" ") || "").trim();
 
     if (!url) {
       return sock.sendMessage(
-        msg.key.remoteJid,
-        { text: '❌ Utilisation : .facebook <URL Facebook>' },
-        { quoted: msg }
+        jid,
+        {
+          text: "❌ Utilisation : *.facebook <lien Facebook>*"
+        },
+        { quoted: message }
       );
     }
 
-    if (!/^https?:\/\/([a-z0-9-]+\.)?(facebook\.com|fb\.watch)\//i.test(url)) {
-      return sock.sendMessage(
-        msg.key.remoteJid,
-        { text: '❌ Veuillez fournir une URL Facebook valide.' },
-        { quoted: msg }
-      );
-    }
-
-    const apiUrl = process.env.DOWNLOAD_API_URL;
-    const apiKey = process.env.DOWNLOAD_API_KEY;
-    const timeout = Number(process.env.DOWNLOAD_API_TIMEOUT || 30000);
-
-    if (!apiUrl || !apiKey) {
-      return sock.sendMessage(
-        msg.key.remoteJid,
-        { text: '❌ L’API de téléchargement n’est pas configurée sur le serveur.' },
-        { quoted: msg }
-      );
-    }
+    let parsedUrl;
 
     try {
-      await sock.sendMessage(
-        msg.key.remoteJid,
-        { text: '⏳ Préparation de votre vidéo Facebook...' },
-        { quoted: msg }
+      parsedUrl = new URL(url);
+    } catch {
+      return sock.sendMessage(
+        jid,
+        { text: "❌ Le lien fourni est invalide." },
+        { quoted: message }
       );
+    }
 
-      const response = await axios.get(apiUrl, {
-        params: { url },
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          Accept: 'application/json'
+    const hostname = parsedUrl.hostname.toLowerCase();
+
+    if (
+      !hostname.includes("facebook.com") &&
+      !hostname.includes("fb.watch")
+    ) {
+      return sock.sendMessage(
+        jid,
+        { text: "❌ Veuillez envoyer un lien Facebook valide." },
+        { quoted: message }
+      );
+    }
+
+    const apiUrl = config?.download?.apiUrl;
+    const apiKey = config?.download?.apiKey;
+    const timeout = Number(config?.download?.timeout) || 30000;
+
+    if (!apiUrl) {
+      return sock.sendMessage(
+        jid,
+        { text: "❌ Le service de téléchargement n'est pas configuré." },
+        { quoted: message }
+      );
+    }
+
+    await sock.sendMessage(
+      jid,
+      {
+        text: "⏳ Téléchargement de la vidéo Facebook en cours..."
+      },
+      { quoted: message }
+    );
+
+    try {
+      const headers = {
+        "Content-Type": "application/json",
+        Accept: "application/json"
+      };
+
+      if (apiKey) {
+        headers.Authorization = `Bearer ${apiKey}`;
+      }
+
+      const response = await axios.post(
+        apiUrl,
+        {
+          url,
+          type: "video"
         },
-        timeout
-      });
-
-      const medias = Array.isArray(response.data?.medias)
-        ? response.data.medias
-        : [];
-
-      const video = medias.find(media =>
-        media?.url &&
-        (
-          media?.type === 'video' ||
-          media?.mime?.startsWith('video/') ||
-          /\.(mp4|mkv|webm|mov)(\?|$)/i.test(media.url)
-        )
+        {
+          headers,
+          timeout,
+          validateStatus: () => true
+        }
       );
 
-      if (!video?.url) {
+      if (response.status < 200 || response.status >= 300) {
+        console.error(
+          "FACEBOOK API ERROR:",
+          response.status,
+          response.data
+        );
+
         return sock.sendMessage(
-          msg.key.remoteJid,
-          { text: '❌ Aucun fichier vidéo n’a été trouvé pour cette publication Facebook.' },
-          { quoted: msg }
+          jid,
+          {
+            text: "❌ Impossible de télécharger cette vidéo Facebook."
+          },
+          { quoted: message }
         );
       }
 
+      const data = response.data || {};
+      const result = data.result ?? data.data ?? data;
+
+      const mediaUrl =
+        result?.downloadUrl ||
+        result?.download_url ||
+        result?.mediaUrl ||
+        result?.media_url ||
+        result?.videoUrl ||
+        result?.video_url ||
+        result?.fileUrl ||
+        result?.file_url ||
+        result?.media ||
+        result?.url ||
+        result?.link;
+
+      if (!mediaUrl || typeof mediaUrl !== "string") {
+        console.error(
+          "FACEBOOK INVALID RESPONSE:",
+          JSON.stringify(data, null, 2)
+        );
+
+        return sock.sendMessage(
+          jid,
+          {
+            text: "❌ Aucune vidéo n'a été trouvée pour ce lien."
+          },
+          { quoted: message }
+        );
+      }
+
+      const title =
+        result?.title ||
+        result?.filename ||
+        "TOPFEROS MD";
+
+      const mime =
+        result?.mimeType ||
+        result?.mime ||
+        "video/mp4";
+
       await sock.sendMessage(
-        msg.key.remoteJid,
+        jid,
         {
-          video: { url: video.url },
-          mimetype: video.mime || 'video/mp4',
-          fileName: `${video.title || 'facebook-video'}.mp4`,
-          caption: video.title
-            ? `🎬 ${video.title}`
-            : '🎬 Vidéo Facebook'
+          video: { url: mediaUrl },
+          mimetype: mime,
+          fileName: `${title}.mp4`,
+          caption: "✨ Téléchargé avec succès par *TOPFEROS MD*"
         },
-        { quoted: msg }
+        { quoted: message }
       );
 
     } catch (error) {
       console.error(
-        '[FACEBOOK]',
-        error?.response?.data || error.message
+        "FACEBOOK ERROR:",
+        error?.response?.data ||
+        error?.stack ||
+        error?.message ||
+        error
       );
 
-      await sock.sendMessage(
-        msg.key.remoteJid,
-        {
-          text: '❌ Impossible de télécharger cette vidéo Facebook pour le moment.'
-        },
-        { quoted: msg }
+      const errorMessage =
+        error?.code === "ECONNABORTED"
+          ? "❌ Le téléchargement a pris trop de temps."
+          : "❌ Une erreur est survenue pendant le téléchargement Facebook.";
+
+      return sock.sendMessage(
+        jid,
+        { text: errorMessage },
+        { quoted: message }
       );
     }
   }
