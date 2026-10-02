@@ -1,1767 +1,1299 @@
 "use strict";
 
+// ╔════════════════════════════════════════════════════╗
+// ║              🦁 TOPFEROS MD                      ║
+// ║              SETTINGS PANEL                       ║
+// ╚════════════════════════════════════════════════════╝
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🦁 TOPFEROS MD — SETTINGS PANEL
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+const crypto = require("crypto");
 
-
-// ============================================================
-// 🔐 URL / SESSION
-// ============================================================
-
-const params =
-  new URLSearchParams(
-    window.location.search
-  );
-
-let sessionId =
-  params.get("session") || "";
+const PANEL_URL =
+  process.env.PANEL_URL ||
+  "http://localhost:3000";
 
 
-// ============================================================
-// 🌐 LANGUAGE
-// ============================================================
+// ======================================================
+// ⚙️ DEFAULT SETTINGS
+// ======================================================
 
-let currentLanguage =
-  localStorage.getItem(
-    "topferos_settings_language"
-  ) || "en";
+const defaultSettings = {
 
+  publicMode: true,
+  privateMode: false,
 
-// ============================================================
-// 🤖 AI TRANSLATION
-// ============================================================
+  alwaysOnline: true,
+  fakeTyping: false,
+  fakeRecording: false,
 
-let translationInProgress =
-  false;
+  autoReply: false,
+  autoStatusSeen: false,
+  autoStatusLike: false,
+  autoStatus: false,
+  autoReact: false,
+  statusReply: false,
+  statusLike: false,
 
-const translationCache =
-  new Map();
+  antiCall: false,
+  antiCallMode: "ALL",
 
+  antiDelete: false,
+  antiDeleteMode: "ALL",
+  antiDeleteSameChat: true,
+  antiDeleteDM: false,
+  antiDeleteDestination: "same",
 
-// ============================================================
-// 📦 SETTINGS DATA
-// ============================================================
+  antiSpam: false,
 
-let settings = {};
+  antiBug: false,
+  antiBot: false,
 
-let botInformation = {};
+  aiChat: false,
 
+  groupAntiSpam: false,
+  groupAntiLink: false,
+  groupAntiDelete: false,
 
-// ============================================================
-// 🖼️ LOGO
-// ============================================================
+  adminGroup: false,
+  adminGroupNumber: "",
+  adminGroupLink: "",
 
-const LOGO_URL =
-  "/assets/logo.png";
+  groupClose: false,
+  groupOpen: false,
 
+  groupCloseTime: "",
+  groupOpenTime: "",
 
-// ============================================================
-// 📦 ELEMENTS
-// ============================================================
+  groupTimeZone: "Atlantic/Port_of_Spain",
 
-const languageScreen =
-  document.getElementById(
-    "languageScreen"
-  );
+  groupBioEnabled: false,
+  groupBioText: ""
 
-const loginScreen =
-  document.getElementById(
-    "loginScreen"
-  );
-
-const settingsPanel =
-  document.getElementById(
-    "settingsPanel"
-  );
-
-const settingsNumberInput =
-  document.getElementById(
-    "settingsNumber"
-  );
-
-const settingsCodeInput =
-  document.getElementById(
-    "settingsCode"
-  );
-
-const verifyButton =
-  document.getElementById(
-    "verifyButton"
-  );
-
-const loginMessage =
-  document.getElementById(
-    "loginMessage"
-  );
-
-const saveButton =
-  document.getElementById(
-    "saveSettings"
-  );
-
-const settingsMessage =
-  document.getElementById(
-    "settingsMessage"
-  );
-
-const botNameInput =
-  document.getElementById(
-    "botName"
-  );
-
-const botAgeInput =
-  document.getElementById(
-    "botAge"
-  );
-
-const botPrefixInput =
-  document.getElementById(
-    "botPrefix"
-  );
-
-const botOriginInput =
-  document.getElementById(
-    "botOrigin"
-  );
-
-const botFooterInput =
-  document.getElementById(
-    "botFooter"
-  );
-
-const botModeInput =
-  document.getElementById(
-    "botMode"
-  );
-
-const ownerNumberInput =
-  document.getElementById(
-    "ownerNumber"
-  );
-
-const antiDeleteModeInput =
-  document.getElementById(
-    "antiDeleteMode"
-  );
-
-const botLogo =
-  document.getElementById(
-    "botLogo"
-  );
+};
 
 
-const adminGroupNumberInput =
-  document.getElementById(
-    "adminGroupNumber"
-  );
+// ======================================================
+// 🤖 DEFAULT BOT INFORMATION
+// ======================================================
 
-const adminGroupLinkInput =
-  document.getElementById(
-    "adminGroupLink"
-  );
+const defaultBotInformation = {
 
-const groupCloseTimeInput =
-  document.getElementById(
-    "groupCloseTime"
-  );
+  name: "TOPFEROS MD",
 
-const groupOpenTimeInput =
-  document.getElementById(
-    "groupOpenTime"
-  );
+  number: "",
 
-const groupBioEnabledInput =
-  document.getElementById(
-    "groupBioEnabled"
-  );
+  location: "TOPFEROS CHINWA",
 
-const groupBioTextInput =
-  document.getElementById(
-    "groupBioText"
-  );
+  age: 20,
+
+  prefix: ".",
+
+  footer: "🦁 TECH BY TOPFEROS MD 🐑",
+
+  mode: "Public"
+
+};
 
 
-// ============================================================
-// ⚙️ SETTINGS KI PANEL LA SIPÒTE
-// ============================================================
+// ======================================================
+// 📦 SESSIONS
+// ======================================================
 
-const settingNames = [
+const sessions = new Map();
 
-  // BASIC MODE
-  "publicMode",
-  "privateMode",
 
-  // SYSTEM AUTOMATION
-  "alwaysOnline",
-  "fakeTyping",
-  "fakeRecording",
-  "aiChat",
-  "autoReply",
-  "autoStatusSeen",
-  "autoStatusLike",
-  "autoReact",
+// ======================================================
+// 🔢 NORMALIZE NUMBER
+// ======================================================
 
-  // ANTI SYSTEM
-  "antiDelete",
-  "antiDeleteSameChat",
-  "antiDeleteDM",
-  "antiSpam",
-  "antiCall",
-  "antiBug",
-  "antiBot",
+function normalizeNumber(number) {
 
-  // GROUP AUTOMATION
-  "groupAntiSpam",
-  "groupAntiLink",
-  "groupAntiDelete",
-  "groupClose",
-  "groupOpen",
-  "groupBioEnabled"
-
-];
-// ============================================================
-// 🖥️ SCREEN CONTROL
-// ============================================================
-
-function hideAllScreens() {
-
-  languageScreen?.classList.add(
-    "hidden"
-  );
-
-  loginScreen?.classList.add(
-    "hidden"
-  );
-
-  settingsPanel?.classList.add(
-    "hidden"
-  );
+  return String(number || "")
+    .replace(/\D/g, "");
 
 }
 
 
-function showLanguageScreen() {
+// ======================================================
+// 📱 GET PHONE FROM SOCKET
+// ======================================================
 
-  hideAllScreens();
-
-  languageScreen?.classList.remove(
-    "hidden"
-  );
-
-}
-
-
-function showLoginScreen() {
-
-  hideAllScreens();
-
-  loginScreen?.classList.remove(
-    "hidden"
-  );
-
-}
-
-
-function showSettingsPanel() {
-
-  hideAllScreens();
-
-  settingsPanel?.classList.remove(
-    "hidden"
-  );
-
-}
-
-
-// ============================================================
-// 🌐 SEND LANGUAGE TO SERVER
-// ============================================================
-
-async function sendLanguage(
-  language
-) {
+function getPhoneFromSocket(sock) {
 
   try {
 
-    await fetch(
-      "/api/language",
-      {
-        method: "POST",
+    const raw =
+      sock?.user?.id ||
+      sock?.user?.jid ||
+      "";
 
-        headers: {
-          "Content-Type":
-            "application/json"
-        },
+    if (!raw) {
+      return "";
+    }
 
-        body:
-          JSON.stringify({
-            sessionId,
-            language
-          })
-
-      }
+    return normalizeNumber(
+      String(raw)
+        .split(":")[0]
+        .split("@")[0]
     );
 
-  } catch (error) {
+  } catch {
 
-    console.warn(
-      "⚠️ Language server sync failed:",
-      error
-    );
+    return "";
 
   }
 
 }
 
 
-// ============================================================
-// 🤖 AI TRANSLATE PANEL
-// ============================================================
-
-async function translatePanelUI() {
-
-  if (
-    currentLanguage === "en"
-  ) {
-
-    return;
-
-  }
-
-
-  if (
-    translationInProgress
-  ) {
-
-    return;
-
-  }
-
-
-  translationInProgress =
-    true;
-
-
-  try {
-
-    const elements = [];
-
-
-    // ========================================================
-    // TEXT ELEMENTS
-    // ========================================================
-
-    document
-      .querySelectorAll(
-        "button, label, p, h1, h2, h3, h4, h5, h6, span, small, div"
-      )
-      .forEach(
-        element => {
-
-          if (
-            element.closest("script") ||
-            element.closest("style") ||
-            element.classList.contains(
-              "slider"
-            ) ||
-            element.classList.contains(
-              "hidden"
-            )
-          ) {
-
-            return;
-
-          }
-
-
-          const text =
-            element.textContent
-              ?.replace(
-                /\s+/g,
-                " "
-              )
-              .trim();
-
-
-          if (
-            !text ||
-            text.length > 300
-          ) {
-
-            return;
-
-          }
-
-
-          /*
-           * Evite tradui parent ki
-           * gen lòt elements ladan l.
-           */
-
-          const hasElementChild =
-            Array.from(
-              element.children || []
-            )
-              .some(
-                child => {
-
-                  const childText =
-                    child.textContent
-                      ?.replace(
-                        /\s+/g,
-                        " "
-                      )
-                      .trim();
-
-
-                  return (
-                    childText &&
-                    text.includes(
-                      childText
-                    ) &&
-                    childText !== text
-                  );
-
-                }
-              );
-
-
-          if (
-            hasElementChild
-          ) {
-
-            return;
-
-          }
-
-
-          elements.push({
-            element,
-            text
-          });
-
-        }
-      );
-
-
-    // ========================================================
-    // PLACEHOLDERS
-    // ========================================================
-
-    document
-      .querySelectorAll(
-        "input[placeholder], textarea[placeholder]"
-      )
-      .forEach(
-        element => {
-
-          const text =
-            element
-              .getAttribute(
-                "placeholder"
-              )
-              ?.trim();
-
-
-          if (!text) {
-
-            return;
-
-          }
-
-
-          elements.push({
-            element,
-            text,
-            type: "placeholder"
-          });
-
-        }
-      );
-
-
-    if (
-      !elements.length
-    ) {
-
-      return;
-
-    }
-
-
-    // ========================================================
-    // CACHE
-    // ========================================================
-
-    const textsToTranslate = [];
-
-    const uniqueTexts =
-      new Set();
-
-
-    for (
-      const item of elements
-    ) {
-
-      const cacheKey =
-        `${currentLanguage}:${item.text}`;
-
-
-      if (
-        translationCache.has(
-          cacheKey
-        )
-      ) {
-
-        continue;
-
-      }
-
-
-      if (
-        !uniqueTexts.has(
-          item.text
-        )
-      ) {
-
-        uniqueTexts.add(
-          item.text
-        );
-
-        textsToTranslate.push(
-          item.text
-        );
-
-      }
-
-    }
-
-
-    // ========================================================
-    // AI API
-    // ========================================================
-
-    if (
-      textsToTranslate.length
-    ) {
-
-      const response =
-        await fetch(
-          "/api/translate",
-          {
-            method: "POST",
-
-            headers: {
-              "Content-Type":
-                "application/json"
-            },
-
-            body:
-              JSON.stringify({
-                language:
-                  currentLanguage,
-
-                texts:
-                  textsToTranslate
-              })
-
-          }
-        );
-
-
-      if (
-        response.ok
-      ) {
-
-        const data =
-          await response.json();
-
-
-        const translations =
-          data.translations;
-
-
-        // ====================================================
-        // ARRAY RESPONSE
-        // ====================================================
-
-        if (
-          Array.isArray(
-            translations
-          )
-        ) {
-
-          textsToTranslate.forEach(
-            (
-              original,
-              index
-            ) => {
-
-              const translated =
-                translations[index];
-
-
-              if (
-                typeof translated ===
-                  "string" &&
-                translated.trim()
-              ) {
-
-                translationCache.set(
-                  `${currentLanguage}:${original}`,
-                  translated.trim()
-                );
-
-              }
-
-            }
-          );
-
-        }
-
-
-        // ====================================================
-        // OBJECT RESPONSE
-        // ====================================================
-
-        else if (
-          translations &&
-          typeof translations ===
-            "object"
-        ) {
-
-          textsToTranslate.forEach(
-            original => {
-
-              const translated =
-                translations[
-                  original
-                ];
-
-
-              if (
-                typeof translated ===
-                  "string" &&
-                translated.trim()
-              ) {
-
-                translationCache.set(
-                  `${currentLanguage}:${original}`,
-                  translated.trim()
-                );
-
-              }
-
-            }
-          );
-
-        }
-
-      }
-
-    }
-
-
-    // ========================================================
-    // APPLY TRANSLATIONS
-    // ========================================================
-
-    for (
-      const item of elements
-    ) {
-
-      const translated =
-        translationCache.get(
-          `${currentLanguage}:${item.text}`
-        );
-
-
-      if (
-        !translated
-      ) {
-
-        continue;
-
-      }
-
-
-      if (
-        item.type ===
-        "placeholder"
-      ) {
-
-        item.element.setAttribute(
-          "placeholder",
-          translated
-        );
-
-      } else {
-
-        item.element.textContent =
-          translated;
-
-      }
-
-    }
-
-  } catch (error) {
-
-    console.warn(
-      "⚠️ AI Settings translation unavailable:",
-      error?.message ||
-      error
-    );
-
-  } finally {
-
-    translationInProgress =
-      false;
-
-  }
+// ======================================================
+// 🔐 GENERATE CODE
+// ======================================================
+
+function generateCode() {
+
+  return crypto
+    .randomBytes(3)
+    .toString("hex")
+    .toUpperCase();
 
 }
 
 
-// ============================================================
-// 🌐 SELECT LANGUAGE
-// ============================================================
+// ======================================================
+// 🔑 GENERATE SESSION ID
+// ======================================================
 
-async function selectSettingsLanguage(
-  language
+function generateSessionId() {
+
+  return crypto
+    .randomBytes(24)
+    .toString("hex");
+
+}
+
+
+// ======================================================
+// 🔗 CREATE SESSION LINK
+// ======================================================
+
+function buildSessionLink(sessionId) {
+
+  return `${PANEL_URL}/setting?session=${encodeURIComponent(
+    sessionId
+  )}`;
+
+}
+
+
+// ======================================================
+// 🧹 CLEAN SESSION DATA
+// ======================================================
+
+function createSessionData(
+  sock,
+  sessionId
 ) {
-
-  if (
-    ![
-      "en",
-      "fr",
-      "es"
-    ].includes(language)
-  ) {
-
-    return;
-
-  }
-
-
-  currentLanguage =
-    language;
-
-
-  localStorage.setItem(
-    "topferos_settings_language",
-    language
-  );
-
-
-  /*
-   * Server la konnen lang user la.
-   */
-
-  await sendLanguage(
-    language
-  );
-
-
-  /*
-   * Apre language selection,
-   * montre Number + Code.
-   */
-
-  showLoginScreen();
-
-
-  /*
-   * AI tradui login interface la.
-   */
-
-  await translatePanelUI();
-
-}
-
-
-// ============================================================
-// 🔐 LOGIN MESSAGE
-// ============================================================
-
-function showLoginMessage(
-  text,
-  error = true
-) {
-
-  if (!loginMessage) {
-
-    return;
-
-  }
-
-
-  loginMessage.textContent =
-    text;
-
-
-  loginMessage.className =
-    error
-      ? "message error"
-      : "message success";
-
-}
-
-
-// ============================================================
-// 📢 SETTINGS MESSAGE
-// ============================================================
-
-function showMessage(
-  text = "",
-  success = false
-) {
-
-  if (!settingsMessage) {
-
-    return;
-
-  }
-
-
-  settingsMessage.textContent =
-    text;
-
-
-  settingsMessage.style.color =
-    success
-      ? "#72ffad"
-      : "#ff7777";
-
-}
-
-
-// ============================================================
-// 🔐 VERIFY SETTINGS CODE
-// ============================================================
-
-async function verifySettings() {
-
-  const code =
-    settingsCodeInput
-      ?.value
-      .trim()
-      .toUpperCase() || "";
-
 
   const number =
-    settingsNumberInput
-      ?.value
-      .trim()
-      .replace(
-        /\D/g,
-        ""
-      ) || "";
+    getPhoneFromSocket(sock);
 
+  return {
 
-  if (!number) {
+    sessionId,
 
-    showLoginMessage(
-      "❌ Mete Number la.",
-      true
-    );
+    socket: sock,
 
-    settingsNumberInput?.focus();
+    number,
 
-    return;
+    code: generateCode(),
 
-  }
+    link:
+      buildSessionLink(sessionId),
 
+    connected: Boolean(sock),
 
-  if (!code) {
+    authenticated: false,
 
-    showLoginMessage(
-      "❌ Mete Settings Code la.",
-      true
-    );
+    createdAt: Date.now(),
 
-    settingsCodeInput?.focus();
+    updatedAt: Date.now(),
 
-    return;
+    settings: {
+      ...defaultSettings
+    },
 
-  }
+    botInformation: {
 
+      ...defaultBotInformation,
 
-  if (
-    !/^[A-Z0-9]{6}$/.test(
-      code
-    )
-  ) {
-
-    showLoginMessage(
-      "❌ Settings Code la dwe gen 6 karaktè.",
-      true
-    );
-
-    settingsCodeInput?.focus();
-
-    return;
-
-  }
-
-
-  if (verifyButton) {
-
-    verifyButton.disabled =
-      true;
-
-    verifyButton.textContent =
-      "⏳ VERIFYING...";
-
-  }
-
-
-  showLoginMessage(
-    "",
-    false
-  );
-
-
-  try {
-
-    const body = {
-
-      number,
-
-      code
-
-    };
-
-
-    /*
-     * Si URL la gen session,
-     * voye l tou.
-     */
-
-    if (
-      sessionId
-    ) {
-
-      body.sessionId =
-        sessionId;
+      number
 
     }
 
-
-    const response =
-      await fetch(
-        "/api/verify",
-        {
-          method: "POST",
-
-          headers: {
-            "Content-Type":
-              "application/json"
-          },
-
-          body:
-            JSON.stringify(
-              body
-            )
-
-        }
-      );
-
-
-    let data = {};
-
-    try {
-
-      data =
-        await response.json();
-
-    } catch {
-
-      data = {};
-
-    }
-
-
-    if (
-      !response.ok ||
-      data.success !== true
-    ) {
-
-      showLoginMessage(
-        data.error ||
-        data.message ||
-        "❌ Settings Code pa kòrèk.",
-        true
-      );
-
-      return;
-
-    }
-
-// ============================================================
-// ✅ VERIFICATION SUCCESS → SHOW SETTINGS PANEL
-// ============================================================
-
-function showVerifiedSettingsPanel() {
-  const accessPanel =
-  document.getElementById("loginScreen");
-
-  const settingsPanel =
-    document.getElementById("settingsPanel");
-
-  const accessLogo =
-    document.getElementById("accessLogo");
-
-  const settingsLogo =
-    document.getElementById("botLogo");
-
-  // ----------------------------------------------------------
-  // 🔐 HIDE PANEL ACCESS COMPLETELY
-  // ----------------------------------------------------------
-
-  if (accessPanel) {
-    accessPanel.style.display = "none";
-  }
-
-  if (accessLogo) {
-    accessLogo.style.display = "none";
-  }
-
-  // ----------------------------------------------------------
-  // ⚙️ SHOW SETTINGS PANEL
-  // ----------------------------------------------------------
-
-  if (settingsPanel) {
-    settingsPanel.style.display = "block";
-  }
-
-  // ----------------------------------------------------------
-  // 🦁 SHOW SETTINGS LOGO
-  // ----------------------------------------------------------
-
-  if (settingsLogo) {
-    settingsLogo.src =
-      "/assets/logo.png";
-
-    settingsLogo.alt =
-      "TOPFEROS MD SETTINGS";
-
-    settingsLogo.style.display =
-      "block";
-  }
-
-  // ----------------------------------------------------------
-  // ⚙️ LOAD SETTINGS
-  // ----------------------------------------------------------
-
-  if (
-    typeof loadSettings ===
-    "function"
-  ) {
-    loadSettings();
-  }
-
-  console.log(
-    "✅ NUMBER + CODE VERIFIED → SETTINGS PANEL SHOWN"
-  );
-}
-
-    // ========================================================
-    // SESSION ID
-    // ========================================================
-
-    if (
-      data.sessionId
-    ) {
-
-      sessionId =
-        String(
-          data.sessionId
-        );
-
-    }
-
-
-    // ========================================================
-    // SETTINGS DATA
-    // ========================================================
-
-    settings =
-      data.settings ||
-      {};
-
-    botInformation =
-      data.botInformation ||
-      data.bot ||
-      {};
-
-
-    /*
-     * Si verification lan pa voye
-     * tout settings yo, chaje yo.
-     */
-
-    if (
-      sessionId
-    ) {
-
-      await loadSettings();
-
-    }
-
-
-    // ========================================================
-// OPEN SETTINGS AFTER VERIFICATION
-// ========================================================
-
-showVerifiedSettingsPanel();
-
-
-    /*
-     * AI tradui vrè Settings Panel la
-     * nan lang user la te chwazi a.
-     */
-
-    await translatePanelUI();
-
-
-  } catch (error) {
-
-    console.error(
-      "❌ SETTINGS VERIFICATION ERROR:",
-      error
-    );
-
-
-    showLoginMessage(
-      "❌ Erè koneksyon ak server la.",
-      true
-    );
-
-
-  } finally {
-
-    if (verifyButton) {
-
-      verifyButton.disabled =
-        false;
-
-      verifyButton.textContent =
-        "🔓 VERIFY";
-
-    }
-
-  }
+  };
 
 }
 
 
-// ============================================================
-// 📥 LOAD SETTINGS
-// ============================================================
+// ======================================================
+// 🆕 CREATE NEW SESSION
+// ======================================================
 
-async function loadSettings() {
+function createNewSession(sock) {
+
+  if (!sock) {
+    return null;
+  }
+
+  const sessionId =
+    generateSessionId();
+
+  const session =
+    createSessionData(
+      sock,
+      sessionId
+    );
+
+  sessions.set(
+    sessionId,
+    session
+  );
+
+  return session;
+
+}
+
+
+// ======================================================
+// 🔄 CREATE / GET SESSION
+// ======================================================
+
+function createSession(
+  sock,
+  sessionId = null
+) {
+
+  if (!sock) {
+    return null;
+  }
+
+  if (sessionId) {
+
+    const existing =
+      sessions.get(
+        String(sessionId)
+      );
+
+    if (existing) {
+
+      existing.socket =
+        sock;
+
+      existing.connected =
+        true;
+
+      existing.number =
+        getPhoneFromSocket(sock);
+
+      existing.botInformation.number =
+        existing.number;
+
+      existing.updatedAt =
+        Date.now();
+
+      return existing;
+
+    }
+
+  }
+
+  return createNewSession(sock);
+
+}
+
+
+// ======================================================
+// 🔎 GET SESSION
+// ======================================================
+
+function getSession(sessionId) {
 
   if (!sessionId) {
+    return null;
+  }
+
+  return sessions.get(
+    String(sessionId)
+  ) || null;
+
+}
+
+
+// ======================================================
+// 🔎 GET SESSION BY NUMBER
+// ======================================================
+
+function getSessionByNumber(number) {
+
+  const normalized =
+    normalizeNumber(number);
+
+  if (!normalized) {
+    return null;
+  }
+
+  for (const session of sessions.values()) {
+
+    if (
+      normalizeNumber(
+        session.number
+      ) === normalized
+    ) {
+
+      return session;
+
+    }
+
+  }
+
+  return null;
+
+}
+
+
+// ======================================================
+// 🔎 GET SESSION BY SOCKET
+// ======================================================
+
+function getSessionBySocket(sock) {
+
+  if (!sock) {
+    return null;
+  }
+
+  for (const session of sessions.values()) {
+
+    if (
+      session.socket === sock
+    ) {
+
+      return session;
+
+    }
+
+  }
+
+  return null;
+
+}
+
+
+// ======================================================
+// 🟢 BOT CONNECTED
+// ======================================================
+
+function setBotConnected(sock) {
+
+  if (!sock) {
+    return null;
+  }
+
+  const session =
+    createSession(sock);
+
+  if (!session) {
+    return null;
+  }
+
+  session.connected =
+    true;
+
+  session.authenticated =
+    false;
+
+  session.number =
+    getPhoneFromSocket(sock);
+
+  session.botInformation.number =
+    session.number;
+
+  session.updatedAt =
+    Date.now();
+
+  return session;
+
+}
+
+
+// ======================================================
+// 🔴 BOT DISCONNECTED
+// ======================================================
+
+function setBotDisconnected(sock) {
+
+  if (sock) {
+
+    const session =
+      getSessionBySocket(sock);
+
+    if (session) {
+
+      session.connected =
+        false;
+
+      session.authenticated =
+        false;
+
+      session.socket =
+        null;
+
+      session.updatedAt =
+        Date.now();
+
+    }
+
+  }
+
+  /*
+   * Tout session ki te asosye ak bot la
+   * pa dwe rete authenticated.
+   */
+
+  for (const session of sessions.values()) {
+
+    if (!session.connected) {
+
+      session.authenticated =
+        false;
+
+    }
+
+  }
+
+}
+
+
+// ======================================================
+// 🔐 VERIFY SESSION
+// ======================================================
+
+function verifySession(
+  sessionId,
+  number,
+  code
+) {
+
+  const session =
+    getSession(sessionId);
+
+  if (!session) {
+    return false;
+  }
+
+  if (
+    !session.connected ||
+    !session.socket
+  ) {
+
+    session.authenticated =
+      false;
 
     return false;
 
   }
 
+  const inputNumber =
+    normalizeNumber(number);
 
-  try {
-
-    const response =
-      await fetch(
-        `/api/settings?session=${encodeURIComponent(
-          sessionId
-        )}`,
-        {
-          method: "GET",
-          cache: "no-store"
-        }
-      );
-
-
-    let result = {};
-
-    try {
-
-      result =
-        await response.json();
-
-    } catch {
-
-      result = {};
-
-    }
-
-
-    if (
-      !response.ok ||
-      result.success !== true
-    ) {
-
-      /*
-       * Eseye alternate query format.
-       */
-
-      const alternateResponse =
-        await fetch(
-          `/api/settings?sessionId=${encodeURIComponent(
-            sessionId
-          )}`,
-          {
-            method: "GET",
-            cache: "no-store"
-          }
-        );
-
-
-      let alternate =
-        {};
-
-      try {
-
-        alternate =
-          await alternateResponse.json();
-
-      } catch {
-
-        alternate =
-          {};
-
-      }
-
-
-      if (
-        !alternateResponse.ok ||
-        alternate.success !== true
-      ) {
-
-        showMessage(
-          result.message ||
-          "❌ Pa kapab chaje settings yo."
-        );
-
-        return false;
-
-      }
-
-
-      result =
-        alternate;
-
-    }
-
-// ============================================================
-// 📤 COLLECT SETTINGS
-// ============================================================
-
-function collectSettings() {
-
-  enforceAntiDeleteDestination();
-
-  const collected = {};
-
-  // ----------------------------------------------------------
-  // SWITCHES
-  // ----------------------------------------------------------
-
-  getSwitches()
-    .forEach(
-      input => {
-
-        const name =
-          input.dataset.setting;
-
-        if (
-          settingNames.includes(
-            name
-          )
-        ) {
-
-          collected[name] =
-            input.checked;
-
-        }
-
-      }
+  const sessionNumber =
+    normalizeNumber(
+      session.number
     );
 
-  // ----------------------------------------------------------
-  // ANTI DELETE MODE
-  // ----------------------------------------------------------
+  const inputCode =
+    String(code || "")
+      .trim()
+      .toUpperCase();
 
-  const antiDeleteMode =
-    document.getElementById(
-      "antiDeleteMode"
-    );
+  const sessionCode =
+    String(session.code || "")
+      .trim()
+      .toUpperCase();
 
   if (
-    antiDeleteMode
+    !inputNumber ||
+    !inputCode
   ) {
 
-    collected.antiDeleteMode =
-      antiDeleteMode.value;
+    return false;
 
   }
 
-  // ----------------------------------------------------------
-  // ANTI DELETE DESTINATION
-  // ----------------------------------------------------------
-
-  const antiDeleteDestination =
-    document.getElementById(
-      "antiDeleteDestination"
-    );
-
   if (
-    antiDeleteDestination
+    inputNumber !==
+    sessionNumber
   ) {
 
-    collected.antiDeleteDestination =
-      antiDeleteDestination.value;
+    return false;
 
   }
 
-  // ----------------------------------------------------------
-  // ANTI CALL MODE
-  // ----------------------------------------------------------
-
-  const antiCallMode =
-    document.getElementById(
-      "antiCallMode"
-    );
-
   if (
-    antiCallMode
+    inputCode !==
+    sessionCode
   ) {
 
-    collected.antiCallMode =
-      antiCallMode.value;
+    return false;
 
   }
 
-  // ----------------------------------------------------------
-  // ANTI CALL OPTION
-  // ----------------------------------------------------------
+  session.authenticated =
+    true;
 
-  const antiCallOption =
-    document.getElementById(
-      "antiCallOption"
-    );
+  session.updatedAt =
+    Date.now();
 
-  if (
-    antiCallOption
-  ) {
-
-    collected.antiCallOption =
-      antiCallOption.value.trim();
-
-  }
-
-  // ----------------------------------------------------------
-  // GROUP ADMIN NUMBER
-  // ----------------------------------------------------------
-
-  const adminGroupNumber =
-    document.getElementById(
-      "adminGroupNumber"
-    );
-
-  if (
-    adminGroupNumber
-  ) {
-
-    collected.adminGroupNumber =
-      adminGroupNumber.value.trim();
-
-  }
-
-  // ----------------------------------------------------------
-  // GROUP ADMIN LINK
-  // ----------------------------------------------------------
-
-  const adminGroupLink =
-    document.getElementById(
-      "adminGroupLink"
-    );
-
-  if (
-    adminGroupLink
-  ) {
-
-    collected.adminGroupLink =
-      adminGroupLink.value.trim();
-
-  }
-
-  // ----------------------------------------------------------
-  // TIME ZONE
-  // ----------------------------------------------------------
-
-  const groupTimeZone =
-    document.getElementById(
-      "groupTimeZone"
-    );
-
-  if (
-    groupTimeZone
-  ) {
-
-    collected.groupTimeZone =
-      groupTimeZone.value;
-
-  }
-
-  // ----------------------------------------------------------
-  // GROUP CLOSE TIME
-  // ----------------------------------------------------------
-
-  const groupCloseTime =
-    document.getElementById(
-      "groupCloseTime"
-    );
-
-  if (
-    groupCloseTime
-  ) {
-
-    collected.groupCloseTime =
-      groupCloseTime.value;
-
-  }
-
-  // ----------------------------------------------------------
-  // GROUP OPEN TIME
-  // ----------------------------------------------------------
-
-  const groupOpenTime =
-    document.getElementById(
-      "groupOpenTime"
-    );
-
-  if (
-    groupOpenTime
-  ) {
-
-    collected.groupOpenTime =
-      groupOpenTime.value;
-
-  }
-
-  // ----------------------------------------------------------
-  // GROUP BIO
-  // ----------------------------------------------------------
-
-  const groupBioText =
-    document.getElementById(
-      "groupBioText"
-    );
-
-  if (
-    groupBioText
-  ) {
-
-    collected.groupBioText =
-      groupBioText.value.trim();
-
-  }
-
-  return collected;
+  return true;
 
 }
 
-// ============================================================
-// 🤖 BOT INFORMATION
-// ============================================================
 
-function collectBotInformation() {
+// ======================================================
+// 🔒 IS AUTHENTICATED
+// ======================================================
 
-  const locationInput =
-    document.getElementById(
-      "botOrigin"
-    ) ||
-    document.getElementById(
-      "botLocation"
-    );
+function isAuthenticated(sessionId) {
 
-  const footerInput =
-    document.getElementById(
-      "botFooter"
-    );
+  const session =
+    getSession(sessionId);
 
-  const ownerNumberInput =
-    document.getElementById(
-      "ownerNumber"
-    );
+  if (!session) {
+    return false;
+  }
+
+  if (
+    !session.connected ||
+    !session.socket
+  ) {
+
+    session.authenticated =
+      false;
+
+    return false;
+
+  }
+
+  return Boolean(
+    session.authenticated
+  );
+
+}
+
+
+// ======================================================
+// 🚪 LOGOUT SESSION
+// ======================================================
+
+function logoutSession(sessionId) {
+
+  const session =
+    getSession(sessionId);
+
+  if (!session) {
+    return false;
+  }
+
+  session.authenticated =
+    false;
+
+  session.updatedAt =
+    Date.now();
+
+  return true;
+
+}
+
+
+// ======================================================
+// ⚙️ GET SETTINGS
+// ======================================================
+
+function getSettings(sessionId) {
+
+  const session =
+    getSession(sessionId);
+
+  if (!session) {
+    return null;
+  }
+
+  return {
+    ...session.settings
+  };
+
+}
+
+
+// ======================================================
+// 🤖 GET BOT INFORMATION
+// ======================================================
+
+function getBotInformation(
+  sessionId
+) {
+
+  const session =
+    getSession(sessionId);
+
+  if (!session) {
+    return null;
+  }
+
+  return {
+    ...session.botInformation
+  };
+
+}
+
+
+// ======================================================
+// 🎛️ SET ONE SETTING
+// ======================================================
+
+function setSetting(
+  sessionId,
+  key,
+  value
+) {
+
+  const session =
+    getSession(sessionId);
+
+  if (!session) {
+    return false;
+  }
+
+  if (
+    !Object.prototype.hasOwnProperty.call(
+      defaultSettings,
+      key
+    )
+  ) {
+
+    return false;
+
+  }
+
+  /*
+   * Text / select values
+   * dwe rete string.
+   */
+
+  const textSettings = [
+
+    "antiCallMode",
+    "antiDeleteMode",
+    "antiDeleteDestination",
+    "adminGroupNumber",
+    "adminGroupLink",
+    "groupCloseTime",
+    "groupOpenTime",
+    "groupTimeZone",
+    "groupBioText"
+
+  ];
+
+  if (
+    textSettings.includes(key)
+  ) {
+
+    session.settings[key] =
+      String(
+        value ?? ""
+      ).trim();
+
+  } else {
+
+    session.settings[key] =
+      Boolean(value);
+
+  }
+
+  enforceSettingRules(
+    session
+  );
+
+  session.updatedAt =
+    Date.now();
+
+  return true;
+
+}
+
+
+// ======================================================
+// 🧠 ENFORCE SETTING RULES
+// ======================================================
+
+function enforceSettingRules(
+  session
+) {
+
+  if (
+    session.settings.publicMode
+  ) {
+
+    session.settings.privateMode =
+      false;
+
+  }
+
+  if (
+    session.settings.privateMode
+  ) {
+
+    session.settings.publicMode =
+      false;
+
+  }
+
+  if (
+    session.settings.antiDeleteSameChat
+  ) {
+
+    session.settings.antiDeleteDM =
+      false;
+
+  }
+
+  if (
+    session.settings.antiDeleteDM
+  ) {
+
+    session.settings.antiDeleteSameChat =
+      false;
+
+  }
+
+  if (
+    session.settings.groupClose
+  ) {
+
+    session.settings.groupOpen =
+      false;
+
+  }
+
+  if (
+    session.settings.groupOpen
+  ) {
+
+    session.settings.groupClose =
+      false;
+
+  }
+
+  updateMode(session);
+
+}
+
+
+// ======================================================
+// 💾 APPLY ALL SETTINGS
+// ======================================================
+
+function applySettings(
+  sessionId,
+  newSettings = {}
+) {
+
+  const session =
+    getSession(sessionId);
+
+  if (!session) {
+    return null;
+  }
+
+  const textSettings = [
+
+    "antiCallMode",
+    "antiDeleteMode",
+    "antiDeleteDestination",
+    "adminGroupNumber",
+    "adminGroupLink",
+    "groupCloseTime",
+    "groupOpenTime",
+    "groupTimeZone",
+    "groupBioText"
+
+  ];
+
+  for (
+    const key of
+    Object.keys(defaultSettings)
+  ) {
+
+    if (
+      !Object.prototype.hasOwnProperty.call(
+        newSettings,
+        key
+      )
+    ) {
+
+      continue;
+
+    }
+
+    if (
+      textSettings.includes(key)
+    ) {
+
+      session.settings[key] =
+        String(
+          newSettings[key] ?? ""
+        ).trim();
+
+    } else {
+
+      session.settings[key] =
+        Boolean(
+          newSettings[key]
+        );
+
+    }
+
+  }
+
+  enforceSettingRules(
+    session
+  );
+
+  session.updatedAt =
+    Date.now();
+
+  return {
+    ...session.settings
+  };
+
+}
+
+
+// ======================================================
+// 🔄 UPDATE BOT MODE
+// ======================================================
+
+function updateMode(session) {
+
+  session.botInformation.mode =
+    session.settings.privateMode
+      ? "Private"
+      : "Public";
+
+}
+
+
+// ======================================================
+// 🤖 UPDATE BOT INFORMATION
+// ======================================================
+
+function updateBotInformation(
+  sessionId,
+  information = {}
+) {
+
+  const session =
+    getSession(sessionId);
+
+  if (!session) {
+    return null;
+  }
+
+  /*
+   * BOT NAME
+   */
+
+  if (
+    typeof information.name ===
+    "string"
+  ) {
+
+    const name =
+      information.name.trim();
+
+    session.botInformation.name =
+      name ||
+      "TOPFEROS MD";
+
+  }
+
+  /*
+   * LOCATION
+   */
+
+  if (
+    typeof information.location ===
+    "string"
+  ) {
+
+    const location =
+      information.location.trim();
+
+    session.botInformation.location =
+      location ||
+      "TOPFEROS CHINWA";
+
+  }
+
+  /*
+   * AGE
+   */
+
+  if (
+    information.age !==
+    undefined &&
+    information.age !==
+    null &&
+    information.age !== ""
+  ) {
+
+    const age =
+      Number(
+        information.age
+      );
+
+    if (
+      Number.isFinite(age) &&
+      age >= 0
+    ) {
+
+      session.botInformation.age =
+        age;
+
+    }
+
+  }
+
+  /*
+   * PREFIX
+   */
+
+  if (
+    typeof information.prefix ===
+    "string"
+  ) {
+
+    const prefix =
+      information.prefix.trim();
+
+    session.botInformation.prefix =
+      prefix ||
+      ".";
+
+  }
+
+  /*
+   * FOOTER
+   */
+
+  if (
+    typeof information.footer ===
+    "string"
+  ) {
+
+    const footer =
+      information.footer.trim();
+
+    session.botInformation.footer =
+      footer ||
+      "🦁 TECH BY TOPFEROS MD 🐑";
+
+  }
+
+  /*
+   * NUMBER TOUJOU SOTI NAN WHATSAPP.
+   */
+
+  if (session.number) {
+
+    session.botInformation.number =
+      session.number;
+
+  }
+
+  updateMode(session);
+
+  session.updatedAt =
+    Date.now();
+
+  return {
+    ...session.botInformation
+  };
+
+}
+
+
+// ======================================================
+// ✅ IS FEATURE ENABLED
+// ======================================================
+
+function isEnabled(
+  sessionId,
+  key
+) {
+
+  const session =
+    getSession(sessionId);
+
+  if (!session) {
+    return false;
+  }
+
+  if (
+    !Object.prototype.hasOwnProperty.call(
+      defaultSettings,
+      key
+    )
+  ) {
+
+    return false;
+
+  }
+
+  return Boolean(
+    session.settings[key]
+  );
+
+}
+
+
+// ======================================================
+// 📥 LOAD SETTINGS
+// ======================================================
+
+function loadSettings(
+  sessionId
+) {
+
+  const session =
+    getSession(sessionId);
+
+  if (!session) {
+    return null;
+  }
+
+  updateMode(session);
 
   return {
 
-    name:
-      botNameInput
-        ? botNameInput.value.trim()
-        : "",
+    settings: {
+      ...session.settings
+    },
 
-    number:
-      ownerNumberInput
-        ? ownerNumberInput.value.trim()
-        : "",
-
-    location:
-      locationInput
-        ? locationInput.value.trim()
-        : "",
-
-    age:
-      botAgeInput
-        ? Number(
-            botAgeInput.value
-          )
-        : 0,
-
-    prefix:
-      botPrefixInput
-        ? botPrefixInput.value.trim()
-        : ".",
-
-    footer:
-      footerInput
-        ? footerInput.value.trim()
-        : "",
-
-    mode:
-      settings.publicMode === true
-        ? "Public"
-        : "Private"
+    botInformation: {
+      ...session.botInformation
+    }
 
   };
 
 }
-     // ========================================================
-// SETTINGS
-// ========================================================
-
-settings =
-  result.settings ||
-  {};
 
 
-getSwitches()
-  .forEach(
-    input => {
+// ======================================================
+// 🌐 SEND SETTINGS PANEL LINK
+// ======================================================
 
-      const name =
-        input.dataset.setting;
+async function sendPanelLink(
+  sock,
+  jid,
+  quoted,
+  sessionId = null
+) {
 
+  if (!sock || !jid) {
+    return false;
+  }
 
-      if (
-        settingNames.includes(
-          name
-        ) &&
-        Object.prototype.hasOwnProperty.call(
-          settings,
-          name
+  const session =
+    sessionId
+      ? createSession(
+          sock,
+          sessionId
         )
-      ) {
+      : createNewSession(
+          sock
+        );
 
-        input.checked =
-          settings[name] === true;
+  if (!session) {
 
+    console.error(
+      "❌ sendPanelLink: session not found"
+    );
+
+    return false;
+
+  }
+
+  const text =
+`🦁 *TOPFEROS MD SETTINGS*
+
+🔐 *Settings Code:* ${session.code}
+
+🌐 *Settings Panel:*
+${session.link}
+
+⚠️ Pa pataje Settings Code ou ak lòt moun.`;
+
+  try {
+
+    await sock.sendMessage(
+      jid,
+      {
+        text
+      },
+      {
+        quoted
       }
-
-    }
-  );
-
-
-if (
-  adminGroupNumberInput
-) {
-
-  adminGroupNumberInput.value =
-    settings.adminGroupNumber ||
-    "";
-
-}
-
-
-if (
-  adminGroupLinkInput
-) {
-
-  adminGroupLinkInput.value =
-    settings.adminGroupLink ||
-    "";
-
-}
-
-
-if (
-  groupCloseTimeInput
-) {
-
-  groupCloseTimeInput.value =
-    settings.groupCloseTime ||
-    "";
-
-}
-
-
-if (
-  groupOpenTimeInput
-) {
-
-  groupOpenTimeInput.value =
-    settings.groupOpenTime ||
-    "";
-
- }
-
-
-// ========================================================
-// 📜 GROUP BIO / PRINSIP
-// ========================================================
-
-if (
-  groupBioEnabledInput
-) {
-
-  groupBioEnabledInput.checked =
-    settings.groupBioEnabled === true;
-
-}
-
-
-if (
-  groupBioTextInput
-) {
-
-  groupBioTextInput.value =
-    settings.groupBioText ||
-    "";
-
-  }
-
-  return true;
-
-} catch (error) {
-
-  console.error(
-    "❌ LOAD SETTINGS ERROR:",
-    error
-  );
-
-  showMessage(
-    "❌ Erè pandan chajman settings yo."
-  );
-
-  return false;
-
-}
-
-}
-
-getSwitches()
-  .forEach(
-    input => {
-
-      const name =
-        input.dataset.setting;
-
-      if (
-        settingNames.includes(
-          name
-        )
-      ) {
-
-        collected[name] =
-          input.checked;
-
-      }
-
-    }
-  );
-
-// ============================================================
-// 🗑️ ANTI DELETE DESTINATION
-// ============================================================
-
-function enforceAntiDeleteDestination() {
-
-  const antiDelete =
-    document.getElementById("antiDelete");
-
-  const options =
-    document.getElementById(
-      "antiDeleteOptions"
     );
 
-  const sameChat =
-    document.getElementById(
-      "antiDeleteSameChat"
+    return true;
+
+  } catch (error) {
+
+    console.error(
+      "❌ sendPanelLink error:",
+      error?.stack ||
+      error?.message ||
+      error
     );
 
-  const privateChat =
-    document.getElementById(
-      "antiDeletePrivate"
-    );
-
-  if (!antiDelete || !options) {
-    return;
-  }
-
-  // Show options only when Anti Delete is ON
-  options.style.display =
-    antiDelete.checked
-      ? "block"
-      : "none";
-
-  // If Anti Delete is OFF,
-  // remove the selected destination.
-  if (!antiDelete.checked) {
-
-    if (sameChat) {
-      sameChat.checked = false;
-    }
-
-    if (privateChat) {
-      privateChat.checked = false;
-    }
-
-    return;
-  }
-
-  // Default destination: Same Chat
-  if (
-    sameChat &&
-    privateChat &&
-    !sameChat.checked &&
-    !privateChat.checked
-  ) {
-
-    sameChat.checked = true;
+    return false;
 
   }
 
 }
 
 
-// ============================================================
-// 🗑️ ANTI DELETE CHANGE EVENT
-// ============================================================
+// ======================================================
+// 🗑️ REMOVE SESSION
+// ======================================================
 
-const antiDeleteInput =
-  document.getElementById(
-    "antiDelete"
-  );
+function removeSession(
+  sessionId
+) {
 
-if (antiDeleteInput) {
+  if (!sessionId) {
+    return false;
+  }
 
-  antiDeleteInput.addEventListener(
-    "change",
-    enforceAntiDeleteDestination
+  return sessions.delete(
+    String(sessionId)
   );
 
 }
+
+
+// ======================================================
+// 🧹 CLEAR ALL SESSIONS
+// ======================================================
+
+function clearSessions() {
+
+  sessions.clear();
+
+}
+
+
+// ======================================================
+// 📋 LIST SESSIONS
+// ======================================================
+
+function listSessions() {
+
+  return Array.from(
+    sessions.values()
+  ).map(
+    session => ({
+
+      sessionId:
+        session.sessionId,
+
+      number:
+        session.number,
+
+      authenticated:
+        Boolean(
+          session.authenticated
+        ),
+
+      connected:
+        Boolean(
+          session.connected &&
+          session.socket
+        ),
+
+      createdAt:
+        session.createdAt,
+
+      updatedAt:
+        session.updatedAt
+
+    })
+  );
+
+}
+
+
+// ======================================================
+// 📤 EXPORTS
+// ======================================================
+
+module.exports = {
+
+  PANEL_URL,
+
+  sessions,
+
+  defaultSettings,
+  defaultBotInformation,
+
+  generateCode,
+
+  normalizeNumber,
+  getPhoneFromSocket,
+
+  createNewSession,
+  createSession,
+
+  setBotConnected,
+  setBotDisconnected,
+
+  getSession,
+  getSessionByNumber,
+  getSessionBySocket,
+
+  verifySession,
+  isAuthenticated,
+  logoutSession,
+
+  getSettings,
+  getBotInformation,
+
+  setSetting,
+  applySettings,
+  updateBotInformation,
+
+  isEnabled,
+  loadSettings,
+
+  sendPanelLink,
+
+  removeSession,
+  clearSessions,
+  listSessions
+
+};
+
+
+// ╔════════════════════════════════════════════════════╗
+// ║             🚀 TECH BY TOPFEROS MD               ║
+// ╚════════════════════════════════════════════════════╝
