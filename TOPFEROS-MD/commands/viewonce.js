@@ -250,10 +250,7 @@ async function handleVV2(context) {
       media?.caption ||
       "";
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // 🖼️ IMAGE
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
     if (
       mediaInfo.type === "image"
     ) {
@@ -276,10 +273,7 @@ async function handleVV2(context) {
       return true;
     }
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // 🎥 VIDEO
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
     if (
       mediaInfo.type === "video"
     ) {
@@ -306,10 +300,7 @@ async function handleVV2(context) {
       return true;
     }
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // 🎵 AUDIO
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
     if (
       mediaInfo.type === "audio"
     ) {
@@ -335,10 +326,7 @@ async function handleVV2(context) {
       return true;
     }
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // 📄 DOCUMENT
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
     if (
       mediaInfo.type === "document"
     ) {
@@ -395,13 +383,6 @@ function getBotJid(sock) {
   if (!id) {
     return null;
   }
-
-  /*
-   * Baileys ka konn bay:
-   * 509xxxxxxxx:xx@s.whatsapp.net
-   *
-   * Nou retire device ID a pou DM la.
-   */
 
   if (
     id.endsWith(
@@ -483,10 +464,7 @@ async function handleReplyForward(context) {
       media?.caption ||
       "";
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 🖼️ IMAGE → BOT DM
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
+    // 🖼️ IMAGE
     if (
       mediaInfo.type === "image"
     ) {
@@ -506,10 +484,7 @@ async function handleReplyForward(context) {
       return true;
     }
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 🎥 VIDEO → BOT DM
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
+    // 🎥 VIDEO
     if (
       mediaInfo.type === "video"
     ) {
@@ -533,10 +508,7 @@ async function handleReplyForward(context) {
       return true;
     }
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 🎵 AUDIO → BOT DM
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
+    // 🎵 AUDIO
     if (
       mediaInfo.type === "audio"
     ) {
@@ -559,10 +531,7 @@ async function handleReplyForward(context) {
       return true;
     }
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 📄 DOCUMENT → BOT DM
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
+    // 📄 DOCUMENT
     if (
       mediaInfo.type === "document"
     ) {
@@ -685,10 +654,8 @@ async function execute(context) {
 }
 
 
-
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 👁️ AUTO VIEW ONCE REPLY → BOT DM
-// Pa dekode ni telechaje View Once la.
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 function isViewOnceMessage(message) {
@@ -738,6 +705,7 @@ function isViewOnceMessage(message) {
   return check(msg);
 }
 
+
 async function handleAutomaticViewOnceReply(context) {
   const {
     sock,
@@ -748,7 +716,6 @@ async function handleAutomaticViewOnceReply(context) {
     return false;
   }
 
-  // Pa trete pwòp mesaj bot la
   if (message?.key?.fromMe) {
     return false;
   }
@@ -822,6 +789,7 @@ module.exports = {
 
   handleReplyForward,
 
-handleVV2,
+  handleVV2,
 
-handleAutomaticViewOnceReply
+  handleAutomaticViewOnceReply
+};
