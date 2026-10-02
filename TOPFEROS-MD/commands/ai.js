@@ -2,257 +2,195 @@
 
 const config = require("../config");
 
-async function execute(context) {
-  const {
-    sock,
-    message,
-    text = ""
-  } = context;
+async function execute({
+  sock,
+  message,
+  text = ""
+}) {
+  const chatId =
+    message?.key?.remoteJid;
 
-  const question = text.trim();
-  const chatId = message?.key?.remoteJid;
+  const question =
+    String(text || "").trim();
 
   if (!chatId) return;
 
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // ❌ NO QUESTION
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
   if (!question) {
-    const response = `╭━━━〔 🤖 AI 〕━━━╮
-┃
-┃ ❌ Tanpri ekri kesyon ou.
-┃
-┃ 📌 Egzanp:
-┃ ${config.bot?.prefix || "."}ai Ki sa ki WhatsApp?
-┃
-╰━━━━━━━━━━━━━━━━━━━━╯
-
-🚀 ${config.bot?.developer || "TOPFEROS TECH"}`;
-
-    await sock.sendMessage(
+    return sock.sendMessage(
       chatId,
-      { text: response },
-      { quoted: message }
+      {
+        text:
+          `🤖 *TOPFEROS MD AI*\n\n` +
+          `Ekri kesyon an apre ` +
+          `${config.bot?.prefix || "."}ai.\n\n` +
+          `Egzanp:\n` +
+          `.ai Ki sa ki WhatsApp?`
+      },
+      {
+        quoted: message
+      }
     );
-
-    return;
   }
 
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // 🤖 GROQ CONFIGURATION
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
   const apiUrl =
-    config.ai?.apiUrl ||
-    "https://api.groq.com/openai/v1/chat/completions";
+    String(
+      config.ai?.apiUrl ||
+      "https://api.groq.com/openai/v1/chat/completions"
+    ).trim();
 
   const apiKey =
-    config.ai?.apiKey;
+    String(
+      config.ai?.apiKey || ""
+    ).trim();
 
   const model =
-    config.ai?.model ||
-    "openai/gpt-oss-20b";
-
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // 🔑 API KEY MANQUANTE
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    String(
+      config.ai?.model ||
+      "openai/gpt-oss-20b"
+    ).trim();
 
   if (!apiKey) {
-    const response = `╭━━━〔 🤖 AI 〕━━━╮
-┃
-┃ ⚠️ *AI API KEY PA CONFIGURE.*
-┃
-┃ Mete API key Groq la nan
-┃ Environment Variables Render yo.
-┃
-┃ Variable:
-┃ AI_API_KEY
-┃
-╰━━━━━━━━━━━━━━━━━━━━╯
-
-🚀 ${config.bot?.developer || "TOPFEROS TECH"}`;
-
-    await sock.sendMessage(
+    return sock.sendMessage(
       chatId,
-      { text: response },
-      { quoted: message }
+      {
+        text:
+          "⚠️ AI_API_KEY pa configure " +
+          "sou Render."
+      },
+      {
+        quoted: message
+      }
     );
-
-    return;
   }
 
   try {
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // ✍️ AI AP PREPARE REPONS LAN
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-    try {
-      await sock.sendPresenceUpdate(
+    await sock
+      .sendPresenceUpdate(
         "composing",
         chatId
+      )
+      .catch(() => {});
+
+    const response =
+      await fetch(
+        apiUrl,
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json",
+
+            "Authorization":
+              `Bearer ${apiKey}`
+          },
+
+          body:
+            JSON.stringify({
+              model,
+
+              messages: [
+                {
+                  role: "system",
+
+                  content:
+                    "You are TOPFEROS MD AI. " +
+                    "Answer accurately and naturally. " +
+                    "If the user writes Haitian Creole, " +
+                    "answer in Haitian Creole. " +
+                    "If French, answer in French. " +
+                    "If English, answer in English. " +
+                    "Do not invent facts. " +
+                    "Keep answers clear unless the user " +
+                    "asks for detail."
+                },
+
+                {
+                  role: "user",
+                  content: question
+                }
+              ],
+
+              temperature: 0.4,
+
+              max_completion_tokens:
+                1024
+            })
+        }
       );
-    } catch (_) {}
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 🚀 GROQ API REQUEST
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    const raw =
+      await response.text();
 
-    const response = await fetch(
-      apiUrl,
-      {
-        method: "POST",
+    let data;
 
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${apiKey}`
-        },
-
-        body: JSON.stringify({
-          model,
-
-          messages: [
-            {
-              role: "system",
-              content:
-                "You are TOPFEROS MD AI, a helpful and friendly WhatsApp assistant. Answer clearly and concisely."
-            },
-            {
-              role: "user",
-              content: question
-            }
-          ],
-
-          temperature: 0.7,
-
-          max_completion_tokens: 1024
-        })
-      }
-    );
-
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // ❌ API ERROR
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    try {
+      data =
+        JSON.parse(raw);
+    } catch {
+      data = null;
+    }
 
     if (!response.ok) {
-
-      let errorText = "";
-
-      try {
-        errorText = await response.text();
-      } catch (_) {}
-
-      console.error(
-        "❌ GROQ API ERROR:",
-        response.status,
-        errorText
-      );
-
       throw new Error(
-        `Groq API returned ${response.status}`
+        `Groq HTTP ${response.status}: ` +
+        `${data?.error?.message || raw.slice(0, 300)}`
       );
     }
-
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 📥 API RESPONSE
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-    const data =
-      await response.json();
 
     const answer =
-      data?.choices?.[0]?.message?.content;
+      data
+        ?.choices?.[0]
+        ?.message
+        ?.content
+        ?.trim();
 
     if (!answer) {
-      console.error(
-        "❌ GROQ RESPONSE:",
-        JSON.stringify(data)
-      );
-
       throw new Error(
-        "Groq API returned no answer."
+        "No answer returned by Groq"
       );
     }
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 💬 SEND ANSWER
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-    const botName =
-      config.bot?.name ||
-      "TOPFEROS MD";
-
-    const developer =
-      config.bot?.developer ||
-      "TOPFEROS TECH";
-
-    const finalMessage = `╭━━━〔 🤖 ${botName} AI 〕━━━╮
-┃
-┃ 🧠 *Question:*
-┃ ${question}
-┃
-┃ 💬 *Answer:*
-┃
-┃ ${answer}
-┃
-╰━━━━━━━━━━━━━━━━━━━━╯
-
-🚀 ${developer}`;
-
     await sock.sendMessage(
       chatId,
       {
-        text: finalMessage
+        text:
+          `🤖 *TOPFEROS MD AI*\n\n${answer}`
       },
       {
         quoted: message
       }
     );
 
-    try {
-      await sock.sendPresenceUpdate(
-        "paused",
-        chatId
-      );
-    } catch (_) {}
-
-  } catch (error) {
+  } catch (e) {
 
     console.error(
-      "❌ AI COMMAND ERROR:",
-      error?.stack ||
-      error?.message ||
-      error
+      "[AI]",
+      e?.stack || e
     );
-
-    const errorMessage = `╭━━━〔 🤖 AI 〕━━━╮
-┃
-┃ ❌ *AI pa disponib kounye a.*
-┃
-┃ Verifye AI_API_KEY ak
-┃ configuration Groq la.
-┃
-╰━━━━━━━━━━━━━━━━━━━━╯
-
-🚀 ${config.bot?.developer || "TOPFEROS TECH"}`;
 
     await sock.sendMessage(
       chatId,
       {
-        text: errorMessage
+        text:
+          "❌ AI pa disponib kounye a.\n\n" +
+          "Verifye AI_API_KEY, AI_API_URL " +
+          "ak AI_MODEL sou Render."
       },
       {
         quoted: message
       }
     );
 
-    try {
-      await sock.sendPresenceUpdate(
+  } finally {
+
+    await sock
+      .sendPresenceUpdate(
         "paused",
         chatId
-      );
-    } catch (_) {}
+      )
+      .catch(() => {});
   }
 }
 
