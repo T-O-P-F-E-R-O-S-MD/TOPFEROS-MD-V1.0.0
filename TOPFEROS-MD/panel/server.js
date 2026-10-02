@@ -2361,20 +2361,50 @@ app.post(
       delete updatedData.session;
 
 
-      const settings =
-        await settingsPanel.applySettings(
-          sessionId,
-          updatedData
-        );
+      /* ======================================================
+   SAVE BOT INFORMATION
+====================================================== */
+
+let botInformation = null;
+
+if (
+  req.body?.bot &&
+  typeof settingsPanel.updateBotInformation ===
+    "function"
+) {
+  botInformation =
+    await settingsPanel.updateBotInformation(
+      sessionId,
+      req.body.bot
+    );
+}
 
 
-      return res.json({
-        success: true,
-        sessionId,
+/* ======================================================
+   SAVE SETTINGS
+====================================================== */
 
-        settings:
-          settings || {}
-      });
+const settings =
+  await settingsPanel.applySettings(
+    sessionId,
+    updatedData
+  );
+
+
+/* ======================================================
+   RESPONSE
+====================================================== */
+
+return res.json({
+  success: true,
+  sessionId,
+
+  settings:
+    settings || {},
+
+  botInformation:
+    botInformation || {}
+});
 
     } catch (error) {
 
