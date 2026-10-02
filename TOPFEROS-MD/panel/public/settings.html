@@ -9,7 +9,7 @@
     content="width=device-width, initial-scale=1.0"
   >
 
-  <title>TOPFEROS MD — Settings</title>
+  <title>PANEL TOPFEROS MD SETTINGS</title>
 
   <link
     rel="stylesheet"
@@ -23,6 +23,7 @@
 
     <!-- ============================================================
          🌐 LANGUAGE
+         ⚠️ PA MANYEN — EXISTING LANGUAGE SCREEN
          ============================================================ -->
 
     <section
@@ -31,12 +32,14 @@
     >
 
       <div class="logo-container">
+
         <img
           class="logo"
           src="/assets/logo.png"
           alt="TOPFEROS MD"
           onerror="this.style.display='none';"
         >
+
       </div>
 
       <h1>🌐 LANGUAGE</h1>
@@ -81,7 +84,8 @@
 
 
     <!-- ============================================================
-         🔐 LOGIN / NUMBER + CODE
+         🔐 LOGIN
+         ⚠️ PA MANYEN — EXISTING NUMBER + CODE SCREEN
          ============================================================ -->
 
     <section
@@ -176,7 +180,7 @@
 
 
     <!-- ============================================================
-         ⚙️ SETTINGS PANEL
+         ⚙️ NEW TOPFEROS MD SETTINGS PANEL
          ============================================================ -->
 
     <section
@@ -184,7 +188,10 @@
       class="card settings-screen hidden"
     >
 
-      <!-- SETTINGS LOGO -->
+      <!-- ==========================================================
+           🦁 LOGO + TITLE
+           ========================================================== -->
+
       <div
         id="settingsLogoContainer"
         class="logo-container"
@@ -201,67 +208,225 @@
       </div>
 
 
-      <!-- ==========================================================
-           🤖 BOT INFORMATION
-           ========================================================== -->
-
       <div class="settings-title">
 
-        <h1>
-          🤖 BOT INFORMATION
+        <h1 id="settingsPanelTitle">
+          🦁 PANEL TOPFEROS MD SETTINGS
         </h1>
+
+        <div
+          id="connectionStatus"
+          class="message success"
+        >
+          🟢 CONNECTED
+        </div>
 
       </div>
 
 
+      <!-- ==========================================================
+           📋 BASIC INFO
+           ========================================================== -->
+
       <div class="settings-box">
 
+        <h2>
+          ───────── BASIC INFO ─────────
+        </h2>
+
+
+        <!-- OWNER NUMBER
+             ⚠️ READ ONLY — BOT DETECTE L -->
         <div class="info-field">
+
+          <label for="ownerNumber">
+            OWNER NUMBER
+          </label>
+
+          <input
+            id="ownerNumber"
+            type="text"
+            value=""
+            readonly
+            disabled
+            autocomplete="off"
+          >
+
+        </div>
+
+
+        <!-- BOT NAME -->
+        <div class="info-field editable-field">
 
           <label for="botName">
-            Nom Bot:
+            BOT NAME
           </label>
 
-          <input
-            id="botName"
-            type="text"
-            value="TOPFEROS MD"
-            autocomplete="off"
-          >
+          <div class="editable-input">
+
+            <input
+              id="botName"
+              type="text"
+              value="TOPFEROS MD"
+              autocomplete="off"
+            >
+
+            <button
+              type="button"
+              class="edit-button"
+              data-edit-target="botName"
+              aria-label="Edit bot name"
+            >
+              ✏️
+            </button>
+
+          </div>
 
         </div>
 
 
-        <div class="info-field">
+        <!-- LOCATION -->
+        <div class="info-field editable-field">
+
+          <label for="botOrigin">
+            LOCATION
+          </label>
+
+          <div class="editable-input">
+
+            <input
+              id="botOrigin"
+              type="text"
+              value="TOPFEROS CHINWA"
+              autocomplete="off"
+            >
+
+            <button
+              type="button"
+              class="edit-button"
+              data-edit-target="botOrigin"
+              aria-label="Edit location"
+            >
+              ✏️
+            </button>
+
+          </div>
+
+        </div>
+
+
+        <!-- AGE -->
+        <div class="info-field editable-field">
 
           <label for="botAge">
-            Âge:
+            AGE
           </label>
 
-          <input
-            id="botAge"
-            type="number"
-            value="24"
-            min="0"
-            autocomplete="off"
-          >
+          <div class="editable-input">
+
+            <input
+              id="botAge"
+              type="number"
+              value="20"
+              min="0"
+              autocomplete="off"
+            >
+
+            <button
+              type="button"
+              class="edit-button"
+              data-edit-target="botAge"
+              aria-label="Edit age"
+            >
+              ✏️
+            </button>
+
+          </div>
 
         </div>
 
 
-        <div class="info-field">
+        <!-- PREFIX -->
+        <div class="info-field editable-field">
 
           <label for="botPrefix">
-            Prefix:
+            PREFIX
           </label>
 
-          <input
-            id="botPrefix"
-            type="text"
-            value="."
-            maxlength="5"
-            autocomplete="off"
+          <div class="editable-input">
+
+            <input
+              id="botPrefix"
+              type="text"
+              value="."
+              maxlength="5"
+              autocomplete="off"
+            >
+
+            <button
+              type="button"
+              class="edit-button"
+              data-edit-target="botPrefix"
+              aria-label="Edit prefix"
+            >
+              ✏️
+            </button>
+
+          </div>
+
+        </div>
+
+
+        <!-- FOOTER -->
+        <div class="info-field editable-field">
+
+          <label for="botFooter">
+            FOOTER
+          </label>
+
+          <div class="editable-input">
+
+            <input
+              id="botFooter"
+              type="text"
+              value="🦁 TECH BY TOPFEROS MD 🐑"
+              autocomplete="off"
+            >
+
+            <button
+              type="button"
+              class="edit-button"
+              data-edit-target="botFooter"
+              aria-label="Edit footer"
+            >
+              ✏️
+            </button>
+
+          </div>
+
+        </div>
+
+
+        <!-- MODE -->
+        <div class="info-field">
+
+          <label for="botMode">
+            MODE
+          </label>
+
+          <select
+            id="botMode"
           >
+
+            <option value="public">
+              PUBLIC
+            </option>
+
+            <option value="private">
+              PRIVATE
+            </option>
+
+          </select>
 
         </div>
 
@@ -269,62 +434,14 @@
 
 
       <!-- ==========================================================
-           ⚙️ BOT SETTINGS
+           ⚡ SYSTEM AUTOMATION
            ========================================================== -->
 
       <div class="settings-box">
 
-        <h3>
-          ⚙️ BOT SETTINGS
-        </h3>
-
-
-        <!-- PUBLIC MODE -->
-
-        <div class="setting-row">
-
-          <div>
-            <strong>
-              🌐 Mode Public
-            </strong>
-          </div>
-
-          <label class="switch">
-
-            <input
-              type="checkbox"
-              data-setting="publicMode"
-            >
-
-            <span class="slider"></span>
-
-          </label>
-
-        </div>
-
-
-        <!-- PRIVATE MODE -->
-
-        <div class="setting-row">
-
-          <div>
-            <strong>
-              🔒 Mode Private
-            </strong>
-          </div>
-
-          <label class="switch">
-
-            <input
-              type="checkbox"
-              data-setting="privateMode"
-            >
-
-            <span class="slider"></span>
-
-          </label>
-
-        </div>
+        <h2>
+          ──────── ⚡ SYSTEM AUTOMATION ────────
+        </h2>
 
 
         <!-- ALWAYS ONLINE -->
@@ -333,7 +450,7 @@
 
           <div>
             <strong>
-              🟢 Always Online
+              Always Online
             </strong>
           </div>
 
@@ -357,7 +474,7 @@
 
           <div>
             <strong>
-              ⌨️ Fake Typing
+              Fake Typing
             </strong>
           </div>
 
@@ -381,7 +498,7 @@
 
           <div>
             <strong>
-              🎙️ Fake Recording
+              Fake Recording
             </strong>
           </div>
 
@@ -399,19 +516,62 @@
         </div>
 
 
+        <!-- AI CHAT -->
+
+        <div class="setting-row">
+
+          <div>
+            <strong>
+              AI Chat
+            </strong>
+          </div>
+
+          <label class="switch">
+
+            <input
+              type="checkbox"
+              data-setting="aiChat"
+            >
+
+            <span class="slider"></span>
+
+          </label>
+
+        </div>
+
+
+        <!-- AUTO REPLY -->
+
+        <div class="setting-row">
+
+          <div>
+            <strong>
+              Auto Reply
+            </strong>
+          </div>
+
+          <label class="switch">
+
+            <input
+              type="checkbox"
+              data-setting="autoReply"
+            >
+
+            <span class="slider"></span>
+
+          </label>
+
+        </div>
+
+
         <!-- AUTO STATUS SEEN -->
 
         <div class="setting-row">
 
           <div>
             <strong>
-              👁️ Auto Status Seen
+              Auto Status Seen
             </strong>
-
-            <p class="message">
-              Wè status yo otomatikman san Like.
-            </p>
-
           </div>
 
           <label class="switch">
@@ -428,19 +588,14 @@
         </div>
 
 
-        <!-- AUTO LIKE STATUS -->
+        <!-- AUTO STATUS LIKE -->
 
         <div class="setting-row">
 
           <div>
             <strong>
-              ❤️ Auto Like Status
+              Auto Status Like
             </strong>
-
-            <p class="message">
-              Wè status la epi Like li otomatikman.
-            </p>
-
           </div>
 
           <label class="switch">
@@ -457,43 +612,16 @@
         </div>
 
 
-        <!-- ANTI CALL -->
+        <!-- ======================================================
+             🛡️ ANTI DELETE
+             ====================================================== -->
 
         <div class="setting-row">
 
           <div>
             <strong>
-              📞 Anti Call
+              Anti Delete
             </strong>
-          </div>
-
-          <label class="switch">
-
-            <input
-              type="checkbox"
-              data-setting="antiCall"
-            >
-
-            <span class="slider"></span>
-
-          </label>
-
-        </div>
-
-
-        <!-- ANTI DELETE -->
-
-        <div class="setting-row">
-
-          <div>
-            <strong>
-              🗑️ Anti Delete
-            </strong>
-
-            <p class="message">
-              Lè ON, chwazi kote mesaj efase a dwe parèt.
-            </p>
-
           </div>
 
           <label class="switch">
@@ -511,73 +639,59 @@
         </div>
 
 
-        <!-- ANTI DELETE DESTINATION -->
-
         <div
           id="antiDeleteOptions"
           class="settings-box"
-          style="display:none;"
         >
 
-          <div class="settings-subtitle">
-            🗑️ ANTI DELETE
+          <div class="info-field">
+
+            <label for="antiDeleteMode">
+              Anti-Delete Mode
+            </label>
+
+            <select
+              id="antiDeleteMode"
+            >
+
+              <option value="all">
+                ALL
+              </option>
+
+              <option value="media">
+                MEDIA
+              </option>
+
+              <option value="text">
+                TEXT
+              </option>
+
+            </select>
+
           </div>
 
-          <p class="message">
-            Chwazi yon sèl destinasyon:
-          </p>
 
+          <div class="info-field">
 
-          <!-- SAME CHAT -->
+            <label for="antiDeleteDestination">
+              Send To
+            </label>
 
-          <label
-            class="setting-option"
-            style="
-              display:flex;
-              align-items:center;
-              gap:10px;
-              margin:10px 0;
-            "
-          >
-
-            <input
-              id="antiDeleteSameChat"
-              type="radio"
-              name="antiDeleteDestination"
-              value="sameChat"
+            <select
+              id="antiDeleteDestination"
             >
 
-            <span>
-              📥 Same Chat
-            </span>
+              <option value="owner">
+                OWNER
+              </option>
 
-          </label>
+              <option value="sameChat">
+                SAME CHAT
+              </option>
 
+            </select>
 
-          <!-- PRIVE -->
-
-          <label
-            class="setting-option"
-            style="
-              display:flex;
-              align-items:center;
-              gap:10px;
-              margin:10px 0;
-            "
-          >
-
-            <input
-              id="antiDeletePrivate"
-              type="radio"
-              name="antiDeleteDestination"
-              value="private"
-            >
-
-            <span>
-              📩 Prive
-            </span>
-
-          </label>
+          </div>
 
         </div>
 
@@ -588,7 +702,7 @@
 
           <div>
             <strong>
-              🚫 Anti Spam
+              Anti Spam
             </strong>
           </div>
 
@@ -606,13 +720,83 @@
         </div>
 
 
-        <!-- AI CHAT -->
+        <!-- ======================================================
+             📞 ANTI CALL
+             ====================================================== -->
+
+        <div class="settings-box">
+
+          <div class="setting-row">
+
+            <div>
+              <strong>
+                📞 ANTI-CALL
+              </strong>
+            </div>
+
+            <label class="switch">
+
+              <input
+                type="checkbox"
+                data-setting="antiCall"
+              >
+
+              <span class="slider"></span>
+
+            </label>
+
+          </div>
+
+
+          <div class="info-field">
+
+            <label for="antiCallMode">
+              Anti-Call Mode
+            </label>
+
+            <select
+              id="antiCallMode"
+            >
+
+              <option value="all">
+                ALL
+              </option>
+
+              <option value="unknown">
+                UNKNOWN
+              </option>
+
+              <option value="nonOwner">
+                NON-OWNER
+              </option>
+
+            </select>
+
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <!-- ==========================================================
+           🛡️ SECURITY
+           ========================================================== -->
+
+      <div class="settings-box">
+
+        <h2>
+          ───────── SECURITY ─────────
+        </h2>
+
+
+        <!-- ANTI BUG -->
 
         <div class="setting-row">
 
           <div>
             <strong>
-              🤖 AI Chat
+              🐞 ANTI-BUG
             </strong>
           </div>
 
@@ -620,7 +804,31 @@
 
             <input
               type="checkbox"
-              data-setting="aiChat"
+              data-setting="antiBug"
+            >
+
+            <span class="slider"></span>
+
+          </label>
+
+        </div>
+
+
+        <!-- ANTI BOT -->
+
+        <div class="setting-row">
+
+          <div>
+            <strong>
+              🤖 ANTI-BOT
+            </strong>
+          </div>
+
+          <label class="switch">
+
+            <input
+              type="checkbox"
+              data-setting="antiBot"
             >
 
             <span class="slider"></span>
@@ -633,108 +841,128 @@
 
 
       <!-- ==========================================================
-           👥 GROUP SECURITY
+           🕦 AUTOMATION GROUP
            ========================================================== -->
 
       <div class="settings-box">
 
-        <h3>
-          👥 GROUP SECURITY
-        </h3>
+        <h2>
+          ─────── 🕦 AUTOMATION GROUP ───────
+        </h2>
 
 
-        <!-- GROUP ANTI SPAM -->
+        <!-- GROUP JID / NUMBER -->
 
-        <div class="setting-row">
+        <div class="info-field">
 
-          <div>
-            <strong>
-              🚫 Group Anti Spam
-            </strong>
-          </div>
-
-          <label class="switch">
-
-            <input
-              type="checkbox"
-              data-setting="groupAntiSpam"
-            >
-
-            <span class="slider"></span>
-
+          <label for="adminGroupNumber">
+            GROUP JID / ADMIN NUMBER
           </label>
+
+          <input
+            id="adminGroupNumber"
+            type="text"
+            autocomplete="off"
+            placeholder="Number or Group JID"
+          >
 
         </div>
 
 
-        <!-- GROUP ANTI LINK -->
+        <!-- GROUP LINK -->
 
-        <div class="setting-row">
+        <div class="info-field">
 
-          <div>
-            <strong>
-              🔗 Group Anti Link
-            </strong>
-          </div>
-
-          <label class="switch">
-
-            <input
-              type="checkbox"
-              data-setting="groupAntiLink"
-            >
-
-            <span class="slider"></span>
-
+          <label for="adminGroupLink">
+            GROUP LINK
           </label>
+
+          <input
+            id="adminGroupLink"
+            type="url"
+            autocomplete="off"
+            placeholder="https://chat.whatsapp.com/..."
+          >
 
         </div>
 
 
-        <!-- GROUP ANTI DELETE -->
+        <!-- TIME ZONE -->
 
-        <div class="setting-row">
+        <div class="info-field">
 
-          <div>
-            <strong>
-              🗑️ Group Anti Delete
-            </strong>
-          </div>
-
-          <label class="switch">
-
-            <input
-              type="checkbox"
-              data-setting="groupAntiDelete"
-            >
-
-            <span class="slider"></span>
-
+          <label for="groupTimeZone">
+            TIME ZONE
           </label>
+
+          <select
+            id="groupTimeZone"
+          >
+
+            <option value="America/Port-au-Prince">
+              Atlantique UTC-04:00
+            </option>
+
+            <option value="UTC">
+              UTC +00:00
+            </option>
+
+            <option value="America/New_York">
+              Eastern UTC-04:00 / UTC-05:00
+            </option>
+
+            <option value="America/Los_Angeles">
+              Pacific UTC-07:00 / UTC-08:00
+            </option>
+
+          </select>
 
         </div>
 
-      </div>
+
+        <!-- CLOSE / OPEN -->
+
+        <div class="automation-time-grid">
+
+          <div class="info-field">
+
+            <label for="groupCloseTime">
+              CLOSE TIME
+            </label>
+
+            <input
+              id="groupCloseTime"
+              type="time"
+              value="12:00"
+            >
+
+          </div>
 
 
-      <!-- ==========================================================
-           🔒 GROUP AUTOMATION
-           ========================================================== -->
+          <div class="info-field">
 
-      <div class="settings-box">
+            <label for="groupOpenTime">
+              OPEN TIME
+            </label>
 
-        <h3>
-          🔒 GROUP AUTOMATION
-        </h3>
+            <input
+              id="groupOpenTime"
+              type="time"
+              value="06:00"
+            >
+
+          </div>
+
+        </div>
 
 
-        <!-- AUTO CLOSE -->
+        <!-- CLOSE -->
 
         <div class="setting-row">
 
           <div>
             <strong>
-              🔐 Auto Close Group
+              🔒 GROUP CLOSE
             </strong>
           </div>
 
@@ -753,28 +981,13 @@
         </div>
 
 
-        <div class="info-field">
-
-          <label for="groupCloseTime">
-            Close Time:
-          </label>
-
-          <input
-            id="groupCloseTime"
-            type="time"
-            value="22:00"
-          >
-
-        </div>
-
-
-        <!-- AUTO OPEN -->
+        <!-- OPEN -->
 
         <div class="setting-row">
 
           <div>
             <strong>
-              🔓 Auto Open Group
+              🔓 GROUP OPEN
             </strong>
           </div>
 
@@ -793,46 +1006,30 @@
         </div>
 
 
+        <!-- GROUP BIO -->
+
         <div class="info-field">
 
-          <label for="groupOpenTime">
-            Open Time:
+          <label for="groupBioText">
+            GROUP BIO
           </label>
 
-          <input
-            id="groupOpenTime"
-            type="time"
-            value="06:00"
-          >
+          <textarea
+            id="groupBioText"
+            rows="6"
+            autocomplete="off"
+            placeholder="Bio or principles"
+          ></textarea>
 
         </div>
-
-      </div>
-
-
-      <!-- ==========================================================
-           📜 GROUP BIO / PRINCIPLES
-           ========================================================== -->
-
-      <div class="settings-box">
-
-        <h3>
-          📜 GROUP BIO / PRINCIPLES
-        </h3>
 
 
         <div class="setting-row">
 
           <div>
-
             <strong>
-              Bio / Prensip Enforcement
+              GROUP BIO / PRINCIPLES
             </strong>
-
-            <p class="message">
-              Lè ON, bot la ap aplike prensip group yo.
-            </p>
-
           </div>
 
           <label class="switch">
@@ -849,83 +1046,10 @@
 
         </div>
 
-
-        <div class="info-field">
-
-          <label for="groupBioText">
-            Bio / Prensip Group:
-          </label>
-
-          <textarea
-            id="groupBioText"
-            rows="8"
-            autocomplete="off"
-            placeholder="📜 PRINSIP GROUP
-
-❌ Pa voye lyen.
-❌ Pa fè spam.
-❌ Pa fè piblisite.
-❌ Pa joure lòt manm."
-          ></textarea>
-
-        </div>
-
       </div>
 
 
-      <!-- ==========================================================
-           👥 GROUP MANAGEMENT
-           ========================================================== -->
-
-      <div class="settings-box">
-
-        <h3>
-          👥 GROUP MANAGEMENT
-        </h3>
-
-
-        <p class="message">
-          Configure the group where the bot will manage
-          automatic closing and opening.
-        </p>
-
-
-        <div class="info-field">
-
-          <label for="adminGroupNumber">
-            Admin Group Number:
-          </label>
-
-          <input
-            id="adminGroupNumber"
-            type="tel"
-            inputmode="numeric"
-            autocomplete="off"
-            placeholder="509XXXXXXXX"
-          >
-
-        </div>
-
-
-        <div class="info-field">
-
-          <label for="adminGroupLink">
-            Admin Group Link:
-          </label>
-
-          <input
-            id="adminGroupLink"
-            type="url"
-            autocomplete="off"
-            placeholder="https://chat.whatsapp.com/..."
-          >
-
-        </div>
-
-      </div>
-
-
-      <!-- ==========================================================
+            <!-- ==========================================================
            💾 SAVE
            ========================================================== -->
 
@@ -934,9 +1058,8 @@
         class="next-button"
         type="button"
       >
-        SAVE ✅
+        APP SAVE
       </button>
-
 
       <div
         id="settingsMessage"
@@ -944,8 +1067,12 @@
       ></div>
 
 
+      <!-- ==========================================================
+           🦁 FOOTER
+           ========================================================== -->
+
       <div class="footer">
-        TECH BY TOPFEROS MD
+        🦁 TECH TOPFEROS MD 🐑
       </div>
 
     </section>
