@@ -2,6 +2,67 @@
 
 const config = require("../config");
 
+const axios = require('axios');
+
+module.exports = {
+    name: 'download',
+    category: 'downloader',
+    description: 'Telechaje videyo oswa mizik sou YouTube, TikTok, Facebook, elatriye.',
+    async execute(sock, message, args, cmdName) {
+        const jid = message.key.remoteJid;
+        const text = args.join(' ');
+
+        if (!text) {
+            return reply(sock, jid, `❌ Itilizasyon: *${prefix}${cmdName} [lyen videyo a]*`, message);
+        }
+
+        // Tcheke si se mizik oswa videyo itilizatè a mande selon kòmand la
+        const type = (cmdName === 'play' || cmdName === 'mp3') ? 'audio' : 'video';
+
+        await reply(sock, jid, '⏳ _Topferos MD ap trete lyen an, tann yon ti moman..._', message);
+
+        try {
+            // Rele API nou sot mete nan panel/server.js la lokalman (pòt 3000 oswa pòt Render la)
+            const port = process.env.PORT || 3000;
+            const response = await axios.post(`http://localhost:${port}/api/download`, {
+                url: text,
+                type: type
+            });
+
+            if (response.data && response.data.status) {
+                const mediaUrl = response.data.download_url;
+
+                if (type === 'audio') {
+                    // Voye odyo a bay itilizatè a sou WhatsApp
+                    await sock.sendMessage(jid, { 
+                        audio: { url: mediaUrl }, 
+                        mimetype: 'audio/mp4',
+                        ptt: false 
+                    }, { quoted: message });
+                } else {
+                    // Voye videyo a bay itilizatè a sou WhatsApp
+                    await sock.sendMessage(jid, { 
+                        video: { url: mediaUrl }, 
+                        mimetype: 'video/mp4',
+                        caption: '✨ Téléchargé avec succès par *TOPFEROS MD*'
+                    }, { quoted: message });
+                }
+            } else {
+                reply(sock, jid, '❌ Enposib pou jwenn videyo sa a.', message);
+            }
+        } catch (err) {
+            console.error(err);
+            reply(sock, jid, '❌ Gen yon erè ki pase pandan telechajman an.', message);
+        }
+    }
+};
+
+// Yon ti fonksyon rapid pou bot la ka reponn mesaj la
+async function reply(sock, jid, text, quoted) {
+    return await sock.sendMessage(jid, { text: text }, { quoted: quoted });
+}
+
+
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 📥 TOPFEROS MD — DOWNLOAD COMMAND
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
