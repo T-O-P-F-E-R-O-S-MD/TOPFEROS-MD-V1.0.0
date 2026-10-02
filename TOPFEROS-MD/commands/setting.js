@@ -46,9 +46,7 @@ function getRealSession(sock) {
         "function"
     ) {
       const session =
-        settingPanel.getSessionByNumber(
-          socketNumber
-        );
+        settingPanel.getSessionByNumber(socketNumber);
 
       if (session?.sessionId) {
         return session;
@@ -243,7 +241,6 @@ function buildSettingsMessage(info, settings) {
 
 /* ======================================================
    PANEL ACCESS MESSAGE
-   PASSWORD + COPY BUTTON
 ====================================================== */
 
 function buildAccessText(session) {
@@ -291,11 +288,7 @@ async function sendAccessMessage(
   quoted
 ) {
   try {
-
-    if (
-      !sock ||
-      !chatId
-    ) {
+    if (!sock || !chatId) {
       return;
     }
 
@@ -313,7 +306,6 @@ async function sendAccessMessage(
     --------------------------------------------------- */
 
     if (!code) {
-
       await sock.sendMessage(
         chatId,
         {
@@ -332,8 +324,7 @@ async function sendAccessMessage(
     }
 
     /* ---------------------------------------------------
-       COPY PASSWORD BUTTON
-       User klike → WhatsApp kopye code A7K29P
+       CREATE COPY BUTTON
     --------------------------------------------------- */
 
     const messageContent =
@@ -357,9 +348,6 @@ async function sendAccessMessage(
                   display_text:
                     "📋 Copy password",
 
-                  id:
-                    "copy_settings_password",
-
                   copy_code:
                     code
                 })
@@ -367,6 +355,10 @@ async function sendAccessMessage(
           ]
         }
       });
+
+    /* ---------------------------------------------------
+       CREATE WHATSAPP MESSAGE
+    --------------------------------------------------- */
 
     const generatedMessage =
       generateWAMessageFromContent(
@@ -382,9 +374,14 @@ async function sendAccessMessage(
         {
           userJid:
             sock?.user?.id,
+
           quoted
         }
       );
+
+    /* ---------------------------------------------------
+       SEND INTERACTIVE MESSAGE
+    --------------------------------------------------- */
 
     await sock.relayMessage(
       chatId,
@@ -396,8 +393,7 @@ async function sendAccessMessage(
     );
 
     console.log(
-      "[TOPFEROS] PANEL ACCESS + COPY PASSWORD SENT:",
-      code
+      "[TOPFEROS] PANEL ACCESS + COPY PASSWORD SENT"
     );
 
   } catch (error) {
@@ -410,11 +406,12 @@ async function sendAccessMessage(
     );
 
     /* ---------------------------------------------------
-       FALLBACK SI BUTTON NAN PA SIPÒTE
+       FALLBACK
+       SI COPY BUTTON PA SIPÒTE,
+       VOYE MESSAGE 2 NORMALMAN.
     --------------------------------------------------- */
 
     try {
-
       await sock.sendMessage(
         chatId,
         {
@@ -424,6 +421,10 @@ async function sendAccessMessage(
         {
           quoted
         }
+      );
+
+      console.log(
+        "[TOPFEROS] PANEL ACCESS FALLBACK SENT"
       );
 
     } catch (fallbackError) {
@@ -449,7 +450,7 @@ function buildInstructionsMessage() {
 Pour modifier les paramètres de votre bot, veuillez cliquer sur le lien web dans le message ci-dessus et accéder à la page web. Utilisez l’ownerNumber et le mot de passe indiqués dans le message ci-dessus pour vous connecter et modifier les paramètres de votre bot. Après avoir soumis les paramètres sur le site web, votre bot mettra à jour les nouveaux paramètres dans un délai de 3 minutes. ✅
 
 
-Para cambiar la configuración de tu bot, haz clic en el enlace web del mensaje anterior y accede a la página web. Utiliza el ownerNumber y la contraseña que aparecen en el mensaje anterior para iniciar sesión y cambiar la configuración de tu bot. Después de enviar la configuración en el sitio web, tu bot actualizará los nuevos ajustes en un plazo de 3 minutos. ✅
+Para cambiar la configuración de tu bot, haz clic en el enlace web del mensaje anterior y accede a la página web. Utiliza el ownerNumber y la contraseña que aparecen en el mensaje anterior para iniciar sesión y cambiar los ajustes de tu bot. Después de enviar la configuración en el sitio web, tu bot actualizará los nuevos ajustes en un plazo de 3 minutos. ✅
 
 🦁 *By TOPFEROS MD TECH*`;
 }
@@ -472,6 +473,10 @@ async function execute({
   }
 
   try {
+
+    /* ---------------------------------------------------
+       VERIFY SESSION
+    --------------------------------------------------- */
 
     if (!session?.sessionId) {
 
@@ -580,6 +585,9 @@ async function execute({
       {
         text:
           buildInstructionsMessage()
+      },
+      {
+        quoted: message
       }
     );
 
@@ -604,6 +612,9 @@ async function execute({
           text:
             "❌ *TOPFEROS MD*\n\n" +
             "Gen yon erè pandan m ap prepare Settings Panel la."
+        },
+        {
+          quoted: message
         }
       );
 
