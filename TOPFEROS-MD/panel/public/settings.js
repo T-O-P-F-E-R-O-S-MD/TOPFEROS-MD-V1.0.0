@@ -1255,55 +1255,73 @@ async function loadSettings() {
 
     }
 
+// ============================================================
+// 🤖 BOT INFORMATION
+// ============================================================
 
-    // ========================================================
-    // BOT INFORMATION
-    // ========================================================
+function collectBotInformation() {
 
-    const bot =
-      result.bot ||
-      result.botInformation ||
-      {};
+  const locationInput =
+    document.getElementById(
+      "botOrigin"
+    ) ||
+    document.getElementById(
+      "botLocation"
+    );
 
+  const footerInput =
+    document.getElementById(
+      "botFooter"
+    );
 
-    botInformation =
-      bot;
+  const ownerNumberInput =
+    document.getElementById(
+      "ownerNumber"
+    );
 
+  return {
 
-    if (
+    name:
       botNameInput
-    ) {
+        ? botNameInput.value.trim()
+        : "",
 
-      botNameInput.value =
-        bot.name ||
-        "TOPFEROS MD";
+    number:
+      ownerNumberInput
+        ? ownerNumberInput.value.trim()
+        : "",
 
-    }
+    location:
+      locationInput
+        ? locationInput.value.trim()
+        : "",
 
-
-    if (
+    age:
       botAgeInput
-    ) {
+        ? Number(
+            botAgeInput.value
+          )
+        : 0,
 
-      botAgeInput.value =
-        bot.age ??
-        "";
-
-    }
-
-
-    if (
+    prefix:
       botPrefixInput
-    ) {
+        ? botPrefixInput.value.trim()
+        : ".",
 
-      botPrefixInput.value =
-        bot.prefix ||
-        ".";
+    footer:
+      footerInput
+        ? footerInput.value.trim()
+        : "",
 
-    }
+    mode:
+      settings.publicMode === true
+        ? "Public"
+        : "Private"
 
+  };
 
-    // ========================================================
+}
+     // ========================================================
 // SETTINGS
 // ========================================================
 
