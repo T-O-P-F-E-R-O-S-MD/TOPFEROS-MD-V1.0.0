@@ -2,7 +2,6 @@
 
 const fs = require("fs");
 const path = require("path");
-
 const config = require("../config");
 
 // ============================================================
@@ -17,17 +16,10 @@ const LOGO_PATH = path.join(
   "logo.png"
 );
 
-// ============================================================
-// GET CONNECTED USER
-// ============================================================
-
 function getConnectedUser(sock) {
-
-  const user =
-    sock?.user;
+  const user = sock?.user;
 
   if (!user) {
-
     return {
       name: "Unknown",
       number: "Unknown"
@@ -39,9 +31,7 @@ function getConnectedUser(sock) {
     user.verifiedName ||
     "Unknown";
 
-  const id =
-    user.id ||
-    "";
+  const id = user.id || "";
 
   const number =
     id
@@ -56,27 +46,18 @@ function getConnectedUser(sock) {
   };
 }
 
-// ============================================================
-// MENU COMMAND
-// ============================================================
-
 async function execute(context) {
-
   const {
     sock,
     message
-  } = context;
+  } = context || {};
 
   const chatId =
     message?.key?.remoteJid;
 
-  if (!chatId) {
+  if (!sock || !chatId) {
     return;
   }
-
-  // ==========================================================
-  // CONFIG
-  // ==========================================================
 
   const botName =
     config?.bot?.name ||
@@ -100,159 +81,123 @@ async function execute(context) {
     config?.owner?.name ||
     "TOPFEROS MD V1.0.0";
 
-  // ==========================================================
-  // CONNECTED USER
-  // ==========================================================
-
   const connectedUser =
     getConnectedUser(sock);
 
-  const showUserName =
-    config?.bot?.session?.showUserName !== false;
-
-  const showUserNumber =
-    config?.bot?.session?.showUserNumber !== false;
-
   const userName =
-    showUserName
-      ? connectedUser.name
-      : "Hidden";
+    config?.bot?.session?.showUserName === false
+      ? "Hidden"
+      : connectedUser.name;
 
   const userNumber =
-    showUserNumber
-      ? connectedUser.number
-      : "Hidden";
+    config?.bot?.session?.showUserNumber === false
+      ? "Hidden"
+      : connectedUser.number;
 
-  // ==========================================================
-  // MENU TEXT
-  // ==========================================================
+  const webConnect =
+    config?.links?.web ||
+    "Web Bot link pa configuré";
+
+  const webSettings =
+    config?.links?.settings ||
+    config?.links?.setting ||
+    "Web Settings link pa configuré";
+
+  const webChannel =
+    config?.links?.channel ||
+    "Web Channel link pa configuré";
+
+  const webGroup =
+    config?.links?.group ||
+    config?.links?.groups ||
+    "Web Group link pa configuré";
 
   const menu = `
+━━━━━━━━━━━━━━━━━━━━━━
+          COMMANDS
+━━━━━━━━━━━━━━━━━━━━━━
 
-╭──⋅──⋅─🦁─⋅──⋅──╮
-  💕 \*TOPFEROS MD V1.0.0\* 💕
-╰──⋅──⋅─⋅─⋅─⋅──⋅──╯
+🤖 Bot       : ${botName} ${version}
+📦 Version   : ${version}
+🟢 Status    : ONLINE
+🔑 Prefix    : ${prefix}
+⚙️ Mode      : ${mode}
 
-👤 \*ᴏᴡɴᴇʀ\*   : \`${ownerName}\`
-🤖 \*ʙᴏᴛ\*     : \`${botName}\`
-📦 \*ᴠᴇʀsɪᴏɴ\* : \`${version}\`
-📡 \*sᴛᴀᴛᴜs\*  : \`ONLINE\`
-🔑 \*ᴘʀᴇғɪx\*  : \`${prefix}\`
-⚙️ \*ᴍᴏᴅᴇ\*    : \`${mode}\`
+👑 OWNER
+👤 Name      : ${ownerName}
+📱 Number    : ${userNumber}
 
-⋆ ˚｡⋆୨୧˚ ˚୨୧⋆｡˚ ⋆⋆ ˚｡⋆୨୧˚
+━━━━━━━━━━━━━━━━━━━━━━
+          COMMANDS
+━━━━━━━━━━━━━━━━━━━━━━
 
-.・。.・゜✭・.・✫・゜・。.
-   🦁  *ɢᴇɴᴇʀᴀʟ ᴄᴏᴍᴍᴀɴᴅꜱ*  🦁
-.・。.・゜✭・.・✫・゜・。.
+👑 GENERAL
+│ ${prefix}alive
+│ ${prefix}ping
+│ ${prefix}menu
+│ ${prefix}help
+│ ${prefix}info
+│ ${prefix}owner
+│ ${prefix}runtime
+│ ${prefix}uptime
+│ ${prefix}status
+│ ${prefix}setting
 
-🦁 \`${prefix}menu\` ➪ Show all commands
-🦁 \`${prefix}setting\` ➪ Open settings
-🦁 \`${prefix}help\` ➪ Command help
-🦁 \`${prefix}info\` ➪ Bot information
-🦁 \`${prefix}owner\` ➪ Show owner
-🦁 \`${prefix}alive\` ➪ Check bot status
-🦁 \`${prefix}ping\` ➪ Check response speed
-🦁 \`${prefix}runtime\` ➪ Show runtime
-🦁 \`${prefix}uptime\` ➪ Show uptime
+👥 GROUP
+│ ${prefix}add <NUMBER>
+│ ${prefix}admin
+│ ${prefix}close
+│ ${prefix}demote
+│ ${prefix}groupinfo
+│ ${prefix}kick <NUMBER>
+│ ${prefix}open
+│ ${prefix}promote <NUMBER>
+│ ${prefix}setdesc <TEXT>
+│ ${prefix}setgoodbye <TEXT>
+│ ${prefix}setname <NAME>
+│ ${prefix}setpp
+│ ${prefix}setwelcome <TEXT>
+│ ${prefix}tagall
 
-.・。.・゜✭・.・✫・゜・。.
-   🐜  *ᴀʀᴛɪғɪᴄɪᴀʟ ɪɴᴛᴇʟʟɪɢᴇɴᴄᴇ*  🐜
-.・。.・゜✭・.・✫・゜・。.
+🎬 MEDIA
+│ ${prefix}download <URL>
+│ ${prefix}play <TITLE SONG>
+│ ${prefix}sticker
+│ ${prefix}toimg
+│ ${prefix}vv2
 
-🐜 \`${prefix}ai\` ➪ Ask AI
-🐜 \`${prefix}chat\` ➪ Chat with AI
-🐜 \`${prefix}ask\` ➪ Ask a question
-🐜 \`${prefix}imagine\` ➪ Generate an image
+🤖 AI
+│ ${prefix}ai <QUESTION>
+│ ${prefix}ask <QUESTION>
+│ ${prefix}chat <MESSAGE>
+│ ${prefix}imagine <PROMPT>
 
-.・。.・゜✭・.・✫・゜・。.
-   😹  *ᴍᴇᴅɪᴀ ᴄᴏᴍᴍᴀɴᴅꜱ*  😹
-.・。.・゜✭・.・✫・゜・。.
+🔐 OTHER
+│ ${prefix}pair <NUMBER>
 
-😹 \`${prefix}play\` ➪ Play / download music
-😹 \`${prefix}download\` ➪ Download media
-😹 \`${prefix}sticker\` ➪ Create sticker
-😹 \`${prefix}toimg\` ➪ Sticker to image
+━━━━━━━━━━━━━━━━━━━━━━
 
-.・。.・゜✭・.・✫・゜・。.
-   🙊  *sᴛᴀᴛᴜs & ᴠɪᴇᴡ ᴏɴᴄᴇ*  🙊
-.・。.・゜✭・.・✫・゜・。.
+👤 USER
+│ Name   : ${userName}
+│ Number : ${userNumber}
 
-🙊 \`${prefix}status\` ➪ Status system
-🙊 \`${prefix}vv2\` ➪ View Once
-🙊 \`${prefix}viewonce\` ➪ View Once reply/forward
+🌐 Web Connect
+└──➤ ${webConnect}
+🌐 Web Settings
+└──➤ ${webSettings}
+🌐 Web Channel
+└──➤ ${webChannel}
+🌐 Web GROUP
+└──➤ ${webGroup}
 
-.・。.・゜✭・.・✫・゜・。.
-   👁️  *ɢʀᴏᴜᴘ ᴄᴏᴍᴍᴀɴᴅꜱ*  👁️
-.・。.・゜✭・.・✫・゜・。.
-
-👁️ \`${prefix}groupinfo\` ➪ Group information
-👁️ \`${prefix}admin\` ➪ Show group admins
-👁️ \`${prefix}tagall\` ➪ Mention all members
-👁️ \`${prefix}add\` ➪ Add a member
-👁️ \`${prefix}kick\` ➪ Remove a member
-👁️ \`${prefix}promote\` ➪ Promote member
-👁️ \`${prefix}demote\` ➪ Demote member
-👁️ \`${prefix}open\` ➪ Open group
-👁️ \`${prefix}close\` ➪ Close group
-
-.・。.・゜✭・.・✫・゜・。.
-   🐯  *ɢʀᴏᴜᴘ sᴇᴛᴛɪɴɢs*  🐯
-.・。.・゜✭・.・✫・゜・。.
-
-🐯 \`${prefix}setname\` ➪ Change group name
-🐯 \`${prefix}setdesc\` ➪ Change group description
-🐯 \`${prefix}setpp\` ➪ Change group picture
-
-.・。.・゜✭・.・✫・゜・。.
-   🐴  *ᴡᴇʟᴄᴏᴍᴇ sʏsᴛᴇᴍ*  🐴
-.・。.・゜✭・.・✫・゜・。.
-
-🐴 \`${prefix}setwelcome\` ➪ Configure welcome
-🐴 \`${prefix}setgoodbye\` ➪ Configure goodbye
-
-.・。.・゜✭・.・✫・゜・。.
-   🫎  *ᴏᴛʜᴇʀ ᴄᴏᴍᴍᴀɴᴅꜱ*  🫎
-.・。.・゜✭・.・✫・゜・。.
-
-🫎 \`${prefix}parrain\` ➪ Generate Parrain code
-
-.・。.・゜✭・.・✫・゜・。.
-
-🐊 \`${prefix}help\` ➪ Show command help
-🐊 \`${prefix}info\` ➪ Show bot information
-
-.・。.・゜✭・.・✫・゜・。.
-
-🐼 *ᴜsᴇʀ sᴇssɪᴏɴ*
-
-👤 \`ᴜsᴇʀ\`   : \`${userName}\`
-📱 \`ɴᴜᴍʙᴇʀ\` : \`${userNumber}\`
-
-*━━━━━━━━━━━━━━━━━━━━*
-
-🌐 *WEB BOT CONECT* :
-${config?.links?.web || "Web Bot link pa configuré"}
-
-</> ᴘᴏᴡᴇʀᴇᴅ ʙʏ TOPFEROS MD TECH 🦁
+╔════════════════════════════════════════════════════╗
+║             🚀 TECH BY TOPFEROS MD               ║
+╚════════════════════════════════════════════════════╝
 `;
 
-  // ==========================================================
-  // SEND MENU
-  // ==========================================================
-
   try {
-
-    if (
-      fs.existsSync(
-        LOGO_PATH
-      )
-    ) {
-
-      const logo =
-        fs.readFileSync(
-          LOGO_PATH
-        );
+    if (fs.existsSync(LOGO_PATH)) {
+      const logo = fs.readFileSync(LOGO_PATH);
 
       await sock.sendMessage(
         chatId,
@@ -264,9 +209,7 @@ ${config?.links?.web || "Web Bot link pa configuré"}
           quoted: message
         }
       );
-
     } else {
-
       await sock.sendMessage(
         chatId,
         {
@@ -276,46 +219,26 @@ ${config?.links?.web || "Web Bot link pa configuré"}
           quoted: message
         }
       );
-
     }
-
   } catch (error) {
-
     console.error(
       "❌ MENU ERROR:",
       error?.stack ||
       error?.message ||
       error
     );
-
   }
 }
 
-// ============================================================
-// EXPORT
-// ============================================================
-
 module.exports = {
-
   name: "menu",
-
   aliases: [
     "commands",
     "cmds",
     "list"
   ],
-
   description:
     "Montre tout command TOPFEROS MD yo.",
-
-  usage:
-    ".menu",
-
+  usage: ".menu",
   execute
-
 };
-
-
-// ╔════════════════════════════════════════════════════╗
-// ║             🚀 TECH BY TOPFEROS MD               ║
-// ╚════════════════════════════════════════════════════╝
