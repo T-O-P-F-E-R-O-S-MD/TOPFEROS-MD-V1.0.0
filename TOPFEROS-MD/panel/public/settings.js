@@ -1256,6 +1256,225 @@ async function loadSettings() {
     }
 
 // ============================================================
+// 📤 COLLECT SETTINGS
+// ============================================================
+
+function collectSettings() {
+
+  enforceAntiDeleteDestination();
+
+  const collected = {};
+
+  // ----------------------------------------------------------
+  // SWITCHES
+  // ----------------------------------------------------------
+
+  getSwitches()
+    .forEach(
+      input => {
+
+        const name =
+          input.dataset.setting;
+
+        if (
+          settingNames.includes(
+            name
+          )
+        ) {
+
+          collected[name] =
+            input.checked;
+
+        }
+
+      }
+    );
+
+  // ----------------------------------------------------------
+  // ANTI DELETE MODE
+  // ----------------------------------------------------------
+
+  const antiDeleteMode =
+    document.getElementById(
+      "antiDeleteMode"
+    );
+
+  if (
+    antiDeleteMode
+  ) {
+
+    collected.antiDeleteMode =
+      antiDeleteMode.value;
+
+  }
+
+  // ----------------------------------------------------------
+  // ANTI DELETE DESTINATION
+  // ----------------------------------------------------------
+
+  const antiDeleteDestination =
+    document.getElementById(
+      "antiDeleteDestination"
+    );
+
+  if (
+    antiDeleteDestination
+  ) {
+
+    collected.antiDeleteDestination =
+      antiDeleteDestination.value;
+
+  }
+
+  // ----------------------------------------------------------
+  // ANTI CALL MODE
+  // ----------------------------------------------------------
+
+  const antiCallMode =
+    document.getElementById(
+      "antiCallMode"
+    );
+
+  if (
+    antiCallMode
+  ) {
+
+    collected.antiCallMode =
+      antiCallMode.value;
+
+  }
+
+  // ----------------------------------------------------------
+  // ANTI CALL OPTION
+  // ----------------------------------------------------------
+
+  const antiCallOption =
+    document.getElementById(
+      "antiCallOption"
+    );
+
+  if (
+    antiCallOption
+  ) {
+
+    collected.antiCallOption =
+      antiCallOption.value.trim();
+
+  }
+
+  // ----------------------------------------------------------
+  // GROUP ADMIN NUMBER
+  // ----------------------------------------------------------
+
+  const adminGroupNumber =
+    document.getElementById(
+      "adminGroupNumber"
+    );
+
+  if (
+    adminGroupNumber
+  ) {
+
+    collected.adminGroupNumber =
+      adminGroupNumber.value.trim();
+
+  }
+
+  // ----------------------------------------------------------
+  // GROUP ADMIN LINK
+  // ----------------------------------------------------------
+
+  const adminGroupLink =
+    document.getElementById(
+      "adminGroupLink"
+    );
+
+  if (
+    adminGroupLink
+  ) {
+
+    collected.adminGroupLink =
+      adminGroupLink.value.trim();
+
+  }
+
+  // ----------------------------------------------------------
+  // TIME ZONE
+  // ----------------------------------------------------------
+
+  const groupTimeZone =
+    document.getElementById(
+      "groupTimeZone"
+    );
+
+  if (
+    groupTimeZone
+  ) {
+
+    collected.groupTimeZone =
+      groupTimeZone.value;
+
+  }
+
+  // ----------------------------------------------------------
+  // GROUP CLOSE TIME
+  // ----------------------------------------------------------
+
+  const groupCloseTime =
+    document.getElementById(
+      "groupCloseTime"
+    );
+
+  if (
+    groupCloseTime
+  ) {
+
+    collected.groupCloseTime =
+      groupCloseTime.value;
+
+  }
+
+  // ----------------------------------------------------------
+  // GROUP OPEN TIME
+  // ----------------------------------------------------------
+
+  const groupOpenTime =
+    document.getElementById(
+      "groupOpenTime"
+    );
+
+  if (
+    groupOpenTime
+  ) {
+
+    collected.groupOpenTime =
+      groupOpenTime.value;
+
+  }
+
+  // ----------------------------------------------------------
+  // GROUP BIO
+  // ----------------------------------------------------------
+
+  const groupBioText =
+    document.getElementById(
+      "groupBioText"
+    );
+
+  if (
+    groupBioText
+  ) {
+
+    collected.groupBioText =
+      groupBioText.value.trim();
+
+  }
+
+  return collected;
+
+}
+
+// ============================================================
 // 🤖 BOT INFORMATION
 // ============================================================
 
