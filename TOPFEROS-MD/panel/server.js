@@ -1,1087 +1,410 @@
-<!DOCTYPE html>
-<html lang="en">
-
-<head>
-  <meta charset="UTF-8">
-
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
-  >
-
-  <title>PANEL TOPFEROS MD SETTINGS</title>
-
-  <link
-    rel="stylesheet"
-    href="/style.css"
-  >
-</head>
-
-<body>
-
-  <main class="container">
-
-    <!-- ============================================================
-         🌐 LANGUAGE
-         ⚠️ PA MANYEN — EXISTING LANGUAGE SCREEN
-         ============================================================ -->
-
-    <section
-      id="languageScreen"
-      class="card hidden"
-    >
-
-      <div class="logo-container">
-
-        <img
-          class="logo"
-          src="/assets/logo.png"
-          alt="TOPFEROS MD"
-          onerror="this.style.display='none';"
-        >
-
-      </div>
-
-      <h1>🌐 LANGUAGE</h1>
-
-      <p class="message">
-        Choose your language / Choisissez votre langue
-      </p>
-
-      <div class="language-buttons">
-
-        <button
-          type="button"
-          class="language-btn"
-          onclick="selectSettingsLanguage('en')"
-        >
-          🇬🇧 English
-        </button>
-
-        <button
-          type="button"
-          class="language-btn"
-          onclick="selectSettingsLanguage('fr')"
-        >
-          🇫🇷 Français
-        </button>
-
-        <button
-          type="button"
-          class="language-btn"
-          onclick="selectSettingsLanguage('es')"
-        >
-          🇪🇸 Español
-        </button>
-
-      </div>
-
-      <div class="footer">
-        Made in TOPFEROS TECH
-      </div>
-
-    </section>
-
-
-    <!-- ============================================================
-         🔐 LOGIN
-         ⚠️ PA MANYEN — EXISTING NUMBER + CODE SCREEN
-         ============================================================ -->
-
-    <section
-      id="loginScreen"
-      class="card hidden"
-    >
-
-      <div
-        id="accessLogoContainer"
-        class="logo-container"
-      >
-
-        <img
-          id="accessLogo"
-          class="logo"
-          src="/assets/logo.png"
-          alt="TOPFEROS MD"
-          onerror="this.style.display='none';"
-        >
-
-      </div>
-
-      <h1 id="settingsLoginTitle">
-        🔐 SETTINGS
-      </h1>
-
-      <div class="settings-box">
-
-        <div class="info-field">
-
-          <label
-            id="settingsNumberLabel"
-            for="settingsNumber"
-          >
-            Number:
-          </label>
-
-          <input
-            id="settingsNumber"
-            type="tel"
-            inputmode="numeric"
-            autocomplete="off"
-            placeholder="Number"
-          >
-
-        </div>
-
-
-        <div class="info-field">
-
-          <label
-            id="settingsCodeLabel"
-            for="settingsCode"
-          >
-            Settings Code:
-          </label>
-
-          <input
-            id="settingsCode"
-            type="text"
-            maxlength="6"
-            autocomplete="one-time-code"
-            placeholder="6-character code"
-          >
-
-        </div>
-
-      </div>
-
-
-      <button
-        id="verifyButton"
-        class="next-button"
-        type="button"
-        onclick="verifySettings()"
-      >
-        🔓 VERIFY
-      </button>
-
-
-      <div
-        id="loginMessage"
-        class="message"
-      ></div>
-
-
-      <div class="footer">
-        Made in TOPFEROS TECH
-      </div>
-
-    </section>
-
-
-    <!-- ============================================================
-         ⚙️ NEW TOPFEROS MD SETTINGS PANEL
-         ============================================================ -->
-
-    <section
-      id="settingsPanel"
-      class="card settings-screen hidden"
-    >
-
-      <div
-        id="settingsLogoContainer"
-        class="logo-container"
-      >
-
-        <img
-          id="botLogo"
-          class="logo"
-          src="/assets/logo.png"
-          alt="TOPFEROS MD SETTINGS"
-          onerror="this.style.display='none';"
-        >
-
-      </div>
-
-
-      <div class="settings-title">
-
-        <h1 id="settingsPanelTitle">
-          🦁 PANEL TOPFEROS MD SETTINGS
-        </h1>
-
-        <div
-          id="connectionStatus"
-          class="message success"
-        >
-          🟢 CONNECTED
-        </div>
-
-      </div>
-
-
-      <!-- ==========================================================
-           📋 BASIC INFO
-           ========================================================== -->
-
-      <div class="settings-box">
-
-        <h2>
-          ───────── BASIC INFO ─────────
-        </h2>
-
-
-        <div class="info-field">
-
-          <label for="ownerNumber">
-            OWNER NUMBER
-          </label>
-
-          <input
-            id="ownerNumber"
-            type="text"
-            value=""
-            readonly
-            disabled
-            autocomplete="off"
-          >
-
-        </div>
-
-
-        <div class="info-field editable-field">
-
-          <label for="botName">
-            BOT NAME
-          </label>
-
-          <div class="editable-input">
-
-            <input
-              id="botName"
-              type="text"
-              value="TOPFEROS MD"
-              autocomplete="off"
-            >
-
-            <button
-              type="button"
-              class="edit-button"
-              data-edit-target="botName"
-              aria-label="Edit bot name"
-            >
-              ✏️
-            </button>
-
-          </div>
-
-        </div>
-
-
-        <div class="info-field editable-field">
-
-          <label for="botOrigin">
-            LOCATION
-          </label>
-
-          <div class="editable-input">
-
-            <input
-              id="botOrigin"
-              type="text"
-              value="TOPFEROS CHINWA"
-              autocomplete="off"
-            >
-
-            <button
-              type="button"
-              class="edit-button"
-              data-edit-target="botOrigin"
-              aria-label="Edit location"
-            >
-              ✏️
-            </button>
-
-          </div>
-
-        </div>
-
-
-        <div class="info-field editable-field">
-
-          <label for="botAge">
-            AGE
-          </label>
-
-          <div class="editable-input">
-
-            <input
-              id="botAge"
-              type="number"
-              value="20"
-              min="0"
-              autocomplete="off"
-            >
-
-            <button
-              type="button"
-              class="edit-button"
-              data-edit-target="botAge"
-              aria-label="Edit age"
-            >
-              ✏️
-            </button>
-
-          </div>
-
-        </div>
-
-
-        <div class="info-field editable-field">
-
-          <label for="botPrefix">
-            PREFIX
-          </label>
-
-          <div class="editable-input">
-
-            <input
-              id="botPrefix"
-              type="text"
-              value="."
-              maxlength="5"
-              autocomplete="off"
-            >
-
-            <button
-              type="button"
-              class="edit-button"
-              data-edit-target="botPrefix"
-              aria-label="Edit prefix"
-            >
-              ✏️
-            </button>
-
-          </div>
-
-        </div>
-
-
-        <div class="info-field editable-field">
-
-          <label for="botFooter">
-            FOOTER
-          </label>
-
-          <div class="editable-input">
-
-            <input
-              id="botFooter"
-              type="text"
-              value="🦁 TECH BY TOPFEROS MD 🐑"
-              autocomplete="off"
-            >
-
-            <button
-              type="button"
-              class="edit-button"
-              data-edit-target="botFooter"
-              aria-label="Edit footer"
-            >
-              ✏️
-            </button>
-
-          </div>
-
-        </div>
-
-
-        <div class="info-field">
-
-          <label for="botMode">
-            MODE
-          </label>
-
-          <select
-            id="botMode"
-          >
-
-            <option value="public">
-              PUBLIC
-            </option>
-
-            <option value="private">
-              PRIVATE
-            </option>
-
-          </select>
-
-        </div>
-
-      </div>      <!-- ==========================================================
-           ⚡ SYSTEM AUTOMATION
-           ========================================================== -->
-
-      <div class="settings-box">
-
-        <h2>
-          ──────── ⚡ SYSTEM AUTOMATION ────────
-        </h2>
-
-
-        <!-- ALWAYS ONLINE -->
-
-        <div class="setting-row">
-
-          <div>
-            <strong>
-              Always Online
-            </strong>
-          </div>
-
-          <label class="switch">
-
-            <input
-              type="checkbox"
-              data-setting="alwaysOnline"
-            >
-
-            <span class="slider"></span>
-
-          </label>
-
-        </div>
-
-
-        <!-- FAKE TYPING -->
-
-        <div class="setting-row">
-
-          <div>
-            <strong>
-              Fake Typing
-            </strong>
-          </div>
-
-          <label class="switch">
-
-            <input
-              type="checkbox"
-              data-setting="fakeTyping"
-            >
-
-            <span class="slider"></span>
-
-          </label>
-
-        </div>
-
-
-        <!-- FAKE RECORDING -->
-
-        <div class="setting-row">
-
-          <div>
-            <strong>
-              Fake Recording
-            </strong>
-          </div>
-
-          <label class="switch">
-
-            <input
-              type="checkbox"
-              data-setting="fakeRecording"
-            >
-
-            <span class="slider"></span>
-
-          </label>
-
-        </div>
-
-
-        <!-- AI CHAT -->
-
-        <div class="setting-row">
-
-          <div>
-            <strong>
-              AI Chat
-            </strong>
-          </div>
-
-          <label class="switch">
-
-            <input
-              type="checkbox"
-              data-setting="aiChat"
-            >
-
-            <span class="slider"></span>
-
-          </label>
-
-        </div>
-
-
-        <!-- AUTO REPLY -->
-
-        <div class="setting-row">
-
-          <div>
-            <strong>
-              Auto Reply
-            </strong>
-          </div>
-
-          <label class="switch">
-
-            <input
-              type="checkbox"
-              data-setting="autoReply"
-            >
-
-            <span class="slider"></span>
-
-          </label>
-
-        </div>
-
-
-        <!-- AUTO STATUS SEEN -->
-
-        <div class="setting-row">
-
-          <div>
-            <strong>
-              Auto Status Seen
-            </strong>
-          </div>
-
-          <label class="switch">
-
-            <input
-              type="checkbox"
-              data-setting="autoStatusSeen"
-            >
-
-            <span class="slider"></span>
-
-          </label>
-
-        </div>
-
-
-        <!-- AUTO STATUS LIKE -->
-
-        <div class="setting-row">
-
-          <div>
-            <strong>
-              Auto Status Like
-            </strong>
-          </div>
-
-          <label class="switch">
-
-            <input
-              type="checkbox"
-              data-setting="statusLike"
-            >
-
-            <span class="slider"></span>
-
-          </label>
-
-        </div>
-
-
-        <!-- ======================================================
-             🛡️ ANTI DELETE
-             ====================================================== -->
-
-        <div class="setting-row">
-
-          <div>
-            <strong>
-              Anti Delete
-            </strong>
-          </div>
-
-          <label class="switch">
-
-            <input
-              id="antiDelete"
-              type="checkbox"
-              data-setting="antiDelete"
-            >
-
-            <span class="slider"></span>
-
-          </label>
-
-        </div>
-
-
-        <div
-          id="antiDeleteOptions"
-          class="settings-box"
-        >
-
-          <div class="info-field">
-
-            <label for="antiDeleteMode">
-              Anti-Delete Mode
-            </label>
-
-            <select
-              id="antiDeleteMode"
-            >
-
-              <option value="all">
-                ALL
-              </option>
-
-              <option value="media">
-                MEDIA
-              </option>
-
-              <option value="text">
-                TEXT
-              </option>
-
-            </select>
-
-          </div>
-
-
-          <div class="info-field">
-
-            <label for="antiDeleteDestination">
-              Send To
-            </label>
-
-            <select
-              id="antiDeleteDestination"
-            >
-
-              <option value="owner">
-                OWNER
-              </option>
-
-              <option value="sameChat">
-                SAME CHAT
-              </option>
-
-            </select>
-
-          </div>
-
-        </div>
-
-
-        <!-- ANTI SPAM -->
-
-        <div class="setting-row">
-
-          <div>
-            <strong>
-              Anti Spam
-            </strong>
-          </div>
-
-          <label class="switch">
-
-            <input
-              type="checkbox"
-              data-setting="antiSpam"
-            >
-
-            <span class="slider"></span>
-
-          </label>
-
-        </div>
-
-
-        <!-- ======================================================
-             📞 ANTI CALL
-             ====================================================== -->
-
-        <div class="settings-box">
-
-          <div class="setting-row">
-
-            <div>
-              <strong>
-                📞 ANTI-CALL
-              </strong>
-            </div>
-
-            <label class="switch">
-
-              <input
-                type="checkbox"
-                data-setting="antiCall"
-              >
-
-              <span class="slider"></span>
-
-            </label>
-
-          </div>
-
-
-          <div class="info-field">
-
-            <label for="antiCallMode">
-              Anti-Call Mode
-            </label>
-
-            <select
-              id="antiCallMode"
-            >
-
-              <option value="all">
-                ALL
-              </option>
-
-              <option value="unknown">
-                UNKNOWN
-              </option>
-
-              <option value="nonOwner">
-                NON-OWNER
-              </option>
-
-            </select>
-
-          </div>
-
-        </div>
-
-      </div>
-
-
-      <!-- ==========================================================
-           🛡️ SECURITY
-           ========================================================== -->
-
-      <div class="settings-box">
-
-        <h2>
-          ───────── SECURITY ─────────
-        </h2>
-
-
-        <!-- ANTI BUG -->
-
-        <div class="setting-row">
-
-          <div>
-            <strong>
-              🐞 ANTI-BUG
-            </strong>
-          </div>
-
-          <label class="switch">
-
-            <input
-              type="checkbox"
-              data-setting="antiBug"
-            >
-
-            <span class="slider"></span>
-
-          </label>
-
-        </div>
-
-
-        <!-- ANTI BOT -->
-
-        <div class="setting-row">
-
-          <div>
-            <strong>
-              🤖 ANTI-BOT
-            </strong>
-          </div>
-
-          <label class="switch">
-
-            <input
-              type="checkbox"
-              data-setting="antiBot"
-            >
-
-            <span class="slider"></span>
-
-          </label>
-
-        </div>
-
-      </div>
-
-
-      <!-- ==========================================================
-           🕦 AUTOMATION GROUP
-           ========================================================== -->
-
-      <div class="settings-box">
-
-        <h2>
-          ─────── 🕦 AUTOMATION GROUP ───────
-        </h2>
-
-
-        <!-- GROUP JID / NUMBER -->
-
-        <div class="info-field">
-
-          <label for="adminGroupNumber">
-            GROUP JID / ADMIN NUMBER
-          </label>
-
-          <input
-            id="adminGroupNumber"
-            type="text"
-            autocomplete="off"
-            placeholder="Number or Group JID"
-          >
-
-        </div>
-
-
-        <!-- GROUP LINK -->
-
-        <div class="info-field">
-
-          <label for="adminGroupLink">
-            GROUP LINK
-          </label>
-
-          <input
-            id="adminGroupLink"
-            type="url"
-            autocomplete="off"
-            placeholder="https://chat.whatsapp.com/..."
-          >
-
-        </div>
-
-
-        <!-- TIME ZONE -->
-
-        <div class="info-field">
-
-          <label for="groupTimeZone">
-            TIME ZONE
-          </label>
-
-          <select
-            id="groupTimeZone"
-          >
-
-            <option value="America/Port-au-Prince">
-              Atlantique UTC-04:00
-            </option>
-
-            <option value="UTC">
-              UTC +00:00
-            </option>
-
-            <option value="America/New_York">
-              Eastern UTC-04:00 / UTC-05:00
-            </option>
-
-            <option value="America/Los_Angeles">
-              Pacific UTC-07:00 / UTC-08:00
-            </option>
-
-          </select>
-
-        </div>        <div class="automation-time-grid">
-
-          <div class="info-field">
-
-            <label for="groupCloseTime">
-              CLOSE TIME
-            </label>
-
-            <input
-              id="groupCloseTime"
-              type="time"
-              value="12:00"
-            >
-
-          </div>
-
-
-          <div class="info-field">
-
-            <label for="groupOpenTime">
-              OPEN TIME
-            </label>
-
-            <input
-              id="groupOpenTime"
-              type="time"
-              value="06:00"
-            >
-
-          </div>
-
-        </div>
-
-
-        <!-- GROUP CLOSE -->
-
-        <div class="setting-row">
-
-          <div>
-            <strong>
-              🔒 GROUP CLOSE
-            </strong>
-          </div>
-
-          <label class="switch">
-
-            <input
-              id="groupClose"
-              type="checkbox"
-              data-setting="groupClose"
-            >
-
-            <span class="slider"></span>
-
-          </label>
-
-        </div>
-
-
-        <!-- GROUP OPEN -->
-
-        <div class="setting-row">
-
-          <div>
-            <strong>
-              🔓 GROUP OPEN
-            </strong>
-          </div>
-
-          <label class="switch">
-
-            <input
-              id="groupOpen"
-              type="checkbox"
-              data-setting="groupOpen"
-            >
-
-            <span class="slider"></span>
-
-          </label>
-
-        </div>
-
-
-        <!-- GROUP BIO -->
-
-        <div class="info-field">
-
-          <label for="groupBioText">
-            GROUP BIO
-          </label>
-
-          <textarea
-            id="groupBioText"
-            rows="6"
-            autocomplete="off"
-            placeholder="Bio or principles"
-          ></textarea>
-
-        </div>
-
-
-        <!-- GROUP BIO / PRINCIPLES -->
-
-        <div class="setting-row">
-
-          <div>
-            <strong>
-              GROUP BIO / PRINCIPLES
-            </strong>
-          </div>
-
-          <label class="switch">
-
-            <input
-              id="groupBioEnabled"
-              type="checkbox"
-              data-setting="groupBioEnabled"
-            >
-
-            <span class="slider"></span>
-
-          </label>
-
-        </div>
-
-      </div>
-
-
-      <!-- ==========================================================
-           🏠 MAIN PUBLIC PANEL
-           ========================================================== -->
-
-      <button
-        type="button"
-        class="secondaryButton"
-        onclick="window.location.href='/'"
-      >
-        🏠 MAIN PUBLIC PANEL
-      </button>
-
-
-      <!-- ==========================================================
-           💾 SAVE SETTINGS
-           ========================================================== -->
-
-      <button
-        id="saveSettings"
-        class="next-button"
-        type="button"
-      >
-        💾 SAVE SETTINGS
-      </button>
-
-
-      <div
-        id="settingsMessage"
-        class="message"
-      ></div>
-
-
-      <!-- ==========================================================
-           FOOTER
-           ========================================================== -->
-
-      <div class="footer">
-        🦁 TECH TOPFEROS MD 🐑
-      </div>
-
-    </section>
-
-  </main>
-
-
-  <!-- ============================================================
-       ⚙️ SETTINGS JAVASCRIPT
-       ============================================================ -->
-
-  <script src="/settings.js"></script>
-
-</body>
-
-</html>
+"use strict";
+
+const express = require("express");
+const path = require("path");
+const fs = require("fs");
+
+const connection = require("../src/connection");
+const sessionManager = require("../src/sessionManager");
+const language = require("../src/language");
+
+/*
+|--------------------------------------------------------------------------
+| SETTINGS PANEL BACKEND
+|--------------------------------------------------------------------------
+*/
+
+const SETTING_PANEL_FILE = path.join(
+  __dirname,
+  "..",
+  "src",
+  "settingPanel.js"
+);
+
+console.log(
+  "[TOPFEROS] settingPanel path:",
+  SETTING_PANEL_FILE
+);
+
+console.log(
+  "[TOPFEROS] settingPanel exists:",
+  fs.existsSync(SETTING_PANEL_FILE)
+);
+
+let settingsPanel = null;
+
+try {
+  settingsPanel = require("../src/settingPanel");
+
+  console.log(
+    "[TOPFEROS] ✅ settingPanel.js chaje avèk siksè."
+  );
+} catch (error) {
+  console.error(
+    "[TOPFEROS] ❌ settingPanel.js pa disponib:",
+    error?.stack ||
+      error?.message ||
+      error
+  );
+}
+
+const app = express();
+
+const { exec } = require('child_process');
+
+// API pou telechaje mizik ak videyo via yt-dlp
+app.post('/api/download', (req, res) => {
+    const { url, type } = req.body; // type ka 'audio' oswa 'video'
+
+    if (!url) {
+        return res.status(400).json({ status: false, message: "Ou dwe voye yon lyen." });
+    }
+
+    let command = '';
+    if (type === 'audio') {
+        // Jwenn pi bon odyo epi fòse kòd la ba li fòma mp3 nòmal
+        command = `yt-dlp -f "bestaudio" -g "${url}"`;
+    } else {
+        // Jwenn pi bon videyo MP4 ki gen odyo ansanm
+        command = `yt-dlp -f "best[ext=mp4]/best" -g "${url}"`;
+    }
+
+    exec(command, (error, stdout) => {
+        if (error) {
+            console.error(`yt-dlp error: ${error.message}`);
+            return res.status(500).json({ status: false, message: "Sèvè a pa ka trete lyen sa a." });
+        }
+
+        const directUrl = stdout.trim();
+        if (!directUrl) {
+            return res.status(404).json({ status: false, message: "Pa jwenn lyen telechajman dirèk." });
+        }
+
+        return res.json({
+            status: true,
+            type: type || 'video',
+            download_url: directUrl
+        });
+    });
+});
+
+
+/*
+|--------------------------------------------------------------------------
+| SERVER
+|--------------------------------------------------------------------------
+*/
+
+const PORT =
+  Number(process.env.PORT) || 3000;
+
+const HOST =
+  process.env.HOST || "0.0.0.0";
+
+/*
+|--------------------------------------------------------------------------
+| PATHS
+|--------------------------------------------------------------------------
+*/
+
+const PUBLIC_DIR =
+  path.join(
+    __dirname,
+    "public"
+  );
+
+const BACKGROUND_FILE =
+  path.join(
+    __dirname,
+    "background.png"
+  );
+
+const ASSETS_DIR =
+  path.join(
+    __dirname,
+    "..",
+    "assets"
+  );
+
+/*
+|--------------------------------------------------------------------------
+| MIDDLEWARE
+|--------------------------------------------------------------------------
+*/
+
+app.disable("x-powered-by");
+
+app.use(
+  express.json({
+    limit: "2mb"
+  })
+);
+
+app.use(
+  express.urlencoded({
+    extended: true,
+    limit: "2mb"
+  })
+);
+
+/*
+|--------------------------------------------------------------------------
+| STATIC FILES
+|--------------------------------------------------------------------------
+*/
+
+app.use(
+  express.static(
+    PUBLIC_DIR
+  )
+);
+
+app.use(
+  "/assets",
+  express.static(
+    ASSETS_DIR
+  )
+);
+
+/*
+|--------------------------------------------------------------------------
+| BACKGROUND
+|--------------------------------------------------------------------------
+*/
+
+app.get(
+  "/background.png",
+  (req, res) => {
+    if (
+      !fs.existsSync(
+        BACKGROUND_FILE
+      )
+    ) {
+      return res.status(404).end();
+    }
+
+    return res.sendFile(
+      BACKGROUND_FILE
+    );
+  }
+);
+
+/*
+|--------------------------------------------------------------------------
+| HELPERS
+|--------------------------------------------------------------------------
+*/
+
+function cleanNumberValue(value) {
+  return String(
+    value || ""
+  ).replace(
+    /\D/g,
+    ""
+  );
+}
+
+function isValidPhoneNumber(number) {
+  return /^\d{8,15}$/.test(
+    number
+  );
+}
+
+function makeSessionId(number) {
+  return `session_${cleanNumberValue(
+    number
+  )}`;
+}
+
+function getConnectionSession(
+  sessionId
+) {
+  if (!sessionId) {
+    return null;
+  }
+
+  try {
+    if (
+      typeof sessionManager.getSession !==
+      "function"
+    ) {
+      return null;
+    }
+
+    return sessionManager.getSession(
+      sessionId
+    );
+  } catch (error) {
+    console.error(
+      "[TOPFEROS] getSession:",
+      error?.message || error
+    );
+
+    return null;
+  }
+}
+
+function getPublicSessions() {
+  try {
+    if (
+      typeof sessionManager.getPublicSessions ===
+      "function"
+    ) {
+      return (
+        sessionManager.getPublicSessions() ||
+        []
+      );
+    }
+
+    if (
+      typeof sessionManager.getSessions ===
+      "function"
+    ) {
+      const result =
+        sessionManager.getSessions();
+
+      if (Array.isArray(result)) {
+        return result;
+      }
+
+      if (
+        result &&
+        typeof result === "object"
+      ) {
+        return Object.values(
+          result
+        );
+      }
+    }
+
+    return [];
+  } catch (error) {
+    console.error(
+      "[TOPFEROS] getPublicSessions:",
+      error?.message || error
+    );
+
+    return [];
+  }
+}
+
+function publicSession(
+  session
+) {
+  if (!session) {
+    return null;
+  }
+
+  try {
+    if (
+      typeof sessionManager.publicSession ===
+      "function"
+    ) {
+      return sessionManager.publicSession(
+        session
+      );
+    }
+  } catch (error) {
+    console.error(
+      "[TOPFEROS] publicSession:",
+      error?.message || error
+    );
+  }
+
+  return session;
+}
+
+function getSessionIdFromRequest(
+  req
+) {
+  return (
+    req.query?.sessionId ||
+    req.query?.session ||
+    req.body?.sessionId ||
+    req.body?.session ||
+    null
+  );
+}
+
+function isSessionConnected(
+  session
+) {
+  return Boolean(
+    session &&
+      (
+        session.connected === true ||
+        session.status === "connected"function makeTranslationCacheKey(
+  languageName,
+  texts
+) {
+  return JSON.stringify({
+    language:
+      String(
+        languageName ||
+          "English"
+      )
+        .trim()
+        .toLowerCase(),
+
+    texts
+  });
+}
+
+function getCachedTranslation(
+  key
+) {
+  const cached =
+    translationCache.get(
+      key
+    );
+
+  if (!cached) {
+    return null;
+  }
+
+  // Mete l ankò kòm dènye item cache la
+  translationCache.delete(
+    key
+  );
+
+  translationCache.set(
+    key,
+    cached
+  );
+
+  return cached;
+}
+
+function setCachedTranslation(
+  key,
+  value
+) {
+  if (
+    translationCache.has(
+      key
+    )
+  ) {
+    translationCache.delete(
+      key
+    );
+  }
+
+  translationCache.set(
+    key,
+    value
+  );
+
+  while (
+    translationCache.size >
+    TRANSLATION_CACHE_LIMIT
+  ) {
+    const firstKey =
+      translationCache.keys().next().value;
+
+    translationCache.delete(
+      firstKey
+    );
+  }
+
+  return value;
+}
