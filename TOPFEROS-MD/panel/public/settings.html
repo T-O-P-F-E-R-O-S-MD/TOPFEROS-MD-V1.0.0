@@ -188,10 +188,6 @@
       class="card settings-screen hidden"
     >
 
-      <!-- ==========================================================
-           🦁 LOGO + TITLE
-           ========================================================== -->
-
       <div
         id="settingsLogoContainer"
         class="logo-container"
@@ -235,8 +231,6 @@
         </h2>
 
 
-        <!-- OWNER NUMBER
-             ⚠️ READ ONLY — BOT DETECTE L -->
         <div class="info-field">
 
           <label for="ownerNumber">
@@ -255,7 +249,6 @@
         </div>
 
 
-        <!-- BOT NAME -->
         <div class="info-field editable-field">
 
           <label for="botName">
@@ -285,7 +278,6 @@
         </div>
 
 
-        <!-- LOCATION -->
         <div class="info-field editable-field">
 
           <label for="botOrigin">
@@ -315,7 +307,6 @@
         </div>
 
 
-        <!-- AGE -->
         <div class="info-field editable-field">
 
           <label for="botAge">
@@ -346,7 +337,6 @@
         </div>
 
 
-        <!-- PREFIX -->
         <div class="info-field editable-field">
 
           <label for="botPrefix">
@@ -377,7 +367,6 @@
         </div>
 
 
-        <!-- FOOTER -->
         <div class="info-field editable-field">
 
           <label for="botFooter">
@@ -407,7 +396,6 @@
         </div>
 
 
-        <!-- MODE -->
         <div class="info-field">
 
           <label for="botMode">
@@ -430,10 +418,7 @@
 
         </div>
 
-      </div>
-
-
-      <!-- ==========================================================
+      </div>      <!-- ==========================================================
            ⚡ SYSTEM AUTOMATION
            ========================================================== -->
 
@@ -917,12 +902,7 @@
 
           </select>
 
-        </div>
-
-
-        <!-- CLOSE / OPEN -->
-
-        <div class="automation-time-grid">
+        </div>        <div class="automation-time-grid">
 
           <div class="info-field">
 
@@ -956,7 +936,7 @@
         </div>
 
 
-        <!-- CLOSE -->
+        <!-- GROUP CLOSE -->
 
         <div class="setting-row">
 
@@ -981,7 +961,7 @@
         </div>
 
 
-        <!-- OPEN -->
+        <!-- GROUP OPEN -->
 
         <div class="setting-row">
 
@@ -1024,6 +1004,8 @@
         </div>
 
 
+        <!-- GROUP BIO / PRINCIPLES -->
+
         <div class="setting-row">
 
           <div>
@@ -1049,27 +1031,31 @@
       </div>
 
 
-            <!-- ==========================================================
-           💾 SAVE
+      <!-- ==========================================================
+           🏠 MAIN PUBLIC PANEL
            ========================================================== -->
 
-  <!-- MAIN PUBLIC PANEL -->
+      <button
+        type="button"
+        class="secondaryButton"
+        onclick="window.location.href='/'"
+      >
+        🏠 MAIN PUBLIC PANEL
+      </button>
+
+
+      <!-- ==========================================================
+           💾 SAVE SETTINGS
+           ========================================================== -->
 
       <button
-      type="button"
-     class="secondaryButton"
-   onclick="window.location.href='/'"
->
-  🏠 MAIN PUBLIC PANEL
-        </button>
-
-         <button
         id="saveSettings"
         class="next-button"
         type="button"
       >
-        APP SAVE
+        💾 SAVE SETTINGS
       </button>
+
 
       <div
         id="settingsMessage"
@@ -1078,7 +1064,7 @@
 
 
       <!-- ==========================================================
-           🦁 FOOTER
+           FOOTER
            ========================================================== -->
 
       <div class="footer">
@@ -1091,7 +1077,7 @@
 
 
   <!-- ============================================================
-       📜 SETTINGS JAVASCRIPT
+       ⚙️ SETTINGS JAVASCRIPT
        ============================================================ -->
 
   <script src="/settings.js"></script>
