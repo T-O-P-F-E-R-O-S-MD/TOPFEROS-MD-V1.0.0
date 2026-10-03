@@ -181,6 +181,39 @@
     Enter your WhatsApp number and 6-character Settings Code.
   </p>
 
+  <input
+    id="settingsNumber"
+    type="tel"
+    inputmode="numeric"
+    autocomplete="tel"
+    placeholder="📱 509XXXXXXXXXX"
+  >
+
+  <input
+    id="settingsCode"
+    type="text"
+    maxlength="6"
+    minlength="6"
+    autocomplete="off"
+    autocapitalize="characters"
+    placeholder="🔐 G7K2P9"
+  >
+
+  <button
+    id="verifyButton"
+    type="button"
+    onclick="verifySettings()"
+  >
+    🔓 CONNECT
+  </button>
+
+  <p
+    id="loginMessage"
+    class="message"
+  ></p>
+
+</section>
+
   <!-- =========================
        WHATSAPP NUMBER
   ========================== -->
