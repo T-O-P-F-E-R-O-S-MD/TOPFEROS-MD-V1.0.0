@@ -1,1168 +1,1578 @@
 "use strict";
 
-// ╔════════════════════════════════════════════════════╗
-// ║              🦁 TOPFEROS MD                      ║
-// ║              SETTINGS PANEL                       ║
-// ╚════════════════════════════════════════════════════╝
 
-const crypto = require("crypto");
-
-const PANEL_URL =
-  process.env.PANEL_URL ||
-  "http://localhost:3000";
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 🦁 TOPFEROS MD — SETTINGS PANEL
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 
-// ======================================================
-// ⚙️ DEFAULT SETTINGS
-// ======================================================
+// ============================================================
+// 🔐 URL / SESSION
+// ============================================================
 
-const defaultSettings = {
+const params =
+  new URLSearchParams(
+    window.location.search
+  );
 
-  publicMode: true,
-  privateMode: false,
-
-  alwaysOnline: true,
-  fakeTyping: false,
-  fakeRecording: false,
-
-  autoReply: false,
-  autoStatusSeen: false,
-  autoStatusLike: false,
-  autoStatus: false,
-  autoReact: false,
-  statusReply: false,
-  statusLike: false,
-
-  antiCall: false,
-  antiCallMode: "ALL",
-
-  antiDelete: false,
-  antiDeleteMode: "ALL",
-  antiDeleteSameChat: true,
-  antiDeleteDM: false,
-  antiDeleteDestination: "same",
-
-  antiSpam: false,
-
-  antiBug: false,
-  antiBot: false,
-
-  aiChat: false,
-
-  groupAntiSpam: false,
-  groupAntiLink: false,
-  groupAntiDelete: false,
-
-  adminGroup: false,
-  adminGroupNumber: "",
-  adminGroupLink: "",
-
-  groupClose: false,
-  groupOpen: false,
-
-  groupCloseTime: "",
-  groupOpenTime: "",
-
-  groupTimeZone: "Atlantic/Port_of_Spain",
-
-  groupBioEnabled: false,
-  groupBioText: ""
-
-};
+let sessionId =
+  params.get("session") || "";
 
 
-// ======================================================
-// 🤖 DEFAULT BOT INFORMATION
-// ======================================================
+// ============================================================
+// 🌐 LANGUAGE
+// ============================================================
 
-const defaultBotInformation = {
-
-  name: "TOPFEROS MD",
-
-  number: "",
-
-  location: "TOPFEROS CHINWA",
-
-  age: 20,
-
-  prefix: ".",
-
-  footer: "🦁 TECH BY TOPFEROS MD 🐑",
-
-  mode: "Public"
-
-};
+let currentLanguage =
+  localStorage.getItem(
+    "topferos_settings_language"
+  ) || "en";
 
 
-// ======================================================
-// 📦 SESSIONS
-// ======================================================
+// ============================================================
+// 🤖 AI TRANSLATION
+// ============================================================
 
-const sessions = new Map();
+let translationInProgress =
+  false;
+
+const translationCache =
+  new Map();
 
 
-// ======================================================
-// 🔢 NORMALIZE NUMBER
-// ======================================================
+// ============================================================
+// 📦 SETTINGS DATA
+// ============================================================
 
-function normalizeNumber(number) {
+let settings = {};
 
-  return String(number || "")
-    .replace(/\D/g, "");
+let botInformation = {};
+
+
+// ============================================================
+// 🖼️ LOGO
+// ============================================================
+
+const LOGO_URL =
+  "/assets/logo.png";
+
+
+// ============================================================
+// 📦 ELEMENTS
+// ============================================================
+
+const languageScreen =
+  document.getElementById(
+    "languageScreen"
+  );
+
+const loginScreen =
+  document.getElementById(
+    "loginScreen"
+  );
+
+const settingsPanel =
+  document.getElementById(
+    "settingsPanel"
+  );
+
+const settingsNumberInput =
+  document.getElementById(
+    "settingsNumber"
+  );
+
+const settingsCodeInput =
+  document.getElementById(
+    "settingsCode"
+  );
+
+const verifyButton =
+  document.getElementById(
+    "verifyButton"
+  );
+
+const loginMessage =
+  document.getElementById(
+    "loginMessage"
+  );
+
+const saveButton =
+  document.getElementById(
+    "saveSettings"
+  );
+
+const settingsMessage =
+  document.getElementById(
+    "settingsMessage"
+  );
+
+const botNameInput =
+  document.getElementById(
+    "botName"
+  );
+
+const botAgeInput =
+  document.getElementById(
+    "botAge"
+  );
+
+const botPrefixInput =
+  document.getElementById(
+    "botPrefix"
+  );
+
+const botLogo =
+  document.getElementById(
+    "botLogo"
+  );
+
+
+// ============================================================
+// ⚙️ SETTINGS KI PANEL LA SIPÒTE
+// ============================================================
+
+const settingNames = [
+
+  "publicMode",
+  "privateMode",
+
+  "alwaysOnline",
+  "fakeTyping",
+  "fakeRecording",
+  "autoReact",
+
+  "autoStatus",
+  "statusReply",
+  "statusLike",
+  "statusReact",
+
+  "antiCall",
+  "antiDelete",
+  "antiDeleteSameChat",
+  "antiDeleteDM",
+  "antiSpam",
+
+  "aiChat",
+
+  "groupAntiSpam",
+  "groupAntiLink",
+  "groupAntiDelete",
+
+  "adminGroup",
+
+  "groupClose",
+  "groupOpen"
+
+];
+
+
+// ============================================================
+// 🖥️ SCREEN CONTROL
+// ============================================================
+
+function hideAllScreens() {
+
+  languageScreen?.classList.add(
+    "hidden"
+  );
+
+  loginScreen?.classList.add(
+    "hidden"
+  );
+
+  settingsPanel?.classList.add(
+    "hidden"
+  );
 
 }
 
 
-// ======================================================
-// 📱 GET PHONE FROM SOCKET
-// ======================================================
+function showLanguageScreen() {
 
-function getPhoneFromSocket(sock) {
+  hideAllScreens();
+
+  languageScreen?.classList.remove(
+    "hidden"
+  );
+
+}
+
+
+function showLoginScreen() {
+
+  hideAllScreens();
+
+  loginScreen?.classList.remove(
+    "hidden"
+  );
+
+}
+
+
+function showSettingsPanel() {
+
+  hideAllScreens();
+
+  settingsPanel?.classList.remove(
+    "hidden"
+  );
+
+}
+
+
+// ============================================================
+// 🌐 SEND LANGUAGE TO SERVER
+// ============================================================
+
+async function sendLanguage(
+  language
+) {
 
   try {
 
-    const raw =
-      sock?.user?.id ||
-      sock?.user?.jid ||
-      "";
-
-    if (!raw) {
-      return "";
-    }
-
-    return normalizeNumber(
-      String(raw)
-        .split(":")[0]
-        .split("@")[0]
-    );
-
-  } catch {
-
-    return "";
-
-  }
-
-}
-
-
-// ======================================================
-// 🔐 GENERATE CODE
-// ======================================================
-
-function generateCode() {
-
-  return crypto
-    .randomBytes(3)
-    .toString("hex")
-    .toUpperCase();
-
-}
-
-
-// ======================================================
-// 🔑 GENERATE SESSION ID
-// ======================================================
-
-function generateSessionId() {
-
-  return crypto
-    .randomBytes(24)
-    .toString("hex");
-
-}
-
-
-// ======================================================
-// 🔗 CREATE SESSION LINK
-// ======================================================
-
-function buildSessionLink(sessionId) {
-
-  return `${PANEL_URL}/setting?session=${encodeURIComponent(
-    sessionId
-  )}`;
-
-}
-
-
-// ======================================================
-// 🧹 CLEAN SESSION DATA
-// ======================================================
-
-function createSessionData(
-  sock,
-  sessionId
-) {
-
-  const number =
-    getPhoneFromSocket(sock);
-
-  return {
-
-    sessionId,
-
-    socket: sock,
-
-    number,
-
-    code: generateCode(),
-
-    link:
-      buildSessionLink(sessionId),
-
-    connected: Boolean(sock),
-
-    authenticated: false,
-
-    createdAt: Date.now(),
-
-    updatedAt: Date.now(),
-
-    settings: {
-      ...defaultSettings
-    },
-
-    botInformation: {
-
-      ...defaultBotInformation,
-
-      number
-
-    }
-
-  };
-
-}
-
-
-// ======================================================
-// 🆕 CREATE NEW SESSION
-// ======================================================
-
-function createNewSession(sock) {
-
-  if (!sock) {
-    return null;
-  }
-
-  const sessionId =
-    generateSessionId();
-
-  const session =
-    createSessionData(
-      sock,
-      sessionId
-    );
-
-  sessions.set(
-    sessionId,
-    session
-  );
-
-  return session;
-
-}
-
-
-// ======================================================
-// 🔄 CREATE / GET SESSION
-// ======================================================
-
-function createSession(
-  sock,
-  sessionId = null
-) {
-
-  if (!sock) {
-    return null;
-  }
-
-  if (sessionId) {
-
-    const existing =
-      sessions.get(
-        String(sessionId)
-      );
-
-    if (existing) {
-
-      existing.socket =
-        sock;
-
-      existing.connected =
-        true;
-
-      existing.number =
-        getPhoneFromSocket(sock);
-
-      existing.botInformation.number =
-        existing.number;
-
-      existing.updatedAt =
-        Date.now();
-
-      return existing;
-
-    }
-
-  }
-
-  return createNewSession(sock);
-
-}
-
-
-// ======================================================
-// 🔎 GET SESSION
-// ======================================================
-
-function getSession(sessionId) {
-
-  if (!sessionId) {
-    return null;
-  }
-
-  return sessions.get(
-    String(sessionId)
-  ) || null;
-
-}
-
-
-// ======================================================
-// 🔎 GET SESSION BY NUMBER
-// ======================================================
-
-function getSessionByNumber(number) {
-
-  const normalized =
-    normalizeNumber(number);
-
-  if (!normalized) {
-    return null;
-  }
-
-  for (const session of sessions.values()) {
-
-    if (
-      normalizeNumber(
-        session.number
-      ) === normalized
-    ) {
-
-      return session;
-
-    }
-
-  }
-
-  return null;
-
-}
-
-
-// ======================================================
-// 🔎 GET SESSION BY SOCKET
-// ======================================================
-
-function getSessionBySocket(sock) {
-
-  if (!sock) {
-    return null;
-  }
-
-  for (const session of sessions.values()) {
-
-    if (
-      session.socket === sock
-    ) {
-
-      return session;
-
-    }
-
-  }
-
-  return null;
-
-}
-
-
-// ======================================================
-// 🟢 BOT CONNECTED
-// ======================================================
-
-function setBotConnected(sock) {
-
-  if (!sock) {
-    return null;
-  }
-
-  const session =
-    createSession(sock);
-
-  if (!session) {
-    return null;
-  }
-
-  session.connected =
-    true;
-
-  session.authenticated =
-    false;
-
-  session.number =
-    getPhoneFromSocket(sock);
-
-  session.botInformation.number =
-    session.number;
-
-  session.updatedAt =
-    Date.now();
-
-  return session;
-
-}
-
-
-// ======================================================
-// 🔴 BOT DISCONNECTED
-// ======================================================
-
-function setBotDisconnected(sock) {
-
-  if (sock) {
-
-    const session =
-      getSessionBySocket(sock);
-
-    if (session) {
-
-      session.connected =
-        false;
-
-      session.authenticated =
-        false;
-
-      session.socket =
-        null;
-
-      session.updatedAt =
-        Date.now();
-
-    }
-
-  }
-
-  /*
-   * Tout session ki te asosye ak bot la
-   * pa dwe rete authenticated.
-   */
-
-  for (const session of sessions.values()) {
-
-    if (!session.connected) {
-
-      session.authenticated =
-        false;
-
-    }
-
-  }
-
-}
-
-
-// ======================================================
-// 🔐 VERIFY SESSION
-// ======================================================
-
-function verifySession(
-  sessionId,
-  number,
-  code
-) {
-
-  const session =
-    getSession(sessionId);
-
-  if (!session) {
-    return false;
-  }
-
-  if (
-    !session.connected ||
-    !session.socket
-  ) {
-
-    session.authenticated =
-      false;
-
-    return false;
-
-  }
-
-  const inputNumber =
-    normalizeNumber(number);
-
-  const sessionNumber =
-    normalizeNumber(
-      session.number
-    );
-
-  const inputCode =
-    String(code || "")
-      .trim()
-      .toUpperCase();
-
-  const sessionCode =
-    String(session.code || "")
-      .trim()
-      .toUpperCase();
-
-  if (
-    !inputNumber ||
-    !inputCode
-  ) {
-
-    return false;
-
-  }
-
-  if (
-    inputNumber !==
-    sessionNumber
-  ) {
-
-    return false;
-
-  }
-
-  if (
-    inputCode !==
-    sessionCode
-  ) {
-
-    return false;
-
-  }
-
-  session.authenticated =
-    true;
-
-  session.updatedAt =
-    Date.now();
-
-  return true;
-
-}
-
-
-// ======================================================
-// 🔒 IS AUTHENTICATED
-// ======================================================
-
-function isAuthenticated(sessionId) {
-
-  const session =
-    getSession(sessionId);
-
-  if (!session) {
-    return false;
-  }
-
-  if (
-    !session.connected ||
-    !session.socket
-  ) {
-
-    session.authenticated =
-      false;
-
-    return false;
-
-  }
-
-  return Boolean(
-    session.authenticated
-  );
-
-}
-
-
-// ======================================================
-// 🚪 LOGOUT SESSION
-// ======================================================
-
-function logoutSession(sessionId) {
-
-  const session =
-    getSession(sessionId);
-
-  if (!session) {
-    return false;
-  }
-
-  session.authenticated =
-    false;
-
-  session.updatedAt =
-    Date.now();
-
-  return true;
-
-}
-
-
-// ======================================================
-// ⚙️ GET SETTINGS
-// ======================================================
-
-function getSettings(sessionId) {
-
-  const session =
-    getSession(sessionId);
-
-  if (!session) {
-    return null;
-  }
-
-  return {
-    ...session.settings
-  };
-
-}
-
-
-// ======================================================
-// 🤖 GET BOT INFORMATION
-// ======================================================
-
-function getBotInformation(
-  sessionId
-) {
-
-  const session =
-    getSession(sessionId);
-
-  if (!session) {
-    return null;
-  }
-
-  return {
-    ...session.botInformation
-  };
-
-}
-
-
-// ======================================================
-// 🎛️ SET ONE SETTING
-// ======================================================
-
-function setSetting(
-  sessionId,
-  key,
-  value
-) {
-
-  const session =
-    getSession(sessionId);
-
-  if (!session) {
-    return false;
-  }
-
-  if (
-    !Object.prototype.hasOwnProperty.call(
-      defaultSettings,
-      key
-    )
-  ) {
-
-    return false;
-
-  }
-
-  /*
-   * Text / select values
-   * dwe rete string.
-   */
-
-  const textSettings = [
-
-    "antiCallMode",
-    "antiDeleteMode",
-    "antiDeleteDestination",
-    "adminGroupNumber",
-    "adminGroupLink",
-    "groupCloseTime",
-    "groupOpenTime",
-    "groupTimeZone",
-    "groupBioText"
-
-  ];
-
-  if (
-    textSettings.includes(key)
-  ) {
-
-    session.settings[key] =
-      String(
-        value ?? ""
-      ).trim();
-
-  } else {
-
-    session.settings[key] =
-      Boolean(value);
-
-  }
-
-  enforceSettingRules(
-    session
-  );
-
-  session.updatedAt =
-    Date.now();
-
-  return true;
-
-}
-
-
-// ======================================================
-// 🧠 ENFORCE SETTING RULES
-// ======================================================
-
-function enforceSettingRules(
-  session
-) {
-
-  if (
-    session.settings.publicMode
-  ) {
-
-    session.settings.privateMode =
-      false;
-
-  }
-
-  if (
-    session.settings.privateMode
-  ) {
-
-    session.settings.publicMode =
-      false;
-
-  }
-
-  if (
-    session.settings.antiDeleteSameChat
-  ) {
-
-    session.settings.antiDeleteDM =
-      false;
-
-  }
-
-  if (
-    session.settings.antiDeleteDM
-  ) {
-
-    session.settings.antiDeleteSameChat =
-      false;
-
-  }
-
-  if (
-    session.settings.groupClose
-  ) {
-
-    session.settings.groupOpen =
-      false;
-
-  }
-
-  if (
-    session.settings.groupOpen
-  ) {
-
-    session.settings.groupClose =
-      false;
-
-  }
-
-  updateMode(session);
-
-}
-
-
-// ======================================================
-// 💾 APPLY ALL SETTINGS
-// ======================================================
-
-function applySettings(
-  sessionId,
-  newSettings = {}
-) {
-
-  const session =
-    getSession(sessionId);
-
-  if (!session) {
-    return null;
-  }
-
-  const textSettings = [
-
-    "antiCallMode",
-    "antiDeleteMode",
-    "antiDeleteDestination",
-    "adminGroupNumber",
-    "adminGroupLink",
-    "groupCloseTime",
-    "groupOpenTime",
-    "groupTimeZone",
-    "groupBioText"
-
-  ];
-
-  for (
-    const key of
-    Object.keys(defaultSettings)
-  ) {
-
-    if (
-      !Object.prototype.hasOwnProperty.call(
-        newSettings,
-        key
-      )
-    ) {
-
-      continue;
-
-    }
-
-    if (
-      textSettings.includes(key)
-    ) {
-
-      session.settings[key] =
-        String(
-          newSettings[key] ?? ""
-        ).trim();
-
-    } else {
-
-      session.settings[key] =
-        Boolean(
-          newSettings[key]
-        );
-
-    }
-
-  }
-
-  enforceSettingRules(
-    session
-  );
-
-  session.updatedAt =
-    Date.now();
-
-  return {
-    ...session.settings
-  };
-
-}
-
-
-// ======================================================
-// 🔄 UPDATE BOT MODE
-// ======================================================
-
-function updateMode(session) {
-
-  session.botInformation.mode =
-    session.settings.privateMode
-      ? "Private"
-      : "Public";
-
-}
-
-
-// ======================================================
-// 🤖 UPDATE BOT INFORMATION
-// ======================================================
-
-function updateBotInformation(
-  sessionId,
-  information = {}
-) {
-
-  const session =
-    getSession(sessionId);
-
-  if (!session) {
-    return null;
-  }
-
-  /*
-   * BOT NAME
-   */
-
-  if (
-    typeof information.name ===
-    "string"
-  ) {
-
-    const name =
-      information.name.trim();
-
-    session.botInformation.name =
-      name ||
-      "TOPFEROS MD";
-
-  }
-
-  /*
-   * LOCATION
-   */
-
-  if (
-    typeof information.location ===
-    "string"
-  ) {
-
-    const location =
-      information.location.trim();
-
-    session.botInformation.location =
-      location ||
-      "TOPFEROS CHINWA";
-
-  }
-
-  /*
-   * AGE
-   */
-
-  if (
-    information.age !==
-    undefined &&
-    information.age !==
-    null &&
-    information.age !== ""
-  ) {
-
-    const age =
-      Number(
-        information.age
-      );
-
-    if (
-      Number.isFinite(age) &&
-      age >= 0
-    ) {
-
-      session.botInformation.age =
-        age;
-
-    }
-
-  }
-
-  /*
-   * PREFIX
-   */
-
-  if (
-    typeof information.prefix ===
-    "string"
-  ) {
-
-    const prefix =
-      information.prefix.trim();
-
-    session.botInformation.prefix =
-      prefix ||
-      ".";
-
-  }
-
-  /*
-   * FOOTER
-   */
-
-  if (
-    typeof information.footer ===
-    "string"
-  ) {
-
-    const footer =
-      information.footer.trim();
-
-    session.botInformation.footer =
-      footer ||
-      "🦁 TECH BY TOPFEROS MD 🐑";
-
-  }
-
-  /*
-   * NUMBER TOUJOU SOTI NAN WHATSAPP.
-   */
-
-  if (session.number) {
-
-    session.botInformation.number =
-      session.number;
-
-  }
-
-  updateMode(session);
-
-  session.updatedAt =
-    Date.now();
-
-  return {
-    ...session.botInformation
-  };
-
-}
-
-
-// ======================================================
-// ✅ IS FEATURE ENABLED
-// ======================================================
-
-function isEnabled(
-  sessionId,
-  key
-) {
-
-  const session =
-    getSession(sessionId);
-
-  if (!session) {
-    return false;
-  }
-
-  if (
-    !Object.prototype.hasOwnProperty.call(
-      defaultSettings,
-      key
-    )
-  ) {
-
-    return false;
-
-  }
-
-  return Boolean(
-    session.settings[key]
-  );
-
-}
-
-
-// ======================================================
-// 📥 LOAD SETTINGS
-// ======================================================
-
-function loadSettings(
-  sessionId
-) {
-
-  const session =
-    getSession(sessionId);
-
-  if (!session) {
-    return null;
-  }
-
-  updateMode(session);
-
-  return {
-
-    settings: {
-      ...session.settings
-    },
-
-    botInformation: {
-      ...session.botInformation
-    }
-
-  };
-
-}
-
-
-// ======================================================
-// 🌐 SEND SETTINGS PANEL LINK
-// ======================================================
-
-async function sendPanelLink(
-  sock,
-  jid,
-  quoted,
-  sessionId = null
-) {
-
-  if (!sock || !jid) {
-    return false;
-  }
-
-  const session =
-    sessionId
-      ? createSession(
-          sock,
-          sessionId
-        )
-      : createNewSession(
-          sock
-        );
-
-  if (!session) {
-
-    console.error(
-      "❌ sendPanelLink: session not found"
-    );
-
-    return false;
-
-  }
-
-  const text =
-`🦁 *TOPFEROS MD SETTINGS*
-
-🔐 *Settings Code:* ${session.code}
-
-🌐 *Settings Panel:*
-${session.link}
-
-⚠️ Pa pataje Settings Code ou ak lòt moun.`;
-
-  try {
-
-    await sock.sendMessage(
-      jid,
+    await fetch(
+      "/api/language",
       {
-        text
-      },
-      {
-        quoted
+        method: "POST",
+
+        headers: {
+          "Content-Type":
+            "application/json"
+        },
+
+        body:
+          JSON.stringify({
+            sessionId,
+            language
+          })
+
       }
     );
 
-    return true;
+  } catch (error) {
+
+    console.warn(
+      "⚠️ Language server sync failed:",
+      error
+    );
+
+  }
+
+}
+
+
+// ============================================================
+// 🤖 AI TRANSLATE PANEL
+// ============================================================
+
+function restoreOriginalUI() {
+
+  document
+    .querySelectorAll(
+      "[data-topferos-original-text]"
+    )
+    .forEach(element => {
+
+      const original =
+        element.getAttribute(
+          "data-topferos-original-text"
+        );
+
+      if (
+        original !== null &&
+        element.textContent !== original
+      ) {
+
+        element.textContent = original;
+
+      }
+
+    });
+
+
+  document
+    .querySelectorAll(
+      "[data-topferos-original-placeholder]"
+    )
+    .forEach(element => {
+
+      const original =
+        element.getAttribute(
+          "data-topferos-original-placeholder"
+        );
+
+      if (original !== null) {
+
+        element.setAttribute(
+          "placeholder",
+          original
+        );
+
+      }
+
+    });
+
+}
+
+
+function rememberOriginalText(element) {
+
+  if (
+    !element.hasAttribute(
+      "data-topferos-original-text"
+    )
+  ) {
+
+    element.setAttribute(
+      "data-topferos-original-text",
+      element.textContent
+        ?.replace(/\s+/g, " ")
+        .trim() || ""
+    );
+
+  }
+
+}
+
+
+function rememberOriginalPlaceholder(element) {
+
+  if (
+    !element.hasAttribute(
+      "data-topferos-original-placeholder"
+    )
+  ) {
+
+    const placeholder =
+      element
+        .getAttribute("placeholder")
+        ?.trim() || "";
+
+    element.setAttribute(
+      "data-topferos-original-placeholder",
+      placeholder
+    );
+
+  }
+
+}
+
+
+async function translatePanelUI() {
+
+  if (
+    translationInProgress
+  ) {
+
+    return;
+
+  }
+
+
+  if (
+    currentLanguage === "en"
+  ) {
+
+    restoreOriginalUI();
+
+    return;
+
+  }
+
+
+  translationInProgress =
+    true;
+
+
+  try {
+
+    restoreOriginalUI();
+
+
+    const elements = [];
+
+
+    document
+      .querySelectorAll(
+        "button, label, p, h1, h2, h3, h4, h5, h6, span, small, div"
+      )
+      .forEach(element => {
+
+        if (
+          element.closest("script") ||
+          element.closest("style") ||
+          element.classList.contains("slider") ||
+          element.classList.contains("hidden")
+        ) {
+
+          return;
+
+        }
+
+
+        const text =
+          element.textContent
+            ?.replace(/\s+/g, " ")
+            .trim();
+
+
+        if (
+          !text ||
+          text.length > 300
+        ) {
+
+          return;
+
+        }
+
+
+        const hasElementChild =
+          Array.from(
+            element.children || []
+          ).some(child => {
+
+            const childText =
+              child.textContent
+                ?.replace(/\s+/g, " ")
+                .trim();
+
+            return (
+              childText &&
+              text.includes(childText) &&
+              childText !== text
+            );
+
+          });
+
+
+        if (
+          hasElementChild
+        ) {
+
+          return;
+
+        }
+
+
+        rememberOriginalText(element);
+
+
+        const original =
+          element.getAttribute(
+            "data-topferos-original-text"
+          )?.trim();
+
+
+        if (!original) {
+
+          return;
+
+        }
+
+
+        elements.push({
+          element,
+          text: original
+        });
+
+      });
+
+
+    document
+      .querySelectorAll(
+        "input[placeholder], textarea[placeholder]"
+      )
+      .forEach(element => {
+
+        if (
+          element.closest(".hidden") ||
+          element.disabled
+        ) {
+
+          return;
+
+        }
+
+
+        rememberOriginalPlaceholder(element);
+
+
+        const text =
+          element.getAttribute(
+            "data-topferos-original-placeholder"
+          )?.trim();
+
+
+        if (!text) {
+
+          return;
+
+        }
+
+
+        elements.push({
+          element,
+          text,
+          type: "placeholder"
+        });
+
+      });
+
+
+    if (
+      !elements.length
+    ) {
+
+      return;
+
+    }
+
+
+    const textsToTranslate = [];
+    const uniqueTexts = new Set();
+
+
+    for (
+      const item of elements
+    ) {
+
+      const cacheKey =
+        `${currentLanguage}:${item.text}`;
+
+
+      if (
+        translationCache.has(cacheKey)
+      ) {
+
+        continue;
+
+      }
+
+
+      if (
+        !uniqueTexts.has(item.text)
+      ) {
+
+        uniqueTexts.add(item.text);
+
+        textsToTranslate.push(
+          item.text
+        );
+
+      }
+
+    }
+
+
+    if (
+      textsToTranslate.length
+    ) {
+
+      const response =
+        await fetch(
+          "/api/translate",
+          {
+            method: "POST",
+
+            headers: {
+              "Content-Type":
+                "application/json"
+            },
+
+            body: JSON.stringify({
+              language:
+                currentLanguage,
+
+              texts:
+                textsToTranslate
+            })
+
+          }
+        );
+
+
+      if (
+        response.ok
+      ) {
+
+        const data =
+          await response.json();
+
+        const translations =
+          data.translations;
+
+
+        if (
+          Array.isArray(translations)
+        ) {
+
+          textsToTranslate.forEach(
+            (original, index) => {
+
+              const translated =
+                translations[index];
+
+              if (
+                typeof translated === "string" &&
+                translated.trim()
+              ) {
+
+                translationCache.set(
+                  `${currentLanguage}:${original}`,
+                  translated.trim()
+                );
+
+              }
+
+            }
+          );
+
+        }
+
+
+        else if (
+          translations &&
+          typeof translations === "object"
+        ) {
+
+          textsToTranslate.forEach(
+            original => {
+
+              const translated =
+                translations[original];
+
+              if (
+                typeof translated === "string" &&
+                translated.trim()
+              ) {
+
+                translationCache.set(
+                  `${currentLanguage}:${original}`,
+                  translated.trim()
+                );
+
+              }
+
+            }
+          );
+
+        }
+
+      }
+
+    }
+
+
+    for (
+      const item of elements
+    ) {
+
+      const translated =
+        translationCache.get(
+          `${currentLanguage}:${item.text}`
+        );
+
+
+      if (!translated) {
+
+        continue;
+
+      }
+
+
+      if (
+        item.type === "placeholder"
+      ) {
+
+        item.element.setAttribute(
+          "placeholder",
+          translated
+        );
+
+      } else {
+
+        item.element.textContent =
+          translated;
+
+      }
+
+    }
+
+
+  } catch (error) {
+
+    console.warn(
+      "⚠️ AI Settings translation unavailable:",
+      error?.message || error
+    );
+
+  } finally {
+
+    translationInProgress =
+      false;
+
+  }
+
+}
+
+
+// ============================================================
+// 🌐 SELECT LANGUAGE
+// ============================================================
+
+async function selectSettingsLanguage(
+  language
+) {
+
+  if (
+    ![
+      "en",
+      "fr",
+      "es"
+    ].includes(language)
+  ) {
+
+    return;
+
+  }
+
+
+  currentLanguage =
+    language;
+
+
+  localStorage.setItem(
+    "topferos_settings_language",
+    language
+  );
+
+
+  await sendLanguage(
+    language
+  );
+
+
+  showLoginScreen();
+
+
+  await translatePanelUI();
+
+}
+
+
+// ============================================================
+// 🔐 LOGIN MESSAGE
+// ============================================================
+
+function showLoginMessage(
+  text,
+  error = true
+) {
+
+  if (!loginMessage) {
+
+    return;
+
+  }
+
+
+  loginMessage.textContent =
+    text;
+
+
+  loginMessage.className =
+    error
+      ? "message error"
+      : "message success";
+
+}
+
+
+// ============================================================
+// 📢 SETTINGS MESSAGE
+// ============================================================
+
+function showMessage(
+  text = "",
+  success = false
+) {
+
+  if (!settingsMessage) {
+
+    return;
+
+  }
+
+
+  settingsMessage.textContent =
+    text;
+
+
+  settingsMessage.style.color =
+    success
+      ? "#72ffad"
+      : "#ff7777";
+
+}
+
+
+// ============================================================
+// 🔐 VERIFY SETTINGS CODE
+// ============================================================
+
+async function verifySettings() {
+
+  const code =
+    settingsCodeInput
+      ?.value
+      .trim()
+      .toUpperCase() || "";
+
+
+  const number =
+    settingsNumberInput
+      ?.value
+      .trim()
+      .replace(
+        /\D/g,
+        ""
+      ) || "";
+
+
+  if (!number) {
+
+    showLoginMessage(
+      "❌ Mete Number la.",
+      true
+    );
+
+    settingsNumberInput?.focus();
+
+    return;
+
+  }
+
+
+  if (!code) {
+
+    showLoginMessage(
+      "❌ Mete Settings Code la.",
+      true
+    );
+
+    settingsCodeInput?.focus();
+
+    return;
+
+  }
+
+
+  if (
+    !/^[A-Z0-9]{6}$/.test(
+      code
+    )
+  ) {
+
+    showLoginMessage(
+      "❌ Settings Code la dwe gen 6 karaktè.",
+      true
+    );
+
+    settingsCodeInput?.focus();
+
+    return;
+
+  }
+
+
+  if (verifyButton) {
+
+    verifyButton.disabled =
+      true;
+
+    verifyButton.textContent =
+      "⏳ VERIFYING...";
+
+  }
+
+
+  showLoginMessage(
+    "",
+    false
+  );
+
+
+  try {
+
+    const body = {
+
+      number,
+
+      code
+
+    };
+
+
+    if (
+      sessionId
+    ) {
+
+      body.sessionId =
+        sessionId;
+
+    }
+
+
+    const response =
+      await fetch(
+        "/api/verify",
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+
+          body:
+            JSON.stringify(
+              body
+            )
+
+        }
+      );
+
+
+    let data = {};
+
+    try {
+
+      data =
+        await response.json();
+
+    } catch {
+
+      data = {};
+
+    }
+
+
+    if (
+      !response.ok ||
+      data.success !== true
+    ) {
+
+      showLoginMessage(
+        data.error ||
+        data.message ||
+        "❌ Settings Code pa kòrèk.",
+        true
+      );
+
+      return;
+
+    }
+
+
+    if (
+      data.sessionId
+    ) {
+
+      sessionId =
+        String(
+          data.sessionId
+        );
+
+    }
+
+
+    settings =
+      data.settings ||
+      {};
+
+    botInformation =
+      data.botInformation ||
+      data.bot ||
+      {};
+
+
+    if (
+      sessionId
+    ) {
+
+      await loadSettings();
+
+    }
+
+
+    showSettingsPanel();
+
+
+    setupLogo();
+
+
+    await translatePanelUI();
+
 
   } catch (error) {
 
     console.error(
-      "❌ sendPanelLink error:",
-      error?.stack ||
-      error?.message ||
+      "❌ SETTINGS VERIFICATION ERROR:",
+      error
+    );
+
+
+    showLoginMessage(
+      "❌ Erè koneksyon ak server la.",
+      true
+    );
+
+
+  } finally {
+
+    if (verifyButton) {
+
+      verifyButton.disabled =
+        false;
+
+      verifyButton.textContent =
+        "🔓 VERIFY";
+
+    }
+
+  }
+
+}
+
+
+// ============================================================
+// 📥 LOAD SETTINGS
+// ============================================================
+
+async function loadSettings() {
+
+  if (!sessionId) {
+
+    return false;
+
+  }
+
+
+  try {
+
+    const response =
+      await fetch(
+        `/api/settings?session=${encodeURIComponent(
+          sessionId
+        )}`,
+        {
+          method: "GET",
+          cache: "no-store"
+        }
+      );
+
+
+    let result = {};
+
+    try {
+
+      result =
+        await response.json();
+
+    } catch {
+
+      result = {};
+
+    }
+
+
+    if (
+      !response.ok ||
+      result.success !== true
+    ) {
+
+      const alternateResponse =
+        await fetch(
+          `/api/settings?sessionId=${encodeURIComponent(
+            sessionId
+          )}`,
+          {
+            method: "GET",
+            cache: "no-store"
+          }
+        );
+
+
+      let alternate =
+        {};
+
+      try {
+
+        alternate =
+          await alternateResponse.json();
+
+      } catch {
+
+        alternate =
+          {};
+
+      }
+
+
+      if (
+        !alternateResponse.ok ||
+        alternate.success !== true
+      ) {
+
+        showMessage(
+          result.message ||
+          "❌ Pa kapab chaje settings yo."
+        );
+
+        return false;
+
+      }
+
+
+      result =
+        alternate;
+
+    }
+
+
+    // ========================================================
+    // BOT INFORMATION
+    // ========================================================
+
+    const bot =
+      result.bot ||
+      result.botInformation ||
+      {};
+
+
+    botInformation =
+      bot;
+
+
+    if (
+      botNameInput
+    ) {
+
+      botNameInput.value =
+        bot.name ||
+        "TOPFEROS MD";
+
+    }
+
+
+    if (
+      botAgeInput
+    ) {
+
+      botAgeInput.value =
+        bot.age ??
+        "";
+
+    }
+
+
+    if (
+      botPrefixInput
+    ) {
+
+      botPrefixInput.value =
+        bot.prefix ||
+        ".";
+
+    }
+
+
+    // ========================================================
+    // SETTINGS
+    // ========================================================
+
+    settings =
+      result.settings ||
+      {};
+
+
+    getSwitches()
+      .forEach(
+        input => {
+
+          const name =
+            input.dataset.setting;
+
+
+          if (
+            settingNames.includes(
+              name
+            ) &&
+            Object.prototype.hasOwnProperty.call(
+              settings,
+              name
+            )
+          ) {
+
+            input.checked =
+              settings[name] === true;
+
+          }
+
+        }
+      );
+
+
+    enforceAntiDeleteDestination();
+
+
+    return true;
+
+
+  } catch (error) {
+
+    console.error(
+      "❌ LOAD SETTINGS ERROR:",
+      error
+    );
+
+
+    showMessage(
+      "❌ Erè pandan chajman settings yo."
+    );
+
+
+    return false;
+
+  }
+
+}
+
+
+// ============================================================
+// 🔎 GET SWITCHES
+// ============================================================
+
+function getSwitches() {
+
+  return Array.from(
+    document.querySelectorAll(
+      "input[data-setting]"
+    )
+  );
+
+}
+
+
+// ============================================================
+// 📤 COLLECT SETTINGS
+// ============================================================
+
+function collectSettings() {
+
+  enforceAntiDeleteDestination();
+
+
+  const collected = {};
+
+
+  getSwitches()
+    .forEach(
+      input => {
+
+        const name =
+          input.dataset.setting;
+
+
+        if (
+          settingNames.includes(
+            name
+          )
+        ) {
+
+          collected[name] =
+            input.checked;
+
+        }
+
+      }
+    );
+
+
+  return collected;
+
+}
+
+
+// ============================================================
+// 🗑️ ANTI DELETE DESTINATION
+// ============================================================
+
+function enforceAntiDeleteDestination() {
+
+  const sameChat =
+    document.querySelector(
+      'input[data-setting="antiDeleteSameChat"]'
+    );
+
+  const dmBot =
+    document.querySelector(
+      'input[data-setting="antiDeleteDM"]'
+    );
+
+
+  if (
+    !sameChat ||
+    !dmBot
+  ) {
+
+    return;
+
+  }
+
+
+  if (
+    sameChat.checked &&
+    dmBot.checked
+  ) {
+
+    dmBot.checked =
+      false;
+
+  }
+
+}
+
+
+// ============================================================
+// 🔄 SETUP ANTI DELETE
+// ============================================================
+
+function setupAntiDeleteDestination() {
+
+  const sameChat =
+    document.querySelector(
+      'input[data-setting="antiDeleteSameChat"]'
+    );
+
+  const dmBot =
+    document.querySelector(
+      'input[data-setting="antiDeleteDM"]'
+    );
+
+
+  if (
+    !sameChat ||
+    !dmBot
+  ) {
+
+    return;
+
+  }
+
+
+  sameChat.addEventListener(
+    "change",
+    () => {
+
+      if (
+        sameChat.checked
+      ) {
+
+        dmBot.checked =
+          false;
+
+      }
+
+    }
+  );
+
+
+  dmBot.addEventListener(
+    "change",
+    () => {
+
+      if (
+        dmBot.checked
+      ) {
+
+        sameChat.checked =
+          false;
+
+      }
+
+    }
+  );
+
+}
+
+
+// ============================================================
+// 🤖 BOT INFORMATION
+// ============================================================
+
+function collectBotInformation() {
+
+  return {
+
+    name:
+      botNameInput
+        ? botNameInput.value.trim()
+        : "",
+
+    locatiion:
+      document.getElementById(
+        "botLocation"
+      )
+        ? document
+            .getElementById(
+              "botLocation"
+            )
+            .value
+            .trim()
+        : "",
+
+    age:
+      botAgeInput
+        ? Number(
+            botAgeInput.value
+          )
+        : 0,
+
+    prefix:
+      botPrefixInput
+        ? botPrefixInput.value.trim()
+        : ".",
+
+    footer:
+      document.getElementById(
+        "botFooter"
+      )
+        ? document
+            .getElementById(
+              "botFooter"
+            )
+            .value
+            .trim()
+        : ""
+
+  };
+
+}
+
+
+// ============================================================
+// 🔎 VALIDATE BOT INFORMATION
+// ============================================================
+
+function validateBotInformation(
+  bot
+) {
+
+  if (
+    !bot.name
+  ) {
+
+    showMessage(
+      "❌ Nom Bot pa ka vid."
+    );
+
+    botNameInput?.focus();
+
+    return false;
+
+  }
+
+
+  if (
+    !Number.isFinite(
+      bot.age
+    ) ||
+    bot.age < 0
+  ) {
+
+    showMessage(
+      "❌ Âge Bot la pa valid."
+    );
+
+    botAgeInput?.focus();
+
+    return false;
+
+  }
+
+
+  if (
+    !bot.prefix
+  ) {
+
+    showMessage(
+      "❌ Prefix pa ka vid."
+    );
+
+    botPrefixInput?.focus();
+
+    return false;
+
+  }
+
+
+  return true;
+
+}
+
+
+// ============================================================
+// 🔐 VERIFY CURRENT SESSION
+// ============================================================
+
+async function verifySession() {
+
+  if (
+    !sessionId
+  ) {
+
+    return false;
+
+  }
+
+
+  try {
+
+    const response =
+      await fetch(
+        `/api/auth?session=${encodeURIComponent(
+          sessionId
+        )}`,
+        {
+          method: "GET",
+          cache: "no-store"
+        }
+      );
+
+
+    if (
+      !response.ok
+    ) {
+
+      return false;
+
+    }
+
+
+    const result =
+      await response.json();
+
+
+    return (
+      result.success === true &&
+      result.connected === true
+    );
+
+  } catch (error) {
+
+    console.error(
+      "❌ SETTINGS AUTH ERROR:",
       error
     );
 
@@ -1173,127 +1583,517 @@ ${session.link}
 }
 
 
-// ======================================================
-// 🗑️ REMOVE SESSION
-// ======================================================
+// ============================================================
+// 🔒 DISABLE SAVE
+// ============================================================
 
-function removeSession(
-  sessionId
-) {
+function disableSave() {
 
-  if (!sessionId) {
-    return false;
+  if (
+    saveButton
+  ) {
+
+    saveButton.disabled =
+      true;
+
   }
 
-  return sessions.delete(
-    String(sessionId)
+}
+
+
+// ============================================================
+// 🔓 ENABLE SAVE
+// ============================================================
+
+function enableSave() {
+
+  if (
+    saveButton
+  ) {
+
+    saveButton.disabled =
+      false;
+
+  }
+
+}
+
+
+// ============================================================
+// 💾 SAVE SETTINGS
+// ============================================================
+
+async function saveSettings() {
+
+  showMessage("");
+
+
+  const authenticated =
+    await verifySession();
+
+
+  if (
+    !authenticated
+  ) {
+
+    showMessage(
+      "🔴 Bot la dekonekte oswa session la pa valid."
+    );
+
+    disableSave();
+
+    return;
+
+  }
+
+
+  const bot =
+    collectBotInformation();
+
+
+  if (
+    !validateBotInformation(
+      bot
+    )
+  ) {
+
+    return;
+
+  }
+
+
+  const collectedSettings =
+    collectSettings();
+
+
+  if (
+    saveButton
+  ) {
+
+    saveButton.disabled =
+      true;
+
+    saveButton.textContent =
+      "Saving...";
+
+  }
+
+
+  try {
+
+    const response =
+      await fetch(
+        "/api/settings",
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+
+          body:
+            JSON.stringify({
+              sessionId,
+
+              bot,
+
+              settings:
+                collectedSettings
+
+            })
+
+        }
+      );
+
+
+    let result = {};
+
+    try {
+
+      result =
+        await response.json();
+
+    } catch {
+
+      result =
+        {};
+
+    }
+
+
+    if (
+      !response.ok ||
+      result.success !== true
+    ) {
+
+      showMessage(
+        result.message ||
+        "❌ Settings yo pa t sove."
+      );
+
+      return;
+
+    }
+
+
+    settings =
+      collectedSettings;
+
+
+    botInformation =
+      bot;
+
+
+    showMessage(
+      "✅ Settings yo sove avèk siksè.",
+      true
+    );
+
+
+  } catch (error) {
+
+    console.error(
+      "❌ SAVE SETTINGS ERROR:",
+      error
+    );
+
+
+    showMessage(
+      "❌ Pa kapab kontakte server panel la."
+    );
+
+
+  } finally {
+
+    if (
+      saveButton
+    ) {
+
+      saveButton.disabled =
+        false;
+
+      saveButton.textContent =
+        "SAVE ✅";
+
+    }
+
+  }
+
+}
+
+
+// ============================================================
+// 🖱️ SAVE BUTTON
+// ============================================================
+
+if (
+  saveButton
+) {
+
+  saveButton.addEventListener(
+    "click",
+    saveSettings
   );
 
 }
 
 
-// ======================================================
-// 🧹 CLEAR ALL SESSIONS
-// ======================================================
+// ============================================================
+// 🖼️ SETUP LOGO
+// ============================================================
 
-function clearSessions() {
+function setupLogo() {
 
-  sessions.clear();
+  if (
+    !botLogo
+  ) {
 
-}
+    return;
+
+  }
 
 
-// ======================================================
-// 📋 LIST SESSIONS
-// ======================================================
+  botLogo.src =
+    LOGO_URL;
 
-function listSessions() {
 
-  return Array.from(
-    sessions.values()
-  ).map(
-    session => ({
+  botLogo.alt =
+    "TOPFEROS MD V1.0.0";
 
-      sessionId:
-        session.sessionId,
 
-      number:
-        session.number,
+  botLogo.style.display =
+    "block";
 
-      authenticated:
-        Boolean(
-          session.authenticated
-        ),
 
-      connected:
-        Boolean(
-          session.connected &&
-          session.socket
-        ),
+  botLogo.onerror =
+    () => {
 
-      createdAt:
-        session.createdAt,
+      console.warn(
+        "⚠️ Logo pa kapab chaje:",
+        LOGO_URL
+      );
 
-      updatedAt:
-        session.updatedAt
-
-    })
-  );
+    };
 
 }
 
 
-// ======================================================
-// 📤 EXPORTS
-// ======================================================
+// ============================================================
+// 🦶 SETUP FOOTER
+// ============================================================
 
-module.exports = {
+function setupFooter() {
 
-  PANEL_URL,
+  let footer =
+    document.querySelector(
+      ".footer"
+    );
 
-  sessions,
 
-  defaultSettings,
-  defaultBotInformation,
+  if (
+    !footer
+  ) {
 
-  generateCode,
+    footer =
+      document.createElement(
+        "div"
+      );
 
-  normalizeNumber,
-  getPhoneFromSocket,
+    footer.className =
+      "footer";
 
-  createNewSession,
-  createSession,
 
-  setBotConnected,
-  setBotDisconnected,
+    document.body.appendChild(
+      footer
+    );
 
-  getSession,
-  getSessionByNumber,
-  getSessionBySocket,
+  }
 
-  verifySession,
-  isAuthenticated,
-  logoutSession,
 
-  getSettings,
-  getBotInformation,
+  footer.innerHTML = `
+    <div class="footer-line">
+      =========================
+    </div>
 
-  setSetting,
-  applySettings,
-  updateBotInformation,
+    <div class="footer-text">
+      🦁 TECH BY TOPFEROS MD
+    </div>
 
-  isEnabled,
-  loadSettings,
+    <div class="footer-line">
+      =========================
+    </div>
+  `;
 
-  sendPanelLink,
 
-  removeSession,
-  clearSessions,
-  listSessions
+  footer.style.width =
+    "100%";
 
-};
+  footer.style.textAlign =
+    "center";
+
+  footer.style.marginTop =
+    "40px";
+
+  footer.style.padding =
+    "20px 10px";
+
+  footer.style.boxSizing =
+    "border-box";
+
+  footer.style.fontWeight =
+    "600";
+
+  footer.style.fontSize =
+    "14px";
+
+  footer.style.lineHeight =
+    "1.8";
+
+}
+
+// ============================================================
+// 🔄 MONITOR SESSION
+// ============================================================
+
+async function monitorSettings() {
+
+  if (
+    settingsPanel?.classList.contains(
+      "hidden"
+    )
+  ) {
+
+    return;
+
+  }
+
+
+  if (
+    !sessionId
+  ) {
+
+    disableSave();
+
+    return;
+
+  }
+
+
+  const authenticated =
+    await verifySession();
+
+
+  if (
+    !authenticated
+  ) {
+
+    showMessage(
+      "🔴 Bot la dekonekte oswa session la ekspire."
+    );
+
+    disableSave();
+
+    return;
+
+  }
+
+
+  enableSave();
+
+}
+
+
+// ============================================================
+// 🚀 INITIALIZE
+// ============================================================
+
+async function initSettings() {
+
+  setupLogo();
+
+  setupFooter();
+
+  setupAntiDeleteDestination();
+
+
+  if (
+    settingsNumberInput
+  ) {
+
+    settingsNumberInput.addEventListener(
+      "input",
+      event => {
+
+        event.target.value =
+          event.target.value
+            .replace(
+              /\D/g,
+              ""
+            );
+
+      }
+    );
+
+  }
+
+
+  if (
+    settingsCodeInput
+  ) {
+
+    settingsCodeInput.addEventListener(
+      "input",
+      event => {
+
+        event.target.value =
+          event.target.value
+            .toUpperCase()
+            .replace(
+              /[^A-Z0-9]/g,
+              ""
+            )
+            .slice(
+              0,
+              6
+            );
+
+      }
+    );
+
+
+    settingsCodeInput.addEventListener(
+      "keydown",
+      event => {
+
+        if (
+          event.key ===
+          "Enter"
+        ) {
+
+          verifySettings();
+
+        }
+
+      }
+    );
+
+  }
+
+
+  if (
+    localStorage.getItem(
+      "topferos_settings_language"
+    )
+  ) {
+
+    currentLanguage =
+      localStorage.getItem(
+        "topferos_settings_language"
+      );
+
+  }
+
+
+  showLanguageScreen();
+
+
+  await translatePanelUI();
+
+}
+
+
+// ============================================================
+// 🌐 GLOBAL FUNCTIONS
+// ============================================================
+
+window.selectSettingsLanguage =
+  selectSettingsLanguage;
+
+window.verifySettings =
+  verifySettings;
+
+window.saveSettings =
+  saveSettings;
+
+
+// ============================================================
+// 🚀 START
+// ============================================================
+
+initSettings();
+
+
+// ============================================================
+// ⏱️ AUTO CONNECTION CHECK
+// ============================================================
+
+setInterval(
+  monitorSettings,
+  5000
+);
 
 
 // ╔════════════════════════════════════════════════════╗
-// ║             🚀 TECH BY TOPFEROS MD               ║
+// ║             🦁 TECH BY TOPFEROS MD               ║
 // ╚════════════════════════════════════════════════════╝
