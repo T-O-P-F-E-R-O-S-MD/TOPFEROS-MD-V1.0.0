@@ -1292,14 +1292,13 @@ app.post(
 | /settings -> settings.html
 |--------------------------------------------------------------------------
 */
-
 app.get(
   "/setting",
   (req, res) => {
     return res.sendFile(
       path.join(
         PUBLIC_DIR,
-        "settings.html"
+        "index.html"
       )
     );
   }
@@ -1311,31 +1310,7 @@ app.get(
     return res.sendFile(
       path.join(
         PUBLIC_DIR,
-        "settings.html"
-      )
-    );
-  }
-);
-
-app.get(
-  "/settings",
-  (req, res) => {
-    return res.sendFile(
-      path.join(
-        PUBLIC_DIR,
-        "settings.html"
-      )
-    );
-  }
-);
-
-app.get(
-  "/settings/",
-  (req, res) => {
-    return res.sendFile(
-      path.join(
-        PUBLIC_DIR,
-        "settings.html"
+        "index.html"
       )
     );
   }
