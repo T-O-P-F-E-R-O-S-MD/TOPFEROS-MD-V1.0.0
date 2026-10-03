@@ -1284,13 +1284,22 @@ app.post(
 |--------------------------------------------------------------------------
 */
 
+/*
+|--------------------------------------------------------------------------
+| SETTINGS PUBLIC PANEL
+|--------------------------------------------------------------------------
+| /setting  -> settings.html
+| /settings -> settings.html
+|--------------------------------------------------------------------------
+*/
+
 app.get(
   "/setting",
   (req, res) => {
     return res.sendFile(
       path.join(
         PUBLIC_DIR,
-        "index.html"
+        "settings.html"
       )
     );
   }
@@ -1302,12 +1311,35 @@ app.get(
     return res.sendFile(
       path.join(
         PUBLIC_DIR,
-        "index.html"
+        "settings.html"
       )
     );
   }
 );
 
+app.get(
+  "/settings",
+  (req, res) => {
+    return res.sendFile(
+      path.join(
+        PUBLIC_DIR,
+        "settings.html"
+      )
+    );
+  }
+);
+
+app.get(
+  "/settings/",
+  (req, res) => {
+    return res.sendFile(
+      path.join(
+        PUBLIC_DIR,
+        "settings.html"
+      )
+    );
+  }
+);
 /*
 |--------------------------------------------------------------------------
 | HEALTH CHECK
