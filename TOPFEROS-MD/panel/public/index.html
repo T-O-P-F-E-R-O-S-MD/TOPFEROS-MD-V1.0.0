@@ -31,11 +31,11 @@
     ========================== -->
 
     <img
-  id="mainLogo"
-  src="/assets/logo.png"
-  class="logo"
-  alt="TOPFEROS MD"
->
+      id="mainLogo"
+      src="/assets/logo.png"
+      class="logo"
+      alt="TOPFEROS MD"
+    >
 
     <h1>🦁 TOPFEROS MD PANEL</h1>
 
@@ -166,98 +166,10 @@
     </section>
 
 
-    <!-- <!-- =========================
-     SETTINGS LOGIN
-========================= -->
+    <!-- =========================
+         DASHBOARD
+    ========================== -->
 
-<section
-  id="loginScreen"
-  class="screen hidden"
->
-
-  <h2>🔐 SETTINGS LOGIN</h2>
-
-  <p class="description">
-    Enter your WhatsApp number and 6-character Settings Code.
-  </p>
-
-  <input
-    id="settingsNumber"
-    type="tel"
-    inputmode="numeric"
-    autocomplete="tel"
-    placeholder="📱 509XXXXXXXXXX"
-  >
-
-  <input
-    id="settingsCode"
-    type="text"
-    maxlength="6"
-    minlength="6"
-    autocomplete="off"
-    autocapitalize="characters"
-    placeholder="🔐 G7K2P9"
-  >
-
-  <button
-    id="verifyButton"
-    type="button"
-    onclick="verifySettings()"
-  >
-    🔓 CONNECT
-  </button>
-
-  <p
-    id="loginMessage"
-    class="message"
-  ></p>
-
-</section>
-
-  <!-- =========================
-       WHATSAPP NUMBER
-  ========================== -->
-
-  <input
-    id="settingsNumber"
-    type="tel"
-    inputmode="numeric"
-    autocomplete="tel"
-    placeholder="📱 509XXXXXXXXXX"
-  >
-
-  <!-- =========================
-       SETTINGS CODE
-  ========================== -->
-
-  <input
-    id="settingsCode"
-    type="text"
-    maxlength="6"
-    minlength="6"
-    autocomplete="off"
-    autocapitalize="characters"
-    placeholder="🔐 G7K2P9"
-  >
-
-  <button
-    id="verifyButton"
-    type="button"
-    onclick="verifySettings()"
-  >
-    🔓 CONNECT
-  </button>
-
-  <p
-    id="loginMessage"
-    class="message"
-  ></p>
-
-</section>
-
-<!-- =========================
-     DASHBOARD
-========================= -->
     <section
       id="dashboard"
       class="hidden"
@@ -280,7 +192,9 @@
       </div>
 
 
-      <!-- BOT INFORMATION -->
+      <!-- =========================
+           BOT INFORMATION
+      ========================== -->
 
       <div class="card">
 
@@ -337,7 +251,9 @@
       </div>
 
 
-      <!-- GENERAL -->
+      <!-- =========================
+           GENERAL
+      ========================== -->
 
       <div class="card">
 
@@ -351,7 +267,9 @@
       </div>
 
 
-      <!-- PROTECTION -->
+      <!-- =========================
+           PROTECTION
+      ========================== -->
 
       <div class="card">
 
@@ -365,7 +283,9 @@
       </div>
 
 
-      <!-- STATUS -->
+      <!-- =========================
+           STATUS
+      ========================== -->
 
       <div class="card">
 
@@ -379,7 +299,9 @@
       </div>
 
 
-      <!-- GROUP -->
+      <!-- =========================
+           GROUP
+      ========================== -->
 
       <div class="card">
 
@@ -393,7 +315,9 @@
       </div>
 
 
-      <!-- AI -->
+      <!-- =========================
+           AI
+      ========================== -->
 
       <div class="card">
 
@@ -407,7 +331,9 @@
       </div>
 
 
-      <!-- SAVE -->
+      <!-- =========================
+           SAVE
+      ========================== -->
 
       <button
         id="saveButton"
@@ -424,28 +350,19 @@
       ></p>
 
 
-      <!-- SETTINGS PANEL -->
+      <!-- =========================
+           LOGOUT
+      ========================== -->
 
-<button
-  id="openSettingsButton"
-  class="secondaryButton"
-  type="button"
-  onclick="window.location.href='/setting'"
->
-  ⚙️ OPEN SETTINGS PANEL
-</button>
+      <button
+        id="logoutButton"
+        class="secondaryButton"
+        type="button"
+        onclick="logoutPanel()"
+      >
+        🚪 LOGOUT
+      </button>
 
-
-<!-- LOGOUT -->
-
-<button
-  id="logoutButton"
-  class="secondaryButton"
-  type="button"
-  onclick="logoutPanel()"
->
-  🚪 LOGOUT
-</button>
 
       <footer>
         ==========================<br>
