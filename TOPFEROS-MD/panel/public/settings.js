@@ -1420,7 +1420,7 @@ function collectBotInformation() {
         ? botNameInput.value.trim()
         : "",
 
-    locatiion:
+    location:
       document.getElementById(
         "botLocation"
       )
@@ -1911,6 +1911,7 @@ function setupFooter() {
     "1.8";
 
 }
+
 
 // ============================================================
 // 🔄 MONITOR SESSION
