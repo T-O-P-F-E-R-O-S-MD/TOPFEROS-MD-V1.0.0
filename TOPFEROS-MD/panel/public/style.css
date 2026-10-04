@@ -99,6 +99,28 @@ h3 {
 }
 
 /* =========================
+   LANGUAGE
+========================= */
+
+.languageBox {
+  text-align: center;
+}
+
+.languageBox h2 {
+  margin-bottom: 20px;
+}
+
+.languageButtons {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+.languageButtons button {
+  margin-top: 0;
+}
+
+/* =========================
    BUTTONS
 ========================= */
 
@@ -173,6 +195,150 @@ input:focus {
 }
 
 /* =========================
+   SELECT
+========================= */
+
+select {
+  width: 100%;
+
+  padding: 13px 14px;
+  margin-top: 8px;
+
+  border-radius: 10px;
+  border: 1px solid #333;
+
+  background: rgba(5, 5, 5, 0.90);
+  color: #fff;
+
+  outline: none;
+
+  font-size: 15px;
+
+  cursor: pointer;
+
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+select:focus {
+  border-color: #19ff72;
+
+  box-shadow:
+    0 0 10px rgba(25, 255, 114, 0.20);
+}
+
+select option {
+  background: #111;
+  color: #fff;
+}
+
+/* =========================
+   LOGIN / NUMBER
+========================= */
+
+.loginNumberRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  margin-top: 8px;
+}
+
+.loginNumberRow input {
+  margin-top: 0;
+  flex: 1;
+}
+
+.phoneField {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.phoneDecoration {
+  min-width: 45px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 14px 8px;
+
+  background: rgba(5, 5, 5, 0.90);
+
+  border: 1px solid #333;
+  border-radius: 10px;
+
+  color: #19ff72;
+  font-weight: bold;
+}
+
+/* =========================
+   STATUS
+========================= */
+
+.statusBox {
+  margin-top: 18px;
+
+  padding: 13px;
+
+  text-align: center;
+
+  border-radius: 12px;
+
+  background: rgba(0, 0, 0, 0.55);
+
+  border: 1px solid rgba(25, 255, 114, 0.18);
+}
+
+.statusConnected {
+  color: #19ff72;
+  font-weight: bold;
+}
+
+.statusDisconnected {
+  color: #ff4444;
+  font-weight: bold;
+}
+
+/* =========================
+   PAIRING / CODE
+========================= */
+
+.pairingBox {
+  margin-top: 18px;
+
+  padding: 18px;
+
+  text-align: center;
+
+  background: rgba(0, 0, 0, 0.55);
+
+  border: 1px solid rgba(25, 255, 114, 0.20);
+
+  border-radius: 15px;
+}
+
+.pairingBox h3 {
+  margin-top: 0;
+}
+
+#pairingCode {
+  margin: 12px 0;
+
+  font-size: 28px;
+
+  font-weight: bold;
+
+  letter-spacing: 5px;
+
+  color: #19ff72;
+
+  text-align: center;
+}
+
+/* =========================
    SETTINGS CODE
 ========================= */
 
@@ -184,6 +350,23 @@ input:focus {
 
   letter-spacing: 5px;
   text-transform: uppercase;
+}
+
+/* =========================
+   COPY BUTTON
+========================= */
+
+.copyButton {
+  margin-top: 10px;
+
+  border-color: #19ff72;
+
+  background: rgba(25, 255, 114, 0.08);
+}
+
+.copyButton:hover {
+  background: #19ff72;
+  color: #000;
 }
 
 /* =========================
@@ -244,6 +427,33 @@ input:focus {
 }
 
 /* =========================
+   GROUP GRID
+========================= */
+
+.groupGrid {
+  display: grid;
+
+  grid-template-columns: 1fr 1fr;
+
+  gap: 12px;
+}
+
+.groupGrid label {
+  display: block;
+
+  color: #aaa;
+
+  font-size: 13px;
+
+  margin-bottom: 5px;
+}
+
+.groupGrid input,
+.groupGrid select {
+  margin-top: 0;
+}
+
+/* =========================
    SETTINGS
 ========================= */
 
@@ -266,6 +476,55 @@ input:focus {
 
 .setting span {
   font-size: 15px;
+}
+
+/* =========================
+   SETTINGS ROW
+========================= */
+
+.settingRow {
+  display: flex;
+
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 15px;
+
+  padding: 14px 0;
+
+  border-bottom: 1px solid #181818;
+}
+
+.settingRow:last-child {
+  border-bottom: 0;
+}
+
+.settingRow > span {
+  flex: 1;
+
+  font-size: 15px;
+}
+
+/* =========================
+   SETTING CONTROL
+========================= */
+
+.settingControl {
+  display: flex;
+
+  align-items: center;
+
+  gap: 10px;
+
+  flex-shrink: 0;
+}
+
+.settingControl select {
+  width: auto;
+
+  min-width: 150px;
+
+  margin-top: 0;
 }
 
 /* =========================
@@ -334,6 +593,52 @@ input:focus {
 }
 
 /* =========================
+   AUTOMATION GROUP
+========================= */
+
+.automationGroup {
+  margin-top: 18px;
+}
+
+.automationGroup input,
+.automationGroup select {
+  margin-bottom: 8px;
+}
+
+.automationGroup textarea {
+  width: 100%;
+
+  min-height: 90px;
+
+  padding: 14px;
+
+  margin-top: 8px;
+
+  border-radius: 10px;
+
+  border: 1px solid #333;
+
+  background: rgba(5, 5, 5, 0.90);
+
+  color: #fff;
+
+  outline: none;
+
+  font-family: Arial, Helvetica, sans-serif;
+
+  font-size: 15px;
+
+  resize: vertical;
+}
+
+.automationGroup textarea:focus {
+  border-color: #19ff72;
+
+  box-shadow:
+    0 0 10px rgba(25, 255, 114, 0.20);
+}
+
+/* =========================
    SAVE BUTTON
 ========================= */
 
@@ -357,6 +662,71 @@ input:focus {
 
   box-shadow:
     0 0 20px rgba(255, 255, 255, 0.20);
+}
+
+/* =========================
+   EXIT / LOGOUT
+========================= */
+
+.logoutButton,
+.exitButton {
+  margin-top: 12px;
+
+  border-color: #ff4444;
+
+  color: #ff6666;
+
+  background: rgba(255, 68, 68, 0.05);
+}
+
+.logoutButton:hover,
+.exitButton:hover {
+  background: #ff4444;
+
+  color: #fff;
+
+  box-shadow:
+    0 0 18px rgba(255, 68, 68, 0.25);
+}
+
+/* =========================
+   SETTINGS LINK
+========================= */
+
+.settingsLink {
+  display: block;
+
+  margin-top: 18px;
+
+  padding: 14px;
+
+  text-align: center;
+
+  border: 1px solid #19ff72;
+
+  border-radius: 12px;
+
+  background: rgba(25, 255, 114, 0.06);
+
+  color: #19ff72;
+
+  font-weight: bold;
+
+  text-decoration: none;
+
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.settingsLink:hover {
+  background: #19ff72;
+
+  color: #000;
+
+  box-shadow:
+    0 0 18px rgba(25, 255, 114, 0.30);
 }
 
 /* =========================
@@ -455,6 +825,10 @@ footer {
     grid-template-columns: 1fr;
   }
 
+  .groupGrid {
+    grid-template-columns: 1fr;
+  }
+
   .card {
     padding: 15px;
   }
@@ -463,12 +837,32 @@ footer {
     padding: 13px 0;
   }
 
-  .setting span {
+  .settingRow {
+    padding: 13px 0;
+  }
+
+  .setting span,
+  .settingRow > span {
     font-size: 14px;
+  }
+
+  .settingControl {
+    gap: 7px;
+  }
+
+  .settingControl select {
+    min-width: 125px;
+    max-width: 155px;
+    font-size: 13px;
   }
 
   #settingsCode {
     font-size: 21px;
+    letter-spacing: 4px;
+  }
+
+  #pairingCode {
+    font-size: 24px;
     letter-spacing: 4px;
   }
 }
@@ -499,5 +893,43 @@ footer {
 
   button {
     font-size: 15px;
+  }
+
+  .settingRow {
+    align-items: flex-start;
+  }
+
+  .settingControl {
+    flex-direction: column;
+    align-items: flex-end;
+  }
+
+  .settingControl select {
+    width: 135px;
+    min-width: 135px;
+  }
+
+  .switch {
+    width: 46px;
+    height: 25px;
+  }
+
+  .slider:before {
+    width: 19px;
+    height: 19px;
+  }
+
+  .switch input:checked + .slider:before {
+    transform: translateX(21px);
+  }
+
+  #settingsCode {
+    font-size: 19px;
+    letter-spacing: 3px;
+  }
+
+  #pairingCode {
+    font-size: 22px;
+    letter-spacing: 3px;
   }
 }
