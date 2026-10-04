@@ -1,9 +1,9 @@
 "use strict";
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🤖 TOPFEROS MD V1.0.0       
-//⚙️ SETTINGS API MODULE         ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
+// 🤖 TOPFEROS MD V1.0.0
+// ⚙️ SETTINGS API MODULE
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 const settingsPanel =
   require("../src/settingPanel");
