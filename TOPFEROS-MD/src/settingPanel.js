@@ -87,6 +87,7 @@ const defaultSettings = {
 
 };
 
+
 /* ======================================================
    DEFAULT BOT INFORMATION
 ====================================================== */
@@ -552,6 +553,160 @@ function getSession(sessionId) {
 
   return session || null;
 
+}      ensureSession(
+        id,
+        "",
+        sock
+      );
+
+
+    if (!session) {
+      return null;
+    }
+
+
+    return formatSession(
+      session
+    );
+
+  }
+
+
+  if (sock) {
+
+    const waSession =
+      sessionManager.getSessionBySocket?.(
+        sock
+      );
+
+
+    if (waSession) {
+
+      const session =
+        ensureSession(
+          waSession.sessionId,
+          waSession.number,
+          sock
+        );
+
+
+      return session
+        ? formatSession(session)
+        : null;
+
+    }
+
+
+    const number =
+      getPhoneFromSocket(sock);
+
+
+    if (number) {
+
+      const waSession =
+        sessionManager.getSessionByNumber(
+          number
+        );
+
+
+      if (waSession) {
+
+        const session =
+          ensureSession(
+            waSession.sessionId,
+            number,
+            sock
+          );
+
+
+        return session
+          ? formatSession(session)
+          : null;
+
+      }
+
+    }
+
+  }
+
+
+  return null;
+
+}
+
+
+/* ======================================================
+   FORMAT SESSION
+====================================================== */
+
+function formatSession(session) {
+
+  return {
+
+    sessionId:
+      session.sessionId,
+
+    number:
+      session.number,
+
+    code:
+      session.code,
+
+    link:
+      getPanelLink(
+        session.sessionId
+      ),
+
+    connected:
+      isBotConnected(session)
+
+  };
+
+}
+
+
+/* ======================================================
+   GET SESSION
+====================================================== */
+
+function getSession(sessionId) {
+
+  if (!sessionId) {
+    return null;
+  }
+
+
+  const id =
+    String(sessionId);
+
+
+  let session =
+    sessions.get(id);
+
+
+  if (!session) {
+
+    const waSession =
+      sessionManager.getSession(id);
+
+
+    if (!waSession) {
+      return null;
+    }
+
+
+    session =
+      ensureSession(
+        id,
+        waSession.number,
+        waSession.socket || null
+      );
+
+  }
+
+
+  return session || null;
+
 }
 
 
@@ -805,10 +960,7 @@ function setBotDisconnected(
 
   if (!session) {
     return false;
-  }
-
-
-  session.socket =
+  }  session.socket =
     null;
 
 
@@ -1198,288 +1350,9 @@ function applySettings(
 
 
   for (
-  const key of
-  Object.keys(defaultSettings)
-) {
-
-  if (
-    !Object.prototype.hasOwnProperty.call(
-      newSettings,
-      key
-    )
+    const key of
+    Object.keys(defaultSettings)
   ) {
-
-    continue;
-
-  }
-
-
-  // ========================================================
-  // 👥 GROUP MANAGEMENT TEXT / TIME VALUES
-  // ========================================================
-
-  if (
-  key === "adminGroupNumber" ||
-  key === "adminGroupLink" ||
-  key === "groupCloseTime" ||
-  key === "groupOpenTime" ||
-  key === "groupBioText"
-) {
-
-  session.settings[key] =
-    String(
-      newSettings[key] ?? ""
-    ).trim();
-
-  continue;
-
-  }
-
-
-  // ========================================================
-  // ⚙️ NORMAL BOOLEAN SETTINGS
-  // ========================================================
-
-  session.settings[key] =
-    Boolean(
-      newSettings[key]
-    );
-
-}
-
-
-  /*
-   * Public / Private.
-   */
-
-  if (
-    session.settings.publicMode
-  ) {
-
-    session.settings.privateMode =
-      false;
-
-  }
-
-
-  if (
-    session.settings.privateMode
-  ) {
-
-    session.settings.publicMode =
-      false;
-
-  }
-
-
-  /*
-   * Anti Delete destination.
-   *
-   * Same Chat and DM Bot cannot
-   * be active at the same time.
-   */
-
-  if (
-    session.settings.antiDeleteSameChat
-  ) {
-
-    session.settings.antiDeleteDM =
-      false;
-
-  }
-
-
-  if (
-    session.settings.antiDeleteDM
-  ) {
-
-    session.settings.antiDeleteSameChat =
-      false;
-
- }
-
-
-  updateMode(session);
-
-
-  session.updatedAt =
-    Date.now();
-
-
-  return {
-    ...session.settings
-  };
-
-}
-
-
-/* ======================================================
-   UPDATE BOT MODE
-====================================================== */
-
-function updateMode(session) {
-
-  session.botInformation.mode =
-    session.settings.privateMode
-      ? "Private"
-      : "Public";
-
-}
-
-
-/* ======================================================
-   UPDATE BOT INFORMATION
-====================================================== */
-
-function updateBotInformation(
-  sessionId,
-  information = {}
-) {
-
-  const session =
-    getSession(
-      sessionId
-    );
-
-
-  if (!session) {
-    return null;
-  }
-
-
-  if (
-    typeof information.name ===
-    "string"
-  ) {
-
-    const name =
-      information.name.trim();
-
-
-    session.botInformation.name =
-      name ||
-      "TOPFEROS MD";
-
-  }
-
-
-  if (
-    typeof information.prefix ===
-    "string"
-  ) {
-
-    const prefix =
-      information.prefix.trim();
-
-
-    session.botInformation.prefix =
-      prefix ||
-      ".";
-
-  }
-
-
-  /*
-   * Number always comes from WhatsApp.
-   */
-
-  if (session.number) {
-
-    session.botInformation.number =
-      session.number;
-
-  }
-
-
-  updateMode(session);
-
-
-  session.updatedAt =
-    Date.now();
-
-
-  return {
-    ...session.botInformation
-  };
-
-}
-
-
-/* ======================================================
-   IS FEATURE ENABLED
-====================================================== */
-
-function isEnabled(
-  sessionId,
-  key
-) {
-
-  const session =
-    getSession(
-      sessionId
-    );
-
-
-  if (!session) {
-    return false;
-  }
-
-
-  if (
-    !Object.prototype.hasOwnProperty.call(
-      defaultSettings,
-      key
-    )
-  ) {
-
-    return false;
-
-  }
-
-
-  return Boolean(
-    session.settings[key]
-  );
-
-}
-
-
-/* ======================================================
-   LOAD SETTINGS
-====================================================== */
-
-function loadSettings(
-  sessionId
-) {
-
-  const session =
-    getSession(
-      sessionId
-    );
-
-
-  if (!session) {
-    return null;
-  }
-
-
-  updateMode(session);
-
-
-  return {
-
-    settings: {
-      ...session.settings
-    },
-
-    botInformation: {
-      ...session.botInformation
-    }
-
-  };
-
-}
-
 
 /* ======================================================
    SEND SETTINGS PANEL LINK
@@ -1681,3 +1554,4 @@ module.exports = {
 
 // ╔════════════════════════════════════════════════════╗
 // ║             🚀 TECH BY TOPFEROS MD               ║
+// ╚════════════════════════════════════════════════════╝
