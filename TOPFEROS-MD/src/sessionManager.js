@@ -1489,7 +1489,7 @@ function resetAuth(
 
     return true;
 
-  } catch (error) {
+    } catch (error) {
 
     console.error(
       `❌ RESET AUTH ERROR [${sessionId}]:`,
@@ -1498,9 +1498,7 @@ function resetAuth(
 
     return false;
   }
-  }
 }
-
 
 // ============================================================
 // DELETE SESSION
