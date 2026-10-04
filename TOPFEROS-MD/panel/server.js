@@ -2473,9 +2473,9 @@ app.get(
 
 
       const botInformation =
-        await settingsPanel.getBotInformation(
-          sessionId
-        );      );
+  await settingsPanel.getBotInformation(
+    sessionId
+  );
 
       return res.status(500).json({
         success: false,
