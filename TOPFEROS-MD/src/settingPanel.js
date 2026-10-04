@@ -1498,6 +1498,105 @@ function listSessions() {
 
 }
 
+/* ======================================================
+   UPDATE BOT INFORMATION
+====================================================== */
+
+function updateBotInformation(
+  sessionId,
+  botInformation = {}
+) {
+
+  const session =
+    getSession(
+      sessionId
+    );
+
+
+  if (!session) {
+    return null;
+  }
+
+
+  session.botInformation = {
+    ...session.botInformation,
+    ...botInformation
+  };
+
+
+  /*
+   * Normalize important bot information.
+   */
+
+  if (
+    Object.prototype.hasOwnProperty.call(
+      botInformation,
+      "number"
+    )
+  ) {
+
+    session.botInformation.number =
+      normalizeNumber(
+        botInformation.number
+      );
+
+  }
+
+
+  if (
+    Object.prototype.hasOwnProperty.call(
+      botInformation,
+      "name"
+    )
+  ) {
+
+    session.botInformation.name =
+      String(
+        botInformation.name || ""
+      ).trim();
+
+  }
+
+
+  if (
+    Object.prototype.hasOwnProperty.call(
+      botInformation,
+      "prefix"
+    )
+  ) {
+
+    session.botInformation.prefix =
+      String(
+        botInformation.prefix || "."
+      );
+
+  }
+
+
+  if (
+    Object.prototype.hasOwnProperty.call(
+      botInformation,
+      "mode"
+    )
+  ) {
+
+    session.botInformation.mode =
+      String(
+        botInformation.mode || "Public"
+      );
+
+  }
+
+
+  session.updatedAt =
+    Date.now();
+
+
+  return {
+    ...session.botInformation
+  };
+
+}
 
 /* ======================================================
    EXPORTS
