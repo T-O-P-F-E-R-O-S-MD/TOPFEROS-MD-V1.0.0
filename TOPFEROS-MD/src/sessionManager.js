@@ -217,7 +217,188 @@ function loadSession(sessionId) {
   }
 
   try {
-    const raw =    const stored =
+    const raw =
+      fs.readFileSync(
+        file,
+        "utf8"
+      );
+
+    const data =
+      JSON.parse(raw);
+
+    const session = {
+      sessionId:
+        data.sessionId ||
+        sessionId,
+
+      number:
+        data.number ||
+        null,
+
+      code:
+        data.code ||
+        generateParrainCode(),
+
+      authenticated:
+        data.authenticated === true,
+
+      connected:
+        false,
+
+      socket:
+        null,
+
+      authDir:
+        getAuthDir(
+          data.sessionId ||
+          sessionId
+        ),
+
+      status:
+        "disconnected",
+
+      pairing:
+        false,
+
+      pairingCode:
+        null,
+
+      pairingStartedAt:
+        null,
+
+      createdAt:
+        data.createdAt ||
+        Date.now(),
+
+      updatedAt:
+        Date.now(),
+
+      settings:
+        data.settings || {},
+
+      bot:
+        data.bot || {},
+
+      panelSession:
+        data.panelSession ||
+        null
+    };
+
+    ensureSessionDirectories(
+      session.sessionId
+    );
+
+    return session;
+
+  } catch (error) {
+    console.error(
+      `❌ SESSION LOAD ERROR [${sessionId}]:`,
+      error?.message || error
+    );
+
+    return null;
+  }
+}
+
+
+// ============================================================
+// CREATE SESSION
+// ============================================================
+
+function createSession(options = {}) {
+  const {
+    sessionId:
+      requestedSessionId = null,
+
+    number = null,
+
+    socket = null,
+
+    sock = null,
+
+    settings = {},
+
+    bot = {},
+
+    status = null,
+
+    pairing = false,
+
+    panelSession = null
+  } = options || {};
+
+  const finalSocket =
+    socket ||
+    sock ||
+    null;
+
+  let cleanNumber =
+    cleanPhoneNumber(
+      number ||
+      finalSocket?.user?.id ||
+      ""
+    );
+
+  let sessionId =
+    requestedSessionId ||
+    null;
+
+  // ----------------------------------------------------------
+  // EXISTING SESSION BY ID
+  // ----------------------------------------------------------
+
+  if (sessionId) {
+    const existingById =
+      sessions.get(
+        sessionId
+      );
+
+    if (existingById) {
+
+      if (cleanNumber) {
+        existingById.number =
+          cleanNumber;
+      }
+
+      if (finalSocket) {
+        existingById.socket =
+          finalSocket;
+      }
+
+      if (settings) {
+        existingById.settings = {
+          ...existingById.settings,
+          ...settings
+        };
+      }
+
+      if (bot) {
+        existingById.bot = {
+          ...existingById.bot,
+          ...bot
+        };
+      }
+
+      existingById.connected =
+        Boolean(
+          finalSocket ||
+          existingById.socket
+        );
+
+      existingById.updatedAt =
+        Date.now();
+
+      persistSession(
+        existingById
+      );
+
+      return sanitizeSession(
+        existingById
+      );
+    }
+
+    // Try loading existing stored session
+    const stored =
       loadSession(
         sessionId
       );
@@ -317,7 +498,6 @@ function loadSession(sessionId) {
   sessionId =
     sessionId ||
     generateSessionId();
-
   const session = {
 
     sessionId,
@@ -616,7 +796,8 @@ function setSocket(
   session.socket =
     socket || null;
 
-  session.connected =    Boolean(
+  session.connected =
+    Boolean(
       socket
     );
 
@@ -630,10 +811,6 @@ function setSocket(
   return true;
 }
 
-
-// ============================================================
-// GET SOCKET
-// ============================================================
 
 function getSocket(sessionId) {
   const session =
@@ -819,7 +996,7 @@ function setStatus(
     );
 
   session.updatedAt =
-    Date.now();
+    Date.now();                         
 
   persistSession(
     session
@@ -1003,6 +1180,33 @@ function getPairingInfo(
 // AUTHENTICATION
 // ============================================================
 
+function setAuthenticated(
+  sessionId,
+  value = true
+) {
+  const session =
+    getSession(
+      sessionId
+    );
+
+  if (!session) {
+    return false;
+  }
+
+  session.authenticated =
+    value === true;
+
+  session.updatedAt =
+    Date.now();
+
+  persistSession(
+    session
+  );
+
+  return true;
+}
+
+
 function isAuthenticated(
   sessionId
 ) {
@@ -1019,10 +1223,6 @@ function isAuthenticated(
   );
 }
 
-
-// ============================================================
-// VERIFY SESSION
-// ============================================================
 
 function verifySession(
   sessionId,
@@ -1298,6 +1498,7 @@ function resetAuth(
 
     return false;
   }
+  }
 }
 
 
@@ -1396,7 +1597,9 @@ function listPublicSessions() {
         session.pairing === true,
 
       authenticated:
-        session.authenticated === true,      createdAt:
+        session.authenticated === true,
+
+      createdAt:
         session.createdAt,
 
       updatedAt:
