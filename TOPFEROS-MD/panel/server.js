@@ -994,13 +994,6 @@ app.post(
           );
 
       }      /*
-       * ============================================================
-       * LANGUAGE NAME
-       * ============================================================
-       */
-
-      let languageName =
-        "English";
 
       /*
        * ============================================================
@@ -1989,13 +1982,11 @@ app.post(
        */
 
       const sessionNumber =
-        cleanNumberValue(
-          realPanelSession.number ||
-          realPanelSession.botInformation?.number ||
-          ""
-        );          ""
-        );
-
+  cleanNumberValue(
+    realPanelSession.number ||
+    realPanelSession.botInformation?.number ||
+    ""
+  );
 
       if (
         sessionNumber &&
