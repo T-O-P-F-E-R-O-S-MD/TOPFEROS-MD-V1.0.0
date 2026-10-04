@@ -2473,15 +2473,34 @@ app.get(
 
 
       const botInformation =
-  await settingsPanel.getBotInformation(
-    sessionId
-  );
+        await settingsPanel.getBotInformation(
+          sessionId
+        );
+
+
+      return res.json({
+        success: true,
+        sessionId,
+
+        botInformation:
+          botInformation || {}
+      });
+
+
+    } catch (error) {
+
+      console.error(
+        "[TOPFEROS] bot-information:",
+        error?.message || error
+      );
+
 
       return res.status(500).json({
         success: false,
         error:
           "Impossible de récupérer les informations du bot."
       });
+
     }
   }
 );
