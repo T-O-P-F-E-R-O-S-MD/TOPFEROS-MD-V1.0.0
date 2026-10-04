@@ -1981,36 +1981,30 @@ app.post(
        * ==========================================================
        */
 
-      const sessionNumber =
+    const sessionNumber =
   cleanNumberValue(
     realPanelSession.number ||
     realPanelSession.botInformation?.number ||
     ""
   );
 
-      if (
-        sessionNumber &&
-        sessionNumber !== number
-      ) {
+if (
+  sessionNumber &&
+  sessionNumber !== number
+) {
 
-      if (
-        sessionNumber &&
-        sessionNumber !== number
-      ) {
+  console.log(
+    `[TOPFEROS] ❌ Number mismatch: ${sessionNumber} !== ${number}`
+  );
 
-        console.log(
-          `[TOPFEROS] ❌ Number mismatch: ${sessionNumber} !== ${number}`
-        );
-
-        return res.status(401).json({
-          success: false,
-          verified: false,
-          authenticated: false,
-          error:
-            "WhatsApp Number lan pa koresponn ak session sa a."
-        });
-      }
-
+  return res.status(401).json({
+    success: false,
+    verified: false,
+    authenticated: false,
+    error:
+      "WhatsApp Number lan pa koresponn ak session sa a."
+  });
+}
 
       /*
        * ==========================================================
