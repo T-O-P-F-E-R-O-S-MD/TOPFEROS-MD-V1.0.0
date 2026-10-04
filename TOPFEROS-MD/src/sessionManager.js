@@ -1396,4 +1396,163 @@ function listPublicSessions() {
         session.pairing === true,
 
       authenticated:
-        session.authenticated === true,
+        session.authenticated === true,      createdAt:
+        session.createdAt,
+
+      updatedAt:
+        session.updatedAt
+    })
+  );
+}
+
+
+// ============================================================
+// SANITIZE
+// ============================================================
+
+function sanitizeSession(
+  session
+) {
+  if (!session) {
+    return null;
+  }
+
+  return {
+    sessionId:
+      session.sessionId,
+
+    number:
+      session.number,
+
+    code:
+      session.code,
+
+    authenticated:
+      session.authenticated === true,
+
+    connected:
+      session.connected === true,
+
+    status:
+      session.status ||
+      "disconnected",
+
+    pairing:
+      session.pairing === true,
+
+    pairingCode:
+      session.pairingCode ||
+      null,
+
+    pairingStartedAt:
+      session.pairingStartedAt ||
+      null,
+
+    authDir:
+      session.authDir,
+
+    settings: {
+      ...session.settings
+    },
+
+    bot: {
+      ...session.bot
+    },
+
+    panelSession:
+      session.panelSession ||
+      null,
+
+    createdAt:
+      session.createdAt,
+
+    updatedAt:
+      session.updatedAt
+  };
+}
+
+
+// ============================================================
+// EXPORTS
+// ============================================================
+
+module.exports = {
+
+  // Session
+  createSession,
+  generateSessionId,
+  generateParrainCode,
+
+  // Lookup
+  getSession,
+  getSessionByNumber,
+  getAllSessions,
+  getSessions,
+  getSessionCount,
+
+  // Stored sessions
+  getStoredSessionIds,
+  restoreSession,
+  restoreSessions,
+
+  // Numbers
+  cleanPhoneNumber,
+  normalizeNumber,
+  validatePhoneNumber,
+  getPhoneNumber,
+  setPhoneNumber,
+
+  // Paths
+  getAuthDir,
+  getSessionDir,
+
+  // Socket
+  setSocket,
+  getSocket,
+
+  // Connection
+  connectSession,
+  disconnectSession,
+  isConnected,
+
+  // Status
+  setStatus,
+  getStatus,
+
+  // Pairing
+  startPairing,
+  setPairingCode,
+  endPairing,
+  getPairingInfo,
+
+  // Authentication
+  setAuthenticated,
+  isAuthenticated,
+  verifySession,
+
+  // Settings
+  updateSettings,
+  getSettings,
+
+  // Bot
+  updateBot,
+  getBot,
+
+  // Auth reset
+  resetAuth,
+
+  // Delete
+  deleteSession,
+  clearSessions,
+
+  // Public
+  listPublicSessions,
+
+  // Security
+  sanitizeSession
+};
+
+
+// ╔════════════════════════════════════════════════════╗
+// ║             🚀 TECH BY TOPFEROS MD               ║
+// ╚════════════════════════════════════════════════════╝
