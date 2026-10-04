@@ -553,12 +553,7 @@ function getSession(sessionId) {
 
   return session || null;
 
-}      ensureSession(
-        id,
-        "",
-        sock
-      );
-
+     } 
 
     if (!session) {
       return null;
