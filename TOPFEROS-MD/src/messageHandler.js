@@ -1005,8 +1005,8 @@ try {
   sock,
   chatId,
   commandName,
-  prefix
-);
+  PREFIX
+    );
 
       return;
     }
