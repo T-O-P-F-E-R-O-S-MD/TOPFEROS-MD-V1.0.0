@@ -1229,6 +1229,129 @@ function applySettings(
     Object.keys(defaultSettings)
   ) {
 
+    if (
+      !Object.prototype.hasOwnProperty.call(
+        newSettings,
+        key
+      )
+    ) {
+      continue;
+    }
+
+
+    /*
+     * Group management text / time values.
+     */
+
+    if (
+      key === "adminGroupNumber" ||
+      key === "adminGroupLink" ||
+      key === "groupCloseTime" ||
+      key === "groupOpenTime" ||
+      key === "groupBioText"
+    ) {
+
+      session.settings[key] =
+        String(
+          newSettings[key] ?? ""
+        ).trim();
+
+      continue;
+    }
+
+
+    /*
+     * Normal settings.
+     */
+
+    if (
+      key === "groupTimeZone"
+    ) {
+
+      session.settings[key] =
+        String(
+          newSettings[key] ?? ""
+        ).trim();
+
+      continue;
+    }
+
+
+    session.settings[key] =
+      Boolean(
+        newSettings[key]
+      );
+  }
+
+
+  /*
+   * Public / Private.
+   */
+
+  if (
+    session.settings.publicMode
+  ) {
+
+    session.settings.privateMode =
+      false;
+
+  }
+
+
+  if (
+    session.settings.privateMode
+  ) {
+
+    session.settings.publicMode =
+      false;
+
+  }
+
+
+  /*
+   * Anti Delete destination.
+   */
+
+  if (
+    session.settings.antiDeleteSameChat
+  ) {
+
+    session.settings.antiDeleteDM =
+      false;
+
+  }
+
+
+  if (
+    session.settings.antiDeleteDM
+  ) {
+
+    session.settings.antiDeleteSameChat =
+      false;
+
+  }
+
+
+  /*
+   * Update bot mode.
+   */
+
+  session.botInformation.mode =
+    session.settings.privateMode
+      ? "Private"
+      : "Public";
+
+
+  session.updatedAt =
+    Date.now();
+
+
+  return {
+    ...session.settings
+  };
+
+}
+
 /* ======================================================
    SEND SETTINGS PANEL LINK
 ====================================================== */
