@@ -2989,6 +2989,112 @@ app.post(
 
 /*
 |--------------------------------------------------------------------------
+| DELETE SESSION
+|--------------------------------------------------------------------------
+*/
+
+app.delete(
+  "/api/session/:sessionId",
+  async (req, res) => {
+    try {
+
+      const {
+        sessionId
+      } = req.params;
+
+
+      const session =
+        getConnectionSession(
+          sessionId
+        );
+
+
+      if (!session) {
+        return res.status(404).json({
+          success: false,
+          error:
+            "Session introuvable."
+        });
+      }
+
+
+      if (
+        settingsPanel &&
+        typeof settingsPanel.removeSession ===
+          "function"
+      ) {
+        await settingsPanel.removeSession(
+          sessionId
+        );
+      }
+
+
+      if (
+        !connection ||
+        typeof connection.removeSession !==
+          "function"
+      ) {
+        return res.status(500).json({
+          success: false,
+          error:
+            "removeSession() pa disponib nan connection.js."
+        });
+      }
+
+
+      await connection.removeSession(
+        sessionId
+      );
+
+
+      return res.json({
+        success: true,
+        message:
+          "Session supprimée.",
+        sessionId
+      });
+
+
+    } catch (error) {
+
+      console.error(
+        "[TOPFEROS] delete session:",
+        error?.stack ||
+          error?.message ||
+          error
+      );
+
+
+      return res.status(500).json({
+        success: false,
+        error:
+          error?.message ||
+          "Impossible de supprimer la session."
+      });
+
+    }
+  }
+);
+
+/*
+|--------------------------------------------------------------------------
+| API 404
+|--------------------------------------------------------------------------
+*/
+
+app.use(
+  "/api",
+  (req, res) => {
+    return res.status(404).json({
+      success: false,
+      error:
+        "API route introuvable."
+    });
+  }
+);
+
+/*
+|--------------------------------------------------------------------------
 | EXPRESS ERROR HANDLER
 |--------------------------------------------------------------------------
 */
