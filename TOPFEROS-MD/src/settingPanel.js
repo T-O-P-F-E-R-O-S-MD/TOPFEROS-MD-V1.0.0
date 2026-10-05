@@ -1598,6 +1598,48 @@ function updateBotInformation(
 
 }
 
+// ======================================================
+// 🔌 BOT CONNECTION STATUS
+// ======================================================
+
+function isBotConnected() {
+
+  for (
+    const session of sessions.values()
+  ) {
+
+    if (
+      session &&
+      session.connected === true
+    ) {
+      return true;
+    }
+
+    if (
+      session &&
+      session.status === "connected"
+    ) {
+      return true;
+    }
+
+    if (
+      session &&
+      session.socket
+    ) {
+
+      if (
+        session.socket.user
+      ) {
+        return true;
+      }
+
+    }
+
+  }
+
+  return false;
+}
+
 /* ======================================================
    EXPORTS
 ====================================================== */
@@ -1621,6 +1663,7 @@ module.exports = {
 
   setBotConnected,
   setBotDisconnected,
+  isBotConnected,
 
   getSession,
   getSessionByNumber,
