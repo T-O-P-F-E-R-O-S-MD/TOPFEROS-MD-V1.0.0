@@ -1640,6 +1640,43 @@ function isBotConnected() {
   return false;
 }
 
+// ======================================================
+// 🌐 LANGUAGE
+// ======================================================
+
+function setLanguage(
+  sessionId,
+  language
+) {
+  const session =
+    sessions.get(sessionId);
+
+  if (!session) {
+    return false;
+  }
+
+  const allowedLanguages = [
+    "fr",
+    "en",
+    "ht",
+    "es"
+  ];
+
+  if (
+    !allowedLanguages.includes(language)
+  ) {
+    return false;
+  }
+
+  session.language =
+    language;
+
+  session.updatedAt =
+    Date.now();
+
+  return true;
+}
+
 /* ======================================================
    EXPORTS
 ====================================================== */
@@ -1664,6 +1701,7 @@ module.exports = {
   setBotConnected,
   setBotDisconnected,
   isBotConnected,
+  setLanguage,
 
   getSession,
   getSessionByNumber,
