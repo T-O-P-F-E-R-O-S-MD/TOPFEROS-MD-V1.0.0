@@ -454,8 +454,6 @@ function createSession(options = {}) {
   let sessionId =
     requestedSessionId ||
     null;
-  
- );
 
 // ============================================================
 // SET NUMBER
