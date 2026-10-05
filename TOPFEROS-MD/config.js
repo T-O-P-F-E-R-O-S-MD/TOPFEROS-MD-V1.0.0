@@ -34,8 +34,8 @@ mode:
   "public",
 
 // 👨‍💻 Developer
-developer:
-  "TOPFEROS TECH",
+   developer:
+  "TOPFEROS MD TECH",
 
 // 🖼️ Logo prensipal bot la
 logo:
