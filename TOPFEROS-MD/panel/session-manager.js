@@ -300,6 +300,118 @@ function loadSession(sessionId) {
   }
 }
 
+// ============================================================
+// COMPATIBILITY WITH CONNECTION.JS
+// ============================================================
+
+function updateSession(
+  sessionId,
+  updates = {}
+) {
+  const session =
+    sessions.get(
+      sessionId
+    );
+
+  if (!session) {
+    return null;
+  }
+
+  Object.assign(
+    session,
+    updates
+  );
+
+  session.updatedAt =
+    Date.now();
+
+  return session;
+}
+
+
+// ============================================================
+// SET NUMBER
+// ============================================================
+
+function setNumber(
+  sessionId,
+  number
+) {
+  const session =
+    sessions.get(
+      sessionId
+    );
+
+  if (!session) {
+    return null;
+  }
+
+  session.number =
+    cleanPhoneNumber(
+      number
+    );
+
+  session.updatedAt =
+    Date.now();
+
+  persistSession(
+    session
+  );
+
+  return session;
+}
+
+
+// ============================================================
+// REMOVE SESSION
+// ============================================================
+
+function removeSession(
+  sessionId
+) {
+  const session =
+    sessions.get(
+      sessionId
+    );
+
+  if (!session) {
+    return false;
+  }
+
+  sessions.delete(
+    sessionId
+  );
+
+  try {
+    const sessionDir =
+      getSessionDir(
+        sessionId
+      );
+
+    if (
+      fs.existsSync(
+        sessionDir
+      )
+    ) {
+      fs.rmSync(
+        sessionDir,
+        {
+          recursive: true,
+          force: true
+        }
+      );
+    }
+
+  } catch (error) {
+    console.error(
+      `❌ SESSION REMOVE ERROR [${sessionId}]:`,
+      error?.message ||
+      error
+    );
+  }
+
+  return true;
+}
 
 // ============================================================
 // CREATE SESSION
@@ -1205,10 +1317,7 @@ function setAuthenticated(
   );
 
   return true;
-}
-
-
-function isAuthenticated(
+}function isAuthenticated(
   sessionId
 ) {
   const session =
@@ -1672,6 +1781,133 @@ function sanitizeSession(
     updatedAt:
       session.updatedAt
   };
+}// ============================================================
+// SESSION STATUS HELPERS
+// ============================================================
+
+function markConnected(
+  sessionId,
+  socket = null
+) {
+  const session =
+    getSession(
+      sessionId
+    );
+
+  if (!session) {
+    return false;
+  }
+
+  if (socket) {
+    session.socket =
+      socket;
+  }
+
+  session.connected =
+    true;
+
+  session.status =
+    "connected";
+
+  session.pairing =
+    false;
+
+  session.pairingCode =
+    null;
+
+  session.pairingStartedAt =
+    null;
+
+  session.updatedAt =
+    Date.now();
+
+  persistSession(
+    session
+  );
+
+  return true;
+}
+
+
+function markDisconnected(
+  sessionId,
+  status = "disconnected"
+) {
+  return disconnectSession(
+    sessionId,
+    status
+  );
+}
+
+
+// ============================================================
+// SESSION AUTH DIRECTORY
+// ============================================================
+
+function getAuthPath(
+  sessionId
+) {
+  const session =
+    getSession(
+      sessionId
+    );
+
+  if (session?.authDir) {
+    return session.authDir;
+  }
+
+  return getAuthDir(
+    sessionId
+  );
+}
+
+
+// ============================================================
+// SESSION EXISTENCE
+// ============================================================
+
+function hasSession(
+  sessionId
+) {
+  return sessions.has(
+    String(sessionId || "")
+  );
+}
+
+
+// ============================================================
+// SESSION DATA
+// ============================================================
+
+function getSessionData(
+  sessionId
+) {
+  const session =
+    getSession(
+      sessionId
+    );
+
+  if (!session) {
+    return null;
+  }
+
+  return sanitizeSession(
+    session
+  );
+}
+
+
+// ============================================================
+// INITIAL RESTORE
+// ============================================================
+
+try {
+  restoreSessions();
+} catch (error) {
+  console.error(
+    "❌ SESSION MANAGER INITIAL RESTORE ERROR:",
+    error?.message || error
+  );
 }
 
 
@@ -1681,81 +1917,161 @@ function sanitizeSession(
 
 module.exports = {
 
-  // Session
-  createSession,
-  generateSessionId,
-  generateParrainCode,
+  // ----------------------------------------------------------
+  // SESSION CREATION / RETRIEVAL
+  // ----------------------------------------------------------
 
-  // Lookup
+  createSession,
+
   getSession,
+
   getSessionByNumber,
+
   getAllSessions,
+
   getSessions,
+
   getSessionCount,
 
-  // Stored sessions
-  getStoredSessionIds,
-  restoreSession,
-  restoreSessions,
+  getSessionData,
 
-  // Numbers
-  cleanPhoneNumber,
-  normalizeNumber,
-  validatePhoneNumber,
-  getPhoneNumber,
-  setPhoneNumber,
+  hasSession,
 
-  // Paths
-  getAuthDir,
-  getSessionDir,
-
-  // Socket
-  setSocket,
-  getSocket,
-
-  // Connection
-  connectSession,
-  disconnectSession,
-  isConnected,
-
-  // Status
-  setStatus,
-  getStatus,
-
-  // Pairing
-  startPairing,
-  setPairingCode,
-  endPairing,
-  getPairingInfo,
-
-  // Authentication
-  setAuthenticated,
-  isAuthenticated,
-  verifySession,
-
-  // Settings
-  updateSettings,
-  getSettings,
-
-  // Bot
-  updateBot,
-  getBot,
-
-  // Auth reset
-  resetAuth,
-
-  // Delete
-  deleteSession,
-  clearSessions,
-
-  // Public
   listPublicSessions,
 
-  // Security
+
+  // ----------------------------------------------------------
+  // SESSION UPDATE
+  // ----------------------------------------------------------
+
+  updateSession,
+
+  setNumber,
+
+  setPhoneNumber,
+
+  getPhoneNumber,
+
+  removeSession,
+
+  deleteSession,
+
+  clearSessions,
+
+
+  // ----------------------------------------------------------
+  // RESTORE
+  // ----------------------------------------------------------
+
+  loadSession,
+
+  restoreSession,
+
+  restoreSessions,
+
+  getStoredSessionIds,
+
+
+  // ----------------------------------------------------------
+  // SOCKET
+  // ----------------------------------------------------------
+
+  setSocket,
+
+  getSocket,
+
+  connectSession,
+
+  disconnectSession,
+
+  markConnected,
+
+  markDisconnected,
+
+
+  // ----------------------------------------------------------
+  // STATUS
+  // ----------------------------------------------------------
+
+  setStatus,
+
+  getStatus,
+
+  isConnected,
+
+
+  // ----------------------------------------------------------
+  // PAIRING
+  // ----------------------------------------------------------
+
+  startPairing,
+
+  setPairingCode,
+
+  endPairing,
+
+  getPairingInfo,
+
+
+  // ----------------------------------------------------------
+  // AUTHENTICATION
+  // ----------------------------------------------------------
+
+  setAuthenticated,
+
+  isAuthenticated,
+
+  verifySession,
+
+  resetAuth,
+
+
+  // ----------------------------------------------------------
+  // SETTINGS
+  // ----------------------------------------------------------
+
+  updateSettings,
+
+  getSettings,
+
+
+  // ----------------------------------------------------------
+  // BOT
+  // ----------------------------------------------------------
+
+  updateBot,
+
+  getBot,
+
+
+  // ----------------------------------------------------------
+  // PATHS
+  // ----------------------------------------------------------
+
+  getAuthPath,
+
+  getAuthDir,
+
+  getSessionDir,
+
+  getSessionFile,
+
+
+  // ----------------------------------------------------------
+  // VALIDATION / HELPERS
+  // ----------------------------------------------------------
+
+  cleanPhoneNumber,
+
+  normalizeNumber,
+
+  validatePhoneNumber,
+
+  generateSessionId,
+
+  generateParrainCode,
+
+  persistSession,
+
   sanitizeSession
 };
-
-
-// ╔════════════════════════════════════════════════════╗
-// ║             🚀 TECH BY TOPFEROS MD               ║
-// ╚════════════════════════════════════════════════════╝
