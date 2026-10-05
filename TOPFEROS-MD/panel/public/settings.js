@@ -1917,7 +1917,17 @@ function setupFooter() {
 // 🔄 MONITOR SESSION
 // ============================================================
 
+let monitoringSettings = false;
+
 async function monitorSettings() {
+
+  if (monitoringSettings) {
+    return;
+  }
+
+  monitoringSettings = true;
+
+  try {
 
   if (
     settingsPanel?.classList.contains(
@@ -1961,6 +1971,9 @@ async function monitorSettings() {
 
 
   enableSave();
+  } finally {
+    monitoringSettings = false;
+  }
 
 }
 
