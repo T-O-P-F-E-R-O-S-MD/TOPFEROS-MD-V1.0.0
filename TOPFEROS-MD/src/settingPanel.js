@@ -173,25 +173,75 @@ function getPanelLink(sessionId) {
   return `${PANEL_URL}/setting`;
 }
 
-
 /* ======================================================
    CHECK IF WHATSAPP SESSION IS CONNECTED
 ====================================================== */
 
-function isBotConnected(session) {
+function isBotConnected(session = null) {
 
-  if (!session) {
+  // ------------------------------------------------------
+  // Check a specific WhatsApp session
+  // ------------------------------------------------------
+
+  if (session) {
+
+    if (
+      session.connected === true
+    ) {
+      return true;
+    }
+
+    if (
+      session.socket
+    ) {
+      return true;
+    }
+
+    if (
+      session.status === "connected"
+    ) {
+      return true;
+    }
+
     return false;
   }
 
-  if (!session.socket) {
-    return false;
+
+  // ------------------------------------------------------
+  // Check all panel sessions
+  // ------------------------------------------------------
+
+  for (
+    const currentSession
+    of sessions.values()
+  ) {
+
+    if (
+      currentSession &&
+      currentSession.connected === true
+    ) {
+      return true;
+    }
+
+    if (
+      currentSession &&
+      currentSession.socket
+    ) {
+      return true;
+    }
+
+    if (
+      currentSession &&
+      currentSession.status === "connected"
+    ) {
+      return true;
+    }
+
   }
 
-  return true;
 
+  return false;
 }
-
 
 /* ======================================================
    ENSURE PANEL SESSION
