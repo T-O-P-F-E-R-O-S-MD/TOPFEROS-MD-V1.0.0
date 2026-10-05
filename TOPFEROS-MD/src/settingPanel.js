@@ -511,36 +511,6 @@ function formatSession(session) {
 }
 
 /* ======================================================
-   FORMAT SESSION
-====================================================== */
-
-function formatSession(session) {
-
-  return {
-
-    sessionId:
-      session.sessionId,
-
-    number:
-      session.number,
-
-    code:
-      session.code,
-
-    link:
-      getPanelLink(
-        session.sessionId
-      ),
-
-    connected:
-      isBotConnected(session)
-
-  };
-
-}
-
-
-/* ======================================================
    GET SESSION
 ====================================================== */
 
