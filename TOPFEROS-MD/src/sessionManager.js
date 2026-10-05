@@ -300,6 +300,118 @@ function loadSession(sessionId) {
   }
 }
 
+// ============================================================
+// COMPATIBILITY WITH CONNECTION.JS
+// ============================================================
+
+function updateSession(
+  sessionId,
+  updates = {}
+) {
+  const session =
+    sessions.get(
+      sessionId
+    );
+
+  if (!session) {
+    return null;
+  }
+
+  Object.assign(
+    session,
+    updates
+  );
+
+  session.updatedAt =
+    Date.now();
+
+  return session;
+}
+
+
+// ============================================================
+// SET NUMBER
+// ============================================================
+
+function setNumber(
+  sessionId,
+  number
+) {
+  const session =
+    sessions.get(
+      sessionId
+    );
+
+  if (!session) {
+    return null;
+  }
+
+  session.number =
+    cleanPhoneNumber(
+      number
+    );
+
+  session.updatedAt =
+    Date.now();
+
+  persistSession(
+    session
+  );
+
+  return session;
+}
+
+
+// ============================================================
+// REMOVE SESSION
+// ============================================================
+
+function removeSession(
+  sessionId
+) {
+  const session =
+    sessions.get(
+      sessionId
+    );
+
+  if (!session) {
+    return false;
+  }
+
+  sessions.delete(
+    sessionId
+  );
+
+  try {
+    const sessionDir =
+      getSessionDir(
+        sessionId
+      );
+
+    if (
+      fs.existsSync(
+        sessionDir
+      )
+    ) {
+      fs.rmSync(
+        sessionDir,
+        {
+          recursive: true,
+          force: true
+        }
+      );
+    }
+
+  } catch (error) {
+    console.error(
+      `❌ SESSION REMOVE ERROR [${sessionId}]:`,
+      error?.message ||
+      error
+    );
+  }
+
+  return true;
+}
 
 // ============================================================
 // CREATE SESSION
@@ -342,35 +454,8 @@ function createSession(options = {}) {
   let sessionId =
     requestedSessionId ||
     null;
- 
-// ============================================================
-// COMPATIBILITY WITH CONNECTION.JS
-// ============================================================
-
-function updateSession(
-  sessionId,
-  updates = {}
-) {
-  const session =
-    sessions.get(
-      sessionId
-    );
-
-  if (!session) {
-    return null;
-  }
-
-  Object.assign(
-    session,
-    updates
-  );
-
-  session.updatedAt =
-    Date.now();
-
-  return session;
-}
-
+  
+ );
 
 // ============================================================
 // SET NUMBER
