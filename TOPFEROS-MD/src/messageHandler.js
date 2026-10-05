@@ -1,1196 +1,1878 @@
 "use strict";
 
+const fs = require("fs");
+const path = require("path");
+const crypto = require("crypto");
+
+// ╔════════════════════════════════════════════════════╗
+// ║              🤖 TOPFEROS MD V1.0.0               ║
+// ║                 SESSION MANAGER                   ║
+// ╚════════════════════════════════════════════════════╝
+
 // ============================================================
-// TOPFEROS MD
-// MESSAGE HANDLER
-// WhatsApp / Baileys
+// PATHS
 // ============================================================
 
-let config = {};
+const AUTH_ROOT = path.join(
+  __dirname,
+  "..",
+  "auth",
+  "sessions"
+);
 
-try {
-  config = require("../config");
-} catch (error) {
-  console.warn(
-    "⚠️ CONFIG LOAD WARNING:",
-    error?.message || error
+if (!fs.existsSync(AUTH_ROOT)) {
+  fs.mkdirSync(AUTH_ROOT, {
+    recursive: true
+  });
+}
+
+
+// ============================================================
+// MEMORY STORAGE
+// ============================================================
+
+const sessions = new Map();
+
+
+// ============================================================
+// HELPERS
+// ============================================================
+
+function cleanPhoneNumber(number) {
+  return String(number || "")
+    .replace(/\D/g, "");
+}
+
+
+function normalizeNumber(number) {
+  return cleanPhoneNumber(number);
+}
+
+
+function validatePhoneNumber(number) {
+  const phone = cleanPhoneNumber(number);
+
+  return (
+    phone.length >= 8 &&
+    phone.length <= 15
   );
 }
 
-const commandIndex =
-  require("../commands/index");
 
-const viewonceCommand =
-  require("../commands/viewonce");
+function generateSessionId() {
+  return (
+    "session-" +
+    crypto
+      .randomBytes(12)
+      .toString("hex")
+  );
+}
 
-const settingPanel =
-  require("./settingPanel");
 
-const {
-  getBotInformation
-} = require("./settingPanel");
+function generateParrainCode() {
+  return crypto
+    .randomBytes(6)
+    .toString("hex")
+    .toUpperCase();
+}
+
+
+function getAuthDir(sessionId) {
+  return path.join(
+    AUTH_ROOT,
+    sessionId,
+    "auth"
+  );
+}
+
+
+function getSessionDir(sessionId) {
+  return path.join(
+    AUTH_ROOT,
+    sessionId
+  );
+}
+
+
+function getSessionFile(sessionId) {
+  return path.join(
+    getSessionDir(sessionId),
+    "session.json"
+  );
+}
+
+
+function ensureSessionDirectories(sessionId) {
+  fs.mkdirSync(
+    getAuthDir(sessionId),
+    {
+      recursive: true
+    }
+  );
+}
+
 
 // ============================================================
-// PREFIX
+// PERSIST SESSION
 // ============================================================
 
-function getCurrentPrefix(
-  sessionId
-) {
+function persistSession(session) {
+  if (!session || !session.sessionId) {
+    return false;
+  }
 
   try {
+    ensureSessionDirectories(
+      session.sessionId
+    );
 
-    const information =
-      getBotInformation(
+    const data = {
+      sessionId:
+        session.sessionId,
+
+      number:
+        session.number || null,
+
+      code:
+        session.code || null,
+
+      authenticated:
+        session.authenticated === true,
+
+      connected:
+        session.connected === true,
+
+      status:
+        session.status ||
+        "disconnected",
+
+      pairing:
+        session.pairing === true,
+
+      pairingCode:
+        session.pairingCode || null,
+
+      pairingStartedAt:
+        session.pairingStartedAt ||
+        null,
+
+      createdAt:
+        session.createdAt ||
+        Date.now(),
+
+      updatedAt:
+        Date.now(),
+
+      settings:
+        session.settings || {},
+
+      bot:
+        session.bot || {},
+
+      panelSession:
+        session.panelSession || null
+    };
+
+    fs.writeFileSync(
+      getSessionFile(
+        session.sessionId
+      ),
+      JSON.stringify(
+        data,
+        null,
+        2
+      ),
+      "utf8"
+    );
+
+    return true;
+
+  } catch (error) {
+    console.error(
+      "❌ SESSION PERSIST ERROR:",
+      error?.message || error
+    );
+
+    return false;
+  }
+}
+
+
+// ============================================================
+// LOAD SESSION FROM DISK
+// ============================================================
+
+function loadSession(sessionId) {
+  if (!sessionId) {
+    return null;
+  }
+
+  const file =
+    getSessionFile(
+      sessionId
+    );
+
+  if (!fs.existsSync(file)) {
+    return null;
+  }
+
+  try {
+    const raw =
+      fs.readFileSync(
+        file,
+        "utf8"
+      );
+
+    const data =
+      JSON.parse(raw);
+
+    const session = {
+      sessionId:
+        data.sessionId ||
+        sessionId,
+
+      number:
+        data.number ||
+        null,
+
+      code:
+        data.code ||
+        generateParrainCode(),
+
+      authenticated:
+        data.authenticated === true,
+
+      connected:
+        false,
+
+      socket:
+        null,
+
+      authDir:
+        getAuthDir(
+          data.sessionId ||
+          sessionId
+        ),
+
+      status:
+        "disconnected",
+
+      pairing:
+        false,
+
+      pairingCode:
+        null,
+
+      pairingStartedAt:
+        null,
+
+      createdAt:
+        data.createdAt ||
+        Date.now(),
+
+      updatedAt:
+        Date.now(),
+
+      settings:
+        data.settings || {},
+
+      bot:
+        data.bot || {},
+
+      panelSession:
+        data.panelSession ||
+        null
+    };
+
+    ensureSessionDirectories(
+      session.sessionId
+    );
+
+    return session;
+
+  } catch (error) {
+    console.error(
+      `❌ SESSION LOAD ERROR [${sessionId}]:`,
+      error?.message || error
+    );
+
+    return null;
+  }
+}
+
+
+// ============================================================
+// COMPATIBILITY WITH CONNECTION.JS
+// ============================================================
+
+function updateSession(
+  sessionId,
+  updates = {}
+) {
+  const session =
+    sessions.get(
+      sessionId
+    );
+
+  if (!session) {
+    return null;
+  }
+
+  Object.assign(
+    session,
+    updates
+  );
+
+  session.updatedAt =
+    Date.now();
+
+  return session;
+}
+
+
+// ============================================================
+// SET NUMBER
+// ============================================================
+
+function setNumber(
+  sessionId,
+  number
+) {
+  const session =
+    sessions.get(
+      sessionId
+    );
+
+  if (!session) {
+    return null;
+  }
+
+  session.number =
+    cleanPhoneNumber(
+      number
+    );
+
+  session.updatedAt =
+    Date.now();
+
+  persistSession(
+    session
+  );
+
+  return session;
+}
+
+
+// ============================================================
+// REMOVE SESSION
+// ============================================================
+
+function removeSession(
+  sessionId
+) {
+  const session =
+    sessions.get(
+      sessionId
+    );
+
+  if (!session) {
+    return false;
+  }
+
+  sessions.delete(
+    sessionId
+  );
+
+  try {
+    const sessionDir =
+      getSessionDir(
         sessionId
       );
 
     if (
-      information &&
-      typeof information.prefix ===
-        "string" &&
-      information.prefix.trim()
+      fs.existsSync(
+        sessionDir
+      )
     ) {
-
-      return information.prefix.trim();
-
+      fs.rmSync(
+        sessionDir,
+        {
+          recursive: true,
+          force: true
+        }
+      );
     }
 
   } catch (error) {
-
-    console.warn(
-      "Could not get session prefix:",
+    console.error(
+      `❌ SESSION REMOVE ERROR [${sessionId}]:`,
       error?.message ||
       error
     );
-
   }
 
-
-  return (
-    config?.bot?.prefix ||
-    config?.PREFIX ||
-    config?.prefix ||
-    "."
-  );
-
+  return true;
 }
 
+
 // ============================================================
-// UNWRAP WHATSAPP MESSAGE
+// CREATE SESSION
 // ============================================================
 
-function unwrapMessageContent(messageContent) {
-  let current = messageContent;
+function createSession(options = {}) {
+  const {
+    sessionId:
+      requestedSessionId = null,
 
-  if (!current) {
+    number = null,
+
+    socket = null,
+
+    sock = null,
+
+    settings = {},
+
+    bot = {},
+
+    status = null,
+
+    pairing = false,
+
+    panelSession = null
+  } = options || {};
+
+  const finalSocket =
+    socket ||
+    sock ||
+    null;
+
+  let cleanNumber =
+    cleanPhoneNumber(
+      number ||
+      finalSocket?.user?.id ||
+      ""
+    );
+
+  let sessionId =
+    requestedSessionId ||
+    null;
+
+  // ----------------------------------------------------------
+  // EXISTING SESSION BY ID
+  // ----------------------------------------------------------
+
+  if (sessionId) {
+    const existingById =
+      sessions.get(
+        sessionId
+      );
+
+    if (existingById) {
+
+      if (cleanNumber) {
+        existingById.number =
+          cleanNumber;
+      }
+
+      if (finalSocket) {
+        existingById.socket =
+          finalSocket;
+      }
+
+      if (settings) {
+        existingById.settings = {
+          ...existingById.settings,
+          ...settings
+        };
+      }
+
+      if (bot) {
+        existingById.bot = {
+          ...existingById.bot,
+          ...bot
+        };
+      }
+
+      existingById.connected =
+        Boolean(
+          finalSocket ||
+          existingById.socket
+        );
+
+      existingById.updatedAt =
+        Date.now();
+
+      persistSession(
+        existingById
+      );
+
+      return sanitizeSession(
+        existingById
+      );
+    }
+
+    // Try loading existing stored session
+    const stored =
+      loadSession(
+        sessionId
+      );
+
+    if (stored) {
+
+      if (cleanNumber) {
+        stored.number =
+          cleanNumber;
+      }
+
+      if (finalSocket) {
+        stored.socket =
+          finalSocket;
+
+        stored.connected =
+          true;
+      }
+
+      sessions.set(
+        sessionId,
+        stored
+      );
+
+      persistSession(
+        stored
+      );
+
+      return sanitizeSession(
+        stored
+      );
+    }
+  }
+
+  // ----------------------------------------------------------
+  // EXISTING SESSION BY NUMBER
+  // ----------------------------------------------------------
+
+  if (cleanNumber) {
+
+    const existing =
+      getSessionByNumber(
+        cleanNumber
+      );
+
+    if (existing) {
+
+      if (finalSocket) {
+        existing.socket =
+          finalSocket;
+
+        existing.connected =
+          true;
+      }
+
+      if (settings) {
+        existing.settings = {
+          ...existing.settings,
+          ...settings
+        };
+      }
+
+      if (bot) {
+        existing.bot = {
+          ...existing.bot,
+          ...bot
+        };
+      }
+
+      existing.updatedAt =
+        Date.now();
+
+      persistSession(
+        existing
+      );
+
+      return sanitizeSession(
+        existing
+      );
+    }
+  }
+
+  // ----------------------------------------------------------
+  // NUMBER IS REQUIRED FOR A NEW SESSION
+  // ----------------------------------------------------------
+
+  if (!cleanNumber) {
+    throw new Error(
+      "Bot number pa disponib pou kreye session."
+    );
+  }
+
+  // ----------------------------------------------------------
+  // NEW SESSION
+  // ----------------------------------------------------------
+
+  sessionId =
+    sessionId ||
+    generateSessionId();
+
+  const session = {
+
+    sessionId,
+
+    number:
+      cleanNumber,
+
+    code:
+      generateParrainCode(),
+
+    authenticated:
+      false,
+
+    connected:
+      Boolean(
+        finalSocket
+      ),
+
+    socket:
+      finalSocket,
+
+    authDir:
+      getAuthDir(
+        sessionId
+      ),
+
+    status:
+      status ||
+      (
+        finalSocket
+          ? "connected"
+          : "disconnected"
+      ),
+
+    pairing:
+      pairing === true,
+
+    pairingCode:
+      null,
+
+    pairingStartedAt:
+      null,
+
+    createdAt:
+      Date.now(),
+
+    updatedAt:
+      Date.now(),
+
+    settings: {
+      ...settings
+    },
+
+    bot: {
+      ...bot
+    },
+
+    panelSession:
+      panelSession ||
+      null
+  };
+
+  ensureSessionDirectories(
+    sessionId
+  );
+
+  sessions.set(
+    sessionId,
+    session
+  );
+
+  persistSession(
+    session
+  );
+
+  console.log(
+    `🟢 SESSION MANAGER: Session created ${sessionId} → ${cleanNumber}`
+  );
+
+  return sanitizeSession(
+    session
+  );
+}
+
+
+// ============================================================
+// GET SESSION
+// ============================================================
+
+function getSession(sessionId) {
+  if (!sessionId) {
     return null;
   }
 
-  const wrapperKeys = [
-    "ephemeralMessage",
-    "viewOnceMessage",
-    "viewOnceMessageV2",
-    "viewOnceMessageV2Extension",
-    "documentWithCaptionMessage",
-    "editedMessage",
-    "associatedChildMessage"
-  ];
-
-  let safety = 0;
-
-  while (
-    current &&
-    safety < 10
-  ) {
-    safety++;
-
-    let found = false;
-
-    for (
-      const key of wrapperKeys
-    ) {
-      if (
-        current[key] &&
-        typeof current[key] === "object"
-      ) {
-        current =
-          current[key].message ||
-          current[key];
-
-        found = true;
-        break;
-      }
-    }
-
-    if (!found) {
-      break;
-    }
-  }
-
-  return current || null;
-}
-
-// ============================================================
-// GET MESSAGE CONTENT
-// ============================================================
-
-function getMessageContent(message) {
-  return unwrapMessageContent(
-    message?.message
+  return (
+    sessions.get(
+      String(sessionId)
+    ) ||
+    null
   );
 }
 
+
 // ============================================================
-// GET MESSAGE TEXT
+// GET SESSION BY NUMBER
 // ============================================================
 
-function getMessageText(message) {
-  const msg =
-    getMessageContent(message);
-
-  if (!msg) {
-    return "";
-  }
-
-  if (
-    typeof msg.conversation === "string"
-  ) {
-    return msg.conversation;
-  }
-
-  if (
-    typeof msg.extendedTextMessage?.text ===
-      "string"
-  ) {
-    return msg.extendedTextMessage.text;
-  }
-
-  if (
-    typeof msg.imageMessage?.caption ===
-      "string"
-  ) {
-    return msg.imageMessage.caption;
-  }
-
-  if (
-    typeof msg.videoMessage?.caption ===
-      "string"
-  ) {
-    return msg.videoMessage.caption;
-  }
-
-  if (
-    typeof msg.documentMessage?.caption ===
-      "string"
-  ) {
-    return msg.documentMessage.caption;
-  }
-
-  if (
-    typeof msg.audioMessage?.caption ===
-      "string"
-  ) {
-    return msg.audioMessage.caption;
-  }
-
-  if (
-    typeof
-      msg.buttonsResponseMessage
-        ?.selectedButtonId ===
-      "string"
-  ) {
-    return (
-      msg.buttonsResponseMessage
-        .selectedButtonId
+function getSessionByNumber(number) {
+  const cleanNumber =
+    cleanPhoneNumber(
+      number
     );
-  }
 
-  if (
-    typeof
-      msg.listResponseMessage
-        ?.singleSelectReply
-        ?.selectedRowId ===
-      "string"
-  ) {
-    return (
-      msg.listResponseMessage
-        .singleSelectReply
-        .selectedRowId
-    );
-  }
-
-  if (
-    typeof
-      msg.templateButtonReplyMessage
-        ?.selectedId ===
-      "string"
-  ) {
-    return (
-      msg.templateButtonReplyMessage
-        .selectedId
-    );
-  }
-
-  const interactive =
-    msg.interactiveResponseMessage;
-
-  if (interactive) {
-    try {
-      const nativeFlow =
-        interactive.nativeFlowResponseMessage;
-
-      if (
-        nativeFlow?.paramsJson
-      ) {
-        const parsed =
-          JSON.parse(
-            nativeFlow.paramsJson
-          );
-
-        return (
-          parsed?.id ||
-          parsed?.selectedId ||
-          parsed?.button_id ||
-          ""
-        );
-      }
-    } catch {}
+  if (!cleanNumber) {
+    return null;
   }
 
   for (
-    const value of
-    Object.values(msg)
+    const session
+    of sessions.values()
   ) {
+
     if (
-      value &&
-      typeof value === "object"
+      session.number ===
+      cleanNumber
     ) {
-      if (
-        typeof value.text ===
-        "string"
-      ) {
-        return value.text;
-      }
-
-      if (
-        typeof value.caption ===
-        "string"
-      ) {
-        return value.caption;
-      }
+      return session;
     }
-  }
-
-  return "";
-}
-
-// ============================================================
-// GET QUOTED MESSAGE
-// ============================================================
-
-function getQuotedMessage(message) {
-  const msg =
-    getMessageContent(message);
-
-  if (!msg) {
-    return null;
-  }
-
-  const directContext =
-    msg.extendedTextMessage
-      ?.contextInfo;
-
-  if (
-    directContext?.quotedMessage
-  ) {
-    return (
-      directContext.quotedMessage
-    );
-  }
-
-  const imageContext =
-    msg.imageMessage
-      ?.contextInfo;
-
-  if (
-    imageContext?.quotedMessage
-  ) {
-    return (
-      imageContext.quotedMessage
-    );
-  }
-
-  const videoContext =
-    msg.videoMessage
-      ?.contextInfo;
-
-  if (
-    videoContext?.quotedMessage
-  ) {
-    return (
-      videoContext.quotedMessage
-    );
-  }
-
-  const documentContext =
-    msg.documentMessage
-      ?.contextInfo;
-
-  if (
-    documentContext?.quotedMessage
-  ) {
-    return (
-      documentContext.quotedMessage
-    );
-  }
-
-  const audioContext =
-    msg.audioMessage
-      ?.contextInfo;
-
-  if (
-    audioContext?.quotedMessage
-  ) {
-    return (
-      audioContext.quotedMessage
-    );
   }
 
   return null;
 }
 
+
 // ============================================================
-// GET SENDER
+// GET ALL SESSIONS
 // ============================================================
 
-function getSender(message) {
-  return (
-    message?.key?.participant ||
-    message?.participant ||
-    message?.key?.remoteJid ||
-    null
+function getAllSessions() {
+  return Array.from(
+    sessions.values()
   );
 }
 
+
 // ============================================================
-// GET CHAT ID
+// GET SESSIONS
 // ============================================================
 
-function getChatId(message) {
-  return (
-    message?.key?.remoteJid ||
-    null
-  );
+function getSessions() {
+  return getAllSessions()
+    .map(
+      sanitizeSession
+    );
 }
 
+
 // ============================================================
-// 👁️🤖❤️ AI STATUS LIKE
-// ============================================================
-// Status la antre → AI analize li → AI chwazi 1 emoji
-// → emoji sa a voye kòm Like sou Status la.
-//
-// ❌ Pa gen 2nd reaction
-// ❌ Pa gen Save
-// ❌ Pa gen Send
-// ❌ Pa gen Enregistré
+// GET SESSION COUNT
 // ============================================================
 
-async function handleStatusActions(
-  sock,
-  message,
-  sessionId
-) {
+function getSessionCount() {
+  return sessions.size;
+}
+
+
+// ============================================================
+// GET STORED SESSION IDS
+// ============================================================
+
+function getStoredSessionIds() {
+  if (!fs.existsSync(AUTH_ROOT)) {
+    return [];
+  }
+
   try {
 
-    if (
-      !sock ||
-      !message?.key ||
-      message?.key?.remoteJid !==
-        "status@broadcast"
-    ) {
-      return;
-    }
-
-const PREFIX =
-  getCurrentPrefix(
-    sessionId
-  );
-
-    const runtimeSettings =
-  settingPanel?.getSettings?.(
-    sessionId
-  ) || {};
-
-const features = {
-  ...config?.features,
-  ...runtimeSettings
-};
-    // --------------------------------------------------------
-    // 👁️ AUTO STATUS SEEN
-    // --------------------------------------------------------
-
-    if (
-      features.autoStatusSeen === true &&
-      typeof sock.readMessages ===
-        "function"
-    ) {
-      try {
-
-        await sock.readMessages([
-          message.key
-        ]);
-
-        console.log(
-          `👁️ STATUS SEEN [${sessionId}]`
-        );
-
-      } catch (error) {
-
-        console.warn(
-          `⚠️ STATUS SEEN ERROR [${sessionId}]:`,
-          error?.message ||
-          error
-        );
-      }
-    }
-
-    // --------------------------------------------------------
-    // 🤖❤️ AI AUTO LIKE
-    // --------------------------------------------------------
-
-    if (
-      features.statusLike !== true ||
-      typeof sock.sendMessage !==
-        "function"
-    ) {
-      return;
-    }
-
-    let emoji = "👍";
-    let reason =
-      "Fallback Like";
-
-    // --------------------------------------------------------
-    // LOAD AI STATUS ENGINE
-    // --------------------------------------------------------
-
-    try {
-
-      const statusCommand =
-        require("../commands/status");
-
-      if (
-        typeof
-          statusCommand
-            .getSmartStatusReaction ===
-        "function"
-      ) {
-
-        const result =
-          await statusCommand
-            .getSmartStatusReaction({
-              message,
-              config
-            });
-
-        if (
-          result?.emoji &&
-          typeof result.emoji ===
-            "string"
-        ) {
-          emoji =
-            result.emoji.trim() ||
-            "👍";
+    return fs
+      .readdirSync(
+        AUTH_ROOT,
+        {
+          withFileTypes: true
         }
-
-        if (
-          result?.reason
-        ) {
-          reason =
-            String(
-              result.reason
+      )
+      .filter(
+        entry =>
+          entry.isDirectory()
+      )
+      .map(
+        entry =>
+          entry.name
+      )
+      .filter(
+        sessionId =>
+          fs.existsSync(
+            getSessionFile(
+              sessionId
             )
-              .replace(
-                /[\r\n]+/g,
-                " "
-              )
-              .slice(
-                0,
-                160
-              );
-        }
-      }
-
-    } catch (aiError) {
-
-      console.warn(
-        `⚠️ STATUS AI ERROR [${sessionId}]:`,
-        aiError?.message ||
-        aiError
+          )
       );
-
-      // AI pa disponib:
-      // Like la toujou fèt ak fallback.
-      emoji = "👍";
-      reason =
-        "AI unavailable - fallback Like";
-    }
-
-    // --------------------------------------------------------
-    // 👤 STATUS OWNER
-    // --------------------------------------------------------
-
-    const statusParticipant =
-      message?.key?.participant ||
-      message?.participant ||
-      null;
-
-    // --------------------------------------------------------
-    // ❤️ SEND ONE AI-SELECTED LIKE
-    // --------------------------------------------------------
-
-    try {
-
-      const likeOptions = {
-        react: {
-          text: emoji,
-          key: message.key
-        }
-      };
-
-      // Sa ede WhatsApp asosye Like la
-      // ak moun ki poste Status la.
-      if (
-        statusParticipant
-      ) {
-        likeOptions.statusJidList = [
-          statusParticipant
-        ];
-      }
-
-      await sock.sendMessage(
-        "status@broadcast",
-        likeOptions
-      );
-
-      console.log(
-        `❤️ AI STATUS LIKE SENT [${sessionId}] → ${emoji}`
-      );
-
-      console.log(
-        `🧠 STATUS AI REASON [${sessionId}] → ${reason}`
-      );
-
-    } catch (likeError) {
-
-      console.warn(
-        `⚠️ STATUS LIKE ERROR [${sessionId}]:`,
-        likeError?.message ||
-        likeError
-      );
-    }
-
-    // --------------------------------------------------------
-    // IMPORTANT
-    // --------------------------------------------------------
-    // Pa gen statusReact isit la.
-    // Pa gen 2zyèm reaction.
-    // Pa gen save/send/enregistré.
-    // --------------------------------------------------------
 
   } catch (error) {
 
     console.error(
-      `❌ STATUS ACTIONS ERROR [${sessionId}]`,
-      error?.stack ||
-      error?.message ||
-      error
+      "❌ GET STORED SESSIONS ERROR:",
+      error?.message || error
     );
+
+    return [];
   }
 }
 
+
 // ============================================================
-// CHECK GROUP
+// RESTORE SESSION
 // ============================================================
 
-function isGroupMessage(message) {
-  const chatId =
-    getChatId(message);
+function restoreSession(sessionId) {
+  const existing =
+    getSession(
+      sessionId
+    );
+
+  if (existing) {
+    return existing;
+  }
+
+  const session =
+    loadSession(
+      sessionId
+    );
+
+  if (!session) {
+    return null;
+  }
+
+  sessions.set(
+    session.sessionId,
+    session
+  );
+
+  return session;
+}
+
+
+// ============================================================
+// RESTORE ALL SESSIONS
+// ============================================================
+
+function restoreSessions() {
+  const ids =
+    getStoredSessionIds();
+
+  let restored = 0;
+
+  for (
+    const sessionId
+    of ids
+  ) {
+
+    const session =
+      restoreSession(
+        sessionId
+      );
+
+    if (session) {
+      restored++;
+    }
+  }
+
+  console.log(
+    `📂 SESSION MANAGER: ${restored} stored session(s) restored.`
+  );
+
+  return restored;
+}
+
+
+// ============================================================
+// SOCKET
+// ============================================================
+
+function setSocket(
+  sessionId,
+  socket
+) {
+  const session =
+    getSession(
+      sessionId
+    );
+
+  if (!session) {
+    return false;
+  }
+
+  session.socket =
+    socket || null;
+
+  session.connected =
+    Boolean(
+      socket
+    );
+
+  session.updatedAt =
+    Date.now();
+
+  persistSession(
+    session
+  );
+
+  return true;
+}
+
+
+function getSocket(sessionId) {
+  const session =
+    getSession(
+      sessionId
+    );
+
+  if (!session) {
+    return null;
+  }
+
+  return session.socket || null;
+}
+
+
+// ============================================================
+// CONNECTION
+// ============================================================
+
+function connectSession(
+  sessionId,
+  socket
+) {
+  const session =
+    getSession(
+      sessionId
+    );
+
+  if (
+    !session ||
+    !socket
+  ) {
+    return false;
+  }
+
+  session.socket =
+    socket;
+
+  session.connected =
+    true;
+
+  session.status =
+    "connected";
+
+  session.pairing =
+    false;
+
+  session.pairingCode =
+    null;
+
+  session.pairingStartedAt =
+    null;
+
+  session.updatedAt =
+    Date.now();
+
+  persistSession(
+    session
+  );
+
+  return true;
+}
+
+
+function disconnectSession(
+  sessionId,
+  status = "disconnected"
+) {
+  const session =
+    getSession(
+      sessionId
+    );
+
+  if (!session) {
+    return false;
+  }
+
+  session.socket =
+    null;
+
+  session.connected =
+    false;
+
+  session.status =
+    status;
+
+  session.pairing =
+    false;
+
+  session.pairingCode =
+    null;
+
+  session.pairingStartedAt =
+    null;
+
+  session.updatedAt =
+    Date.now();
+
+  persistSession(
+    session
+  );
+
+  return true;
+}
+
+
+// ============================================================
+// PHONE NUMBER
+// ============================================================
+
+function getPhoneNumber(
+  sessionId
+) {
+  const session =
+    getSession(
+      sessionId
+    );
 
   return (
-    typeof chatId === "string" &&
-    chatId.endsWith("@g.us")
+    session?.number ||
+    null
   );
 }
 
+
+function setPhoneNumber(
+  sessionId,
+  number
+) {
+  const session =
+    getSession(
+      sessionId
+    );
+
+  if (!session) {
+    return false;
+  }
+
+  const cleanNumber =
+    cleanPhoneNumber(
+      number
+    );
+
+  if (!cleanNumber) {
+    return false;
+  }
+
+  session.number =
+    cleanNumber;
+
+  session.updatedAt =
+    Date.now();
+
+  persistSession(
+    session
+  );
+
+  return true;
+}
+
+
 // ============================================================
-// REACT TO COMMAND
+// STATUS
 // ============================================================
 
-async function reactToCommand(
-  sock,
-  message
+function setStatus(
+  sessionId,
+  status
 ) {
+  const session =
+    getSession(
+      sessionId
+    );
+
+  if (!session) {
+    return false;
+  }
+
+  session.status =
+    String(
+      status ||
+      "disconnected"
+    );
+
+  session.updatedAt =
+    Date.now();
+
+  persistSession(
+    session
+  );
+
+  return true;
+}
+
+
+function getStatus(
+  sessionId
+) {
+  const session =
+    getSession(
+      sessionId
+    );
+
+  return (
+    session?.status ||
+    "disconnected"
+  );
+}
+
+
+function isConnected(
+  sessionId
+) {
+  const session =
+    getSession(
+      sessionId
+    );
+
+  return Boolean(
+    session &&
+    session.connected &&
+    session.socket
+  );
+}
+
+
+// ============================================================
+// PAIRING
+// ============================================================
+
+function startPairing(
+  sessionId
+) {
+  const session =
+    getSession(
+      sessionId
+    );
+
+  if (!session) {
+    return false;
+  }
+
+  session.pairing =
+    true;
+
+  session.status =
+    "pairing";
+
+  session.pairingStartedAt =
+    Date.now();
+
+  session.pairingCode =
+    null;
+
+  session.updatedAt =
+    Date.now();
+
+  persistSession(
+    session
+  );
+
+  return true;
+}
+
+
+function setPairingCode(
+  sessionId,
+  code
+) {
+  const session =
+    getSession(
+      sessionId
+    );
+
+  if (!session) {
+    return false;
+  }
+
+  session.pairing =
+    true;
+
+  session.status =
+    "pairing";
+
+  session.pairingCode =
+    String(
+      code || ""
+    )
+      .trim()
+      .toUpperCase();
+
+  session.updatedAt =
+    Date.now();
+
+  persistSession(
+    session
+  );
+
+  return true;
+}
+
+
+function endPairing(
+  sessionId
+) {
+  const session =
+    getSession(
+      sessionId
+    );
+
+  if (!session) {
+    return false;
+  }
+
+  session.pairing =
+    false;
+
+  session.pairingCode =
+    null;
+
+  session.pairingStartedAt =
+    null;
+
+  session.updatedAt =
+    Date.now();
+
+  persistSession(
+    session
+  );
+
+  return true;
+}
+
+
+function getPairingInfo(
+  sessionId
+) {
+  const session =
+    getSession(
+      sessionId
+    );
+
+  if (!session) {
+    return null;
+  }
+
+  return {
+    pairing:
+      session.pairing === true,
+
+    code:
+      session.pairingCode ||
+      null,
+
+    startedAt:
+      session.pairingStartedAt ||
+      null,
+
+    status:
+      session.status ||
+      "disconnected"
+  };
+}
+
+
+// ============================================================
+// AUTHENTICATION
+// ============================================================
+
+function setAuthenticated(
+  sessionId,
+  value = true
+) {
+  const session =
+    getSession(
+      sessionId
+    );
+
+  if (!session) {
+    return false;
+  }
+
+  session.authenticated =
+    value === true;
+
+  session.updatedAt =
+    Date.now();
+
+  persistSession(
+    session
+  );
+
+  return true;
+}
+
+
+function isAuthenticated(
+  sessionId
+) {
+  const session =
+    getSession(
+      sessionId
+    );
+
+  return Boolean(
+    session &&
+    session.connected &&
+    session.socket &&
+    session.authenticated === true
+  );
+}
+
+
+function verifySession(
+  sessionId,
+  number,
+  code
+) {
+  const session =
+    getSession(
+      sessionId
+    );
+
+  if (!session) {
+    return {
+      success: false,
+      message:
+        "❌ Session la pa egziste."
+    };
+  }
+
+  if (
+    !session.connected ||
+    !session.socket
+  ) {
+    return {
+      success: false,
+      message:
+        "❌ Bot la pa konekte."
+    };
+  }
+
+  const cleanNumber =
+    cleanPhoneNumber(
+      number
+    );
+
+  const cleanCode =
+    String(
+      code || ""
+    )
+      .trim()
+      .toUpperCase();
+
+  if (
+    cleanNumber !==
+    session.number
+  ) {
+    return {
+      success: false,
+      message:
+        "❌ Number lan pa koresponn ak session lan."
+    };
+  }
+
+  if (
+    cleanCode !==
+    session.code
+  ) {
+    return {
+      success: false,
+      message:
+        "❌ Parrain Code la pa kòrèk."
+    };
+  }
+
+  session.authenticated =
+    true;
+
+  session.updatedAt =
+    Date.now();
+
+  persistSession(
+    session
+  );
+
+  console.log(
+    `🔐 SESSION MANAGER: Session authenticated ${session.number}`
+  );
+
+  return {
+    success: true,
+
+    session:
+      sanitizeSession(
+        session
+      )
+  };
+}
+
+
+// ============================================================
+// SETTINGS
+// ============================================================
+
+function updateSettings(
+  sessionId,
+  settings = {}
+) {
+  const session =
+    getSession(
+      sessionId
+    );
+
+  if (!session) {
+    return false;
+  }
+
+  session.settings = {
+    ...session.settings,
+    ...settings
+  };
+
+  session.updatedAt =
+    Date.now();
+
+  persistSession(
+    session
+  );
+
+  return true;
+}
+
+
+function getSettings(
+  sessionId
+) {
+  const session =
+    getSession(
+      sessionId
+    );
+
+  if (!session) {
+    return {};
+  }
+
+  return {
+    ...session.settings
+  };
+}
+
+
+// ============================================================
+// BOT INFORMATION
+// ============================================================
+
+function updateBot(
+  sessionId,
+  bot = {}
+) {
+  const session =
+    getSession(
+      sessionId
+    );
+
+  if (!session) {
+    return false;
+  }
+
+  session.bot = {
+    ...session.bot,
+    ...bot
+  };
+
+  session.updatedAt =
+    Date.now();
+
+  persistSession(
+    session
+  );
+
+  return true;
+}
+
+
+function getBot(
+  sessionId
+) {
+  const session =
+    getSession(
+      sessionId
+    );
+
+  if (!session) {
+    return {};
+  }
+
+  return {
+    ...session.bot
+  };
+}
+
+
+// ============================================================
+// RESET AUTH
+// ============================================================
+
+function resetAuth(
+  sessionId
+) {
+  const session =
+    getSession(
+      sessionId
+    );
+
+  if (!session) {
+    return false;
+  }
+
   try {
 
+    const authDir =
+      getAuthDir(
+        sessionId
+      );
+
     if (
-      !sock ||
-      !message?.key
+      fs.existsSync(
+        authDir
+      )
     ) {
-      return false;
-    }
-
-    const chatId =
-      getChatId(message);
-
-    if (!chatId) {
-      return false;
-    }
-
-    await sock.sendMessage(
-      chatId,
-      {
-        react: {
-          text: "🦁",
-          key: message.key
+      fs.rmSync(
+        authDir,
+        {
+          recursive: true,
+          force: true
         }
-      }
+      );
+    }
+
+    ensureSessionDirectories(
+      sessionId
+    );
+
+    session.socket =
+      null;
+
+    session.connected =
+      false;
+
+    session.authenticated =
+      false;
+
+    session.pairing =
+      false;
+
+    session.pairingCode =
+      null;
+
+    session.pairingStartedAt =
+      null;
+
+    session.status =
+      "disconnected";
+
+    session.updatedAt =
+      Date.now();
+
+    persistSession(
+      session
+    );
+
+    console.log(
+      `🧹 SESSION MANAGER: Auth reset for ${sessionId}`
     );
 
     return true;
 
   } catch (error) {
 
-    console.warn(
-      "⚠️ REACT TO COMMAND ERROR:",
-      error?.message ||
-      error
+    console.error(
+      `❌ RESET AUTH ERROR [${sessionId}]:`,
+      error?.message || error
     );
 
     return false;
   }
 }
-// ============================================================
-// SEND COMMAND ERROR
-// ============================================================
 
-async function sendCommandError(
-  sock,
-  chatId,
-  commandName,
-  error,
-  prefix = "."
-) {
-  try {
-
-    if (
-      !sock ||
-      !chatId
-    ) {
-      return;
-    }
-
-    const errorText =
-      "╭━━━━━━━━━━━━━━━━━━━━━━━━━━━━╮\n" +
-      "┃       ❌ COMMAND ERROR\n" +
-      "╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯\n\n" +
-
-      `⚙️ Kòmand: ${prefix}${commandName}\n\n` +
-
-      "Bot la jwenn kòmand lan, men li pa kapab fini ekzekisyon an.\n\n" +
-
-      "🔧 Verifye:\n" +
-      "• Paramèt kòmand lan\n" +
-      "• Configuration bot la\n" +
-      "• Permission bot la\n" +
-      "• Service/API kòmand lan\n\n" +
-
-      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n" +
-      "🚀 TECH BY TOPFEROS MD\n" +
-      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━";
-
-    await sock.sendMessage(
-      chatId,
-      {
-        text: errorText
-      }
-    );
-
-    console.log(
-      `📤 COMMAND ERROR RESPONSE SENT: ${prefix}${commandName}`
-    );
-
-  } catch (sendError) {
-
-    console.error(
-      "❌ FAILED TO SEND COMMAND ERROR:",
-      sendError?.stack ||
-      sendError?.message ||
-      sendError
-    );
-  }
-}
-// ============================================================
-// UNKNOWN COMMAND RESPONSE
-// ============================================================
-
-async function sendUnknownCommand(
-  sock,
-  chatId,
-  commandName,
-  prefix
-) {
-  try {
-
-    if (
-      !sock ||
-      !chatId
-    ) {
-      return;
-    }
-
-    const unknownText =
-      "╭━━━━━━━━━━━━━━━━━━━━━━━━━━━━╮\n" +
-      "┃       ❓ UNKNOWN COMMAND\n" +
-      "╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯\n\n" +
-
-     `❌ Kòmand ${prefix}${commandName} pa egziste.\n\n` +
-
-`📖 Ekri ${prefix}menu pou wè tout kòmand disponib yo.\n\n` +
-
-      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n" +
-      "🚀 TECH BY TOPFEROS MD\n" +
-      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━";
-
-    await sock.sendMessage(
-      chatId,
-      {
-        text: unknownText
-      }
-    );
-
-  } catch (error) {
-
-    console.error(
-      "❌ UNKNOWN COMMAND RESPONSE ERROR:",
-      error?.message ||
-      error
-    );
-  }
-}
 
 // ============================================================
-// HANDLE MESSAGE
+// DELETE SESSION
 // ============================================================
 
-async function handleMessage(
-  sock,
-  message,
+function deleteSession(
   sessionId
 ) {
-  try {
-
-    // --------------------------------------------------------
-    // BASIC VALIDATION
-    // --------------------------------------------------------
-
-    if (
-      !sock ||
-      !message ||
-      !sessionId
-    ) {
-      return;
-    }
-
-  // --------------------------------------------------------
-    // PREFIX
-    // --------------------------------------------------------
-
-    const PREFIX =
-      getCurrentPrefix(
-        sessionId
-      );
-
-    // --------------------------------------------------------
-    // CHAT ID
-    // --------------------------------------------------------
-
-    const chatId =
-      getChatId(message);
-
-    if (!chatId) {
-      return;
-    }
-
-    // ========================================================
-    // 🤖❤️ REAL-TIME AI STATUS LIKE
-    // ========================================================
-    // Status la pa bezwen okenn kòmand.
-    //
-    // Lè messages.upsert resevwa:
-    // status@broadcast
-    //
-    // Fonksyon an lanse imedyatman.
-    // ========================================================
-
-    if (
-      chatId ===
-      "status@broadcast"
-    ) {
-
-      // ------------------------------------------------------
-      // PA TRETE PWÒP STATUS BOT LA
-      // ------------------------------------------------------
-
-      if (
-        message?.key?.fromMe
-      ) {
-
-        console.log(
-          `⏭️ STATUS IGNORED [${sessionId}] — fromMe`
-        );
-
-        return;
-      }
-
-      // ------------------------------------------------------
-      // 🤖❤️ AI LIKE
-      // ------------------------------------------------------
-
-      await handleStatusActions(
-        sock,
-        message,
-        sessionId
-      );
-
-      // ------------------------------------------------------
-      // IMPORTANT
-      // ------------------------------------------------------
-      // Status la pa antre nan command parser la.
-      //
-      // Sa vle di:
-      // .save
-      // .send
-      // .enregistré
-      //
-      // pa kapab deklanche Status Save.
-      // ------------------------------------------------------
-
-      return;
-    }
-
-    // --------------------------------------------------------
-    // EXTRACT TEXT
-    // --------------------------------------------------------
-
-    const text =
-      String(
-        getMessageText(message) ||
-        ""
-      ).trim();
-
-// ========================================================
-// 👁️ AUTO VIEW ONCE REPLY
-// Nenpòt tèks ki reply sou View Once la
-// ap voye notifikasyon nan DM bot la.
-// Pa bezwen prefix.
-// ========================================================
-
-try {
-  const handled =
-    await viewonceCommand
-      .handleAutomaticViewOnceReply({
-        sock,
-        message,
-        sessionId
-      });
-
-  if (handled) {
-    console.log(
-      `👁️ VIEW ONCE REPLY FORWARDED TO BOT DM [${sessionId}]`
+  const session =
+    getSession(
+      sessionId
     );
 
-    return;
+  if (!session) {
+    return false;
   }
-} catch (error) {
-  console.error(
-    "❌ AUTO VIEW ONCE REPLY ERROR:",
-    error?.message ||
-    error
-          );
-          }
 
-    console.log(
-      `📝 MESSAGE [${sessionId}]: ${
-        text || "[MEDIA]"
-      }`
-    );
-
-    // --------------------------------------------------------
-    // NO TEXT
-    // --------------------------------------------------------
-
-    if (!text) {
-      return;
-    }
-
-    // --------------------------------------------------------
-    // PREFIX CHECK
-    // --------------------------------------------------------
-
-    if (
-      !text.startsWith(PREFIX)
-    ) {
-
-      console.log(
-        `ℹ️ MESSAGE WITHOUT PREFIX [${sessionId}]: ${text}`
-      );
-
-      return;
-    }
-
-    // --------------------------------------------------------
-    // REMOVE PREFIX
-    // --------------------------------------------------------
-
-    const commandLine =
-      text
-        .slice(
-          PREFIX.length
-        )
-        .trim();
-
-    if (!commandLine) {
-      return;
-    }
-
-    // --------------------------------------------------------
-    // SPLIT COMMAND
-    // --------------------------------------------------------
-
-    const parts =
-      commandLine.split(
-        /\s+/
-      );
-
-    const commandName =
-      String(
-        parts.shift() || ""
-      ).toLowerCase();
-
-    const args =
-      parts;
-
-    console.log(
-      `🔎 COMMAND SEARCH [${sessionId}]: ${PREFIX}${commandName}`
-    );
-
-    // --------------------------------------------------------
-    // FIND COMMAND
-    // --------------------------------------------------------
-
-    const command =
-      commandIndex.getCommand(
-        commandName
-      );
-
-    if (!command) {
-
-      console.log(
-        `❓ UNKNOWN COMMAND [${sessionId}]: ${PREFIX}${commandName}`
-      );
-
-      await sendUnknownCommand(
-  sock,
-  chatId,
-  commandName,
-  PREFIX
-    );
-
-      return;
-    }
-
-    console.log(
-      `✅ COMMAND FOUND [${sessionId}]: ${command.name}`
-    );
-
-    // --------------------------------------------------------
-    // COMMAND TEXT
-    // --------------------------------------------------------
-
-    const commandText =
-      args
-        .join(" ")
-        .trim();
-
-    // --------------------------------------------------------
-    // MESSAGE CONTEXT
-    // --------------------------------------------------------
-
-    const session =
-  settingPanel.getSession(
+  sessions.delete(
     sessionId
   );
 
-const context = {
+  try {
 
-  sock,
-
-  message,
-
-  msg:
-    message,
-
-  sessionId,
-
-  session,
-
-  settings:
-    session?.settings ||
-    {},
-
-  botInformation:
-    session?.botInformation ||
-    {},
-
-  chatId,
-
-  sender:
-    getSender(message),
-
-  isGroup:
-    isGroupMessage(
-      message
-    ),
-
-  quoted:
-    getQuotedMessage(
-      message
-    ),
-
-  command:
-    commandName,
-
-  commandName,
-
-  args,
-
-  text:
-    commandText,
-
-  prefix:
-    PREFIX,
-
-  config
-};
-
-    // --------------------------------------------------------
-    // LOG COMMAND
-    // --------------------------------------------------------
-
-    console.log(
-      `🚀 EXECUTING COMMAND [${sessionId}]: ${PREFIX}${commandName}`
-    );
-
-    // --------------------------------------------------------
-    // REACTION
-    // --------------------------------------------------------
-
-    await reactToCommand(
-      sock,
-      message
-    );
-
-    // --------------------------------------------------------
-    // EXECUTE COMMAND
-    // --------------------------------------------------------
-
-    try {
-
-      await command.execute(
-        context
+    const sessionDir =
+      getSessionDir(
+        sessionId
       );
 
-      console.log(
-        `✅ COMMAND COMPLETED [${sessionId}]: ${PREFIX}${commandName}`
+    if (
+      fs.existsSync(
+        sessionDir
+      )
+    ) {
+      fs.rmSync(
+        sessionDir,
+        {
+          recursive: true,
+          force: true
+        }
       );
-
-    } catch (commandError) {
-
-      console.error(
-        `❌ COMMAND EXECUTION ERROR [${sessionId}] [${PREFIX}${commandName}]`,
-        commandError?.stack ||
-        commandError?.message ||
-        commandError
-      );
-
-      await sendCommandError(
-      sock,
-      chatId,
-      commandName,
-      commandError,
-      PREFIX
-    );
     }
 
   } catch (error) {
 
     console.error(
-      `❌ HANDLE MESSAGE ERROR [${
-        sessionId || "unknown"
-      }]`,
-      error?.stack ||
-      error?.message ||
-      error
+      `❌ DELETE SESSION FILE ERROR [${sessionId}]:`,
+      error?.message || error
     );
-
-    // --------------------------------------------------------
-    // GLOBAL HANDLER ERROR RESPONSE
-    // --------------------------------------------------------
-
-    try {
-
-      const errorChatId =
-        getChatId(message);
-
-      if (
-        sock &&
-        errorChatId &&
-        errorChatId !==
-          "status@broadcast"
-      ) {
-
-        await sock.sendMessage(
-          errorChatId,
-          {
-            text:
-              "❌ Yon erè rive pandan bot la t ap trete kòmand lan.\n\n" +
-              "🔧 Tanpri eseye ankò."
-          }
-        );
-      }
-
-    } catch (sendError) {
-
-      console.error(
-        "❌ GLOBAL ERROR RESPONSE FAILED:",
-        sendError?.message ||
-        sendError
-      );
-    }
   }
+
+  console.log(
+    `🗑️ SESSION MANAGER: Session deleted ${sessionId}`
+  );
+
+  return true;
 }
+
+
+// ============================================================
+// CLEAR MEMORY ONLY
+// ============================================================
+
+function clearSessions() {
+  sessions.clear();
+
+  console.log(
+    "🧹 SESSION MANAGER: Memory sessions cleared."
+  );
+}
+
+
+// ============================================================
+// PUBLIC SESSION LIST
+// ============================================================
+
+function listPublicSessions() {
+  return getAllSessions().map(
+    session => ({
+      sessionId:
+        session.sessionId,
+
+      number:
+        session.number,
+
+      status:
+        session.status,
+
+      connected:
+        isConnected(
+          session.sessionId
+        ),
+
+      pairing:
+        session.pairing === true,
+
+      authenticated:
+        session.authenticated === true,
+
+      createdAt:
+        session.createdAt,
+
+      updatedAt:
+        session.updatedAt
+    })
+  );
+}
+
+
+// ============================================================
+// SANITIZE
+// ============================================================
+
+function sanitizeSession(
+  session
+) {
+  if (!session) {
+    return null;
+  }
+
+  return {
+    sessionId:
+      session.sessionId,
+
+    number:
+      session.number,
+
+    code:
+      session.code,
+
+    authenticated:
+      session.authenticated === true,
+
+    connected:
+      session.connected === true,
+
+    status:
+      session.status ||
+      "disconnected",
+
+    pairing:
+      session.pairing === true,
+
+    pairingCode:
+      session.pairingCode ||
+      null,
+
+    pairingStartedAt:
+      session.pairingStartedAt ||
+      null,
+
+    authDir:
+      session.authDir,
+
+    settings: {
+      ...session.settings
+    },
+
+    bot: {
+      ...session.bot
+    },
+
+    panelSession:
+      session.panelSession ||
+      null,
+
+    createdAt:
+      session.createdAt,
+
+    updatedAt:
+      session.updatedAt
+  };
+}
+
 
 // ============================================================
 // EXPORTS
 // ============================================================
 
 module.exports = {
-  handleMessage,
-  handleStatusActions,
-  getMessageText,
-  getQuotedMessage,
-  getSender,
-  getChatId
+
+  // Session
+  createSession,
+  updateSession,
+  setNumber,
+  removeSession,
+  generateSessionId,
+  generateParrainCode,
+
+  // Lookup
+  getSession,
+  getSessionByNumber,
+  getAllSessions,
+  getSessions,
+  getSessionCount,
+
+  // Stored sessions
+  getStoredSessionIds,
+  restoreSession,
+  restoreSessions,
+
+  // Numbers
+  cleanPhoneNumber,
+  normalizeNumber,
+  validatePhoneNumber,
+  getPhoneNumber,
+  setPhoneNumber,
+
+  // Paths
+  getAuthDir,
+  getSessionDir,
+
+  // Socket
+  setSocket,
+  getSocket,
+
+  // Connection
+  connectSession,
+  disconnectSession,
+  isConnected,
+
+  // Status
+  setStatus,
+  getStatus,
+
+  // Pairing
+  startPairing,
+  setPairingCode,
+  endPairing,
+  getPairingInfo,
+
+  // Authentication
+  setAuthenticated,
+  isAuthenticated,
+  verifySession,
+
+  // Settings
+  updateSettings,
+  getSettings,
+
+  // Bot
+  updateBot,
+  getBot,
+
+  // Auth reset
+  resetAuth,
+
+  // Delete
+  deleteSession,
+  clearSessions,
+
+  // Public
+  listPublicSessions,
+
+  // Security
+  sanitizeSession
 };
+
+
+// ╔════════════════════════════════════════════════════╗
+// ║             🚀 TECH BY TOPFEROS MD               ║
+// ╚════════════════════════════════════════════════════╝
