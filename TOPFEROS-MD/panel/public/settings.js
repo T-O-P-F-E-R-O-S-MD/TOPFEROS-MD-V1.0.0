@@ -1528,15 +1528,46 @@ function validateBotInformation(
 
 async function verifySession() {
 
-  if (
-    !sessionId
-  ) {
-
+  if (!sessionId) {
     return false;
-
   }
 
+  try {
 
+    const response =
+      await fetch(
+        `/api/session/${encodeURIComponent(
+          sessionId
+        )}`,
+        {
+          method: "GET",
+          cache: "no-store"
+        }
+      );
+
+    if (!response.ok) {
+      return false;
+    }
+
+    const result =
+      await response.json();
+
+    return (
+      result.success === true &&
+      result.exists === true &&
+      result.session?.connected === true
+    );
+
+  } catch (error) {
+
+    console.error(
+      "❌ SETTINGS SESSION VERIFY ERROR:",
+      error
+    );
+
+    return false;
+  }
+}
   try {
 
     const response =
