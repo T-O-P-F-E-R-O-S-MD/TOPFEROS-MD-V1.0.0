@@ -26,20 +26,20 @@
   },
   "dependencies": {
     "@whiskeysockets/baileys": "6.7.24",
-    "axios": "latest",
-    "dotenv": "latest",
-    "express": "latest",
-    "express-session": "latest",
-    "mime-types": "latest",
-    "pino": "latest",
-    "qrcode": "latest",
-    "qrcode-terminal": "latest",
-    "better-sqlite3": "latest",
-    "bcryptjs": "latest",
-    "jsonwebtoken": "latest",
-    "uuid": "latest"
+    "axios": "1.20.0",
+    "dotenv": "18.0.4",
+    "express": "5.2.1",
+    "express-session": "1.19.0",
+    "mime-types": "3.0.2",
+    "pino": "10.3.1",
+    "qrcode": "1.5.4",
+    "qrcode-terminal": "0.12.0",
+    "better-sqlite3": "13.0.3",
+    "bcryptjs": "3.0.3",
+    "jsonwebtoken": "9.0.2",
+    "uuid": "11.1.1"
   },
   "devDependencies": {
-    "nodemon": "latest"
+    "nodemon": "3.1.10"
   }
 }
