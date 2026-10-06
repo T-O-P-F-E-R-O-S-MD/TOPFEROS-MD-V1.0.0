@@ -15,10 +15,10 @@ const {
 |--------------------------------------------------------------------------
 |
 | Responsibilities:
-| - Detect new WhatsApp Status messages instantly
+| - Detect WhatsApp Status messages
 | - Read status text/caption
 | - Detect image/video/audio/document status
-| - Download media when needed
+| - Download supported media
 | - Send status information to AI
 | - Let AI choose one natural emoji
 | - React to the Status immediately
@@ -163,12 +163,9 @@ function getStatusContent(
   const msg =
     message.message;
 
-  /*
-   * Direct text status.
-   */
-
   if (
-    msg.conversation
+    typeof msg.conversation ===
+    "string"
   ) {
     return {
       type: "text",
@@ -176,10 +173,6 @@ function getStatusContent(
         msg.conversation
     };
   }
-
-  /*
-   * Extended text status.
-   */
 
   if (
     msg.extendedTextMessage
@@ -192,10 +185,6 @@ function getStatusContent(
     };
   }
 
-  /*
-   * Image status.
-   */
-
   if (
     msg.imageMessage
   ) {
@@ -205,10 +194,6 @@ function getStatusContent(
         msg.imageMessage
     };
   }
-
-  /*
-   * Video status.
-   */
 
   if (
     msg.videoMessage
@@ -220,10 +205,6 @@ function getStatusContent(
     };
   }
 
-  /*
-   * Audio status.
-   */
-
   if (
     msg.audioMessage
   ) {
@@ -233,10 +214,6 @@ function getStatusContent(
         msg.audioMessage
     };
   }
-
-  /*
-   * Document status.
-   */
 
   if (
     msg.documentMessage
@@ -278,10 +255,6 @@ function extractStatusText(
     ).trim();
   }
 
-  /*
-   * Image caption.
-   */
-
   if (
     content.type ===
     "image"
@@ -292,10 +265,6 @@ function extractStatusText(
         ""
     ).trim();
   }
-
-  /*
-   * Video caption.
-   */
 
   if (
     content.type ===
@@ -322,38 +291,21 @@ async function downloadStatusMedia(
   type
 ) {
   try {
-    let mediaMessage =
-      null;
+    const mediaMessage =
+      message?.message?.[
+        `${type}Message`
+      ];
 
-    if (
-      type ===
-      "image"
-    ) {
-      mediaMessage =
-        message?.message
-          ?.imageMessage;
+    if (!mediaMessage) {
+      return null;
     }
 
     if (
-      type ===
-      "video"
-    ) {
-      mediaMessage =
-        message?.message
-          ?.videoMessage;
-    }
-
-    if (
-      type ===
-      "audio"
-    ) {
-      mediaMessage =
-        message?.message
-          ?.audioMessage;
-    }
-
-    if (
-      !mediaMessage
+      ![
+        "image",
+        "video",
+        "audio"
+      ].includes(type)
     ) {
       return null;
     }
@@ -461,21 +413,14 @@ async function buildAIStatusData(
 function getAIEmoji(
   aiResult
 ) {
-  /*
-   * Expected format:
-   *
-   * {
-   *   emoji: "❤️",
-   *   source: "ai"
-   * }
-   */
-
   if (
     typeof aiResult ===
     "string"
   ) {
-    return aiResult
-      .trim();
+    return (
+      aiResult.trim() ||
+      null
+    );
   }
 
   if (
@@ -483,8 +428,10 @@ function getAIEmoji(
     typeof aiResult.emoji ===
       "string"
   ) {
-    return aiResult.emoji
-      .trim();
+    return (
+      aiResult.emoji.trim() ||
+      null
+    );
   }
 
   return null;
@@ -497,12 +444,8 @@ function getAIEmoji(
 |
 | Personal WhatsApp Status reaction.
 |
-| The Status itself is addressed through:
-|
-|     status@broadcast
-|
-| The original Status key identifies the
-| exact Status being reacted to.
+| The exact Status is identified by
+| the original message key.
 |
 |--------------------------------------------------------------------------
 */
@@ -526,7 +469,11 @@ async function sendStatusReaction(
     );
   }
 
-  if (!emoji) {
+  if (
+    typeof emoji !==
+      "string" ||
+    !emoji.trim()
+  ) {
     throw new Error(
       "Reaction emoji is missing."
     );
@@ -543,15 +490,17 @@ async function sendStatusReaction(
   }
 
   /*
-   * React immediately to the exact
-   * personal Status.
+   * React immediately.
+   *
+   * There is intentionally NO timer.
    */
 
   await sock.sendMessage(
     STATUS_JID,
     {
       react: {
-        text: emoji,
+        text:
+          emoji.trim(),
         key:
           message.key
       }
@@ -598,12 +547,11 @@ async function processStatus(
       ?.remoteJid || "";
 
   /*
-   * Only process WhatsApp Status.
+   * Only WhatsApp Status.
    */
 
   if (
-    jid !==
-    STATUS_JID
+    jid !== STATUS_JID
   ) {
     return {
       success: false,
@@ -614,7 +562,7 @@ async function processStatus(
   }
 
   /*
-   * Never react to our own Status.
+   * Never react to the bot's own Status.
    */
 
   if (
@@ -628,21 +576,17 @@ async function processStatus(
     };
   }
 
-  /*
-   * Get Status ID.
-   */
-
   const messageId =
     getMessageId(
       message
     );
 
   /*
-   * Prevent duplicate AI requests
-   * and duplicate reactions.
+   * Prevent duplicate processing.
    */
 
   if (
+    messageId &&
     hasBeenProcessed(
       messageId
     )
@@ -656,18 +600,18 @@ async function processStatus(
   }
 
   /*
-   * Mark it immediately.
-   *
-   * This prevents two listeners/events
-   * from reacting twice.
+   * Mark before AI processing so two
+   * simultaneous events cannot react twice.
    */
 
-  markAsProcessed(
-    messageId
-  );
+  if (messageId) {
+    markAsProcessed(
+      messageId
+    );
+  }
 
   /*
-   * Build Status data.
+   * Build status data.
    */
 
   const statusData =
@@ -676,7 +620,7 @@ async function processStatus(
     );
 
   /*
-   * Ignore unsupported empty Status.
+   * Nothing readable.
    */
 
   if (
@@ -692,7 +636,7 @@ async function processStatus(
   }
 
   /*
-   * AI chooses the reaction.
+   * Ask AI for exactly one emoji.
    */
 
   const aiResult =
@@ -718,9 +662,10 @@ async function processStatus(
   }
 
   /*
-   * Auto Status React is ON by default.
+   * Auto Status React:
    *
-   * It can only be disabled explicitly:
+   * ON by default.
+   * Disable with:
    *
    * autoStatusReact: false
    */
@@ -739,13 +684,6 @@ async function processStatus(
     autoStatusReact
   ) {
     try {
-      /*
-       * No timer.
-       *
-       * React immediately after the AI
-       * returns the emoji.
-       */
-
       reactionSent =
         await sendStatusReaction(
           sock,
@@ -802,19 +740,11 @@ async function handleStatusUpsert(
   options = {}
 ) {
   const messages =
-    event?.messages || [];
-
-  if (
-    !Array.isArray(
-      messages
+    Array.isArray(
+      event?.messages
     )
-  ) {
-    return;
-  }
-
-  /*
-   * Process each new Status immediately.
-   */
+      ? event.messages
+      : [];
 
   for (
     const message of messages
@@ -863,12 +793,18 @@ async function handleStatusUpdate(
   }
 
   for (
-    const update of updates
+    const item of updates
   ) {
+    /*
+     * Depending on the Baileys event,
+     * the message may be directly available
+     * or inside update.message.
+     */
+
     const message =
-      update?.update
+      item?.update
         ?.message ||
-      update?.message ||
+      item?.message ||
       null;
 
     if (!message) {
@@ -929,10 +865,7 @@ function attachStatusHandler(
     true;
 
   /*
-   * New messages/statuses.
-   *
-   * This is the primary instant
-   * Status detection event.
+   * Primary Status event.
    */
 
   sock.ev.on(
@@ -940,16 +873,24 @@ function attachStatusHandler(
     async (
       event
     ) => {
-      await handleStatusUpsert(
-        sock,
-        event,
-        options
-      );
+      try {
+        await handleStatusUpsert(
+          sock,
+          event,
+          options
+        );
+      } catch (error) {
+        console.error(
+          "[STATUS] Upsert handler error:",
+          error?.stack ||
+            error
+        );
+      }
     }
   );
 
   /*
-   * Message updates.
+   * Status message updates.
    */
 
   sock.ev.on(
@@ -957,11 +898,19 @@ function attachStatusHandler(
     async (
       updates
     ) => {
-      await handleStatusUpdate(
-        sock,
-        updates,
-        options
-      );
+      try {
+        await handleStatusUpdate(
+          sock,
+          updates,
+          options
+        );
+      } catch (error) {
+        console.error(
+          "[STATUS] Update handler error:",
+          error?.stack ||
+            error
+        );
+      }
     }
   );
 
@@ -974,7 +923,7 @@ function attachStatusHandler(
 
 /*
 |--------------------------------------------------------------------------
-| CLEAR CACHE
+| CLEAR PROCESSED CACHE
 |--------------------------------------------------------------------------
 */
 
@@ -984,7 +933,7 @@ function clearProcessedStatusCache() {
 
 /*
 |--------------------------------------------------------------------------
-| GET CACHE SIZE
+| GET PROCESSED STATUS COUNT
 |--------------------------------------------------------------------------
 */
 
