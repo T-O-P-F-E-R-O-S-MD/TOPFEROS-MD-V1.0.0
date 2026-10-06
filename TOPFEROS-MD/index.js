@@ -1,4 +1,4 @@
-4"use strict";
+"use strict";
 
 require("dotenv").config();
 
@@ -22,12 +22,6 @@ const logger = pino({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-/*
-|--------------------------------------------------------------------------
-| WEB SERVER
-|--------------------------------------------------------------------------
-*/
-
 app.get("/", (req, res) => {
   res.status(200).send(`
     <!DOCTYPE html>
@@ -40,22 +34,14 @@ app.get("/", (req, res) => {
         >
         <title>TOPFEROS MD V2.0.0</title>
       </head>
-
       <body>
         <h1>🦁 TOPFEROS MD V2.0.0 🐑</h1>
-        <p>Bot is running.</p>
-        <p>🟢 Status: ONLINE & READY</p>
+        <p>🟢 Status: ONLINE &amp; READY</p>
         <p>🦁 TECH BY TOPFEROS MD 🐑</p>
       </body>
     </html>
   `);
 });
-
-/*
-|--------------------------------------------------------------------------
-| HEALTH CHECK
-|--------------------------------------------------------------------------
-*/
 
 app.get("/health", (req, res) => {
   res.status(200).json({
@@ -67,27 +53,11 @@ app.get("/health", (req, res) => {
   });
 });
 
-/*
-|--------------------------------------------------------------------------
-| START WEB SERVER
-|--------------------------------------------------------------------------
-*/
-
 const server = app.listen(PORT, () => {
   logger.info(
-    `🦁 TOPFEROS MD V2.0.0 web server running on port ${PORT}`
+    `🦁 TOPFEROS MD V2.0.0 running on port ${PORT}`
   );
 });
-
-/*
-|--------------------------------------------------------------------------
-| START WHATSAPP SESSION
-|--------------------------------------------------------------------------
-|
-| Si OWNER_NUMBER pa defini, server la toujou rete aktif.
-| Sa pèmèt Render health check pase san li pa kraze.
-|
-*/
 
 async function startBot() {
   try {
@@ -105,27 +75,23 @@ async function startBot() {
     }
 
     logger.info(
-      `📱 Starting TOPFEROS MD WhatsApp session for ${ownerNumber}`
+      `📱 Starting WhatsApp session for ${ownerNumber}`
     );
 
     await connectSession(ownerNumber);
 
-    logger.info("🟢 TOPFEROS MD V2.0.0 WhatsApp session started.");
+    logger.info(
+      "🟢 TOPFEROS MD V2.0.0 WhatsApp session started."
+    );
   } catch (error) {
     logger.error(
       {
-        error: error?.message || error
+        error: error?.stack || error?.message || error
       },
       "❌ Failed to start WhatsApp session."
     );
   }
 }
-
-/*
-|--------------------------------------------------------------------------
-| GRACEFUL SHUTDOWN
-|--------------------------------------------------------------------------
-*/
 
 let shuttingDown = false;
 
@@ -134,16 +100,16 @@ async function shutdown(signal) {
 
   shuttingDown = true;
 
-  logger.info(`🛑 ${signal} received. Shutting down...`);
+  logger.info(`🛑 ${signal} received.`);
 
   try {
     await disconnectAllSessions();
   } catch (error) {
     logger.error(
       {
-        error: error?.message || error
+        error: error?.stack || error?.message || error
       },
-      "❌ Error while disconnecting WhatsApp sessions."
+      "❌ Error disconnecting sessions."
     );
   }
 
@@ -165,16 +131,10 @@ process.on("SIGTERM", () => {
   shutdown("SIGTERM");
 });
 
-/*
-|--------------------------------------------------------------------------
-| ERROR HANDLERS
-|--------------------------------------------------------------------------
-*/
-
 process.on("uncaughtException", (error) => {
   logger.error(
     {
-      error: error?.stack || error
+      error: error?.stack || error?.message || error
     },
     "❌ UNCAUGHT EXCEPTION"
   );
@@ -183,16 +143,10 @@ process.on("uncaughtException", (error) => {
 process.on("unhandledRejection", (reason) => {
   logger.error(
     {
-      error: reason?.stack || reason
+      error: reason?.stack || reason?.message || reason
     },
     "❌ UNHANDLED REJECTION"
   );
 });
-
-/*
-|--------------------------------------------------------------------------
-| START
-|--------------------------------------------------------------------------
-*/
 
 startBot();
