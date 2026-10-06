@@ -80,27 +80,37 @@ AI capabilities
 🎬 Video prompt creation
 📚 Learning assistance
 📝 Writing assistance
+
 For information that changes over time, the AI system can use current information sources when available instead of relying only on outdated information.
-🎵 MUSIC SYSTEM
+
+*🎵 MUSIC SYSTEM*
+
 TOPFEROS MD separates music downloading from video downloading.
 Music command
 .play song <song name>
 Example:
+
 .play song Perfect Ed Sheeran
 The system searches for the requested song and sends the available audio to WhatsApp.
-🎬 VIDEO SYSTEM
+
+*🎬 VIDEO SYSTEM*
 Video downloading is handled separately from music.
 URL command
+
 .play v <URL>
 or
 .video <URL>
+
 Example:
 .video <URL>
 The system downloads the supported video and sends it to WhatsApp.
+
 ⚠️ Downloading is subject to the supported platform's rules, permissions and copyright restrictions.
-💬 MESSAGE SYSTEM
+
+*💬 MESSAGE SYSTEM*
 TOPFEROS MD V2.0.0 provides automated message handling.
 Features include:
+
 💬 Automatic message processing
 ⚡ Fast command response
 🧩 Command routing
@@ -114,6 +124,7 @@ Default prefix:
 *👁️ STATUS SYSTEM*
 The bot can provide automated status-related actions through the settings panel.
 Available automation options include:
+
 Auto Status Seen
 Auto Status Reply
 Auto Status React
@@ -208,10 +219,12 @@ Mode options
 Public
 Privé
 Group
-🔐 MULTI-SESSION SYSTEM
+
+*🔐 MULTI-SESSION SYSTEM*
 TOPFEROS MD V2.0.0 supports independent WhatsApp sessions.
 Each connected user receives an isolated session.
 This means:
+
 👤 User A cannot access User B's session
 🔐 Session credentials remain isolated
 💾 Sessions can persist across restarts
@@ -221,11 +234,13 @@ This means:
 *🟢 CONNECTION SYSTEM*
 After a successful WhatsApp connection, the bot sends a welcome message explaining the main features of TOPFEROS MD V2.0.0.
 The connection interface provides:
+
 🟢 CONNECTED
 🔴 DISCONNECT
 Disconnecting does not automatically delete the saved WhatsApp session.
 The user can reconnect later without starting the entire setup again.
-🔐 PARRAIN CODE SYSTEM
+
+*🔐 PARRAIN CODE SYSTEM*
 TOPFEROS MD V2.0.0 includes a dedicated Parrain Code Panel.
 The panel allows an authorized user to generate a referral code for a WhatsApp number.
 Panel workflow
@@ -233,15 +248,19 @@ Panel workflow
 2. Generate Code
 3. Copy Code
 Generated codes are associated with the requested number.
-🌐 WEB PANELS
+
+*🌐 WEB PANELS*
 TOPFEROS MD V2.0.0 provides two main Web Panels.
-🦁 TOPFEROS MD PANEL 🐑
+
+*🦁 TOPFEROS MD PANEL 🐑*
 Used for:
 Parrain Code generation
 Number management
 Code generation
 Code copying
-🦁 TOPFEROS MD PANEL SETTINGS 🐑
+
+*🦁 TOPFEROS MD PANEL SETTINGS 🐑*
+
 Used for:
 WhatsApp connection
 Session management
@@ -251,14 +270,20 @@ Group automation
 Logo configuration
 Security settings
 Save configuration
-🌍 LANGUAGE SYSTEM
+
+*🌍 LANGUAGE SYSTEM*
+
 The V2 panel is designed with a multilingual architecture.
 The default language is:
 English
+
 Language selection is presented at the beginning of the panel experience.
 The translation system is designed to support additional languages without changing the core bot architecture.
-🖼️ BOT LOGO
+
+*🖼️ BOT LOGO*
+
 The official TOPFEROS MD logo is used throughout the V2 system.
+
 Logo location:
 public/assets/logo.png
 The same logo can be displayed in:
@@ -266,8 +291,11 @@ The same logo can be displayed in:
 ⚙️ Settings Panel
 🎉 Connection Welcome Message
 📖 Project Documentation
-🎉 CONNECTION WELCOME
+
+*🎉 CONNECTION WELCOME*
+
 After a successful connection, TOPFEROS MD can display a decorated welcome message containing:
+
 🦁 Bot identity
 🟢 Connection status
 👤 Connected user
@@ -339,10 +367,12 @@ Example commands:
 More commands can be added as the V2 system evolves.
 
 *💾 CONFIGURATION*
+
 Configuration is managed through the Web Settings Panel and the bot configuration system.
 Users should not need to manually edit source code for normal bot configuration.
 
 *📁 PROJECT STRUCTURE*
+
 The V2 project follows a clean modular structure.
 TOPFEROS-MD-V2/
 │
