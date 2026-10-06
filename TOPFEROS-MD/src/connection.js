@@ -1130,4 +1130,188 @@ async function disconnectSession(
     );
 
   if (!session?.sock) {
-    return f
+    return false;
+  }
+
+  /*
+   * Close socket only.
+   */
+
+  try {
+    session.sock.end(
+      undefined
+    );
+  } catch (error) {
+    logger.warn(
+      {
+        error:
+          error?.message ||
+          String(error)
+      },
+      `[${sessionId}] Error while closing WhatsApp socket.`
+    );
+  }
+
+  /*
+   * Remove from active memory.
+   *
+   * Authentication files remain untouched.
+   */
+
+  activeSessions.delete(
+    sessionId
+  );
+
+  logger.info(
+    `[${sessionId}] 🔴 WhatsApp disconnected without deleting session credentials.`
+  );
+
+  return true;
+}
+
+/*
+|--------------------------------------------------------------------------
+| RECONNECT SESSION
+|--------------------------------------------------------------------------
+*/
+
+async function reconnectSession(
+  number
+) {
+  const sessionId =
+    getSessionId(number);
+
+  manuallyStopped.delete(
+    sessionId
+  );
+
+  /*
+   * Cancel pending reconnect timer.
+   */
+
+  const timer =
+    reconnectTimers.get(
+      sessionId
+    );
+
+  if (timer) {
+    clearTimeout(
+      timer
+    );
+
+    reconnectTimers.delete(
+      sessionId
+    );
+  }
+
+  /*
+   * Close old socket if present.
+   */
+
+  const existing =
+    activeSessions.get(
+      sessionId
+    );
+
+  if (existing?.sock) {
+    try {
+      existing.sock.end(
+        undefined
+      );
+    } catch {
+      /*
+       * Ignore socket close errors.
+       */
+    }
+
+    activeSessions.delete(
+      sessionId
+    );
+  }
+
+  /*
+   * Reuse stored authentication.
+   */
+
+  return connectSession(
+    sessionId
+  );
+}
+
+/*
+|--------------------------------------------------------------------------
+| DISCONNECT ALL SESSIONS
+|--------------------------------------------------------------------------
+|
+| Used during application shutdown.
+| Credentials remain preserved.
+|--------------------------------------------------------------------------
+*/
+
+async function disconnectAllSessions() {
+  const sessionIds = [
+    ...activeSessions.keys()
+  ];
+
+  for (
+    const sessionId of
+      sessionIds
+  ) {
+    try {
+      await disconnectSession(
+        sessionId
+      );
+    } catch (error) {
+      logger.error(
+        {
+          error:
+            error?.message ||
+            String(error)
+        },
+        `[${sessionId}] Failed to disconnect session during shutdown.`
+      );
+    }
+  }
+}
+
+/*
+|--------------------------------------------------------------------------
+| EXPORTS
+|--------------------------------------------------------------------------
+*/
+
+module.exports = {
+  connectSession,
+
+  disconnectSession,
+
+  reconnectSession,
+
+  disconnectAllSessions,
+
+  getSession,
+
+  getActiveSessions,
+
+  getSessionQR,
+
+  isConnected,
+
+  getSessionAutomation,
+
+  updateSessionAutomation,
+
+  getDefaultAutomationSettings,
+
+  createWelcomeMessage,
+
+  sendWelcomeMessage,
+
+  getSessionId,
+
+  getSessionPath,
+
+  normalizeNumber,
+
+  SESSIONS_DIR
+};
