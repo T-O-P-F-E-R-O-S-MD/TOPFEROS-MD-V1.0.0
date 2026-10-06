@@ -16,13 +16,12 @@ const {
 | MESSAGE HANDLER
 |--------------------------------------------------------------------------
 |
-| This file handles incoming WhatsApp messages and commands.
+| Handles incoming WhatsApp messages and commands.
 |
-| AI Status Reaction is NOT implemented here.
-| It is handled by:
+| Status reactions are handled separately by:
 |
 | services/aiReactionService.js
-|            ↓
+|              ↓
 | src/statusHandler.js
 |
 |--------------------------------------------------------------------------
@@ -31,10 +30,6 @@ const {
 /*
 |--------------------------------------------------------------------------
 | STATUS HANDLER REGISTRY
-|--------------------------------------------------------------------------
-|
-| We attach the status handler only once per socket.
-|
 |--------------------------------------------------------------------------
 */
 
@@ -71,8 +66,7 @@ function registerCommand(
   }
 
   if (
-    typeof handler !==
-    "function"
+    typeof handler !== "function"
   ) {
     throw new Error(
       `Handler for .${name} must be a function.`
@@ -85,25 +79,26 @@ function registerCommand(
       .toLowerCase()
       .replace(/^\./, "");
 
+  const aliases =
+    Array.isArray(
+      options.aliases
+    )
+      ? options.aliases
+          .map((alias) =>
+            String(alias)
+              .trim()
+              .toLowerCase()
+              .replace(/^\./, "")
+          )
+          .filter(Boolean)
+      : [];
+
   commands.set(
     commandName,
     {
       handler,
 
-      aliases:
-        Array.isArray(
-          options.aliases
-        )
-          ? options.aliases.map(
-              (alias) =>
-                String(alias)
-                  .toLowerCase()
-                  .replace(
-                    /^\./,
-                    ""
-                  )
-            )
-          : [],
+      aliases,
 
       description:
         options.description ||
@@ -122,7 +117,7 @@ function registerCommand(
 
 /*
 |--------------------------------------------------------------------------
-| REGISTER ALIAS
+| FIND COMMAND
 |--------------------------------------------------------------------------
 */
 
@@ -183,8 +178,7 @@ function extractMessageText(
     getContentType(message);
 
   if (
-    type ===
-    "conversation"
+    type === "conversation"
   ) {
     return (
       message.conversation ||
@@ -193,8 +187,7 @@ function extractMessageText(
   }
 
   if (
-    type ===
-    "extendedTextMessage"
+    type === "extendedTextMessage"
   ) {
     return (
       message.extendedTextMessage
@@ -204,8 +197,7 @@ function extractMessageText(
   }
 
   if (
-    type ===
-    "imageMessage"
+    type === "imageMessage"
   ) {
     return (
       message.imageMessage
@@ -215,8 +207,7 @@ function extractMessageText(
   }
 
   if (
-    type ===
-    "videoMessage"
+    type === "videoMessage"
   ) {
     return (
       message.videoMessage
@@ -256,8 +247,7 @@ function getChatJid(
   message
 ) {
   return (
-    message?.key
-      ?.remoteJid ||
+    message?.key?.remoteJid ||
     ""
   );
 }
@@ -274,9 +264,7 @@ function getSenderJid(
   if (
     message?.key?.participant
   ) {
-    return (
-      message.key.participant
-    );
+    return message.key.participant;
   }
 
   return (
@@ -295,7 +283,8 @@ function getBotJid(
   sock
 ) {
   return (
-    sock?.user?.id || ""
+    sock?.user?.id ||
+    ""
   );
 }
 
@@ -341,15 +330,11 @@ function isFromBot(
       getBotJid(sock)
     );
 
-  if (
+  return Boolean(
     sender &&
     bot &&
     sender === bot
-  ) {
-    return true;
-  }
-
-  return false;
+  );
 }
 
 /*
@@ -420,9 +405,7 @@ function parseCommand(
 
   const withoutPrefix =
     cleanText
-      .slice(
-        prefix.length
-      )
+      .slice(prefix.length)
       .trim();
 
   if (!withoutPrefix) {
@@ -437,21 +420,17 @@ function parseCommand(
   const command =
     String(
       parts.shift() || ""
-    )
-      .toLowerCase();
-
-  const args =
-    parts;
+    ).toLowerCase();
 
   return {
     prefix,
 
     command,
 
-    args,
+    args: parts,
 
     text:
-      args.join(" "),
+      parts.join(" "),
 
     raw:
       withoutPrefix
@@ -503,19 +482,11 @@ async function reactToMessage(
   message,
   emoji
 ) {
-  if (!sock) {
-    return false;
-  }
-
   if (
-    !message?.key
-  ) {
-    return false;
-  }
-
-  if (
-    typeof emoji !==
-    "string"
+    !sock ||
+    !message?.key ||
+    typeof emoji !== "string" ||
+    !emoji.trim()
   ) {
     return false;
   }
@@ -566,7 +537,10 @@ function canProcessMessage(
   message
 ) {
   const mode =
-    getBotMode()
+    String(
+      getBotMode()
+    )
+      .trim()
       .toLowerCase();
 
   const jid =
@@ -578,9 +552,7 @@ function canProcessMessage(
    */
 
   if (
-    mode ===
-    "public"
-      .toLowerCase()
+    mode === "public"
   ) {
     return true;
   }
@@ -591,10 +563,9 @@ function canProcessMessage(
    */
 
   if (
-    mode ===
-    "privé" ||
-    mode ===
-    "prive"
+    mode === "privé" ||
+    mode === "prive" ||
+    mode === "private"
   ) {
     return !isGroup(jid);
   }
@@ -605,15 +576,14 @@ function canProcessMessage(
    */
 
   if (
-    mode ===
-    "group"
+    mode === "group"
   ) {
     return isGroup(jid);
   }
 
   /*
    * Unknown mode:
-   * Default to public behavior.
+   * Public behavior.
    */
 
   return true;
@@ -668,7 +638,7 @@ function buildContext(
       getPrefix(),
 
     bot:
-      config.bot,
+      config?.bot || {},
 
     config,
 
@@ -699,9 +669,7 @@ function buildContext(
 
 registerCommand(
   "menu",
-  async (
-    ctx
-  ) => {
+  async (ctx) => {
     const menu = `
 ╭━━━〔 🦁 TOPFEROS MD V2.0.0 🐑 〕━━━╮
 ┃
@@ -745,9 +713,7 @@ registerCommand(
 🦁 TECH BY TOPFEROS MD 🐑
 `;
 
-    await ctx.send(
-      menu
-    );
+    await ctx.send(menu);
 
     return {
       success: true
@@ -770,27 +736,26 @@ registerCommand(
 
 registerCommand(
   "info",
-  async (
-    ctx
-  ) => {
+  async (ctx) => {
+    const bot =
+      config?.bot || {};
+
     const info = `
 ╭━━━〔 ⚙️ BOT INFORMATION 〕━━━╮
 ┃
-┃ 🦁 Name     : ${config.bot.name}
-┃ 📦 Version  : V${config.bot.version}
-┃ 🔹 Prefix   : ${config.bot.prefix}
-┃ 🌐 Mode     : ${config.bot.mode}
-┃ 📍 Location : ${config.bot.location}
-┃ 🌎 Language : English
+┃ 🦁 Name     : ${bot.name || "TOPFEROS MD"}
+┃ 📦 Version  : V${bot.version || "2.0.0"}
+┃ 🔹 Prefix   : ${bot.prefix || "."}
+┃ 🌐 Mode     : ${bot.mode || "Public"}
+┃ 📍 Location : ${bot.location || "HAÏTI"}
+┃ 🌎 Language : ${bot.language || "English"}
 ┃
 ╰━━━━━━━━━━━━━━━━━━━━━━━━━━╯
 
 🦁 TECH BY TOPFEROS MD 🐑
 `;
 
-    await ctx.send(
-      info
-    );
+    await ctx.send(info);
 
     return {
       success: true
@@ -809,18 +774,11 @@ registerCommand(
 |--------------------------------------------------------------------------
 | DEFAULT COMMAND: AI
 |--------------------------------------------------------------------------
-|
-| The real AI provider will be connected
-| when the AI service is added.
-|
-|--------------------------------------------------------------------------
 */
 
 registerCommand(
   "ai",
-  async (
-    ctx
-  ) => {
+  async (ctx) => {
     if (!ctx.text) {
       await ctx.send(
         `🤖 Please provide a question.\n\nExample:\n.ai What is artificial intelligence?\n\n🦁 TECH BY TOPFEROS MD 🐑`
@@ -859,9 +817,7 @@ registerCommand(
 
 registerCommand(
   "prompt",
-  async (
-    ctx
-  ) => {
+  async (ctx) => {
     if (!ctx.text) {
       await ctx.send(
         `🤖 Please provide a prompt request.\n\nExample:\n.prompt Create a cinematic lion logo\n\n🦁 TECH BY TOPFEROS MD 🐑`
@@ -900,9 +856,7 @@ registerCommand(
 
 registerCommand(
   "setting",
-  async (
-    ctx
-  ) => {
+  async (ctx) => {
     const panelUrl =
       process.env.SETTINGS_PANEL_URL ||
       "";
@@ -938,6 +892,12 @@ registerCommand(
 |--------------------------------------------------------------------------
 | ATTACH STATUS AI
 |--------------------------------------------------------------------------
+|
+| Kept as a compatibility helper.
+| connection.js already attaches the status
+| handler for each socket, so this function
+| prevents duplicate listeners.
+|--------------------------------------------------------------------------
 */
 
 function attachStatusAI(
@@ -950,21 +910,11 @@ function attachStatusAI(
     );
   }
 
-  /*
-   * Prevent duplicate listeners.
-   */
-
   if (
-    attachedSockets.has(
-      sock
-    )
+    attachedSockets.has(sock)
   ) {
     return false;
   }
-
-  /*
-   * Attach only when enabled.
-   */
 
   if (
     options.enabled === false
@@ -975,7 +925,14 @@ function attachStatusAI(
   attachStatusHandler(
     sock,
     {
-      enabled: true
+      autoStatusReact:
+        options.autoStatusReact !== false,
+
+      autoStatusSeen:
+        options.autoStatusSeen !== false,
+
+      autoStatusReply:
+        options.autoStatusReply !== false
     }
   );
 
@@ -998,10 +955,6 @@ async function handleMessage(
   sessionId
 ) {
   try {
-    /*
-     * Validate message.
-     */
-
     if (
       !sock ||
       !message
@@ -1014,7 +967,7 @@ async function handleMessage(
     }
 
     /*
-     * Ignore bot messages.
+     * Ignore messages sent by the bot.
      */
 
     if (
@@ -1031,18 +984,10 @@ async function handleMessage(
       };
     }
 
-    /*
-     * Get chat.
-     */
-
     const jid =
-      getChatJid(
-        message
-      );
+      getChatJid(message);
 
     /*
-     * Ignore Status here.
-     *
      * Status is handled by statusHandler.js.
      */
 
@@ -1075,17 +1020,13 @@ async function handleMessage(
     }
 
     /*
-     * Extract text.
+     * Extract message text.
      */
 
     const messageText =
       extractMessageText(
         message.message
       );
-
-    /*
-     * Ignore empty messages.
-     */
 
     if (
       !messageText
@@ -1108,10 +1049,10 @@ async function handleMessage(
       );
 
     /*
-     * Normal chat without prefix.
+     * Normal text without prefix.
      *
-     * Natural-language AI handling can be
-     * connected later.
+     * Natural-language AI will be connected
+     * through the AI service.
      */
 
     if (!parsed) {
@@ -1131,10 +1072,6 @@ async function handleMessage(
       findCommand(
         parsed.command
       );
-
-    /*
-     * Unknown command.
-     */
 
     if (!found) {
       await sendText(
@@ -1203,8 +1140,7 @@ async function handleMessage(
       }
     } catch {
       /*
-       * Do not throw another error while
-       * attempting to report an error.
+       * Do not throw a second error.
        */
     }
 
