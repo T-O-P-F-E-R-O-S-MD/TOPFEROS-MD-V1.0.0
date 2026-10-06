@@ -1,1877 +1,1292 @@
 "use strict";
 
-const fs = require("fs");
-const path = require("path");
-const crypto = require("crypto");
-
-// ╔════════════════════════════════════════════════════╗
-// ║              🤖 TOPFEROS MD V1.0.0               ║
-// ║                 SESSION MANAGER                   ║
-// ╚════════════════════════════════════════════════════╝
-
-// ============================================================
-// PATHS
-// ============================================================
-
-const AUTH_ROOT = path.join(
-  __dirname,
-  "..",
-  "auth",
-  "sessions"
-);
-
-if (!fs.existsSync(AUTH_ROOT)) {
-  fs.mkdirSync(AUTH_ROOT, {
-    recursive: true
-  });
-}
-
-
-// ============================================================
-// MEMORY STORAGE
-// ============================================================
-
-const sessions = new Map();
-
-
-// ============================================================
-// HELPERS
-// ============================================================
-
-function cleanPhoneNumber(number) {
-  return String(number || "")
-    .replace(/\D/g, "");
-}
-
-
-function normalizeNumber(number) {
-  return cleanPhoneNumber(number);
-}
-
-
-function validatePhoneNumber(number) {
-  const phone = cleanPhoneNumber(number);
-
-  return (
-    phone.length >= 8 &&
-    phone.length <= 15
-  );
-}
-
-
-function generateSessionId() {
-  return (
-    "session-" +
-    crypto
-      .randomBytes(12)
-      .toString("hex")
-  );
-}
-
-
-function generateParrainCode() {
-  return crypto
-    .randomBytes(6)
-    .toString("hex")
-    .toUpperCase();
-}
-
-
-function getAuthDir(sessionId) {
-  return path.join(
-    AUTH_ROOT,
-    sessionId,
-    "auth"
-  );
-}
-
-
-function getSessionDir(sessionId) {
-  return path.join(
-    AUTH_ROOT,
-    sessionId
-  );
-}
-
-
-function getSessionFile(sessionId) {
-  return path.join(
-    getSessionDir(sessionId),
-    "session.json"
-  );
-}
-
-
-function ensureSessionDirectories(sessionId) {
-  fs.mkdirSync(
-    getAuthDir(sessionId),
-    {
-      recursive: true
-    }
-  );
-}
-
-
-// ============================================================
-// PERSIST SESSION
-// ============================================================
-
-function persistSession(session) {
-  if (!session || !session.sessionId) {
-    return false;
-  }
-
-  try {
-    ensureSessionDirectories(
-      session.sessionId
-    );
-
-    const data = {
-      sessionId:
-        session.sessionId,
-
-      number:
-        session.number || null,
-
-      code:
-        session.code || null,
-
-      authenticated:
-        session.authenticated === true,
-
-      connected:
-        session.connected === true,
-
-      status:
-        session.status ||
-        "disconnected",
-
-      pairing:
-        session.pairing === true,
-
-      pairingCode:
-        session.pairingCode || null,
-
-      pairingStartedAt:
-        session.pairingStartedAt ||
-        null,
-
-      createdAt:
-        session.createdAt ||
-        Date.now(),
-
-      updatedAt:
-        Date.now(),
-
-      settings:
-        session.settings || {},
-
-      bot:
-        session.bot || {},
-
-      panelSession:
-        session.panelSession || null
-    };
-
-    fs.writeFileSync(
-      getSessionFile(
-        session.sessionId
-      ),
-      JSON.stringify(
-        data,
-        null,
-        2
-      ),
-      "utf8"
-    );
-
-    return true;
-
-  } catch (error) {
-    console.error(
-      "❌ SESSION PERSIST ERROR:",
-      error?.message || error
-    );
-
-    return false;
-  }
-}
-
-
-// ============================================================
-// LOAD SESSION FROM DISK
-// ============================================================
-
-function loadSession(sessionId) {
-  if (!sessionId) {
-    return null;
-  }
-
-  const file =
-    getSessionFile(
-      sessionId
-    );
-
-  if (!fs.existsSync(file)) {
-    return null;
-  }
-
-  try {
-    const raw =
-      fs.readFileSync(
-        file,
-        "utf8"
-      );
-
-    const data =
-      JSON.parse(raw);
-
-    const session = {
-      sessionId:
-        data.sessionId ||
-        sessionId,
-
-      number:
-        data.number ||
-        null,
-
-      code:
-        data.code ||
-        generateParrainCode(),
-
-      authenticated:
-        data.authenticated === true,
-
-      connected:
-        false,
-
-      socket:
-        null,
-
-      authDir:
-        getAuthDir(
-          data.sessionId ||
-          sessionId
-        ),
-
-      status:
-        "disconnected",
-
-      pairing:
-        false,
-
-      pairingCode:
-        null,
-
-      pairingStartedAt:
-        null,
-
-      createdAt:
-        data.createdAt ||
-        Date.now(),
-
-      updatedAt:
-        Date.now(),
-
-      settings:
-        data.settings || {},
-
-      bot:
-        data.bot || {},
-
-      panelSession:
-        data.panelSession ||
-        null
-    };
-
-    ensureSessionDirectories(
-      session.sessionId
-    );
-
-    return session;
-
-  } catch (error) {
-    console.error(
-      `❌ SESSION LOAD ERROR [${sessionId}]:`,
-      error?.message || error
-    );
-
-    return null;
-  }
-}
-
-
-// ============================================================
-// CREATE SESSION
-// ============================================================
-
-function createSession(options = {}) {
-  const {
-    sessionId:
-      requestedSessionId = null,
-
-    number = null,
-
-    socket = null,
-
-    sock = null,
-
-    settings = {},
-
-    bot = {},
-
-    status = null,
-
-    pairing = false,
-
-    panelSession = null
-  } = options || {};
-
-  const finalSocket =
-    socket ||
-    sock ||
-    null;
-
-  let cleanNumber =
-    cleanPhoneNumber(
-      number ||
-      finalSocket?.user?.id ||
-      ""
-    );
-
-  let sessionId =
-    requestedSessionId ||
-    null;
- 
-  // ----------------------------------------------------------
-  // EXISTING SESSION BY ID
-  // ----------------------------------------------------------
-
-  if (sessionId) {
-    const existingById =
-      sessions.get(
-        sessionId
-      );
-
-    if (existingById) {
-
-      if (cleanNumber) {
-        existingById.number =
-          cleanNumber;
-      }
-
-      if (finalSocket) {
-        existingById.socket =
-          finalSocket;
-      }
-
-      if (settings) {
-        existingById.settings = {
-          ...existingById.settings,
-          ...settings
-        };
-      }
-
-      if (bot) {
-        existingById.bot = {
-          ...existingById.bot,
-          ...bot
-        };
-      }
-
-      existingById.connected =
-        Boolean(
-          finalSocket ||
-          existingById.socket
-        );
-
-      existingById.updatedAt =
-        Date.now();
-
-      persistSession(
-        existingById
-      );
-
-      return sanitizeSession(
-        existingById
-      );
-    }
-
-    // Try loading existing stored session
-    const stored =
-      loadSession(
-        sessionId
-      );
-
-    if (stored) {
-
-      if (cleanNumber) {
-        stored.number =
-          cleanNumber;
-      }
-
-      if (finalSocket) {
-        stored.socket =
-          finalSocket;
-
-        stored.connected =
-          true;
-      }
-
-      sessions.set(
-        sessionId,
-        stored
-      );
-
-      persistSession(
-        stored
-      );
-
-      return sanitizeSession(
-        stored
-      );
-    }
-  }
-
-  // ----------------------------------------------------------
-  // EXISTING SESSION BY NUMBER
-  // ----------------------------------------------------------
-
-  if (cleanNumber) {
-
-    const existing =
-      getSessionByNumber(
-        cleanNumber
-      );
-
-    if (existing) {
-
-      if (finalSocket) {
-        existing.socket =
-          finalSocket;
-
-        existing.connected =
-          true;
-      }
-
-      if (settings) {
-        existing.settings = {
-          ...existing.settings,
-          ...settings
-        };
-      }
-
-      if (bot) {
-        existing.bot = {
-          ...existing.bot,
-          ...bot
-        };
-      }
-
-      existing.updatedAt =
-        Date.now();
-
-      persistSession(
-        existing
-      );
-
-      return sanitizeSession(
-        existing
-      );
-    }
-  }
-
-  // ----------------------------------------------------------
-  // NUMBER IS REQUIRED FOR A NEW SESSION
-  // ----------------------------------------------------------
-
-  if (!cleanNumber) {
+const {
+  getContentType
+} = require("@whiskeysockets/baileys");
+
+const config = require("./config");
+
+const {
+  attachStatusHandler
+} = require("./statusHandler");
+
+/*
+|--------------------------------------------------------------------------
+| TOPFEROS MD V2.0.0
+| MESSAGE HANDLER
+|--------------------------------------------------------------------------
+|
+| This file handles incoming WhatsApp messages and commands.
+|
+| AI Status Reaction is NOT implemented here.
+| It is handled by:
+|
+| services/aiReactionService.js
+|            ↓
+| src/statusHandler.js
+|
+|--------------------------------------------------------------------------
+*/
+
+/*
+|--------------------------------------------------------------------------
+| STATUS HANDLER REGISTRY
+|--------------------------------------------------------------------------
+|
+| We attach the status handler only once per socket.
+|
+|--------------------------------------------------------------------------
+*/
+
+const attachedSockets =
+  new WeakSet();
+
+/*
+|--------------------------------------------------------------------------
+| COMMAND REGISTRY
+|--------------------------------------------------------------------------
+*/
+
+const commands =
+  new Map();
+
+/*
+|--------------------------------------------------------------------------
+| REGISTER COMMAND
+|--------------------------------------------------------------------------
+*/
+
+function registerCommand(
+  name,
+  handler,
+  options = {}
+) {
+  if (
+    typeof name !== "string" ||
+    !name.trim()
+  ) {
     throw new Error(
-      "Bot number pa disponib pou kreye session."
+      "Command name is required."
     );
   }
 
-  // ----------------------------------------------------------
-  // NEW SESSION
-  // ----------------------------------------------------------
-
-  sessionId =
-    sessionId ||
-    generateSessionId();
-
-  const session = {
-
-    sessionId,
-
-    number:
-      cleanNumber,
-
-    code:
-      generateParrainCode(),
-
-    authenticated:
-      false,
-
-    connected:
-      Boolean(
-        finalSocket
-      ),
-
-    socket:
-      finalSocket,
-
-    authDir:
-      getAuthDir(
-        sessionId
-      ),
-
-    status:
-      status ||
-      (
-        finalSocket
-          ? "connected"
-          : "disconnected"
-      ),
-
-    pairing:
-      pairing === true,
-
-    pairingCode:
-      null,
-
-    pairingStartedAt:
-      null,
-
-    createdAt:
-      Date.now(),
-
-    updatedAt:
-      Date.now(),
-
-    settings: {
-      ...settings
-    },
-
-    bot: {
-      ...bot
-    },
-
-    panelSession:
-      panelSession ||
-      null
-  };
-
-  ensureSessionDirectories(
-    sessionId
-  );
-
-  sessions.set(
-    sessionId,
-    session
-  );
-
-  persistSession(
-    session
-  );
-
-  console.log(
-    `🟢 SESSION MANAGER: Session created ${sessionId} → ${cleanNumber}`
-  );
-
-  return sanitizeSession(
-    session
-  );
-}
-
-
-// ============================================================
-// COMPATIBILITY WITH CONNECTION.JS
-// ============================================================
-
-function updateSession(
-  sessionId,
-  updates = {}
-) {
-  const session =
-    sessions.get(
-      sessionId
+  if (
+    typeof handler !==
+    "function"
+  ) {
+    throw new Error(
+      `Handler for .${name} must be a function.`
     );
-
-  if (!session) {
-    return null;
   }
 
-  Object.assign(
-    session,
-    updates
-  );
+  const commandName =
+    name
+      .trim()
+      .toLowerCase()
+      .replace(/^\./, "");
 
-  session.updatedAt =
-    Date.now();
+  commands.set(
+    commandName,
+    {
+      handler,
 
-  return session;
-}
+      aliases:
+        Array.isArray(
+          options.aliases
+        )
+          ? options.aliases.map(
+              (alias) =>
+                String(alias)
+                  .toLowerCase()
+                  .replace(
+                    /^\./,
+                    ""
+                  )
+            )
+          : [],
 
+      description:
+        options.description ||
+        "",
 
-// ============================================================
-// SET NUMBER
-// ============================================================
+      usage:
+        options.usage ||
+        `.${commandName}`,
 
-function setNumber(
-  sessionId,
-  number
-) {
-  const session =
-    sessions.get(
-      sessionId
-    );
-
-  if (!session) {
-    return null;
-  }
-
-  session.number =
-    cleanPhoneNumber(
-      number
-    );
-
-  session.updatedAt =
-    Date.now();
-
-  persistSession(
-    session
-  );
-
-  return session;
-}
-
-
-// ============================================================
-// REMOVE SESSION
-// ============================================================
-
-function removeSession(
-  sessionId
-) {
-  const session =
-    sessions.get(
-      sessionId
-    );
-
-  if (!session) {
-    return false;
-  }
-
-  sessions.delete(
-    sessionId
-  );
-
-  try {
-    const sessionDir =
-      getSessionDir(
-        sessionId
-      );
-
-    if (
-      fs.existsSync(
-        sessionDir
-      )
-    ) {
-      fs.rmSync(
-        sessionDir,
-        {
-          recursive: true,
-          force: true
-        }
-      );
+      category:
+        options.category ||
+        "GENERAL"
     }
-
-  } catch (error) {
-    console.error(
-      `❌ SESSION REMOVE ERROR [${sessionId}]:`,
-      error?.message ||
-      error
-    );
-  }
-
-  return true;
-}
-
-
-// ============================================================
-// GET SESSION
-// ============================================================
-
-function getSession(sessionId) {
-  if (!sessionId) {
-    return null;
-  }
-
-  return (
-    sessions.get(
-      String(sessionId)
-    ) ||
-    null
   );
 }
 
+/*
+|--------------------------------------------------------------------------
+| REGISTER ALIAS
+|--------------------------------------------------------------------------
+*/
 
-// ============================================================
-// GET SESSION BY NUMBER
-// ============================================================
+function findCommand(
+  commandName
+) {
+  const normalized =
+    String(commandName || "")
+      .trim()
+      .toLowerCase()
+      .replace(/^\./, "");
 
-function getSessionByNumber(number) {
-  const cleanNumber =
-    cleanPhoneNumber(
-      number
-    );
-
-  if (!cleanNumber) {
-    return null;
+  if (
+    commands.has(normalized)
+  ) {
+    return {
+      name: normalized,
+      command:
+        commands.get(normalized)
+    };
   }
 
   for (
-    const session
-    of sessions.values()
+    const [
+      name,
+      command
+    ] of commands
   ) {
-
     if (
-      session.number ===
-      cleanNumber
+      command.aliases.includes(
+        normalized
+      )
     ) {
-      return session;
+      return {
+        name,
+        command
+      };
     }
   }
 
   return null;
 }
 
+/*
+|--------------------------------------------------------------------------
+| EXTRACT MESSAGE TEXT
+|--------------------------------------------------------------------------
+*/
 
-// ============================================================
-// GET ALL SESSIONS
-// ============================================================
-
-function getAllSessions() {
-  return Array.from(
-    sessions.values()
-  );
-}
-
-
-// ============================================================
-// GET SESSIONS
-// ============================================================
-
-function getSessions() {
-  return getAllSessions()
-    .map(
-      sanitizeSession
-    );
-}
-
-
-// ============================================================
-// GET SESSION COUNT
-// ============================================================
-
-function getSessionCount() {
-  return sessions.size;
-}
-
-
-// ============================================================
-// GET STORED SESSION IDS
-// ============================================================
-
-function getStoredSessionIds() {
-  if (!fs.existsSync(AUTH_ROOT)) {
-    return [];
-  }
-
-  try {
-
-    return fs
-      .readdirSync(
-        AUTH_ROOT,
-        {
-          withFileTypes: true
-        }
-      )
-      .filter(
-        entry =>
-          entry.isDirectory()
-      )
-      .map(
-        entry =>
-          entry.name
-      )
-      .filter(
-        sessionId =>
-          fs.existsSync(
-            getSessionFile(
-              sessionId
-            )
-          )
-      );
-
-  } catch (error) {
-
-    console.error(
-      "❌ GET STORED SESSIONS ERROR:",
-      error?.message || error
-    );
-
-    return [];
-  }
-}
-
-
-// ============================================================
-// RESTORE SESSION
-// ============================================================
-
-function restoreSession(sessionId) {
-  const existing =
-    getSession(
-      sessionId
-    );
-
-  if (existing) {
-    return existing;
-  }
-
-  const session =
-    loadSession(
-      sessionId
-    );
-
-  if (!session) {
-    return null;
-  }
-
-  sessions.set(
-    session.sessionId,
-    session
-  );
-
-  return session;
-}
-
-
-// ============================================================
-// RESTORE ALL SESSIONS
-// ============================================================
-
-function restoreSessions() {
-  const ids =
-    getStoredSessionIds();
-
-  let restored = 0;
-
-  for (
-    const sessionId
-    of ids
-  ) {
-
-    const session =
-      restoreSession(
-        sessionId
-      );
-
-    if (session) {
-      restored++;
-    }
-  }
-
-  console.log(
-    `📂 SESSION MANAGER: ${restored} stored session(s) restored.`
-  );
-
-  return restored;
-}
-
-
-// ============================================================
-// SOCKET
-// ============================================================
-
-function setSocket(
-  sessionId,
-  socket
+function extractMessageText(
+  message
 ) {
-  const session =
-    getSession(
-      sessionId
-    );
-
-  if (!session) {
-    return false;
+  if (!message) {
+    return "";
   }
 
-  session.socket =
-    socket || null;
-
-  session.connected =
-    Boolean(
-      socket
-    );
-
-  session.updatedAt =
-    Date.now();
-
-  persistSession(
-    session
-  );
-
-  return true;
-}
-
-
-function getSocket(sessionId) {
-  const session =
-    getSession(
-      sessionId
-    );
-
-  if (!session) {
-    return null;
-  }
-
-  return session.socket || null;
-}
-
-
-// ============================================================
-// CONNECTION
-// ============================================================
-
-function connectSession(
-  sessionId,
-  socket
-) {
-  const session =
-    getSession(
-      sessionId
-    );
+  const type =
+    getContentType(message);
 
   if (
-    !session ||
-    !socket
+    type ===
+    "conversation"
   ) {
-    return false;
+    return (
+      message.conversation ||
+      ""
+    );
   }
 
-  session.socket =
-    socket;
-
-  session.connected =
-    true;
-
-  session.status =
-    "connected";
-
-  session.pairing =
-    false;
-
-  session.pairingCode =
-    null;
-
-  session.pairingStartedAt =
-    null;
-
-  session.updatedAt =
-    Date.now();
-
-  persistSession(
-    session
-  );
-
-  return true;
-}
-
-
-function disconnectSession(
-  sessionId,
-  status = "disconnected"
-) {
-  const session =
-    getSession(
-      sessionId
+  if (
+    type ===
+    "extendedTextMessage"
+  ) {
+    return (
+      message.extendedTextMessage
+        ?.text ||
+      ""
     );
-
-  if (!session) {
-    return false;
   }
 
-  session.socket =
-    null;
+  if (
+    type ===
+    "imageMessage"
+  ) {
+    return (
+      message.imageMessage
+        ?.caption ||
+      ""
+    );
+  }
 
-  session.connected =
-    false;
+  if (
+    type ===
+    "videoMessage"
+  ) {
+    return (
+      message.videoMessage
+        ?.caption ||
+      ""
+    );
+  }
 
-  session.status =
-    status;
-
-  session.pairing =
-    false;
-
-  session.pairingCode =
-    null;
-
-  session.pairingStartedAt =
-    null;
-
-  session.updatedAt =
-    Date.now();
-
-  persistSession(
-    session
-  );
-
-  return true;
+  return "";
 }
 
+/*
+|--------------------------------------------------------------------------
+| GET MESSAGE TYPE
+|--------------------------------------------------------------------------
+*/
 
-// ============================================================
-// PHONE NUMBER
-// ============================================================
-
-function getPhoneNumber(
-  sessionId
+function getMessageType(
+  message
 ) {
-  const session =
-    getSession(
-      sessionId
+  if (!message) {
+    return null;
+  }
+
+  return getContentType(
+    message
+  );
+}
+
+/*
+|--------------------------------------------------------------------------
+| GET CHAT JID
+|--------------------------------------------------------------------------
+*/
+
+function getChatJid(
+  message
+) {
+  return (
+    message?.key
+      ?.remoteJid ||
+    ""
+  );
+}
+
+/*
+|--------------------------------------------------------------------------
+| GET SENDER JID
+|--------------------------------------------------------------------------
+*/
+
+function getSenderJid(
+  message
+) {
+  if (
+    message?.key?.participant
+  ) {
+    return (
+      message.key.participant
     );
+  }
 
   return (
-    session?.number ||
-    null
+    message?.key?.remoteJid ||
+    ""
   );
 }
 
+/*
+|--------------------------------------------------------------------------
+| GET BOT JID
+|--------------------------------------------------------------------------
+*/
 
-function setPhoneNumber(
-  sessionId,
-  number
+function getBotJid(
+  sock
 ) {
-  const session =
-    getSession(
-      sessionId
-    );
-
-  if (!session) {
-    return false;
-  }
-
-  const cleanNumber =
-    cleanPhoneNumber(
-      number
-    );
-
-  if (!cleanNumber) {
-    return false;
-  }
-
-  session.number =
-    cleanNumber;
-
-  session.updatedAt =
-    Date.now();
-
-  persistSession(
-    session
-  );
-
-  return true;
-}
-
-
-// ============================================================
-// STATUS
-// ============================================================
-
-function setStatus(
-  sessionId,
-  status
-) {
-  const session =
-    getSession(
-      sessionId
-    );
-
-  if (!session) {
-    return false;
-  }
-
-  session.status =
-    String(
-      status ||
-      "disconnected"
-    );
-
-  session.updatedAt =
-    Date.now();                         
-
-  persistSession(
-    session
-  );
-
-  return true;
-}
-
-
-function getStatus(
-  sessionId
-) {
-  const session =
-    getSession(
-      sessionId
-    );
-
   return (
-    session?.status ||
-    "disconnected"
+    sock?.user?.id || ""
   );
 }
 
+/*
+|--------------------------------------------------------------------------
+| NORMALIZE JID
+|--------------------------------------------------------------------------
+*/
 
-function isConnected(
-  sessionId
+function normalizeJid(
+  jid
 ) {
-  const session =
-    getSession(
-      sessionId
-    );
-
-  return Boolean(
-    session &&
-    session.connected &&
-    session.socket
-  );
+  return String(
+    jid || ""
+  )
+    .split(":")[0]
+    .trim();
 }
 
+/*
+|--------------------------------------------------------------------------
+| IS BOT MESSAGE
+|--------------------------------------------------------------------------
+*/
 
-// ============================================================
-// PAIRING
-// ============================================================
-
-function startPairing(
-  sessionId
+function isFromBot(
+  message,
+  sock
 ) {
-  const session =
-    getSession(
-      sessionId
-    );
-
-  if (!session) {
-    return false;
+  if (
+    message?.key?.fromMe
+  ) {
+    return true;
   }
 
-  session.pairing =
-    true;
-
-  session.status =
-    "pairing";
-
-  session.pairingStartedAt =
-    Date.now();
-
-  session.pairingCode =
-    null;
-
-  session.updatedAt =
-    Date.now();
-
-  persistSession(
-    session
-  );
-
-  return true;
-}
-
-
-function setPairingCode(
-  sessionId,
-  code
-) {
-  const session =
-    getSession(
-      sessionId
+  const sender =
+    normalizeJid(
+      getSenderJid(message)
     );
 
-  if (!session) {
-    return false;
+  const bot =
+    normalizeJid(
+      getBotJid(sock)
+    );
+
+  if (
+    sender &&
+    bot &&
+    sender === bot
+  ) {
+    return true;
   }
 
-  session.pairing =
-    true;
+  return false;
+}
 
-  session.status =
-    "pairing";
+/*
+|--------------------------------------------------------------------------
+| IS GROUP
+|--------------------------------------------------------------------------
+*/
 
-  session.pairingCode =
-    String(
-      code || ""
+function isGroup(
+  jid
+) {
+  return String(
+    jid || ""
+  ).endsWith("@g.us");
+}
+
+/*
+|--------------------------------------------------------------------------
+| IS STATUS
+|--------------------------------------------------------------------------
+*/
+
+function isStatus(
+  jid
+) {
+  return (
+    jid ===
+    "status@broadcast"
+  );
+}
+
+/*
+|--------------------------------------------------------------------------
+| GET PREFIX
+|--------------------------------------------------------------------------
+*/
+
+function getPrefix() {
+  return (
+    config?.bot?.prefix ||
+    "."
+  );
+}
+
+/*
+|--------------------------------------------------------------------------
+| PARSE COMMAND
+|--------------------------------------------------------------------------
+*/
+
+function parseCommand(
+  text
+) {
+  const prefix =
+    getPrefix();
+
+  const cleanText =
+    String(text || "")
+      .trim();
+
+  if (
+    !cleanText.startsWith(
+      prefix
     )
-      .trim()
-      .toUpperCase();
-
-  session.updatedAt =
-    Date.now();
-
-  persistSession(
-    session
-  );
-
-  return true;
-}
-
-
-function endPairing(
-  sessionId
-) {
-  const session =
-    getSession(
-      sessionId
-    );
-
-  if (!session) {
-    return false;
-  }
-
-  session.pairing =
-    false;
-
-  session.pairingCode =
-    null;
-
-  session.pairingStartedAt =
-    null;
-
-  session.updatedAt =
-    Date.now();
-
-  persistSession(
-    session
-  );
-
-  return true;
-}
-
-
-function getPairingInfo(
-  sessionId
-) {
-  const session =
-    getSession(
-      sessionId
-    );
-
-  if (!session) {
+  ) {
     return null;
   }
 
-  return {
-    pairing:
-      session.pairing === true,
-
-    code:
-      session.pairingCode ||
-      null,
-
-    startedAt:
-      session.pairingStartedAt ||
-      null,
-
-    status:
-      session.status ||
-      "disconnected"
-  };
-}
-
-
-// ============================================================
-// AUTHENTICATION
-// ============================================================
-
-function setAuthenticated(
-  sessionId,
-  value = true
-) {
-  const session =
-    getSession(
-      sessionId
-    );
-
-  if (!session) {
-    return false;
-  }
-
-  session.authenticated =
-    value === true;
-
-  session.updatedAt =
-    Date.now();
-
-  persistSession(
-    session
-  );
-
-  return true;
-}
-
-
-function isAuthenticated(
-  sessionId
-) {
-  const session =
-    getSession(
-      sessionId
-    );
-
-  return Boolean(
-    session &&
-    session.connected &&
-    session.socket &&
-    session.authenticated === true
-  );
-}
-
-
-function verifySession(
-  sessionId,
-  number,
-  code
-) {
-  const session =
-    getSession(
-      sessionId
-    );
-
-  if (!session) {
-    return {
-      success: false,
-      message:
-        "❌ Session la pa egziste."
-    };
-  }
-
-  if (
-    !session.connected ||
-    !session.socket
-  ) {
-    return {
-      success: false,
-      message:
-        "❌ Bot la pa konekte."
-    };
-  }
-
-  const cleanNumber =
-    cleanPhoneNumber(
-      number
-    );
-
-  const cleanCode =
-    String(
-      code || ""
-    )
-      .trim()
-      .toUpperCase();
-
-  if (
-    cleanNumber !==
-    session.number
-  ) {
-    return {
-      success: false,
-      message:
-        "❌ Number lan pa koresponn ak session lan."
-    };
-  }
-
-  if (
-    cleanCode !==
-    session.code
-  ) {
-    return {
-      success: false,
-      message:
-        "❌ Parrain Code la pa kòrèk."
-    };
-  }
-
-  session.authenticated =
-    true;
-
-  session.updatedAt =
-    Date.now();
-
-  persistSession(
-    session
-  );
-
-  console.log(
-    `🔐 SESSION MANAGER: Session authenticated ${session.number}`
-  );
-
-  return {
-    success: true,
-
-    session:
-      sanitizeSession(
-        session
+  const withoutPrefix =
+    cleanText
+      .slice(
+        prefix.length
       )
+      .trim();
+
+  if (!withoutPrefix) {
+    return null;
+  }
+
+  const parts =
+    withoutPrefix.split(
+      /\s+/
+    );
+
+  const command =
+    String(
+      parts.shift() || ""
+    )
+      .toLowerCase();
+
+  const args =
+    parts;
+
+  return {
+    prefix,
+
+    command,
+
+    args,
+
+    text:
+      args.join(" "),
+
+    raw:
+      withoutPrefix
   };
 }
 
+/*
+|--------------------------------------------------------------------------
+| SEND TEXT
+|--------------------------------------------------------------------------
+*/
 
-// ============================================================
-// SETTINGS
-// ============================================================
-
-function updateSettings(
-  sessionId,
-  settings = {}
+async function sendText(
+  sock,
+  jid,
+  text,
+  options = {}
 ) {
-  const session =
-    getSession(
-      sessionId
+  if (!sock) {
+    throw new Error(
+      "WhatsApp socket is required."
     );
+  }
 
-  if (!session) {
+  if (!jid) {
+    throw new Error(
+      "Chat JID is required."
+    );
+  }
+
+  return sock.sendMessage(
+    jid,
+    {
+      text:
+        String(text || "")
+    },
+    options
+  );
+}
+
+/*
+|--------------------------------------------------------------------------
+| SEND REACTION
+|--------------------------------------------------------------------------
+*/
+
+async function reactToMessage(
+  sock,
+  message,
+  emoji
+) {
+  if (!sock) {
     return false;
   }
 
-  session.settings = {
-    ...session.settings,
-    ...settings
-  };
-
-  session.updatedAt =
-    Date.now();
-
-  persistSession(
-    session
-  );
-
-  return true;
-}
-
-
-function getSettings(
-  sessionId
-) {
-  const session =
-    getSession(
-      sessionId
-    );
-
-  if (!session) {
-    return {};
-  }
-
-  return {
-    ...session.settings
-  };
-}
-
-
-// ============================================================
-// BOT INFORMATION
-// ============================================================
-
-function updateBot(
-  sessionId,
-  bot = {}
-) {
-  const session =
-    getSession(
-      sessionId
-    );
-
-  if (!session) {
+  if (
+    !message?.key
+  ) {
     return false;
   }
 
-  session.bot = {
-    ...session.bot,
-    ...bot
-  };
-
-  session.updatedAt =
-    Date.now();
-
-  persistSession(
-    session
-  );
-
-  return true;
-}
-
-
-function getBot(
-  sessionId
-) {
-  const session =
-    getSession(
-      sessionId
-    );
-
-  if (!session) {
-    return {};
-  }
-
-  return {
-    ...session.bot
-  };
-}
-
-
-// ============================================================
-// RESET AUTH
-// ============================================================
-
-function resetAuth(
-  sessionId
-) {
-  const session =
-    getSession(
-      sessionId
-    );
-
-  if (!session) {
+  if (
+    typeof emoji !==
+    "string"
+  ) {
     return false;
   }
 
   try {
-
-    const authDir =
-      getAuthDir(
-        sessionId
-      );
-
-    if (
-      fs.existsSync(
-        authDir
-      )
-    ) {
-      fs.rmSync(
-        authDir,
-        {
-          recursive: true,
-          force: true
+    await sock.sendMessage(
+      message.key.remoteJid,
+      {
+        react: {
+          text: emoji,
+          key: message.key
         }
-      );
-    }
-
-    ensureSessionDirectories(
-      sessionId
-    );
-
-    session.socket =
-      null;
-
-    session.connected =
-      false;
-
-    session.authenticated =
-      false;
-
-    session.pairing =
-      false;
-
-    session.pairingCode =
-      null;
-
-    session.pairingStartedAt =
-      null;
-
-    session.status =
-      "disconnected";
-
-    session.updatedAt =
-      Date.now();
-
-    persistSession(
-      session
-    );
-
-    console.log(
-      `🧹 SESSION MANAGER: Auth reset for ${sessionId}`
+      }
     );
 
     return true;
-
-    } catch (error) {
-
+  } catch (error) {
     console.error(
-      `❌ RESET AUTH ERROR [${sessionId}]:`,
-      error?.message || error
+      "[MESSAGE] Reaction failed:",
+      error?.message ||
+        error
     );
 
     return false;
   }
 }
 
-// ============================================================
-// DELETE SESSION
-// ============================================================
+/*
+|--------------------------------------------------------------------------
+| GET MODE
+|--------------------------------------------------------------------------
+*/
 
-function deleteSession(
-  sessionId
+function getBotMode() {
+  return (
+    config?.bot?.mode ||
+    "Public"
+  );
+}
+
+/*
+|--------------------------------------------------------------------------
+| CHECK MODE
+|--------------------------------------------------------------------------
+*/
+
+function canProcessMessage(
+  message
 ) {
-  const session =
-    getSession(
-      sessionId
+  const mode =
+    getBotMode()
+      .toLowerCase();
+
+  const jid =
+    getChatJid(message);
+
+  /*
+   * Public:
+   * Accept messages everywhere.
+   */
+
+  if (
+    mode ===
+    "public"
+      .toLowerCase()
+  ) {
+    return true;
+  }
+
+  /*
+   * Private:
+   * Ignore group messages.
+   */
+
+  if (
+    mode ===
+    "privé" ||
+    mode ===
+    "prive"
+  ) {
+    return !isGroup(jid);
+  }
+
+  /*
+   * Group:
+   * Accept only groups.
+   */
+
+  if (
+    mode ===
+    "group"
+  ) {
+    return isGroup(jid);
+  }
+
+  /*
+   * Unknown mode:
+   * Default to public behavior.
+   */
+
+  return true;
+}
+
+/*
+|--------------------------------------------------------------------------
+| BUILD COMMAND CONTEXT
+|--------------------------------------------------------------------------
+*/
+
+function buildContext(
+  sock,
+  message,
+  parsed
+) {
+  const jid =
+    getChatJid(message);
+
+  const sender =
+    getSenderJid(message);
+
+  return {
+    sock,
+
+    message,
+
+    jid,
+
+    sender,
+
+    isGroup:
+      isGroup(jid),
+
+    isStatus:
+      isStatus(jid),
+
+    command:
+      parsed?.command ||
+      null,
+
+    args:
+      parsed?.args ||
+      [],
+
+    text:
+      parsed?.text ||
+      "",
+
+    prefix:
+      parsed?.prefix ||
+      getPrefix(),
+
+    bot:
+      config.bot,
+
+    config,
+
+    send:
+      (text, options = {}) =>
+        sendText(
+          sock,
+          jid,
+          text,
+          options
+        ),
+
+    react:
+      (emoji) =>
+        reactToMessage(
+          sock,
+          message,
+          emoji
+        )
+  };
+}
+
+/*
+|--------------------------------------------------------------------------
+| DEFAULT COMMAND: MENU
+|--------------------------------------------------------------------------
+*/
+
+registerCommand(
+  "menu",
+  async (
+    ctx
+  ) => {
+    const menu = `
+╭━━━〔 🦁 TOPFEROS MD V2.0.0 🐑 〕━━━╮
+┃
+┃ ✨ COMMAND MENU
+┃
+┃ 👥 GROUP
+┃ ├─ .group
+┃ ├─ .rules
+┃ └─ .warn
+┃
+┃ 🛡️ SECURITY
+┃ ├─ .antidelete
+┃ ├─ .anticall
+┃ ├─ .antibug
+┃ └─ .antibot
+┃
+┃ ⚡ AUTOMATION
+┃ ├─ .alwaysonline
+┃ ├─ .autoreply
+┃ ├─ .autoreact
+┃ └─ .status
+┃
+┃ 🤖 AI
+┃ ├─ .ai
+┃ └─ .prompt
+┃
+┃ 🎵 MEDIA
+┃ ├─ .play song
+┃ ├─ .play v
+┃ └─ .video
+┃
+┃ ⚙️ SYSTEM
+┃ ├─ .language
+┃ └─ .info
+┃
+┃ ⚙️ SETTINGS
+┃ └─ .setting
+┃
+╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯
+
+🦁 TECH BY TOPFEROS MD 🐑
+`;
+
+    await ctx.send(
+      menu
     );
 
-  if (!session) {
+    return {
+      success: true
+    };
+  },
+  {
+    description:
+      "Display the TOPFEROS MD command menu.",
+
+    category:
+      "SYSTEM"
+  }
+);
+
+/*
+|--------------------------------------------------------------------------
+| DEFAULT COMMAND: INFO
+|--------------------------------------------------------------------------
+*/
+
+registerCommand(
+  "info",
+  async (
+    ctx
+  ) => {
+    const info = `
+╭━━━〔 ⚙️ BOT INFORMATION 〕━━━╮
+┃
+┃ 🦁 Name     : ${config.bot.name}
+┃ 📦 Version  : V${config.bot.version}
+┃ 🔹 Prefix   : ${config.bot.prefix}
+┃ 🌐 Mode     : ${config.bot.mode}
+┃ 📍 Location : ${config.bot.location}
+┃ 🌎 Language : English
+┃
+╰━━━━━━━━━━━━━━━━━━━━━━━━━━╯
+
+🦁 TECH BY TOPFEROS MD 🐑
+`;
+
+    await ctx.send(
+      info
+    );
+
+    return {
+      success: true
+    };
+  },
+  {
+    description:
+      "Display bot information.",
+
+    category:
+      "SYSTEM"
+  }
+);
+
+/*
+|--------------------------------------------------------------------------
+| DEFAULT COMMAND: AI
+|--------------------------------------------------------------------------
+|
+| The real AI provider will be connected
+| when the AI service is added.
+|
+|--------------------------------------------------------------------------
+*/
+
+registerCommand(
+  "ai",
+  async (
+    ctx
+  ) => {
+    if (!ctx.text) {
+      await ctx.send(
+        `🤖 Please provide a question.\n\nExample:\n.ai What is artificial intelligence?\n\n🦁 TECH BY TOPFEROS MD 🐑`
+      );
+
+      return {
+        success: false
+      };
+    }
+
+    await ctx.send(
+      `🤖 AI REQUEST RECEIVED\n\nYour request:\n${ctx.text}\n\n⚙️ AI service is being prepared.\n\n🦁 TECH BY TOPFEROS MD 🐑`
+    );
+
+    return {
+      success: true
+    };
+  },
+  {
+    description:
+      "Ask the TOPFEROS AI assistant.",
+
+    usage:
+      ".ai <question>",
+
+    category:
+      "AI"
+  }
+);
+
+/*
+|--------------------------------------------------------------------------
+| DEFAULT COMMAND: PROMPT
+|--------------------------------------------------------------------------
+*/
+
+registerCommand(
+  "prompt",
+  async (
+    ctx
+  ) => {
+    if (!ctx.text) {
+      await ctx.send(
+        `🤖 Please provide a prompt request.\n\nExample:\n.prompt Create a cinematic lion logo\n\n🦁 TECH BY TOPFEROS MD 🐑`
+      );
+
+      return {
+        success: false
+      };
+    }
+
+    await ctx.send(
+      `🤖 PROMPT REQUEST RECEIVED\n\n${ctx.text}\n\n⚙️ Prompt AI service is being prepared.\n\n🦁 TECH BY TOPFEROS MD 🐑`
+    );
+
+    return {
+      success: true
+    };
+  },
+  {
+    description:
+      "Generate or improve an AI prompt.",
+
+    usage:
+      ".prompt <request>",
+
+    category:
+      "AI"
+  }
+);
+
+/*
+|--------------------------------------------------------------------------
+| DEFAULT COMMAND: SETTING
+|--------------------------------------------------------------------------
+*/
+
+registerCommand(
+  "setting",
+  async (
+    ctx
+  ) => {
+    const panelUrl =
+      process.env.SETTINGS_PANEL_URL ||
+      "";
+
+    if (!panelUrl) {
+      await ctx.send(
+        `⚙️ SETTINGS PANEL\n\nThe Settings Panel URL has not been configured yet.\n\n🦁 TECH BY TOPFEROS MD 🐑`
+      );
+
+      return {
+        success: false
+      };
+    }
+
+    await ctx.send(
+      `⚙️ TOPFEROS MD SETTINGS\n\nOpen the Settings Panel:\n${panelUrl}\n\n🦁 TECH BY TOPFEROS MD 🐑`
+    );
+
+    return {
+      success: true
+    };
+  },
+  {
+    description:
+      "Open the TOPFEROS MD Settings Panel.",
+
+    category:
+      "SETTINGS"
+  }
+);
+
+/*
+|--------------------------------------------------------------------------
+| ATTACH STATUS AI
+|--------------------------------------------------------------------------
+*/
+
+function attachStatusAI(
+  sock,
+  options = {}
+) {
+  if (!sock) {
+    throw new Error(
+      "WhatsApp socket is required."
+    );
+  }
+
+  /*
+   * Prevent duplicate listeners.
+   */
+
+  if (
+    attachedSockets.has(
+      sock
+    )
+  ) {
     return false;
   }
 
-  sessions.delete(
-    sessionId
-  );
+  /*
+   * Attach only when enabled.
+   */
 
-  try {
-
-    const sessionDir =
-      getSessionDir(
-        sessionId
-      );
-
-    if (
-      fs.existsSync(
-        sessionDir
-      )
-    ) {
-      fs.rmSync(
-        sessionDir,
-        {
-          recursive: true,
-          force: true
-        }
-      );
-    }
-
-  } catch (error) {
-
-    console.error(
-      `❌ DELETE SESSION FILE ERROR [${sessionId}]:`,
-      error?.message || error
-    );
+  if (
+    options.enabled === false
+  ) {
+    return false;
   }
 
-  console.log(
-    `🗑️ SESSION MANAGER: Session deleted ${sessionId}`
+  attachStatusHandler(
+    sock,
+    {
+      enabled: true
+    }
+  );
+
+  attachedSockets.add(
+    sock
   );
 
   return true;
 }
 
+/*
+|--------------------------------------------------------------------------
+| HANDLE MESSAGE
+|--------------------------------------------------------------------------
+*/
 
-// ============================================================
-// CLEAR MEMORY ONLY
-// ============================================================
-
-function clearSessions() {
-  sessions.clear();
-
-  console.log(
-    "🧹 SESSION MANAGER: Memory sessions cleared."
-  );
-}
-
-
-// ============================================================
-// PUBLIC SESSION LIST
-// ============================================================
-
-function listPublicSessions() {
-  return getAllSessions().map(
-    session => ({
-      sessionId:
-        session.sessionId,
-
-      number:
-        session.number,
-
-      status:
-        session.status,
-
-      connected:
-        isConnected(
-          session.sessionId
-        ),
-
-      pairing:
-        session.pairing === true,
-
-      authenticated:
-        session.authenticated === true,
-
-      createdAt:
-        session.createdAt,
-
-      updatedAt:
-        session.updatedAt
-    })
-  );
-}
-
-
-// ============================================================
-// SANITIZE
-// ============================================================
-
-function sanitizeSession(
-  session
+async function handleMessage(
+  sock,
+  message,
+  sessionId
 ) {
-  if (!session) {
-    return null;
+  try {
+    /*
+     * Validate message.
+     */
+
+    if (
+      !sock ||
+      !message
+    ) {
+      return {
+        success: false,
+        reason:
+          "Invalid message."
+      };
+    }
+
+    /*
+     * Ignore bot messages.
+     */
+
+    if (
+      isFromBot(
+        message,
+        sock
+      )
+    ) {
+      return {
+        success: false,
+        ignored: true,
+        reason:
+          "Message originated from bot."
+      };
+    }
+
+    /*
+     * Get chat.
+     */
+
+    const jid =
+      getChatJid(
+        message
+      );
+
+    /*
+     * Ignore Status here.
+     *
+     * Status is handled by statusHandler.js.
+     */
+
+    if (
+      isStatus(jid)
+    ) {
+      return {
+        success: false,
+        ignored: true,
+        reason:
+          "Status handled by statusHandler."
+      };
+    }
+
+    /*
+     * Check bot mode.
+     */
+
+    if (
+      !canProcessMessage(
+        message
+      )
+    ) {
+      return {
+        success: false,
+        ignored: true,
+        reason:
+          "Message not allowed in current bot mode."
+      };
+    }
+
+    /*
+     * Extract text.
+     */
+
+    const messageText =
+      extractMessageText(
+        message.message
+      );
+
+    /*
+     * Ignore empty messages.
+     */
+
+    if (
+      !messageText
+    ) {
+      return {
+        success: false,
+        ignored: true,
+        reason:
+          "No command text."
+      };
+    }
+
+    /*
+     * Parse command.
+     */
+
+    const parsed =
+      parseCommand(
+        messageText
+      );
+
+    /*
+     * Normal chat without prefix.
+     *
+     * Natural-language AI handling can be
+     * connected later.
+     */
+
+    if (!parsed) {
+      return {
+        success: false,
+        ignored: true,
+        reason:
+          "Not a command."
+      };
+    }
+
+    /*
+     * Find command.
+     */
+
+    const found =
+      findCommand(
+        parsed.command
+      );
+
+    /*
+     * Unknown command.
+     */
+
+    if (!found) {
+      await sendText(
+        sock,
+        jid,
+        `❌ Unknown command: ${getPrefix()}${parsed.command}\n\n📖 Type ${getPrefix()}menu to see available commands.\n\n🦁 TECH BY TOPFEROS MD 🐑`
+      );
+
+      return {
+        success: false,
+        reason:
+          "Unknown command."
+      };
+    }
+
+    /*
+     * Build command context.
+     */
+
+    const context =
+      buildContext(
+        sock,
+        message,
+        parsed
+      );
+
+    /*
+     * Execute command.
+     */
+
+    const result =
+      await found.command.handler(
+        context
+      );
+
+    return {
+      success: true,
+
+      command:
+        found.name,
+
+      result,
+
+      sessionId:
+        sessionId || null
+    };
+  } catch (error) {
+    console.error(
+      "[MESSAGE HANDLER] Error:",
+      error?.stack ||
+        error
+    );
+
+    try {
+      const jid =
+        getChatJid(
+          message
+        );
+
+      if (jid) {
+        await sendText(
+          sock,
+          jid,
+          `❌ An error occurred while processing your request.\n\n🦁 TECH BY TOPFEROS MD 🐑`
+        );
+      }
+    } catch {
+      /*
+       * Do not throw another error while
+       * attempting to report an error.
+       */
+    }
+
+    return {
+      success: false,
+
+      error:
+        error?.message ||
+        String(error)
+    };
+  }
+}
+
+/*
+|--------------------------------------------------------------------------
+| GET REGISTERED COMMANDS
+|--------------------------------------------------------------------------
+*/
+
+function getCommands() {
+  const result = [];
+
+  for (
+    const [
+      name,
+      command
+    ] of commands
+  ) {
+    result.push({
+      name,
+
+      aliases:
+        [...command.aliases],
+
+      description:
+        command.description,
+
+      usage:
+        command.usage,
+
+      category:
+        command.category
+    });
   }
 
-  return {
-    sessionId:
-      session.sessionId,
-
-    number:
-      session.number,
-
-    code:
-      session.code,
-
-    authenticated:
-      session.authenticated === true,
-
-    connected:
-      session.connected === true,
-
-    status:
-      session.status ||
-      "disconnected",
-
-    pairing:
-      session.pairing === true,
-
-    pairingCode:
-      session.pairingCode ||
-      null,
-
-    pairingStartedAt:
-      session.pairingStartedAt ||
-      null,
-
-    authDir:
-      session.authDir,
-
-    settings: {
-      ...session.settings
-    },
-
-    bot: {
-      ...session.bot
-    },
-
-    panelSession:
-      session.panelSession ||
-      null,
-
-    createdAt:
-      session.createdAt,
-
-    updatedAt:
-      session.updatedAt
-  };
+  return result;
 }
 
-
-// ============================================================
-// EXPORTS
-// ============================================================
+/*
+|--------------------------------------------------------------------------
+| EXPORTS
+|--------------------------------------------------------------------------
+*/
 
 module.exports = {
+  handleMessage,
 
-  // Session
-  createSession,
-  updateSession,
-  setNumber,
-  removeSession,
-  generateSessionId,
-  generateParrainCode,
+  registerCommand,
 
-  // Lookup
-  getSession,
-  getSessionByNumber,
-  getAllSessions,
-  getSessions,
-  getSessionCount,
+  findCommand,
 
-  // Stored sessions
-  getStoredSessionIds,
-  restoreSession,
-  restoreSessions,
+  getCommands,
 
-  // Numbers
-  cleanPhoneNumber,
-  normalizeNumber,
-  validatePhoneNumber,
-  getPhoneNumber,
-  setPhoneNumber,
+  parseCommand,
 
-  // Paths
-  getAuthDir,
-  getSessionDir,
+  extractMessageText,
 
-  // Socket
-  setSocket,
-  getSocket,
+  getMessageType,
 
-  // Connection
-  connectSession,
-  disconnectSession,
-  isConnected,
+  getChatJid,
 
-  // Status
-  setStatus,
-  getStatus,
+  getSenderJid,
 
-  // Pairing
-  startPairing,
-  setPairingCode,
-  endPairing,
-  getPairingInfo,
+  isGroup,
 
-  // Authentication
-  setAuthenticated,
-  isAuthenticated,
-  verifySession,
+  isStatus,
 
-  // Settings
-  updateSettings,
-  getSettings,
+  isFromBot,
 
-  // Bot
-  updateBot,
-  getBot,
+  sendText,
 
-  // Auth reset
-  resetAuth,
+  reactToMessage,
 
-  // Delete
-  deleteSession,
-  clearSessions,
-
-  // Public
-  listPublicSessions,
-
-  // Security
-  sanitizeSession
+  attachStatusAI
 };
-
-
-// ╔════════════════════════════════════════════════════╗
-// ║             🚀 TECH BY TOPFEROS MD               ║
-// ╚════════════════════════════════════════════════════╝
