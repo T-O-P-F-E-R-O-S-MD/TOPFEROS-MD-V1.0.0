@@ -85,13 +85,6 @@ const manuallyStopped =
 |--------------------------------------------------------------------------
 | DEFAULT AUTOMATIONS
 |--------------------------------------------------------------------------
-|
-| IMPORTANT:
-| These values come from config.js.
-| This prevents two different configuration
-| systems from fighting each other.
-|
-|--------------------------------------------------------------------------
 */
 
 function getDefaultAutomationSettings() {
@@ -139,12 +132,10 @@ function getDefaultAutomationSettings() {
 
     antiBlock:
       Array.isArray(
-        config?.security
-          ?.antiBlockNumbers
+        config?.security?.antiBlockNumbers
       )
         ? [
-            ...config.security
-              .antiBlockNumbers
+            ...config.security.antiBlockNumbers
           ]
         : []
   };
@@ -156,9 +147,7 @@ function getDefaultAutomationSettings() {
 |--------------------------------------------------------------------------
 */
 
-function normalizeNumber(
-  number
-) {
+function normalizeNumber(number) {
   return String(
     number || ""
   )
@@ -172,13 +161,9 @@ function normalizeNumber(
 |--------------------------------------------------------------------------
 */
 
-function getSessionId(
-  number
-) {
+function getSessionId(number) {
   const sessionId =
-    normalizeNumber(
-      number
-    );
+    normalizeNumber(number);
 
   if (!sessionId) {
     throw new Error(
@@ -195,9 +180,7 @@ function getSessionId(
 |--------------------------------------------------------------------------
 */
 
-function getSessionPath(
-  sessionId
-) {
+function getSessionPath(sessionId) {
   return path.join(
     SESSIONS_DIR,
     sessionId
@@ -210,9 +193,7 @@ function getSessionPath(
 |--------------------------------------------------------------------------
 */
 
-function getSession(
-  sessionId
-) {
+function getSession(sessionId) {
   return activeSessions.get(
     String(sessionId)
   );
@@ -230,13 +211,137 @@ function getActiveSessions() {
 
 /*
 |--------------------------------------------------------------------------
+| GET SESSION QR
+|--------------------------------------------------------------------------
+*/
+
+function getSessionQR(number) {
+  const sessionId =
+    getSessionId(number);
+
+  const session =
+    activeSessions.get(
+      sessionId
+    );
+
+  return session?.qr || null;
+}
+
+/*
+|--------------------------------------------------------------------------
+| CHECK CONNECTION
+|--------------------------------------------------------------------------
+*/
+
+function isConnected(number) {
+  const sessionId =
+    getSessionId(number);
+
+  const session =
+    activeSessions.get(
+      sessionId
+    );
+
+  return session?.connected === true;
+}
+
+/*
+|--------------------------------------------------------------------------
+| GET SESSION AUTOMATION
+|--------------------------------------------------------------------------
+*/
+
+function getSessionAutomation(number) {
+  const sessionId =
+    getSessionId(number);
+
+  const session =
+    activeSessions.get(
+      sessionId
+    );
+
+  if (!session) {
+    return null;
+  }
+
+  return {
+    ...session.automation
+  };
+}
+
+/*
+|--------------------------------------------------------------------------
+| UPDATE SESSION AUTOMATION
+|--------------------------------------------------------------------------
+*/
+
+function updateSessionAutomation(
+  number,
+  updates = {}
+) {
+  const sessionId =
+    getSessionId(number);
+
+  const session =
+    activeSessions.get(
+      sessionId
+    );
+
+  if (!session) {
+    return null;
+  }
+
+  session.automation = {
+    ...session.automation,
+    ...updates
+  };
+
+  /*
+   * Keep values normalized.
+   */
+
+  session.automation.alwaysOnline =
+    session.automation.alwaysOnline === true;
+
+  session.automation.fakeTyping =
+    session.automation.fakeTyping === true;
+
+  session.automation.fakeRecording =
+    session.automation.fakeRecording === true;
+
+  session.automation.autoStatusSeen =
+    session.automation.autoStatusSeen !== false;
+
+  session.automation.autoStatusReply =
+    session.automation.autoStatusReply !== false;
+
+  session.automation.autoStatusReact =
+    session.automation.autoStatusReact !== false;
+
+  session.automation.antiDelete =
+    session.automation.antiDelete !== false;
+
+  session.automation.antiCall =
+    session.automation.antiCall === true;
+
+  session.automation.antiBug =
+    session.automation.antiBug === true;
+
+  session.automation.antiBotFilter =
+    session.automation.antiBotFilter === true;
+
+  return {
+    ...session.automation
+  };
+}
+
+/*
+|--------------------------------------------------------------------------
 | WELCOME MESSAGE
 |--------------------------------------------------------------------------
 */
 
-function createWelcomeMessage(
-  userNumber
-) {
+function createWelcomeMessage(userNumber) {
   const user =
     String(
       userNumber || ""
@@ -358,9 +463,7 @@ async function sendWelcomeMessage(
     }
 
     const jid =
-      sock.user.id.split(
-        ":"
-      )[0] +
+      sock.user.id.split(":")[0] +
       "@s.whatsapp.net";
 
     const message =
@@ -372,10 +475,7 @@ async function sendWelcomeMessage(
       jid,
       {
         text: message,
-
-        mentions: [
-          jid
-        ]
+        mentions: [jid]
       }
     );
 
@@ -410,9 +510,7 @@ async function connectSession(
   options = {}
 ) {
   const sessionId =
-    getSessionId(
-      number
-    );
+    getSessionId(number);
 
   /*
    * Do not create duplicate sockets.
@@ -502,13 +600,10 @@ async function connectSession(
 
   /*
    * Automation settings.
-   *
-   * Panel/session values can override defaults.
    */
 
   const automation = {
     ...getDefaultAutomationSettings(),
-
     ...(options.automation || {})
   };
 
@@ -548,9 +643,7 @@ async function connectSession(
    * when available.
    */
 
-  if (
-    version
-  ) {
+  if (version) {
     socketConfig.version =
       version;
   }
@@ -603,8 +696,6 @@ async function connectSession(
 
   /*
    * Save authentication credentials.
-   *
-   * This is required for session persistence.
    */
 
   sock.ev.on(
@@ -617,7 +708,7 @@ async function connectSession(
    | STATUS HANDLER
    |--------------------------------------------------------------------------
    |
-   | Attach once per socket.
+   | Attach once for this socket.
    |
    */
 
@@ -625,7 +716,7 @@ async function connectSession(
     attachStatusHandler(
       sock,
       {
-        enabled:
+        autoStatusReact:
           automation.autoStatusReact === true,
 
         autoStatusSeen:
@@ -668,17 +759,13 @@ async function connectSession(
        * QR generated.
        */
 
-      if (
-        qr
-      ) {
+      if (qr) {
         const current =
           activeSessions.get(
             sessionId
           );
 
-        if (
-          current
-        ) {
+        if (current) {
           current.qr =
             qr;
         }
@@ -701,9 +788,7 @@ async function connectSession(
             sessionId
           );
 
-        if (
-          !current
-        ) {
+        if (!current) {
           return;
         }
 
@@ -756,9 +841,7 @@ async function connectSession(
             sessionId
           );
 
-        if (
-          timer
-        ) {
+        if (timer) {
           clearTimeout(
             timer
           );
@@ -782,9 +865,7 @@ async function connectSession(
             sessionId
           );
 
-        if (
-          current
-        ) {
+        if (current) {
           current.connected =
             false;
         }
@@ -819,8 +900,7 @@ async function connectSession(
          * Logged out:
          * do not automatically reconnect.
          *
-         * IMPORTANT:
-         * Session files are not deleted here.
+         * Session files remain untouched.
          */
 
         const shouldReconnect =
@@ -833,9 +913,7 @@ async function connectSession(
           `Reconnect=${shouldReconnect}`
         );
 
-        if (
-          !shouldReconnect
-        ) {
+        if (!shouldReconnect) {
           logger.error(
             `[${sessionId}] WhatsApp session logged out.`
           );
@@ -923,12 +1001,6 @@ async function connectSession(
    |--------------------------------------------------------------------------
    | MESSAGE EVENTS
    |--------------------------------------------------------------------------
-   |
-   | Normal commands are handled by messageHandler.
-   |
-   | Status messages are ignored here because
-   | statusHandler already has its own listener.
-   |
    */
 
   sock.ev.on(
@@ -945,11 +1017,6 @@ async function connectSession(
         return;
       }
 
-      /*
-       * Baileys can deliver multiple
-       * messages in one event.
-       */
-
       for (
         const message of
           event.messages
@@ -962,8 +1029,8 @@ async function connectSession(
           }
 
           /*
-           * Status handler already processes
-           * status@broadcast.
+           * Status messages are handled
+           * by statusHandler.
            */
 
           if (
@@ -1011,9 +1078,7 @@ async function connectSession(
 |--------------------------------------------------------------------------
 |
 | IMPORTANT:
-| This does NOT delete the auth/session files.
-|
-| The user can reconnect later.
+| This does NOT delete auth/session files.
 |--------------------------------------------------------------------------
 */
 
@@ -1021,9 +1086,7 @@ async function disconnectSession(
   number
 ) {
   const sessionId =
-    getSessionId(
-      number
-    );
+    getSessionId(number);
 
   /*
    * Stop automatic reconnect.
@@ -1042,9 +1105,7 @@ async function disconnectSession(
       sessionId
     );
 
-  if (
-    timer
-  ) {
+  if (timer) {
     clearTimeout(
       timer
     );
@@ -1063,16 +1124,12 @@ async function disconnectSession(
       sessionId
     );
 
-  if (
-    !session?.sock
-  ) {
+  if (!session?.sock) {
     return false;
   }
 
   /*
    * Close socket only.
-   *
-   * DO NOT delete session files.
    */
 
   try {
@@ -1091,9 +1148,9 @@ async function disconnectSession(
   }
 
   /*
-   * Remove from active memory.
+   * Remove active memory.
    *
-   * Authentication files remain on disk.
+   * Session credentials remain on disk.
    */
 
   activeSessions.delete(
@@ -1117,9 +1174,7 @@ async function reconnectSession(
   number
 ) {
   const sessionId =
-    getSessionId(
-      number
-    );
+    getSessionId(number);
 
   /*
    * Allow reconnect.
@@ -1138,9 +1193,7 @@ async function reconnectSession(
       sessionId
     );
 
-  if (
-    timer
-  ) {
+  if (timer) {
     clearTimeout(
       timer
     );
@@ -1159,9 +1212,7 @@ async function reconnectSession(
       sessionId
     );
 
-  if (
-    existing?.sock
-  ) {
+  if (existing?.sock) {
     try {
       existing.sock.end(
         undefined
@@ -1188,138 +1239,7 @@ async function reconnectSession(
 
 /*
 |--------------------------------------------------------------------------
-| IS CONNECTED
-|--------------------------------------------------------------------------
-*/
-
-function isConnected(
-  number
-) {
-  const sessionId =
-    getSessionId(
-      number
-    );
-
-  return Boolean(
-    activeSessions.get(
-      sessionId
-    )?.connected
-  );
-}
-
-/*
-|--------------------------------------------------------------------------
-| GET SESSION AUTOMATION
-|--------------------------------------------------------------------------
-*/
-
-function getSessionAutomation(
-  number
-) {
-  const sessionId =
-    getSessionId(
-      number
-    );
-
-  const session =
-    activeSessions.get(
-      sessionId
-    );
-
-  if (
-    !session
-  ) {
-    return null;
-  }
-
-  return {
-    ...session.automation
-  };
-}
-
-/*
-|--------------------------------------------------------------------------
-| UPDATE SESSION AUTOMATION
-|--------------------------------------------------------------------------
-*/
-
-function updateSessionAutomation(
-  number,
-  changes = {}
-) {
-  const sessionId =
-    getSessionId(
-      number
-    );
-
-  const session =
-    activeSessions.get(
-      sessionId
-    );
-
-  if (
-    !session
-  ) {
-    return false;
-  }
-
-  session.automation = {
-    ...session.automation,
-    ...changes
-  };
-
-  /*
-   * Keep online behavior synchronized
-   * when possible.
-   */
-
-  if (
-    Object.prototype.hasOwnProperty.call(
-      changes,
-      "alwaysOnline"
-    )
-  ) {
-    /*
-     * The socket connection itself controls
-     * the actual WhatsApp lifecycle.
-     *
-     * The updated value is stored here for
-     * the automation layer.
-     */
-  }
-
-  logger.info(
-    `[${sessionId}] Automation settings updated.`
-  );
-
-  return true;
-}
-
-/*
-|--------------------------------------------------------------------------
-| GET SESSION QR
-|--------------------------------------------------------------------------
-*/
-
-function getSessionQR(
-  number
-) {
-  const sessionId =
-    getSessionId(
-      number
-    );
-
-  return (
-    activeSessions.get(
-      sessionId
-    )?.qr ||
-    null
-  );
-}
-
-/*
-|--------------------------------------------------------------------------
-| STOP ALL SESSIONS
+| DISCONNECT ALL SESSIONS
 |--------------------------------------------------------------------------
 |
 | Useful during application shutdown.
