@@ -1,34 +1,26 @@
 <p align="center">
   <img src="logo.png" width="220" alt="TOPFEROS MD Logo">
-</p>
-
-<h1 align="center">TOPFEROS MD • V2.0.0</h1>
-
-<p align="center">
+</p><h1 align="center">TOPFEROS MD • V2.0.0</h1><p align="center">
   <strong>Smart • Powerful • Customizable WhatsApp Bot</strong>
-</p>
-
-<p align="center">
+</p><p align="center">
   <img src="https://img.shields.io/badge/Version-V2.0.0-black?style=for-the-badge" alt="Version">
   <img src="https://img.shields.io/badge/Node.js-20%2B-green?style=for-the-badge" alt="Node.js">
   <img src="https://img.shields.io/badge/Status-Active-blue?style=for-the-badge" alt="Status">
   <img src="https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge" alt="License">
-</p>
+</p>---
 
----
+📖 ABOUT TOPFEROS MD
 
-## 📖 ABOUT TOPFEROS MD
+TOPFEROS MD V2.0.0 is a modern WhatsApp Bot designed to provide
+a fast, intelligent, customizable, and easy-to-manage experience.
 
-TOPFEROS MD V2.0.0 se yon WhatsApp Bot modèn ki fèt pou bay
-yon eksperyans rapid, entèlijan, customizable ak fasil pou administre.
+V2.0.0 is built with a new Multi-Session architecture that allows
+multiple users to connect to the bot using independent sessions.
 
-V2.0.0 la fèt ak yon nouvo architecture Multi-Session ki pèmèt
-plizyè itilizatè konekte ak bot la avèk sessions endepandan.
+The bot includes a Web Panel system that allows users to configure
+the bot without directly modifying the source code.
 
-Bot la gen yon sistèm Web Panel ki pèmèt itilizatè yo configure
-bot la san yo pa bezwen modifye source code la dirèkteman.
-
-Sistèm nan gen:
+The system includes:
 
 - 🔐 Multi-Session
 - ⚙️ Advanced Settings
@@ -42,29 +34,28 @@ Sistèm nan gen:
 
 ---
 
-## 📦 BOT INFORMATION
+📦 BOT INFORMATION
 
-| Information | Value |
-|---|---|
-| 🤖 Bot Name | TOPFEROS MD |
-| 📦 Version | V2.0.0 |
-| 🔰 Default Prefix | `.` |
-| ⚙️ Default Mode | Public |
-| 🌐 Default Language | English |
-| 📍 Default Location | HAÏTI |
-| 👤 Default Age | 14 |
-| 👨‍💻 Developer | TOPFEROS MD |
-| 🖼️ Logo | `logo.png` |
-| 📜 License | MIT |
+Information| Value
+🤖 Bot Name| TOPFEROS MD
+📦 Version| V2.0.0
+🔰 Default Prefix| "."
+⚙️ Default Mode| Public
+🌐 Default Language| English
+📍 Default Location| HAÏTI
+👤 Default Age| 14
+👨‍💻 Developer| TOPFEROS MD
+🖼️ Logo| "logo.png"
+📜 License| MIT
 
 ---
 
-## ✨ FEATURES
+✨ FEATURES
 
-### 👥 GROUP SYSTEM
+👥 GROUP SYSTEM
 
-TOPFEROS MD V2.0.0 gen yon sistèm Group Management ak
-Group Automation pou ede admin yo jere group yo pi fasil.
+TOPFEROS MD V2.0.0 includes a Group Management and
+Group Automation system to help administrators manage groups more easily.
 
 - 👥 Group Management
 - 📜 Group Rules
@@ -75,21 +66,21 @@ Group Automation pou ede admin yo jere group yo pi fasil.
 - 📝 Group Bio / Principles
 - 👮 Member Protection
 
-### ⚠️ GROUP PRINCIPLES
+⚠️ GROUP PRINCIPLES
 
-Admin lan kapab mete prensip/règ group la atravè Settings Panel la.
+Administrators can configure group principles and rules through the Settings Panel.
 
-Si yon member vyole prensip yo:
+If a member violates the group principles:
 
-- 1️⃣ Premye vyolasyon → Warning
-- 2️⃣ Dezyèm vyolasyon → Warning
-- 3️⃣ Twazyèm vyolasyon → Remove Member
+- 1️⃣ First violation → Warning
+- 2️⃣ Second violation → Warning
+- 3️⃣ Third violation → Remove Member
 
 ---
 
-### 🛡️ SECURITY SYSTEM
+🛡️ SECURITY SYSTEM
 
-Sistèm sekirite a fèt pou ede pwoteje bot la ak itilizatè yo.
+The security system is designed to help protect the bot and its users.
 
 - 🗑️ Anti-Delete
 - 📞 Anti-Call
@@ -99,19 +90,19 @@ Sistèm sekirite a fèt pou ede pwoteje bot la ak itilizatè yo.
 - 🔐 Session Protection
 - 🛡️ User Isolation
 
-### 🗑️ ANTI-DELETE
+🗑️ ANTI-DELETE
 
-Anti-Delete kapab configure selon mode:
+Anti-Delete can be configured according to the selected mode:
 
-- 🔒 An privé
-- 💬 Nan menm chat la
+- 🔒 Private Chat
+- 💬 Same Chat
 
 ---
 
-### ⚡ AUTOMATION SYSTEM
+⚡ AUTOMATION SYSTEM
 
-TOPFEROS MD V2.0.0 gen plizyè automatisation ki kapab
-aktive oswa dezaktive nan Settings Panel la.
+TOPFEROS MD V2.0.0 includes several automation features
+that can be enabled or disabled through the Settings Panel.
 
 - 💚 Always Online
 - ✍️ Fake Typing
@@ -127,13 +118,12 @@ aktive oswa dezaktive nan Settings Panel la.
 
 ---
 
-## 🤖 AI ASSISTANT
+🤖 AI ASSISTANT
 
-TOPFEROS MD V2.0.0 gen yon AI Assistant pou plizyè kalite travay.
+TOPFEROS MD V2.0.0 includes an AI Assistant designed for various tasks.
 
-### 🧠 AI COMMANDS
+🧠 AI COMMANDS
 
-```text
 .ai <question>
 .prompt <request>
 
