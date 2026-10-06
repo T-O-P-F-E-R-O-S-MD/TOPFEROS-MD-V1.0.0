@@ -15,11 +15,13 @@ const {
 |--------------------------------------------------------------------------
 |
 | Responsibilities:
-| - Detect new WhatsApp Status messages
+| - Detect new WhatsApp Status messages instantly
 | - Read status text/caption
-| - Detect image/video/audio status
+| - Detect image/video/audio/document status
+| - Download media when needed
 | - Send status information to AI
 | - Let AI choose one natural emoji
+| - React to the Status immediately
 | - Prevent duplicate processing
 |
 |--------------------------------------------------------------------------
@@ -412,7 +414,9 @@ async function buildAIStatusData(
     content.type ===
       "image" ||
     content.type ===
-      "video"
+      "video" ||
+    content.type ===
+      "audio"
   ) {
     media =
       await downloadStatusMedia(
@@ -450,17 +454,55 @@ async function buildAIStatusData(
 
 /*
 |--------------------------------------------------------------------------
+| NORMALIZE AI RESULT
+|--------------------------------------------------------------------------
+*/
+
+function getAIEmoji(
+  aiResult
+) {
+  /*
+   * Expected format:
+   *
+   * {
+   *   emoji: "❤️",
+   *   source: "ai"
+   * }
+   */
+
+  if (
+    typeof aiResult ===
+    "string"
+  ) {
+    return aiResult
+      .trim();
+  }
+
+  if (
+    aiResult &&
+    typeof aiResult.emoji ===
+      "string"
+  ) {
+    return aiResult.emoji
+      .trim();
+  }
+
+  return null;
+}
+
+/*
+|--------------------------------------------------------------------------
 | SEND STATUS REACTION
 |--------------------------------------------------------------------------
 |
-| IMPORTANT:
+| Personal WhatsApp Status reaction.
 |
-| Baileys 6.7.21 does not expose a verified,
-| documented high-level API that we can safely
-| use here to claim Status reactions work.
+| The Status itself is addressed through:
 |
-| Therefore this function intentionally refuses
-| to fake a reaction request.
+|     status@broadcast
+|
+| The original Status key identifies the
+| exact Status being reacted to.
 |
 |--------------------------------------------------------------------------
 */
@@ -484,33 +526,44 @@ async function sendStatusReaction(
     );
   }
 
-  if (
-    !emoji
-  ) {
+  if (!emoji) {
     throw new Error(
       "Reaction emoji is missing."
     );
   }
 
+  const participant =
+    message.key
+      ?.participant;
+
+  if (!participant) {
+    throw new Error(
+      "Status participant is missing."
+    );
+  }
+
   /*
-   * Do NOT send a normal chat reaction here.
-   *
-   * A normal:
-   *
-   * sock.sendMessage(jid, {
-   *   react: {
-   *     text: emoji,
-   *     key: message.key
-   *   }
-   * })
-   *
-   * is not a verified implementation for
-   * WhatsApp Status reactions.
+   * React immediately to the exact
+   * personal Status.
    */
 
-  throw new Error(
-    "Status reactions are not enabled because the current Baileys API does not provide a verified Status-reaction method."
+  await sock.sendMessage(
+    STATUS_JID,
+    {
+      react: {
+        text: emoji,
+        key:
+          message.key
+      }
+    },
+    {
+      statusJidList: [
+        participant
+      ]
+    }
   );
+
+  return true;
 }
 
 /*
@@ -561,7 +614,7 @@ async function processStatus(
   }
 
   /*
-   * Ignore our own status messages.
+   * Never react to our own Status.
    */
 
   if (
@@ -576,13 +629,18 @@ async function processStatus(
   }
 
   /*
-   * Prevent duplicate AI requests.
+   * Get Status ID.
    */
 
   const messageId =
     getMessageId(
       message
     );
+
+  /*
+   * Prevent duplicate AI requests
+   * and duplicate reactions.
+   */
 
   if (
     hasBeenProcessed(
@@ -597,12 +655,19 @@ async function processStatus(
     };
   }
 
+  /*
+   * Mark it immediately.
+   *
+   * This prevents two listeners/events
+   * from reacting twice.
+   */
+
   markAsProcessed(
     messageId
   );
 
   /*
-   * Build status data.
+   * Build Status data.
    */
 
   const statusData =
@@ -611,8 +676,7 @@ async function processStatus(
     );
 
   /*
-   * Ignore completely empty/
-   * unsupported status content.
+   * Ignore unsupported empty Status.
    */
 
   if (
@@ -628,7 +692,7 @@ async function processStatus(
   }
 
   /*
-   * AI chooses ONE emoji.
+   * AI chooses the reaction.
    */
 
   const aiResult =
@@ -641,8 +705,9 @@ async function processStatus(
     );
 
   const emoji =
-    aiResult?.emoji ||
-    null;
+    getAIEmoji(
+      aiResult
+    );
 
   if (!emoji) {
     return {
@@ -653,11 +718,16 @@ async function processStatus(
   }
 
   /*
-   * Reaction is deliberately isolated.
+   * Auto Status React is ON by default.
    *
-   * We do not pretend that the current
-   * Baileys API supports this.
+   * It can only be disabled explicitly:
+   *
+   * autoStatusReact: false
    */
+
+  const autoStatusReact =
+    options.autoStatusReact !==
+    false;
 
   let reactionSent =
     false;
@@ -666,24 +736,29 @@ async function processStatus(
     null;
 
   if (
-    options.sendReaction === true
+    autoStatusReact
   ) {
     try {
-      await sendStatusReaction(
-        sock,
-        message,
-        emoji
-      );
+      /*
+       * No timer.
+       *
+       * React immediately after the AI
+       * returns the emoji.
+       */
 
       reactionSent =
-        true;
+        await sendStatusReaction(
+          sock,
+          message,
+          emoji
+        );
     } catch (error) {
       reactionError =
         error?.message ||
         String(error);
 
-      console.warn(
-        "[STATUS] Reaction not sent:",
+      console.error(
+        "[STATUS] Reaction failed:",
         reactionError
       );
     }
@@ -706,7 +781,8 @@ async function processStatus(
     emoji,
 
     aiSource:
-      aiResult.source,
+      aiResult?.source ||
+      "ai",
 
     reactionSent,
 
@@ -716,7 +792,7 @@ async function processStatus(
 
 /*
 |--------------------------------------------------------------------------
-| HANDLE UPSERT
+| HANDLE STATUS UPSERT
 |--------------------------------------------------------------------------
 */
 
@@ -736,9 +812,21 @@ async function handleStatusUpsert(
     return;
   }
 
+  /*
+   * Process each new Status immediately.
+   */
+
   for (
     const message of messages
   ) {
+    if (
+      message?.key
+        ?.remoteJid !==
+      STATUS_JID
+    ) {
+      continue;
+    }
+
     try {
       await processStatus(
         sock,
@@ -757,7 +845,7 @@ async function handleStatusUpsert(
 
 /*
 |--------------------------------------------------------------------------
-| HANDLE MESSAGE UPDATE
+| HANDLE STATUS UPDATE
 |--------------------------------------------------------------------------
 */
 
@@ -784,6 +872,14 @@ async function handleStatusUpdate(
       null;
 
     if (!message) {
+      continue;
+    }
+
+    if (
+      message?.key
+        ?.remoteJid !==
+      STATUS_JID
+    ) {
       continue;
     }
 
@@ -833,7 +929,10 @@ function attachStatusHandler(
     true;
 
   /*
-   * New incoming messages.
+   * New messages/statuses.
+   *
+   * This is the primary instant
+   * Status detection event.
    */
 
   sock.ev.on(
@@ -864,6 +963,10 @@ function attachStatusHandler(
         options
       );
     }
+  );
+
+  console.log(
+    "[STATUS] 🟢 Auto Status React handler attached."
   );
 
   return true;
