@@ -9,15 +9,16 @@ const axios = require("axios");
 |--------------------------------------------------------------------------
 |
 | Purpose:
-| - Analyze a WhatsApp status
+| - Analyze a WhatsApp Status
 | - Ask the configured AI to choose ONE natural emoji
-| - Return only one emoji
+| - Return exactly ONE emoji
 |
 | Environment variables:
 |
 | AI_API_URL
 | AI_API_KEY
 | AI_MODEL
+| AI_TIMEOUT_MS
 |
 |--------------------------------------------------------------------------
 */
@@ -29,37 +30,49 @@ const axios = require("axios");
 */
 
 const AI_API_URL =
-  process.env.AI_API_URL || "";
+  String(
+    process.env.AI_API_URL || ""
+  ).trim();
 
 const AI_API_KEY =
-  process.env.AI_API_KEY || "";
+  String(
+    process.env.AI_API_KEY || ""
+  ).trim();
 
 const AI_MODEL =
-  process.env.AI_MODEL ||
-  "gpt-4o-mini";
+  String(
+    process.env.AI_MODEL ||
+      "gpt-4o-mini"
+  ).trim();
+
+const AI_TIMEOUT_MS =
+  Number(
+    process.env.AI_TIMEOUT_MS
+  ) || 15000;
 
 /*
 |--------------------------------------------------------------------------
 | FALLBACK
 |--------------------------------------------------------------------------
 |
-| This is only used when the AI service is unavailable
+| This is NOT an emoji selection list.
+| It is used only if the AI cannot respond
 | or returns an invalid response.
 |
 |--------------------------------------------------------------------------
 */
 
-const FALLBACK_EMOJI = "❤️";
+const FALLBACK_EMOJI =
+  "❤️";
 
 /*
 |--------------------------------------------------------------------------
-| EMOJI EXTRACTION
+| EXTRACT EMOJI
 |--------------------------------------------------------------------------
 |
-| We do NOT maintain a fixed list of emojis.
-|
-| The AI can choose any appropriate Unicode emoji.
-|
+| No fixed emoji list is used.
+| The AI is free to choose any appropriate
+| Unicode emoji.
 |--------------------------------------------------------------------------
 */
 
@@ -70,34 +83,33 @@ function extractEmoji(text) {
     return null;
   }
 
-  const value =
-    text.trim();
+  let value =
+    text
+      .replace(/```[\s\S]*?```/g, "")
+      .replace(/```/g, "")
+      .trim();
 
   if (!value) {
     return null;
   }
 
   /*
-   * Remove common formatting that an AI
-   * might accidentally return.
+   * Remove surrounding quotes.
    */
 
-  const cleaned =
+  value =
     value
-      .replace(/```/g, "")
       .replace(/^["'`]+/, "")
       .replace(/["'`]+$/, "")
       .trim();
 
   /*
-   * Emoji-aware Unicode extraction.
-   *
-   * Extended pictographic characters are
-   * supported by modern Node.js versions.
+   * Find Unicode emoji/pictographic
+   * sequences.
    */
 
   const matches =
-    cleaned.match(
+    value.match(
       /\p{Extended_Pictographic}(?:\uFE0F|\p{Emoji_Modifier}|\u200D\p{Extended_Pictographic})*/gu
     );
 
@@ -109,7 +121,7 @@ function extractEmoji(text) {
   }
 
   /*
-   * Return the first emoji only.
+   * Return exactly one emoji.
    */
 
   return matches[0];
@@ -132,49 +144,71 @@ function extractAIText(
    * OpenAI-compatible response.
    */
 
+  const messageContent =
+    response.data
+      ?.choices?.[0]
+      ?.message?.content;
+
   if (
-    response.data?.choices?.[0]
-      ?.message?.content
+    typeof messageContent ===
+    "string"
   ) {
-    return String(
-      response.data.choices[0]
-        .message.content
-    ).trim();
+    return messageContent.trim();
   }
 
   /*
-   * Some APIs return:
-   *
-   * choices[0].text
+   * Some providers return
+   * an array of content blocks.
    */
 
   if (
-    response.data?.choices?.[0]
-      ?.text
+    Array.isArray(
+      messageContent
+    )
   ) {
-    return String(
-      response.data.choices[0].text
-    ).trim();
+    return messageContent
+      .map(
+        (item) =>
+          typeof item === "string"
+            ? item
+            : item?.text || ""
+      )
+      .join("")
+      .trim();
   }
 
   /*
-   * Generic response format.
+   * Alternative completion format.
+   */
+
+  const completionText =
+    response.data
+      ?.choices?.[0]
+      ?.text;
+
+  if (
+    typeof completionText ===
+    "string"
+  ) {
+    return completionText.trim();
+  }
+
+  /*
+   * Generic provider format.
    */
 
   if (
-    response.data?.response
+    typeof response.data
+      ?.response === "string"
   ) {
-    return String(
-      response.data.response
-    ).trim();
+    return response.data.response.trim();
   }
 
   if (
-    response.data?.text
+    typeof response.data
+      ?.text === "string"
   ) {
-    return String(
-      response.data.text
-    ).trim();
+    return response.data.text.trim();
   }
 
   return "";
@@ -182,7 +216,7 @@ function extractAIText(
 
 /*
 |--------------------------------------------------------------------------
-| BUILD PROMPT
+| BUILD STATUS PROMPT
 |--------------------------------------------------------------------------
 */
 
@@ -192,48 +226,49 @@ function buildPrompt(
   const text =
     String(
       statusData.text ||
-      statusData.caption ||
-      ""
+        statusData.caption ||
+        ""
     ).trim();
 
   const mediaType =
     String(
       statusData.mediaType ||
-      "none"
+        "none"
     ).toLowerCase();
 
-  const prompt = `
+  return `
 You are the automatic WhatsApp Status reaction assistant for TOPFEROS MD V2.0.0.
 
-Analyze the status content and choose ONE single emoji that naturally matches the emotion, meaning, situation, or subject of the status.
+Analyze the WhatsApp Status and choose the ONE emoji that most naturally matches its meaning, emotion, subject, or situation.
 
-Rules:
+STRICT RULES:
 - Return EXACTLY ONE emoji.
+- Return the emoji only.
 - Do not return words.
 - Do not explain your choice.
 - Do not return multiple emojis.
 - Do not return punctuation.
-- Choose the most natural emoji for the content.
-- You may use any appropriate Unicode emoji.
-- If the status is neutral, choose a natural neutral/relevant emoji.
-- If the status is emotional, match the emotion.
-- If the status is funny, use an appropriate humorous emoji.
-- If it is romantic, use an appropriate romantic emoji.
-- If it is motivational, use an appropriate motivational emoji.
-- If it is sad, use an appropriate sympathetic emoji.
-- If it contains a question, choose an emoji that naturally fits the question.
-- Never invent text.
+- Do not use a predefined emoji list.
+- Choose naturally based on the actual status.
+- Use any appropriate Unicode emoji.
+- Match the emotion when the status is emotional.
+- Match humor when the status is funny.
+- Match romance when the status is romantic.
+- Match sympathy when the status is sad.
+- Match motivation when the status is motivational.
+- Match celebration when the status is celebratory.
+- Match the subject when the status discusses a specific subject.
+- If the content is neutral, choose one relevant neutral emoji.
+- Never invent information that is not present in the status.
 
 STATUS TEXT:
-${text || "[No text/caption]"}
+${text || "[No text or caption]"}
 
 MEDIA TYPE:
 ${mediaType}
 
 Return ONE emoji only.
-`;
-
-  return prompt.trim();
+`.trim();
 }
 
 /*
@@ -246,9 +281,27 @@ async function callAI(
   prompt,
   options = {}
 ) {
-  if (
-    !AI_API_URL
-  ) {
+  const apiUrl =
+    String(
+      options.apiUrl ||
+        AI_API_URL ||
+        ""
+    ).trim();
+
+  const apiKey =
+    String(
+      options.apiKey ||
+        AI_API_KEY ||
+        ""
+    ).trim();
+
+  const model =
+    String(
+      options.model ||
+        AI_MODEL
+    ).trim();
+
+  if (!apiUrl) {
     throw new Error(
       "AI_API_URL is not configured."
     );
@@ -259,17 +312,13 @@ async function callAI(
       "application/json"
   };
 
-  if (
-    AI_API_KEY
-  ) {
+  if (apiKey) {
     headers.Authorization =
-      `Bearer ${AI_API_KEY}`;
+      `Bearer ${apiKey}`;
   }
 
   const payload = {
-    model:
-      options.model ||
-      AI_MODEL,
+    model,
 
     messages: [
       {
@@ -283,23 +332,27 @@ async function callAI(
       }
     ],
 
-    temperature: 0.7,
+    temperature:
+      options.temperature ??
+      0.7,
 
-    max_tokens: 10
+    max_tokens:
+      options.maxTokens ??
+      10
   };
 
   const response =
     await axios.post(
-      AI_API_URL,
+      apiUrl,
       payload,
       {
         headers,
 
         timeout:
           Number(
-            process.env.AI_TIMEOUT_MS
-          ) ||
-          15000
+            options.timeout ||
+              AI_TIMEOUT_MS
+          ) || 15000
       }
     );
 
@@ -340,7 +393,7 @@ async function chooseEmoji(
     }
 
     console.warn(
-      "[AI REACTION] AI returned no valid emoji."
+      "[AI REACTION] AI returned no valid emoji. Using fallback."
     );
 
     return FALLBACK_EMOJI;
@@ -371,25 +424,36 @@ async function analyzeStatus(
       options
     );
 
+  const usedFallback =
+    emoji ===
+    FALLBACK_EMOJI;
+
   return {
     emoji,
 
     source:
-      emoji ===
-      FALLBACK_EMOJI
+      usedFallback
         ? "fallback"
         : "ai",
 
     statusText:
       String(
         statusData.text ||
-        statusData.caption ||
-        ""
+          statusData.caption ||
+          ""
       ).trim(),
 
     mediaType:
       statusData.mediaType ||
-      "none"
+      "none",
+
+    messageId:
+      statusData.messageId ||
+      null,
+
+    participant:
+      statusData.participant ||
+      null
   };
 }
 
@@ -408,5 +472,7 @@ module.exports = {
 
   extractAIText,
 
-  buildPrompt
+  buildPrompt,
+
+  callAI
 };
