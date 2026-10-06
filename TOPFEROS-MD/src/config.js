@@ -6,9 +6,19 @@
 | GLOBAL CONFIGURATION
 |--------------------------------------------------------------------------
 |
-| This file contains the default configuration used by the bot.
-|
-| Environment variables can override the important values.
+| Central configuration for:
+| - Bot information
+| - Automation
+| - Security
+| - Group automation
+| - Multi-session
+| - Panels
+| - Channel
+| - AI
+| - Media
+| - Languages
+| - Branding
+| - Connection
 |
 |--------------------------------------------------------------------------
 */
@@ -62,9 +72,25 @@ function envBoolean(
   );
 }
 
+function envNumber(
+  name,
+  fallback = 0
+) {
+  const value =
+    Number(
+      process.env[name]
+    );
+
+  return Number.isFinite(
+    value
+  )
+    ? value
+    : fallback;
+}
+
 /*
 |--------------------------------------------------------------------------
-| BOT
+| BOT INFORMATION
 |--------------------------------------------------------------------------
 */
 
@@ -106,8 +132,8 @@ const bot = {
     ),
 
   age:
-    Number(
-      process.env.BOT_AGE ||
+    envNumber(
+      "BOT_AGE",
       14
     ),
 
@@ -132,13 +158,13 @@ const bot = {
 
 /*
 |--------------------------------------------------------------------------
-| AUTOMATION
+| SYSTEM AUTOMATION
 |--------------------------------------------------------------------------
 */
 
 const automation = {
   /*
-   * Online / presence
+   * Always keep the bot online.
    */
 
   alwaysOnline:
@@ -148,7 +174,7 @@ const automation = {
     ),
 
   /*
-   * Simulated typing
+   * Fake typing indicator.
    */
 
   fakeTyping:
@@ -158,7 +184,7 @@ const automation = {
     ),
 
   /*
-   * Simulated recording
+   * Fake recording indicator.
    */
 
   fakeRecording:
@@ -168,7 +194,7 @@ const automation = {
     ),
 
   /*
-   * WhatsApp Status
+   * WhatsApp Status automation.
    */
 
   autoStatusSeen:
@@ -190,7 +216,7 @@ const automation = {
     ),
 
   /*
-   * Anti-delete
+   * Anti-delete.
    */
 
   antiDelete:
@@ -206,7 +232,7 @@ const automation = {
     ),
 
   /*
-   * Anti-call
+   * Anti-call.
    */
 
   antiCall:
@@ -216,7 +242,7 @@ const automation = {
     ),
 
   /*
-   * Anti-bug
+   * Anti-bug protection.
    */
 
   antiBug:
@@ -226,7 +252,7 @@ const automation = {
     ),
 
   /*
-   * Anti-bot filter
+   * Anti-bot filter.
    */
 
   antiBotFilter:
@@ -285,6 +311,12 @@ const groupAutomation = {
       ""
     ),
 
+  /*
+   * 1st warning
+   * 2nd warning
+   * 3rd violation = remove
+   */
+
   warningLimit:
     3
 };
@@ -297,15 +329,14 @@ const groupAutomation = {
 
 const security = {
   /*
-   * Numbers listed here can be automatically blocked
+   * Numbers that must be blocked automatically
    * when they call the bot.
    */
 
-  antiBlockNumbers:
-    [],
+  antiBlockNumbers: [],
 
   /*
-   * Group warning system.
+   * Maximum group violations before removal.
    */
 
   groupWarningLimit:
@@ -314,13 +345,13 @@ const security = {
 
 /*
 |--------------------------------------------------------------------------
-| MULTI SESSION
+| MULTI-SESSION
 |--------------------------------------------------------------------------
 */
 
 const session = {
   /*
-   * Directory used by Baileys multi-file auth.
+   * Baileys authentication directory.
    */
 
   directory:
@@ -330,14 +361,16 @@ const session = {
     ),
 
   /*
-   * Keep credentials after disconnect.
+   * Never delete credentials when
+   * the user disconnects from Settings.
    */
 
   keepCredentials:
     true,
 
   /*
-   * Each session is isolated.
+   * Every connected user gets an
+   * isolated session.
    */
 
   isolated:
@@ -366,7 +399,7 @@ const panels = {
 
 /*
 |--------------------------------------------------------------------------
-| CHANNEL
+| WHATSAPP CHANNEL
 |--------------------------------------------------------------------------
 */
 
@@ -404,8 +437,8 @@ const ai = {
     ),
 
   timeout:
-    Number(
-      process.env.AI_TIMEOUT_MS ||
+    envNumber(
+      "AI_TIMEOUT_MS",
       15000
     )
 };
@@ -429,13 +462,13 @@ const media = {
 
 /*
 |--------------------------------------------------------------------------
-| SUPPORTED LANGUAGES
+| LANGUAGE SYSTEM
 |--------------------------------------------------------------------------
 |
-| English is the default/base language.
+| English is the official default language.
 |
-| More translations can be added by the
-| language system without changing this config.
+| Additional languages can be added later
+| without changing the core configuration.
 |
 |--------------------------------------------------------------------------
 */
@@ -471,19 +504,31 @@ const branding = {
 
 const connection = {
   reconnectDelay:
-    Number(
-      process.env.RECONNECT_DELAY_MS ||
+    envNumber(
+      "RECONNECT_DELAY_MS",
       5000
     ),
 
+  /*
+   * 0 = unlimited reconnect attempts.
+   */
+
   maxReconnectAttempts:
-    Number(
-      process.env.MAX_RECONNECT_ATTEMPTS ||
+    envNumber(
+      "MAX_RECONNECT_ATTEMPTS",
       0
     ),
 
+  /*
+   * QR is handled by the application/panel.
+   */
+
   printQRInTerminal:
     false,
+
+  /*
+   * Avoid unnecessary full-history synchronization.
+   */
 
   syncFullHistory:
     false
@@ -491,7 +536,7 @@ const connection = {
 
 /*
 |--------------------------------------------------------------------------
-| COMPLETE CONFIG
+| COMPLETE CONFIGURATION
 |--------------------------------------------------------------------------
 */
 
