@@ -1,8 +1,7 @@
 "use strict";
 
 const {
-  downloadContentFromMessage,
-  getContentType
+  downloadContentFromMessage
 } = require("@whiskeysockets/baileys");
 
 const {
@@ -15,33 +14,14 @@ const {
 | STATUS HANDLER
 |--------------------------------------------------------------------------
 |
-| RESPONSIBILITIES:
+| Responsibilities:
+| - Detect new WhatsApp Status messages
+| - Read status text/caption
+| - Detect image/video/audio status
+| - Send status information to AI
+| - Let AI choose one natural emoji
+| - Prevent duplicate processing
 |
-| 1. Detect incoming WhatsApp Status messages.
-| 2. Detect status text/caption.
-| 3. Detect image/video/audio status.
-| 4. Prepare status content for AI.
-| 5. Ask AI to choose ONE appropriate emoji.
-| 6. Pass the selected emoji to the reaction layer.
-|
-|--------------------------------------------------------------------------
-|
-| IMPORTANT:
-|
-| Baileys 6.7.21 currently does not provide a verified
-| official status-reaction API.
-|
-| Therefore this file does NOT fake a reaction call.
-|
-| Once the selected Baileys/API supports status reactions,
-| only sendStatusReaction() needs to be connected.
-|
-|--------------------------------------------------------------------------
-*/
-
-/*
-|--------------------------------------------------------------------------
-| STATUS JID
 |--------------------------------------------------------------------------
 */
 
@@ -52,54 +32,36 @@ const STATUS_JID =
 |--------------------------------------------------------------------------
 | PROCESSED STATUS CACHE
 |--------------------------------------------------------------------------
-|
-| Prevent the same status from being analyzed repeatedly.
-|
-|--------------------------------------------------------------------------
 */
 
 const processedStatuses =
-  new Set();
+  new Map();
+
+const PROCESS_CACHE_TIME =
+  10 * 60 * 1000;
 
 /*
 |--------------------------------------------------------------------------
-| MAX CACHE SIZE
+| CLEAN OLD CACHE
 |--------------------------------------------------------------------------
 */
 
-const MAX_PROCESSED_STATUSES = 5000;
+function cleanProcessedCache() {
+  const now =
+    Date.now();
 
-/*
-|--------------------------------------------------------------------------
-| CACHE STATUS
-|--------------------------------------------------------------------------
-*/
-
-function rememberStatus(statusId) {
-  if (!statusId) {
-    return;
-  }
-
-  processedStatuses.add(
-    statusId
-  );
-
-  /*
-   * Prevent unlimited memory growth.
-   */
-
-  if (
-    processedStatuses.size >
-    MAX_PROCESSED_STATUSES
+  for (
+    const [
+      id,
+      timestamp
+    ] of processedStatuses
   ) {
-    const first =
-      processedStatuses.values()
-        .next()
-        .value;
-
-    if (first) {
+    if (
+      now - timestamp >
+      PROCESS_CACHE_TIME
+    ) {
       processedStatuses.delete(
-        first
+        id
       );
     }
   }
@@ -107,83 +69,75 @@ function rememberStatus(statusId) {
 
 /*
 |--------------------------------------------------------------------------
-| CHECK IF STATUS WAS PROCESSED
+| GET MESSAGE ID
 |--------------------------------------------------------------------------
 */
 
-function wasProcessed(statusId) {
-  return Boolean(
-    statusId &&
-      processedStatuses.has(
-        statusId
-      )
+function getMessageId(
+  message
+) {
+  return (
+    message?.key?.id ||
+    null
   );
 }
 
 /*
 |--------------------------------------------------------------------------
-| EXTRACT TEXT
+| CHECK IF PROCESSED
 |--------------------------------------------------------------------------
 */
 
-function extractStatusText(
-  message
+function hasBeenProcessed(
+  messageId
 ) {
-  if (!message) {
-    return "";
+  if (!messageId) {
+    return false;
   }
 
-  /*
-   * Normal text.
-   */
+  const timestamp =
+    processedStatuses.get(
+      messageId
+    );
+
+  if (!timestamp) {
+    return false;
+  }
 
   if (
-    typeof message.conversation ===
-    "string"
+    Date.now() -
+      timestamp >
+    PROCESS_CACHE_TIME
   ) {
-    return message.conversation;
+    processedStatuses.delete(
+      messageId
+    );
+
+    return false;
   }
 
-  /*
-   * Extended text.
-   */
+  return true;
+}
 
-  if (
-    typeof message.extendedTextMessage
-      ?.text === "string"
-  ) {
-    return message
-      .extendedTextMessage
-      .text;
+/*
+|--------------------------------------------------------------------------
+| MARK AS PROCESSED
+|--------------------------------------------------------------------------
+*/
+
+function markAsProcessed(
+  messageId
+) {
+  if (!messageId) {
+    return;
   }
 
-  /*
-   * Image caption.
-   */
+  processedStatuses.set(
+    messageId,
+    Date.now()
+  );
 
-  if (
-    typeof message.imageMessage
-      ?.caption === "string"
-  ) {
-    return message
-      .imageMessage
-      .caption;
-  }
-
-  /*
-   * Video caption.
-   */
-
-  if (
-    typeof message.videoMessage
-      ?.caption === "string"
-  ) {
-    return message
-      .videoMessage
-      .caption;
-  }
-
-  return "";
+  cleanProcessedCache();
 }
 
 /*
@@ -195,89 +149,217 @@ function extractStatusText(
 function getStatusContent(
   message
 ) {
-  if (!message) {
+  if (
+    !message?.message
+  ) {
     return {
-      type: null,
+      type: "unknown",
       content: null
     };
   }
 
-  const type =
-    getContentType(message);
+  const msg =
+    message.message;
+
+  /*
+   * Direct text status.
+   */
+
+  if (
+    msg.conversation
+  ) {
+    return {
+      type: "text",
+      content:
+        msg.conversation
+    };
+  }
+
+  /*
+   * Extended text status.
+   */
+
+  if (
+    msg.extendedTextMessage
+  ) {
+    return {
+      type: "text",
+      content:
+        msg.extendedTextMessage
+          .text || ""
+    };
+  }
+
+  /*
+   * Image status.
+   */
+
+  if (
+    msg.imageMessage
+  ) {
+    return {
+      type: "image",
+      content:
+        msg.imageMessage
+    };
+  }
+
+  /*
+   * Video status.
+   */
+
+  if (
+    msg.videoMessage
+  ) {
+    return {
+      type: "video",
+      content:
+        msg.videoMessage
+    };
+  }
+
+  /*
+   * Audio status.
+   */
+
+  if (
+    msg.audioMessage
+  ) {
+    return {
+      type: "audio",
+      content:
+        msg.audioMessage
+    };
+  }
+
+  /*
+   * Document status.
+   */
+
+  if (
+    msg.documentMessage
+  ) {
+    return {
+      type: "document",
+      content:
+        msg.documentMessage
+    };
+  }
 
   return {
-    type: type || null,
-
-    content:
-      message[type] || null
+    type: "unknown",
+    content: null
   };
 }
 
 /*
 |--------------------------------------------------------------------------
-| DOWNLOAD MEDIA
-|--------------------------------------------------------------------------
-|
-| This prepares image/video/audio data for a
-| future vision/audio AI provider.
-|
+| EXTRACT STATUS TEXT
 |--------------------------------------------------------------------------
 */
 
-async function downloadStatusMedia(
+function extractStatusText(
   message
 ) {
-  const {
-    type,
-    content
-  } =
+  const content =
     getStatusContent(
       message
     );
 
   if (
-    !type ||
-    !content
+    content.type ===
+    "text"
   ) {
-    return null;
-  }
-
-  let mediaType = null;
-
-  if (
-    type ===
-    "imageMessage"
-  ) {
-    mediaType = "image";
-  }
-
-  if (
-    type ===
-    "videoMessage"
-  ) {
-    mediaType = "video";
-  }
-
-  if (
-    type ===
-    "audioMessage"
-  ) {
-    mediaType = "audio";
+    return String(
+      content.content ||
+        ""
+    ).trim();
   }
 
   /*
-   * Unsupported media.
+   * Image caption.
    */
 
-  if (!mediaType) {
-    return null;
+  if (
+    content.type ===
+    "image"
+  ) {
+    return String(
+      content.content
+        ?.caption ||
+        ""
+    ).trim();
   }
 
+  /*
+   * Video caption.
+   */
+
+  if (
+    content.type ===
+    "video"
+  ) {
+    return String(
+      content.content
+        ?.caption ||
+        ""
+    ).trim();
+  }
+
+  return "";
+}
+
+/*
+|--------------------------------------------------------------------------
+| DOWNLOAD STATUS MEDIA
+|--------------------------------------------------------------------------
+*/
+
+async function downloadStatusMedia(
+  message,
+  type
+) {
   try {
+    let mediaMessage =
+      null;
+
+    if (
+      type ===
+      "image"
+    ) {
+      mediaMessage =
+        message?.message
+          ?.imageMessage;
+    }
+
+    if (
+      type ===
+      "video"
+    ) {
+      mediaMessage =
+        message?.message
+          ?.videoMessage;
+    }
+
+    if (
+      type ===
+      "audio"
+    ) {
+      mediaMessage =
+        message?.message
+          ?.audioMessage;
+    }
+
+    if (
+      !mediaMessage
+    ) {
+      return null;
+    }
+
     const stream =
       await downloadContentFromMessage(
-        content,
-        mediaType
+        mediaMessage,
+        type
       );
 
     const chunks = [];
@@ -290,20 +372,9 @@ async function downloadStatusMedia(
       );
     }
 
-    return {
-      type: mediaType,
-
-      buffer:
-        Buffer.concat(chunks),
-
-      mimetype:
-        content.mimetype ||
-        null,
-
-      fileLength:
-        content.fileLength ||
-        null
-    };
+    return Buffer.concat(
+      chunks
+    );
   } catch (error) {
     console.error(
       "[STATUS] Media download failed:",
@@ -324,49 +395,56 @@ async function downloadStatusMedia(
 async function buildAIStatusData(
   message
 ) {
+  const content =
+    getStatusContent(
+      message
+    );
+
   const text =
     extractStatusText(
       message
     );
 
-  const {
-    type
-  } =
-    getStatusContent(
-      message
-    );
-
-  /*
-   * Text-only status.
-   */
+  let media =
+    null;
 
   if (
-    !type ||
-    type ===
-      "conversation" ||
-    type ===
-      "extendedTextMessage"
+    content.type ===
+      "image" ||
+    content.type ===
+      "video"
   ) {
-    return {
-      text,
-      type: "text",
-      media: null
-    };
+    media =
+      await downloadStatusMedia(
+        message,
+        content.type
+      );
   }
-
-  /*
-   * Media status.
-   */
-
-  const media =
-    await downloadStatusMedia(
-      message
-    );
 
   return {
     text,
-    type,
-    media
+
+    caption:
+      text,
+
+    mediaType:
+      content.type,
+
+    media,
+
+    messageId:
+      getMessageId(
+        message
+      ),
+
+    participant:
+      message?.key
+        ?.participant ||
+      null,
+
+    timestamp:
+      message?.messageTimestamp ||
+      null
   };
 }
 
@@ -377,20 +455,19 @@ async function buildAIStatusData(
 |
 | IMPORTANT:
 |
-| This function is intentionally isolated.
+| Baileys 6.7.21 does not expose a verified,
+| documented high-level API that we can safely
+| use here to claim Status reactions work.
 |
-| Baileys 6.7.21 does not currently expose a verified
-| official API for reacting to another user's WhatsApp
-| Status.
-|
-| DO NOT replace this with a guessed API.
+| Therefore this function intentionally refuses
+| to fake a reaction request.
 |
 |--------------------------------------------------------------------------
 */
 
 async function sendStatusReaction(
   sock,
-  statusMessage,
+  message,
   emoji
 ) {
   if (!sock) {
@@ -400,41 +477,45 @@ async function sendStatusReaction(
   }
 
   if (
-    !statusMessage?.key
+    !message?.key
   ) {
     throw new Error(
-      "Status message key is required."
+      "Status message key is missing."
     );
   }
 
   if (
-    !emoji ||
-    typeof emoji !==
-      "string"
+    !emoji
   ) {
     throw new Error(
-      "A valid emoji is required."
+      "Reaction emoji is missing."
     );
   }
 
   /*
-   * Baileys 6.7.21:
+   * Do NOT send a normal chat reaction here.
    *
-   * No verified official status-reaction
-   * method is available here.
+   * A normal:
    *
-   * We intentionally stop instead of
-   * pretending the reaction was sent.
+   * sock.sendMessage(jid, {
+   *   react: {
+   *     text: emoji,
+   *     key: message.key
+   *   }
+   * })
+   *
+   * is not a verified implementation for
+   * WhatsApp Status reactions.
    */
 
   throw new Error(
-    "Status reactions are not supported by the current verified Baileys 6.7.21 API."
+    "Status reactions are not enabled because the current Baileys API does not provide a verified Status-reaction method."
   );
 }
 
 /*
 |--------------------------------------------------------------------------
-| PROCESS ONE STATUS
+| PROCESS STATUS
 |--------------------------------------------------------------------------
 */
 
@@ -443,23 +524,32 @@ async function processStatus(
   message,
   options = {}
 ) {
-  if (
-    !message ||
-    !message.key
-  ) {
+  if (!sock) {
     return {
       success: false,
       reason:
-        "Invalid status message."
+        "Socket unavailable."
     };
   }
 
+  if (!message) {
+    return {
+      success: false,
+      reason:
+        "Status message unavailable."
+    };
+  }
+
+  const jid =
+    message?.key
+      ?.remoteJid || "";
+
   /*
-   * Only process status messages.
+   * Only process WhatsApp Status.
    */
 
   if (
-    message.key.remoteJid !==
+    jid !==
     STATUS_JID
   ) {
     return {
@@ -471,33 +561,33 @@ async function processStatus(
   }
 
   /*
-   * Ignore messages created by the bot itself.
+   * Ignore our own status messages.
    */
 
   if (
-    message.key.fromMe
+    message?.key?.fromMe
   ) {
     return {
       success: false,
       ignored: true,
       reason:
-        "Status belongs to the bot."
+        "Own status ignored."
     };
   }
 
   /*
-   * Status ID.
+   * Prevent duplicate AI requests.
    */
 
-  const statusId =
-    message.key.id;
-
-  /*
-   * Prevent duplicate AI calls.
-   */
+  const messageId =
+    getMessageId(
+      message
+    );
 
   if (
-    wasProcessed(statusId)
+    hasBeenProcessed(
+      messageId
+    )
   ) {
     return {
       success: false,
@@ -507,194 +597,215 @@ async function processStatus(
     };
   }
 
-  /*
-   * Mark immediately.
-   *
-   * This prevents duplicate events from
-   * triggering multiple AI requests.
-   */
-
-  rememberStatus(
-    statusId
+  markAsProcessed(
+    messageId
   );
 
   /*
-   * Prepare status content.
+   * Build status data.
    */
 
   const statusData =
     await buildAIStatusData(
-      message.message
+      message
     );
 
   /*
-   * AI must be enabled.
+   * Ignore completely empty/
+   * unsupported status content.
    */
 
   if (
-    options.enabled === false
+    !statusData.text &&
+    !statusData.media
   ) {
     return {
       success: false,
       ignored: true,
       reason:
-        "Auto Status React is disabled.",
-      statusId,
-      statusData
+        "No readable status content."
     };
   }
 
   /*
-   * Ask AI to choose the emoji.
-   *
-   * IMPORTANT:
-   * The AI reaction service decides the emoji.
+   * AI chooses ONE emoji.
    */
 
-  const analysis =
+  const aiResult =
     await analyzeStatus(
+      statusData,
       {
-        text:
-          statusData.text,
-
-        type:
-          statusData.type,
-
-        media:
-          statusData.media
-      },
-      {
-        enabled: true
+        model:
+          options.aiModel
       }
     );
 
   const emoji =
-    analysis?.emoji;
-
-  /*
-   * AI failed to provide emoji.
-   */
+    aiResult?.emoji ||
+    null;
 
   if (!emoji) {
     return {
       success: false,
       reason:
-        "AI did not return an emoji.",
-      statusId,
-      statusData
+        "AI did not return an emoji."
     };
   }
 
   /*
-   * Reaction layer.
+   * Reaction is deliberately isolated.
    *
-   * Currently throws a clear unsupported error
-   * for Baileys 6.7.21 instead of pretending success.
+   * We do not pretend that the current
+   * Baileys API supports this.
    */
 
-  try {
-    await sendStatusReaction(
-      sock,
-      message,
-      emoji
-    );
+  let reactionSent =
+    false;
 
-    return {
-      success: true,
+  let reactionError =
+    null;
 
-      statusId,
+  if (
+    options.sendReaction === true
+  ) {
+    try {
+      await sendStatusReaction(
+        sock,
+        message,
+        emoji
+      );
 
-      emoji,
-
-      statusData,
-
-      usedAI:
-        analysis.usedAI === true
-    };
-  } catch (error) {
-    return {
-      success: false,
-
-      statusId,
-
-      emoji,
-
-      statusData,
-
-      usedAI:
-        analysis.usedAI === true,
-
-      reason:
+      reactionSent =
+        true;
+    } catch (error) {
+      reactionError =
         error?.message ||
-        "Status reaction failed."
-    };
+        String(error);
+
+      console.warn(
+        "[STATUS] Reaction not sent:",
+        reactionError
+      );
+    }
+  }
+
+  return {
+    success: true,
+
+    messageId,
+
+    participant:
+      statusData.participant,
+
+    text:
+      statusData.text,
+
+    mediaType:
+      statusData.mediaType,
+
+    emoji,
+
+    aiSource:
+      aiResult.source,
+
+    reactionSent,
+
+    reactionError
+  };
+}
+
+/*
+|--------------------------------------------------------------------------
+| HANDLE UPSERT
+|--------------------------------------------------------------------------
+*/
+
+async function handleStatusUpsert(
+  sock,
+  event,
+  options = {}
+) {
+  const messages =
+    event?.messages || [];
+
+  if (
+    !Array.isArray(
+      messages
+    )
+  ) {
+    return;
+  }
+
+  for (
+    const message of messages
+  ) {
+    try {
+      await processStatus(
+        sock,
+        message,
+        options
+      );
+    } catch (error) {
+      console.error(
+        "[STATUS] Processing error:",
+        error?.stack ||
+          error
+      );
+    }
   }
 }
 
 /*
 |--------------------------------------------------------------------------
-| HANDLE MESSAGES.UPDATE
-|--------------------------------------------------------------------------
-|
-| This is kept separate because WhatsApp can update
-| message/status state after the initial event.
-|
+| HANDLE MESSAGE UPDATE
 |--------------------------------------------------------------------------
 */
 
 async function handleStatusUpdate(
   sock,
-  updates = []
+  updates,
+  options = {}
 ) {
   if (
-    !Array.isArray(updates)
+    !Array.isArray(
+      updates
+    )
   ) {
-    return [];
+    return;
   }
-
-  const results = [];
 
   for (
     const update of updates
   ) {
     const message =
-      update?.key
-        ? update
-        : update?.message;
+      update?.update
+        ?.message ||
+      update?.message ||
+      null;
 
     if (!message) {
       continue;
     }
 
-    if (
-      message.key
-        ?.remoteJid !==
-      STATUS_JID
-    ) {
-      continue;
-    }
-
-    const result =
+    try {
       await processStatus(
         sock,
-        message
+        message,
+        options
       );
-
-    results.push(
-      result
-    );
+    } catch (error) {
+      console.error(
+        "[STATUS] Update processing error:",
+        error?.stack ||
+          error
+      );
+    }
   }
-
-  return results;
 }
 
 /*
 |--------------------------------------------------------------------------
 | ATTACH STATUS HANDLER
-|--------------------------------------------------------------------------
-|
-| Call this ONCE after creating the socket.
-|
 |--------------------------------------------------------------------------
 */
 
@@ -702,169 +813,82 @@ function attachStatusHandler(
   sock,
   options = {}
 ) {
-  if (!sock?.ev) {
+  if (!sock) {
     throw new Error(
-      "A valid Baileys socket is required."
+      "WhatsApp socket is required."
     );
   }
 
   /*
-   * Auto Status React setting.
+   * Prevent duplicate listeners.
    */
 
-  const enabled =
-    options.enabled !== false;
+  if (
+    sock.__topferosStatusHandlerAttached
+  ) {
+    return false;
+  }
+
+  sock.__topferosStatusHandlerAttached =
+    true;
 
   /*
-   * New WhatsApp messages.
+   * New incoming messages.
    */
 
   sock.ev.on(
     "messages.upsert",
-    async (event) => {
-      if (
-        !event ||
-        !Array.isArray(
-          event.messages
-        )
-      ) {
-        return;
-      }
-
-      /*
-       * Process immediately.
-       */
-
-      for (
-        const message of
-          event.messages
-      ) {
-        if (
-          message?.key
-            ?.remoteJid !==
-          STATUS_JID
-        ) {
-          continue;
-        }
-
-        try {
-          const result =
-            await processStatus(
-              sock,
-              message,
-              {
-                enabled
-              }
-            );
-
-          /*
-           * Log only useful information.
-           */
-
-          if (
-            result.success
-          ) {
-            console.log(
-              `[STATUS AI] Reaction sent: ${result.emoji}`
-            );
-          } else if (
-            result.reason
-          ) {
-            console.warn(
-              `[STATUS AI] ${result.reason}`
-            );
-          }
-        } catch (error) {
-          console.error(
-            "[STATUS AI] Processing error:",
-            error?.message ||
-              error
-          );
-        }
-      }
+    async (
+      event
+    ) => {
+      await handleStatusUpsert(
+        sock,
+        event,
+        options
+      );
     }
   );
 
   /*
-   * Status/message updates.
+   * Message updates.
    */
 
   sock.ev.on(
     "messages.update",
-    async (updates) => {
-      if (
-        !Array.isArray(updates)
-      ) {
-        return;
-      }
-
-      /*
-       * We do not run every update through
-       * the AI because messages.update can
-       * contain unrelated changes.
-       */
-
-      for (
-        const update of updates
-      ) {
-        if (
-          update?.key
-            ?.remoteJid !==
-          STATUS_JID
-        ) {
-          continue;
-        }
-
-        /*
-         * There may not be a complete message
-         * attached to an update.
-         *
-         * Do not invent missing content.
-         */
-
-        if (!update.message) {
-          continue;
-        }
-
-        try {
-          await processStatus(
-            sock,
-            update.message,
-            {
-              enabled
-            }
-          );
-        } catch (error) {
-          console.error(
-            "[STATUS AI] Update processing error:",
-            error?.message ||
-              error
-          );
-        }
-      }
+    async (
+      updates
+    ) => {
+      await handleStatusUpdate(
+        sock,
+        updates,
+        options
+      );
     }
   );
 
-  console.log(
-    "[STATUS AI] 🟢 Instant Status AI handler attached."
-  );
-
-  return {
-    enabled,
-
-    statusJid:
-      STATUS_JID
-  };
+  return true;
 }
 
 /*
 |--------------------------------------------------------------------------
-| CLEAR PROCESSED STATUS CACHE
+| CLEAR CACHE
 |--------------------------------------------------------------------------
 */
 
-function clearProcessedStatuses() {
+function clearProcessedStatusCache() {
   processedStatuses.clear();
+}
+
+/*
+|--------------------------------------------------------------------------
+| GET CACHE SIZE
+|--------------------------------------------------------------------------
+*/
+
+function getProcessedStatusCount() {
+  cleanProcessedCache();
+
+  return processedStatuses.size;
 }
 
 /*
@@ -876,23 +900,25 @@ function clearProcessedStatuses() {
 module.exports = {
   STATUS_JID,
 
+  processStatus,
+
   attachStatusHandler,
 
-  processStatus,
+  handleStatusUpsert,
 
   handleStatusUpdate,
 
   sendStatusReaction,
 
-  buildAIStatusData,
-
   extractStatusText,
+
+  getStatusContent,
 
   downloadStatusMedia,
 
-  wasProcessed,
+  buildAIStatusData,
 
-  rememberStatus,
+  clearProcessedStatusCache,
 
-  clearProcessedStatuses
+  getProcessedStatusCount
 };
