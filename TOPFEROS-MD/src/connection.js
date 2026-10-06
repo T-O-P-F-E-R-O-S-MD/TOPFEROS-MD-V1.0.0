@@ -701,6 +701,15 @@ async function connectSession(
     qr:
       null,
 
+    pairing:
+      false,
+
+    pairingCode:
+      null,
+
+    pairingNumber:
+      null,
+
     createdAt:
       Date.now(),
 
@@ -818,6 +827,12 @@ async function connectSession(
           Date.now();
 
         current.qr =
+          null;
+
+        current.pairing =
+          false;
+
+        current.pairingCode =
           null;
 
         logger.info(
@@ -1080,6 +1095,196 @@ async function connectSession(
 
 /*
 |--------------------------------------------------------------------------
+| PAIR SESSION
+|--------------------------------------------------------------------------
+|
+| Creates an isolated WhatsApp session and
+| requests a WhatsApp Pairing Code.
+|
+| Example:
+|
+| .pair 509XXXXXXXX
+|
+| Number format:
+| country code + number
+| digits only
+|
+|--------------------------------------------------------------------------
+*/
+
+async function pairSession(
+  number
+) {
+  const sessionId =
+    getSessionId(number);
+
+  /*
+   * Basic phone-number validation.
+   */
+
+  if (
+    sessionId.length < 8 ||
+    sessionId.length > 15
+  ) {
+    throw new Error(
+      "Invalid phone number. Use country code + number."
+    );
+  }
+
+  /*
+   * Do not create another socket if
+   * this session is already connected.
+   */
+
+  const existing =
+    activeSessions.get(
+      sessionId
+    );
+
+  if (
+    existing?.sock &&
+    existing.connected === true
+  ) {
+    throw new Error(
+      "This number is already connected."
+    );
+  }
+
+  /*
+   * If a pairing code is already waiting,
+   * return the existing one.
+   */
+
+  if (
+    existing?.pairing &&
+    existing?.pairingCode
+  ) {
+    return {
+      sessionId,
+
+      pairingCode:
+        existing.pairingCode
+    };
+  }
+
+  /*
+   * Create a normal session first.
+   */
+
+  const sock =
+    await connectSession(
+      sessionId
+    );
+
+  /*
+   * Get the session object.
+   */
+
+  const session =
+    activeSessions.get(
+      sessionId
+    );
+
+  if (!session) {
+    throw new Error(
+      "Session could not be created."
+    );
+  }
+
+  /*
+   * The session may already have
+   * valid credentials.
+   */
+
+  if (
+    sock?.authState?.creds
+      ?.registered === true
+  ) {
+    throw new Error(
+      "This session is already registered."
+    );
+  }
+
+  /*
+   * Request WhatsApp Pairing Code.
+   *
+   * The @dexterid/baileys package used
+   * by this project exposes:
+   *
+   * sock.requestPairingCode(number)
+   */
+
+  try {
+    session.pairing =
+      true;
+
+    session.pairingNumber =
+      sessionId;
+
+    const code =
+      await sock.requestPairingCode(
+        sessionId
+      );
+
+    if (!code) {
+      session.pairing =
+        false;
+
+      session.pairingNumber =
+        null;
+
+      throw new Error(
+        "WhatsApp did not return a pairing code."
+      );
+    }
+
+    /*
+     * Keep the original code.
+     *
+     * WhatsApp pairing codes can contain
+     * letters and numbers. We do not modify
+     * the value returned by Baileys.
+     */
+
+    session.pairingCode =
+      String(code).trim();
+
+    logger.info(
+      `[${sessionId}] Pairing code generated successfully.`
+    );
+
+    return {
+      sessionId,
+
+      pairingCode:
+        session.pairingCode
+    };
+  } catch (error) {
+    session.pairing =
+      false;
+
+    session.pairingNumber =
+      null;
+
+    session.pairingCode =
+      null;
+
+    logger.error(
+      {
+        error:
+          error?.stack ||
+          error?.message ||
+          String(error)
+      },
+      `[${sessionId}] Failed to generate pairing code.`
+    );
+
+    throw error;
+  }
+}
+
+/*
+|--------------------------------------------------------------------------
 | DISCONNECT SESSION
 |--------------------------------------------------------------------------
 |
@@ -1282,6 +1487,8 @@ async function disconnectAllSessions() {
 
 module.exports = {
   connectSession,
+
+  pairSession,
 
   disconnectSession,
 
