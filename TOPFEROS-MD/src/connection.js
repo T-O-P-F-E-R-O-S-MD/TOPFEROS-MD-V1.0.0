@@ -17,6 +17,14 @@ const {
 
 const config = require("./config");
 
+const {
+  handleMessage
+} = require("./messageHandler");
+
+const {
+  attachStatusHandler
+} = require("./statusHandler");
+
 /*
 |--------------------------------------------------------------------------
 | LOGGER
@@ -24,7 +32,9 @@ const config = require("./config");
 */
 
 const logger = pino({
-  level: process.env.LOG_LEVEL || "info"
+  level:
+    process.env.LOG_LEVEL ||
+    "info"
 });
 
 /*
@@ -33,15 +43,27 @@ const logger = pino({
 |--------------------------------------------------------------------------
 */
 
-const SESSIONS_DIR = path.resolve(
-  process.env.SESSIONS_DIR ||
-    path.join(process.cwd(), "sessions")
-);
+const SESSIONS_DIR =
+  path.resolve(
+    config?.session?.directory ||
+      process.env.SESSIONS_DIR ||
+      path.join(
+        process.cwd(),
+        "sessions"
+      )
+  );
 
-if (!fs.existsSync(SESSIONS_DIR)) {
-  fs.mkdirSync(SESSIONS_DIR, {
-    recursive: true
-  });
+if (
+  !fs.existsSync(
+    SESSIONS_DIR
+  )
+) {
+  fs.mkdirSync(
+    SESSIONS_DIR,
+    {
+      recursive: true
+    }
+  );
 }
 
 /*
@@ -50,54 +72,161 @@ if (!fs.existsSync(SESSIONS_DIR)) {
 |--------------------------------------------------------------------------
 */
 
-const activeSessions = new Map();
+const activeSessions =
+  new Map();
 
-const reconnectTimers = new Map();
+const reconnectTimers =
+  new Map();
 
-const manuallyStopped = new Set();
+const manuallyStopped =
+  new Set();
 
 /*
 |--------------------------------------------------------------------------
 | DEFAULT AUTOMATIONS
 |--------------------------------------------------------------------------
 |
-| Sa yo aktive otomatikman lè WhatsApp konekte.
-|
 | IMPORTANT:
-| autoStatusReact pa chwazi emoji a.
-| AI reaction service la ap analize status la epi chwazi
-| emoji ki apwopriye a.
+| These values come from config.js.
+| This prevents two different configuration
+| systems from fighting each other.
 |
 |--------------------------------------------------------------------------
 */
 
-const DEFAULT_AUTOMATION = {
-  alwaysOnline: false,
+function getDefaultAutomationSettings() {
+  const automation =
+    config?.automation || {};
 
-  fakeTyping: false,
+  return {
+    alwaysOnline:
+      automation.alwaysOnline === true,
 
-  fakeRecording: false,
+    fakeTyping:
+      automation.fakeTyping === true,
 
-  autoStatusSeen: true,
+    fakeRecording:
+      automation.fakeRecording === true,
 
-  autoStatusReply: true,
+    autoStatusSeen:
+      automation.autoStatusSeen !== false,
 
-  autoStatusReact: true,
+    autoStatusReply:
+      automation.autoStatusReply !== false,
 
-  antiDelete: true,
+    autoStatusReact:
+      automation.autoStatusReact !== false,
 
-  antiDeleteMode: "private",
+    antiDelete:
+      automation.antiDelete !== false,
 
-  antiCall: false,
+    antiDeleteMode:
+      automation.antiDeleteMode ||
+      "private",
 
-  antiBugProtection: false,
+    antiCall:
+      automation.antiCall === true,
 
-  antiBotFilter: false,
+    antiBug:
+      automation.antiBug === true,
 
-  antiBotAction: "delete",
+    antiBotFilter:
+      automation.antiBotFilter === true,
 
-  antiBlock: []
-};
+    antiBotAction:
+      automation.antiBotAction ||
+      "Delete",
+
+    antiBlock:
+      Array.isArray(
+        config?.security
+          ?.antiBlockNumbers
+      )
+        ? [
+            ...config.security
+              .antiBlockNumbers
+          ]
+        : []
+  };
+}
+
+/*
+|--------------------------------------------------------------------------
+| NORMALIZE NUMBER
+|--------------------------------------------------------------------------
+*/
+
+function normalizeNumber(
+  number
+) {
+  return String(
+    number || ""
+  )
+    .replace(/\D/g, "")
+    .trim();
+}
+
+/*
+|--------------------------------------------------------------------------
+| SESSION ID
+|--------------------------------------------------------------------------
+*/
+
+function getSessionId(
+  number
+) {
+  const sessionId =
+    normalizeNumber(
+      number
+    );
+
+  if (!sessionId) {
+    throw new Error(
+      "A valid WhatsApp number is required."
+    );
+  }
+
+  return sessionId;
+}
+
+/*
+|--------------------------------------------------------------------------
+| SESSION PATH
+|--------------------------------------------------------------------------
+*/
+
+function getSessionPath(
+  sessionId
+) {
+  return path.join(
+    SESSIONS_DIR,
+    sessionId
+  );
+}
+
+/*
+|--------------------------------------------------------------------------
+| GET SESSION
+|--------------------------------------------------------------------------
+*/
+
+function getSession(
+  sessionId
+) {
+  return activeSessions.get(
+    String(sessionId)
+  );
+}
+
+/*
+|--------------------------------------------------------------------------
+| GET ACTIVE SESSIONS
+|--------------------------------------------------------------------------
+*/
+
+function getActiveSessions() {
+  return activeSessions;
+}
 
 /*
 |--------------------------------------------------------------------------
@@ -105,11 +234,40 @@ const DEFAULT_AUTOMATION = {
 |--------------------------------------------------------------------------
 */
 
-function createWelcomeMessage(userNumber) {
-  const user = String(userNumber || "").replace(
-    /\D/g,
-    ""
-  );
+function createWelcomeMessage(
+  userNumber
+) {
+  const user =
+    String(
+      userNumber || ""
+    ).replace(
+      /\D/g,
+      ""
+    );
+
+  const botName =
+    config?.bot?.name ||
+    "TOPFEROS MD";
+
+  const botVersion =
+    config?.bot?.version ||
+    "2.0.0";
+
+  const prefix =
+    config?.bot?.prefix ||
+    ".";
+
+  const mode =
+    config?.bot?.mode ||
+    "Public";
+
+  const language =
+    config?.bot?.language ||
+    "English";
+
+  const footer =
+    config?.bot?.footer ||
+    "🦁 TECH BY TOPFEROS MD 🐑";
 
   return `
 ╭━━━〔 🦁 TOPFEROS MD V2.0.0 🐑 〕━━━╮
@@ -124,11 +282,11 @@ function createWelcomeMessage(userNumber) {
 ┃ 🟢 STATUS: ONLINE & READY
 ┃
 ┃ ⚙️ BOT INFORMATION
-┃ ├─ Name     : TOPFEROS MD
-┃ ├─ Version  : V2.0.0
-┃ ├─ Prefix   : .
-┃ ├─ Mode     : Public
-┃ └─ Language : English
+┃ ├─ Name     : ${botName}
+┃ ├─ Version  : V${botVersion}
+┃ ├─ Prefix   : ${prefix}
+┃ ├─ Mode     : ${mode}
+┃ └─ Language : ${language}
 ┃
 ┃ ✨ AVAILABLE FEATURES
 ┃
@@ -167,92 +325,15 @@ function createWelcomeMessage(userNumber) {
 ┃ └─ Custom Configuration
 ┃
 ┃ 📖 COMMANDS
-┃ └─ Type .menu to explore
+┃ └─ Type ${prefix}menu to explore
 ┃
 ┃ ⚙️ SETTINGS
-┃ └─ Type .setting to configure
+┃ └─ Type ${prefix}setting to configure
 ┃
 ╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯
 
-🦁 TECH BY TOPFEROS MD 🐑
+${footer}
 `;
-}
-
-/*
-|--------------------------------------------------------------------------
-| NORMALIZE NUMBER
-|--------------------------------------------------------------------------
-*/
-
-function normalizeNumber(number) {
-  return String(number || "")
-    .replace(/\D/g, "")
-    .trim();
-}
-
-/*
-|--------------------------------------------------------------------------
-| SESSION ID
-|--------------------------------------------------------------------------
-*/
-
-function getSessionId(number) {
-  const sessionId = normalizeNumber(number);
-
-  if (!sessionId) {
-    throw new Error(
-      "A valid WhatsApp number is required."
-    );
-  }
-
-  return sessionId;
-}
-
-/*
-|--------------------------------------------------------------------------
-| SESSION PATH
-|--------------------------------------------------------------------------
-*/
-
-function getSessionPath(sessionId) {
-  return path.join(
-    SESSIONS_DIR,
-    sessionId
-  );
-}
-
-/*
-|--------------------------------------------------------------------------
-| GET SESSION
-|--------------------------------------------------------------------------
-*/
-
-function getSession(sessionId) {
-  return activeSessions.get(
-    String(sessionId)
-  );
-}
-
-/*
-|--------------------------------------------------------------------------
-| GET ACTIVE SESSIONS
-|--------------------------------------------------------------------------
-*/
-
-function getActiveSessions() {
-  return activeSessions;
-}
-
-/*
-|--------------------------------------------------------------------------
-| DEFAULT AUTOMATION SETTINGS
-|--------------------------------------------------------------------------
-*/
-
-function getDefaultAutomationSettings() {
-  return {
-    ...DEFAULT_AUTOMATION
-  };
 }
 
 /*
@@ -266,7 +347,9 @@ async function sendWelcomeMessage(
   sessionId
 ) {
   try {
-    if (!sock?.user?.id) {
+    if (
+      !sock?.user?.id
+    ) {
       logger.warn(
         `[${sessionId}] Cannot send welcome message: bot JID unavailable.`
       );
@@ -275,16 +358,24 @@ async function sendWelcomeMessage(
     }
 
     const jid =
-      sock.user.id.split(":")[0];
+      sock.user.id.split(
+        ":"
+      )[0] +
+      "@s.whatsapp.net";
 
     const message =
-      createWelcomeMessage(sessionId);
+      createWelcomeMessage(
+        sessionId
+      );
 
     await sock.sendMessage(
       jid,
       {
         text: message,
-        mentions: [jid]
+
+        mentions: [
+          jid
+        ]
       }
     );
 
@@ -298,7 +389,8 @@ async function sendWelcomeMessage(
       {
         error:
           error?.stack ||
-          error?.message
+          error?.message ||
+          String(error)
       },
       `[${sessionId}] Failed to send welcome message.`
     );
@@ -318,16 +410,22 @@ async function connectSession(
   options = {}
 ) {
   const sessionId =
-    getSessionId(number);
+    getSessionId(
+      number
+    );
 
   /*
    * Do not create duplicate sockets.
    */
 
   const existing =
-    activeSessions.get(sessionId);
+    activeSessions.get(
+      sessionId
+    );
 
-  if (existing?.sock) {
+  if (
+    existing?.sock
+  ) {
     return existing.sock;
   }
 
@@ -344,12 +442,21 @@ async function connectSession(
    */
 
   const sessionPath =
-    getSessionPath(sessionId);
+    getSessionPath(
+      sessionId
+    );
 
-  if (!fs.existsSync(sessionPath)) {
-    fs.mkdirSync(sessionPath, {
-      recursive: true
-    });
+  if (
+    !fs.existsSync(
+      sessionPath
+    )
+  ) {
+    fs.mkdirSync(
+      sessionPath,
+      {
+        recursive: true
+      }
+    );
   }
 
   /*
@@ -365,7 +472,7 @@ async function connectSession(
     );
 
   /*
-   * Fetch current Baileys WhatsApp version.
+   * Get latest supported WhatsApp version.
    */
 
   let version;
@@ -374,14 +481,20 @@ async function connectSession(
     const latest =
       await fetchLatestBaileysVersion();
 
-    if (latest?.version) {
-      version = latest.version;
+    if (
+      Array.isArray(
+        latest?.version
+      )
+    ) {
+      version =
+        latest.version;
     }
   } catch (error) {
     logger.warn(
       {
         error:
-          error?.message
+          error?.message ||
+          String(error)
       },
       `[${sessionId}] Could not fetch latest WhatsApp version.`
     );
@@ -390,45 +503,56 @@ async function connectSession(
   /*
    * Automation settings.
    *
-   * Panel settings can override these later.
+   * Panel/session values can override defaults.
    */
 
   const automation = {
     ...getDefaultAutomationSettings(),
+
     ...(options.automation || {})
   };
 
   /*
-   * Create socket configuration.
+   * Socket configuration.
    */
 
   const socketConfig = {
     auth: {
-      creds: state.creds,
+      creds:
+        state.creds,
 
-      keys: makeCacheableSignalKeyStore(
-        state.keys,
-        logger
-      )
+      keys:
+        makeCacheableSignalKeyStore(
+          state.keys,
+          logger
+        )
     },
 
     browser:
-      Browsers.ubuntu("Chrome"),
+      Browsers.ubuntu(
+        "Chrome"
+      ),
 
-    printQRInTerminal: false,
+    printQRInTerminal:
+      false,
 
-    syncFullHistory: false,
+    syncFullHistory:
+      false,
 
     markOnlineOnConnect:
       automation.alwaysOnline === true
   };
 
   /*
-   * Use fetched version when available.
+   * Use fetched WhatsApp version
+   * when available.
    */
 
-  if (version) {
-    socketConfig.version = version;
+  if (
+    version
+  ) {
+    socketConfig.version =
+      version;
   }
 
   /*
@@ -436,40 +560,51 @@ async function connectSession(
    */
 
   const sock =
-    makeWASocket(socketConfig);
+    makeWASocket(
+      socketConfig
+    );
 
   /*
-   * Save active session.
+   * Save session in memory.
    */
+
+  const session = {
+    sock,
+
+    sessionId,
+
+    number:
+      sessionId,
+
+    sessionPath,
+
+    automation,
+
+    connected:
+      false,
+
+    welcomeSent:
+      false,
+
+    qr:
+      null,
+
+    createdAt:
+      Date.now(),
+
+    lastConnectedAt:
+      null
+  };
 
   activeSessions.set(
     sessionId,
-    {
-      sock,
-
-      sessionId,
-
-      number: sessionId,
-
-      sessionPath,
-
-      automation,
-
-      connected: false,
-
-      welcomeSent: false,
-
-      createdAt: Date.now(),
-
-      lastConnectedAt: null
-    }
+    session
   );
 
   /*
    * Save authentication credentials.
    *
-   * This is required so updated WhatsApp keys
-   * remain available after restart/reconnect.
+   * This is required for session persistence.
    */
 
   sock.ev.on(
@@ -479,13 +614,50 @@ async function connectSession(
 
   /*
    |--------------------------------------------------------------------------
+   | STATUS HANDLER
+   |--------------------------------------------------------------------------
+   |
+   | Attach once per socket.
+   |
+   */
+
+  try {
+    attachStatusHandler(
+      sock,
+      {
+        enabled:
+          automation.autoStatusReact === true,
+
+        autoStatusSeen:
+          automation.autoStatusSeen === true,
+
+        autoStatusReply:
+          automation.autoStatusReply === true
+      }
+    );
+  } catch (error) {
+    logger.error(
+      {
+        error:
+          error?.stack ||
+          error?.message ||
+          String(error)
+      },
+      `[${sessionId}] Failed to attach status handler.`
+    );
+  }
+
+  /*
+   |--------------------------------------------------------------------------
    | CONNECTION UPDATE
    |--------------------------------------------------------------------------
    */
 
   sock.ev.on(
     "connection.update",
-    async (update) => {
+    async (
+      update
+    ) => {
       const {
         connection,
         lastDisconnect,
@@ -494,56 +666,63 @@ async function connectSession(
 
       /*
        * QR generated.
-       *
-       * The panel can use this later.
        */
 
-      if (qr) {
-        logger.info(
-          `[${sessionId}] WhatsApp pairing QR generated.`
-        );
-
+      if (
+        qr
+      ) {
         const current =
           activeSessions.get(
             sessionId
           );
 
-        if (current) {
-          current.qr = qr;
+        if (
+          current
+        ) {
+          current.qr =
+            qr;
         }
+
+        logger.info(
+          `[${sessionId}] WhatsApp pairing QR generated.`
+        );
       }
 
       /*
        * CONNECTION OPEN
        */
 
-      if (connection === "open") {
+      if (
+        connection ===
+        "open"
+      ) {
         const current =
           activeSessions.get(
             sessionId
           );
 
-        if (!current) {
+        if (
+          !current
+        ) {
           return;
         }
 
-        current.connected = true;
+        current.connected =
+          true;
 
         current.lastConnectedAt =
           Date.now();
 
-        current.qr = null;
+        current.qr =
+          null;
 
         logger.info(
           `[${sessionId}] 🟢 TOPFEROS MD V2.0.0 connected.`
         );
 
-        /*
-         * Log active automations.
-         */
-
         logger.info(
           `[${sessionId}] Automations: ` +
+          `alwaysOnline=${automation.alwaysOnline}, ` +
           `autoStatusSeen=${automation.autoStatusSeen}, ` +
           `autoStatusReply=${automation.autoStatusReply}, ` +
           `autoStatusReact=${automation.autoStatusReact}, ` +
@@ -552,15 +731,15 @@ async function connectSession(
         );
 
         /*
-         * Send welcome message only once
-         * for this active connection.
-         *
-         * Normal reconnects should not spam
-         * the same welcome message repeatedly.
+         * Send welcome once for this
+         * socket connection.
          */
 
-        if (!current.welcomeSent) {
-          current.welcomeSent = true;
+        if (
+          !current.welcomeSent
+        ) {
+          current.welcomeSent =
+            true;
 
           await sendWelcomeMessage(
             sock,
@@ -577,8 +756,12 @@ async function connectSession(
             sessionId
           );
 
-        if (timer) {
-          clearTimeout(timer);
+        if (
+          timer
+        ) {
+          clearTimeout(
+            timer
+          );
 
           reconnectTimers.delete(
             sessionId
@@ -590,19 +773,24 @@ async function connectSession(
        * CONNECTION CLOSED
        */
 
-      if (connection === "close") {
+      if (
+        connection ===
+        "close"
+      ) {
         const current =
           activeSessions.get(
             sessionId
           );
 
-        if (current) {
-          current.connected = false;
+        if (
+          current
+        ) {
+          current.connected =
+            false;
         }
 
         /*
-         * User manually disconnected
-         * from Settings Panel.
+         * Manual disconnect.
          */
 
         if (
@@ -618,16 +806,21 @@ async function connectSession(
         }
 
         /*
-         * Determine disconnect reason.
+         * Read disconnect status.
          */
 
         const statusCode =
-          lastDisconnect?.error?.output
+          lastDisconnect
+            ?.error
+            ?.output
             ?.statusCode;
 
         /*
-         * Logged out means WhatsApp
-         * explicitly terminated the session.
+         * Logged out:
+         * do not automatically reconnect.
+         *
+         * IMPORTANT:
+         * Session files are not deleted here.
          */
 
         const shouldReconnect =
@@ -640,14 +833,9 @@ async function connectSession(
           `Reconnect=${shouldReconnect}`
         );
 
-        /*
-         * Do not automatically reconnect
-         * a logged-out account.
-         *
-         * Session files are NOT deleted here.
-         */
-
-        if (!shouldReconnect) {
+        if (
+          !shouldReconnect
+        ) {
           logger.error(
             `[${sessionId}] WhatsApp session logged out.`
           );
@@ -660,7 +848,7 @@ async function connectSession(
         }
 
         /*
-         * Prevent multiple reconnect timers.
+         * Prevent duplicate reconnect timers.
          */
 
         if (
@@ -672,8 +860,15 @@ async function connectSession(
         }
 
         /*
-         * Reconnect after 5 seconds.
+         * Reconnect delay.
          */
+
+        const reconnectDelay =
+          Number(
+            config?.connection
+              ?.reconnectDelay
+          ) ||
+          5000;
 
         const timer =
           setTimeout(
@@ -706,13 +901,14 @@ async function connectSession(
                   {
                     error:
                       error?.stack ||
-                      error?.message
+                      error?.message ||
+                      String(error)
                   },
                   `[${sessionId}] Reconnection failed.`
                 );
               }
             },
-            5000
+            reconnectDelay
           );
 
         reconnectTimers.set(
@@ -728,49 +924,82 @@ async function connectSession(
    | MESSAGE EVENTS
    |--------------------------------------------------------------------------
    |
-   | connection.js does not contain the AI.
+   | Normal commands are handled by messageHandler.
    |
-   | The main message handler will process
-   | normal WhatsApp commands.
+   | Status messages are ignored here because
+   | statusHandler already has its own listener.
    |
    */
 
   sock.ev.on(
     "messages.upsert",
-    async (event) => {
+    async (
+      event
+    ) => {
       if (
         !event ||
-        event.type !== "notify"
-      ) {
-        return;
-      }
-
-      const current =
-        activeSessions.get(
-          sessionId
-        );
-
-      if (
-        !current ||
-        !current.sock
+        !Array.isArray(
+          event.messages
+        )
       ) {
         return;
       }
 
       /*
-       * Message handling belongs to
-       * the dedicated message handler.
-       *
-       * AI status reaction will also be
-       * handled separately.
+       * Baileys can deliver multiple
+       * messages in one event.
        */
+
+      for (
+        const message of
+          event.messages
+      ) {
+        try {
+          if (
+            !message?.message
+          ) {
+            continue;
+          }
+
+          /*
+           * Status handler already processes
+           * status@broadcast.
+           */
+
+          if (
+            message?.key
+              ?.remoteJid ===
+            "status@broadcast"
+          ) {
+            continue;
+          }
+
+          /*
+           * Normal message handling.
+           */
+
+          await handleMessage(
+            sock,
+            message,
+            sessionId
+          );
+        } catch (error) {
+          logger.error(
+            {
+              error:
+                error?.stack ||
+                error?.message ||
+                String(error)
+            },
+            `[${sessionId}] Message handler error.`
+          );
+        }
+      }
     }
   );
 
   /*
-   |--------------------------------------------------------------------------
-   | RETURN SOCKET
-   |--------------------------------------------------------------------------
+   * Return socket.
    */
 
   return sock;
@@ -782,11 +1011,9 @@ async function connectSession(
 |--------------------------------------------------------------------------
 |
 | IMPORTANT:
-| This does NOT delete the WhatsApp
-| authentication/session files.
+| This does NOT delete the auth/session files.
 |
 | The user can reconnect later.
-|
 |--------------------------------------------------------------------------
 */
 
@@ -794,7 +1021,9 @@ async function disconnectSession(
   number
 ) {
   const sessionId =
-    getSessionId(number);
+    getSessionId(
+      number
+    );
 
   /*
    * Stop automatic reconnect.
@@ -805,7 +1034,7 @@ async function disconnectSession(
   );
 
   /*
-   * Clear pending reconnect timer.
+   * Clear reconnect timer.
    */
 
   const timer =
@@ -813,8 +1042,12 @@ async function disconnectSession(
       sessionId
     );
 
-  if (timer) {
-    clearTimeout(timer);
+  if (
+    timer
+  ) {
+    clearTimeout(
+      timer
+    );
 
     reconnectTimers.delete(
       sessionId
@@ -822,7 +1055,7 @@ async function disconnectSession(
   }
 
   /*
-   * Get current session.
+   * Get active session.
    */
 
   const session =
@@ -830,14 +1063,16 @@ async function disconnectSession(
       sessionId
     );
 
-  if (!session?.sock) {
+  if (
+    !session?.sock
+  ) {
     return false;
   }
 
   /*
    * Close socket only.
    *
-   * Do NOT delete credentials.
+   * DO NOT delete session files.
    */
 
   try {
@@ -848,7 +1083,8 @@ async function disconnectSession(
     logger.warn(
       {
         error:
-          error?.message
+          error?.message ||
+          String(error)
       },
       `[${sessionId}] Error while closing WhatsApp socket.`
     );
@@ -857,7 +1093,7 @@ async function disconnectSession(
   /*
    * Remove from active memory.
    *
-   * Session files remain on disk.
+   * Authentication files remain on disk.
    */
 
   activeSessions.delete(
@@ -881,10 +1117,12 @@ async function reconnectSession(
   number
 ) {
   const sessionId =
-    getSessionId(number);
+    getSessionId(
+      number
+    );
 
   /*
-   * Allow reconnect again.
+   * Allow reconnect.
    */
 
   manuallyStopped.delete(
@@ -892,7 +1130,28 @@ async function reconnectSession(
   );
 
   /*
-   * Close old socket if it exists.
+   * Clear pending reconnect timer.
+   */
+
+  const timer =
+    reconnectTimers.get(
+      sessionId
+    );
+
+  if (
+    timer
+  ) {
+    clearTimeout(
+      timer
+    );
+
+    reconnectTimers.delete(
+      sessionId
+    );
+  }
+
+  /*
+   * Close old socket if present.
    */
 
   const existing =
@@ -900,7 +1159,9 @@ async function reconnectSession(
       sessionId
     );
 
-  if (existing?.sock) {
+  if (
+    existing?.sock
+  ) {
     try {
       existing.sock.end(
         undefined
@@ -931,9 +1192,13 @@ async function reconnectSession(
 |--------------------------------------------------------------------------
 */
 
-function isConnected(number) {
+function isConnected(
+  number
+) {
   const sessionId =
-    getSessionId(number);
+    getSessionId(
+      number
+    );
 
   return Boolean(
     activeSessions.get(
@@ -952,14 +1217,18 @@ function getSessionAutomation(
   number
 ) {
   const sessionId =
-    getSessionId(number);
+    getSessionId(
+      number
+    );
 
   const session =
     activeSessions.get(
       sessionId
     );
 
-  if (!session) {
+  if (
+    !session
+  ) {
     return null;
   }
 
@@ -979,14 +1248,18 @@ function updateSessionAutomation(
   changes = {}
 ) {
   const sessionId =
-    getSessionId(number);
+    getSessionId(
+      number
+    );
 
   const session =
     activeSessions.get(
       sessionId
     );
 
-  if (!session) {
+  if (
+    !session
+  ) {
     return false;
   }
 
@@ -996,8 +1269,8 @@ function updateSessionAutomation(
   };
 
   /*
-   * Keep the socket's online state
-   * synchronized with the setting.
+   * Keep online behavior synchronized
+   * when possible.
    */
 
   if (
@@ -1007,11 +1280,11 @@ function updateSessionAutomation(
     )
   ) {
     /*
-     * Baileys connection state is handled
-     * by the socket lifecycle.
+     * The socket connection itself controls
+     * the actual WhatsApp lifecycle.
      *
-     * The setting is stored here for
-     * the automation system.
+     * The updated value is stored here for
+     * the automation layer.
      */
   }
 
@@ -1020,6 +1293,65 @@ function updateSessionAutomation(
   );
 
   return true;
+}
+
+/*
+|--------------------------------------------------------------------------
+| GET SESSION QR
+|--------------------------------------------------------------------------
+*/
+
+function getSessionQR(
+  number
+) {
+  const sessionId =
+    getSessionId(
+      number
+    );
+
+  return (
+    activeSessions.get(
+      sessionId
+    )?.qr ||
+    null
+  );
+}
+
+/*
+|--------------------------------------------------------------------------
+| STOP ALL SESSIONS
+|--------------------------------------------------------------------------
+|
+| Useful during application shutdown.
+| Session credentials are preserved.
+|--------------------------------------------------------------------------
+*/
+
+async function disconnectAllSessions() {
+  const sessionIds =
+    [
+      ...activeSessions.keys()
+    ];
+
+  for (
+    const sessionId of
+      sessionIds
+  ) {
+    try {
+      await disconnectSession(
+        sessionId
+      );
+    } catch (error) {
+      logger.error(
+        {
+          error:
+            error?.message ||
+            String(error)
+        },
+        `[${sessionId}] Failed to disconnect session during shutdown.`
+      );
+    }
+  }
 }
 
 /*
@@ -1035,9 +1367,13 @@ module.exports = {
 
   reconnectSession,
 
+  disconnectAllSessions,
+
   getSession,
 
   getActiveSessions,
+
+  getSessionQR,
 
   isConnected,
 
@@ -1050,6 +1386,12 @@ module.exports = {
   createWelcomeMessage,
 
   sendWelcomeMessage,
+
+  getSessionId,
+
+  getSessionPath,
+
+  normalizeNumber,
 
   SESSIONS_DIR
 };
