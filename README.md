@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="public/assets/logo.png" width="220" alt="TOPFEROS MD Logo">
+  <img src="logo.png" width="220" alt="TOPFEROS MD Logo">
 </p>
 
-<h1 align="center">🦁 TOPFEROS MD • V2.0.0 🐑</h1>
+<h1 align="center">TOPFEROS MD • V2.0.0</h1>
 
 <p align="center">
   <strong>Smart • Powerful • Customizable WhatsApp Bot</strong>
@@ -11,33 +11,38 @@
 <p align="center">
   <img src="https://img.shields.io/badge/Version-V2.0.0-black?style=for-the-badge" alt="Version">
   <img src="https://img.shields.io/badge/Node.js-20%2B-green?style=for-the-badge" alt="Node.js">
-  <img src="https://img.shields.io/badge/Baileys-6.7.21-blue?style=for-the-badge" alt="Baileys">
+  <img src="https://img.shields.io/badge/Status-Active-blue?style=for-the-badge" alt="Status">
   <img src="https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge" alt="License">
 </p>
 
-<p align="center">
-  <strong>🦁 TECH BY TOPFEROS MD 🐑</strong>
-</p>
+---
+
+## 📖 ABOUT TOPFEROS MD
+
+TOPFEROS MD V2.0.0 se yon WhatsApp Bot modèn ki fèt pou bay
+yon eksperyans rapid, entèlijan, customizable ak fasil pou administre.
+
+V2.0.0 la fèt ak yon nouvo architecture Multi-Session ki pèmèt
+plizyè itilizatè konekte ak bot la avèk sessions endepandan.
+
+Bot la gen yon sistèm Web Panel ki pèmèt itilizatè yo configure
+bot la san yo pa bezwen modifye source code la dirèkteman.
+
+Sistèm nan gen:
+
+- 🔐 Multi-Session
+- ⚙️ Advanced Settings
+- 🤝 Parrain Code System
+- 🌐 Language System
+- 🤖 AI Assistant
+- 🎵 Media Downloader
+- 👥 Group Automation
+- 🛡️ Security & Protection
+- ⚡ System Automation
 
 ---
 
-# 📖 ABOUT TOPFEROS MD
-
-**TOPFEROS MD V2.0.0** is a modern, powerful and customizable
-WhatsApp automation bot built to provide a clean, secure and
-easy-to-manage experience.
-
-The V2 system is designed from the ground up with a modern
-architecture, multi-session support, web control panels,
-automation systems, AI assistance, media tools and group
-management features.
-
-The bot can be controlled through a Web Panel without requiring
-the user to edit the source code directly.
-
----
-
-# 📦 BOT INFORMATION
+## 📦 BOT INFORMATION
 
 | Information | Value |
 |---|---|
@@ -45,23 +50,88 @@ the user to edit the source code directly.
 | 📦 Version | V2.0.0 |
 | 🔰 Default Prefix | `.` |
 | ⚙️ Default Mode | Public |
-| 🌍 Default Language | English |
-| 📍 Location | HAÏTI |
+| 🌐 Default Language | English |
+| 📍 Default Location | HAÏTI |
+| 👤 Default Age | 14 |
 | 👨‍💻 Developer | TOPFEROS MD |
-| 🪪 License | MIT |
-| 🖼️ Logo | `public/assets/logo.png` |
-| 🟢 Status | Active Development |
+| 🖼️ Logo | `logo.png` |
+| 📜 License | MIT |
 
 ---
 
-# ✨ MAIN FEATURES
+## ✨ FEATURES
+
+### 👥 GROUP SYSTEM
+
+TOPFEROS MD V2.0.0 gen yon sistèm Group Management ak
+Group Automation pou ede admin yo jere group yo pi fasil.
+
+- 👥 Group Management
+- 📜 Group Rules
+- ⚠️ Warning System
+- 🕦 Group Automation
+- 🔒 Automatic Group Close
+- 🔓 Automatic Group Open
+- 📝 Group Bio / Principles
+- 👮 Member Protection
+
+### ⚠️ GROUP PRINCIPLES
+
+Admin lan kapab mete prensip/règ group la atravè Settings Panel la.
+
+Si yon member vyole prensip yo:
+
+- 1️⃣ Premye vyolasyon → Warning
+- 2️⃣ Dezyèm vyolasyon → Warning
+- 3️⃣ Twazyèm vyolasyon → Remove Member
+
+---
+
+### 🛡️ SECURITY SYSTEM
+
+Sistèm sekirite a fèt pou ede pwoteje bot la ak itilizatè yo.
+
+- 🗑️ Anti-Delete
+- 📞 Anti-Call
+- 🐛 Anti-Bug Protection
+- 🤖 Anti-Bot Filter
+- 🚫 Anti-Block
+- 🔐 Session Protection
+- 🛡️ User Isolation
+
+### 🗑️ ANTI-DELETE
+
+Anti-Delete kapab configure selon mode:
+
+- 🔒 An privé
+- 💬 Nan menm chat la
+
+---
+
+### ⚡ AUTOMATION SYSTEM
+
+TOPFEROS MD V2.0.0 gen plizyè automatisation ki kapab
+aktive oswa dezaktive nan Settings Panel la.
+
+- 💚 Always Online
+- ✍️ Fake Typing
+- 🎙️ Fake Recording
+- 👁️ Auto Status Seen
+- 💬 Auto Status Reply
+- ❤️ Auto Status React
+- 🗑️ Anti-Delete
+- 📞 Anti-Call
+- 🐛 Anti-Bug Protection
+- 🤖 Anti-Bot Filter
+- 🚫 Anti-Block
+
+---
 
 ## 🤖 AI ASSISTANT
 
-TOPFEROS MD V2.0.0 includes an AI assistant designed to
-understand natural language and help users with different tasks.
+TOPFEROS MD V2.0.0 gen yon AI Assistant pou plizyè kalite travay.
 
-### Commands
+### 🧠 AI COMMANDS
 
 ```text
 .ai <question>
