@@ -1,282 +1,817 @@
 "use strict";
 
-const config = require("../config");
-
-// ============================================================
-// TOPFEROS MD
-// CONNECTION MANAGER
-// WhatsApp / Baileys
-// ============================================================
-
-async function autoFollowChannel(sock) {
-  const channelUrl =
-    config?.links?.channel ||
-    "https://whatsapp.com/channel/0029Vb98522IXnlxdL8Sxj2m";
-
-  if (!channelUrl) return;
-
-  try {
-    const match = channelUrl.match(
-      /whatsapp\.com\/channel\/([A-Za-z0-9_-]+)/
-    );
-
-    if (!match) {
-      console.warn(
-        "[CHANNEL] Channel link la pa valid."
-      );
-      return;
-    }
-
-    const inviteCode = match[1];
-
-    const metadata =
-      await sock.newsletterMetadata(
-        "invite",
-        inviteCode
-      );
-
-    if (!metadata?.id) {
-      console.warn(
-        "[CHANNEL] Mwen pa jwenn Channel JID la."
-      );
-      return;
-    }
-
-    const channelJid = metadata.id;
-
-    const role =
-      metadata?.viewer_metadata?.role;
-
-    if (
-      role === "SUBSCRIBER" ||
-      role === "ADMIN" ||
-      role === "OWNER"
-    ) {
-      console.log(
-        `[CHANNEL] Session deja follow Channel la: ${channelJid}`
-      );
-      return;
-    }
-
-    await sock.newsletterFollow(
-      channelJid
-    );
-
-    console.log(
-      `[CHANNEL] Session follow Channel la avèk siksè: ${channelJid}`
-    );
-
-  } catch (error) {
-    console.error(
-      "[CHANNEL] Auto-follow error:",
-      error?.message || error
-    );
-  }
-}
-
-const {
-  default: makeWASocket,
-  useMultiFileAuthState,
-  DisconnectReason,
-  makeCacheableSignalKeyStore,
-  fetchLatestBaileysVersion,
-  Browsers
-} = require("@whiskeysockets/baileys");
-
-const pino = require("pino");
 const path = require("path");
 const fs = require("fs");
+const pino = require("pino");
 
-const sessionManager =
-  require("./sessionManager");
+const makeWASocket =
+  require("@whiskeysockets/baileys").default;
 
-const messageHandler =
-  require("./messageHandler");
+const {
+  DisconnectReason,
+  useMultiFileAuthState,
+  Browsers,
+  makeCacheableSignalKeyStore,
+  fetchLatestBaileysVersion
+} = require("@whiskeysockets/baileys");
 
-const antiDelete =
-  require("../services/antiDelete");
+const config = require("./config");
 
-// ============================================================
-// ACTIVE SOCKETS
-// ============================================================
+/*
+|--------------------------------------------------------------------------
+| LOGGER
+|--------------------------------------------------------------------------
+*/
 
-const active = new Map();
+const logger = pino({
+  level: process.env.LOG_LEVEL || "info"
+});
 
-// Prevent duplicate reconnect timers
+/*
+|--------------------------------------------------------------------------
+| SESSION DIRECTORY
+|--------------------------------------------------------------------------
+*/
+
+const SESSIONS_DIR = path.resolve(
+  process.env.SESSIONS_DIR ||
+    path.join(process.cwd(), "sessions")
+);
+
+if (!fs.existsSync(SESSIONS_DIR)) {
+  fs.mkdirSync(SESSIONS_DIR, {
+    recursive: true
+  });
+}
+
+/*
+|--------------------------------------------------------------------------
+| ACTIVE SESSIONS
+|--------------------------------------------------------------------------
+*/
+
+const activeSessions = new Map();
+
 const reconnectTimers = new Map();
 
-// ============================================================
-// OPTIONAL COMMANDS
-// ============================================================
+const manuallyStopped = new Set();
 
-let welcome = null;
-let goodbye = null;
+/*
+|--------------------------------------------------------------------------
+| DEFAULT AUTOMATIONS
+|--------------------------------------------------------------------------
+|
+| Sa yo aktive otomatikman lè WhatsApp konekte.
+|
+| IMPORTANT:
+| autoStatusReact pa chwazi emoji a.
+| AI reaction service la ap analize status la epi chwazi
+| emoji ki apwopriye a.
+|
+|--------------------------------------------------------------------------
+*/
 
-try {
-  welcome = require("../commands/welcome");
-} catch (error) {
-  welcome = null;
+const DEFAULT_AUTOMATION = {
+  alwaysOnline: false,
+
+  fakeTyping: false,
+
+  fakeRecording: false,
+
+  autoStatusSeen: true,
+
+  autoStatusReply: true,
+
+  autoStatusReact: true,
+
+  antiDelete: true,
+
+  antiDeleteMode: "private",
+
+  antiCall: false,
+
+  antiBugProtection: false,
+
+  antiBotFilter: false,
+
+  antiBotAction: "delete",
+
+  antiBlock: []
+};
+
+/*
+|--------------------------------------------------------------------------
+| WELCOME MESSAGE
+|--------------------------------------------------------------------------
+*/
+
+function createWelcomeMessage(userNumber) {
+  const user = String(userNumber || "").replace(
+    /\D/g,
+    ""
+  );
+
+  return `
+╭━━━〔 🦁 TOPFEROS MD V2.0.0 🐑 〕━━━╮
+┃
+┃ 🎉 WELCOME TO TOPFEROS MD
+┃
+┃ 🟢 CONNECTION SUCCESSFUL
+┃
+┃ 👤 USER
+┃ └─ @${user}
+┃
+┃ 🟢 STATUS: ONLINE & READY
+┃
+┃ ⚙️ BOT INFORMATION
+┃ ├─ Name     : TOPFEROS MD
+┃ ├─ Version  : V2.0.0
+┃ ├─ Prefix   : .
+┃ ├─ Mode     : Public
+┃ └─ Language : English
+┃
+┃ ✨ AVAILABLE FEATURES
+┃
+┃ 👥 GROUP
+┃ ├─ Group Management
+┃ ├─ Group Rules
+┃ ├─ Warnings System
+┃ └─ Group Automation
+┃
+┃ 🛡️ SECURITY
+┃ ├─ Anti-Delete
+┃ ├─ Anti-Call
+┃ ├─ Anti-Bug Protection
+┃ ├─ Anti-Bot Filter
+┃ └─ Anti-Block
+┃
+┃ ⚡ AUTOMATION
+┃ ├─ Always Online
+┃ ├─ Auto Status
+┃ ├─ Auto Reply
+┃ ├─ Auto React
+┃ ├─ Fake Typing
+┃ └─ Fake Recording
+┃
+┃ 🤖 AI
+┃ └─ AI Assistant & Prompt System
+┃
+┃ 🎵 MEDIA
+┃ ├─ Music Search & Download
+┃ ├─ Video Download
+┃ └─ Media Tools
+┃
+┃ ⚙️ SYSTEM
+┃ ├─ Multi-Session
+┃ ├─ Language System
+┃ └─ Custom Configuration
+┃
+┃ 📖 COMMANDS
+┃ └─ Type .menu to explore
+┃
+┃ ⚙️ SETTINGS
+┃ └─ Type .setting to configure
+┃
+╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯
+
+🦁 TECH BY TOPFEROS MD 🐑
+`;
 }
 
-try {
-  goodbye = require("../commands/goodbye");
-} catch (error) {
-  goodbye = null;
-}
+/*
+|--------------------------------------------------------------------------
+| NORMALIZE NUMBER
+|--------------------------------------------------------------------------
+*/
 
-// ============================================================
-// CLEAN NUMBER
-// ============================================================
-
-function cleanNumber(number) {
+function normalizeNumber(number) {
   return String(number || "")
-    .replace(/\D/g, "");
+    .replace(/\D/g, "")
+    .trim();
 }
 
-// ============================================================
-// SAFE SESSION ID
-// ============================================================
+/*
+|--------------------------------------------------------------------------
+| SESSION ID
+|--------------------------------------------------------------------------
+*/
 
-function safeSessionId(value) {
-  return String(value || "")
-    .replace(/[^a-zA-Z0-9_-]/g, "_")
-    .slice(0, 100);
+function getSessionId(number) {
+  const sessionId = normalizeNumber(number);
+
+  if (!sessionId) {
+    throw new Error(
+      "A valid WhatsApp number is required."
+    );
+  }
+
+  return sessionId;
 }
 
-// ============================================================
-// CONNECTED SUCCESS MESSAGE
-// ============================================================
+/*
+|--------------------------------------------------------------------------
+| SESSION PATH
+|--------------------------------------------------------------------------
+*/
 
-async function sendConnectedMessage(
+function getSessionPath(sessionId) {
+  return path.join(
+    SESSIONS_DIR,
+    sessionId
+  );
+}
+
+/*
+|--------------------------------------------------------------------------
+| GET SESSION
+|--------------------------------------------------------------------------
+*/
+
+function getSession(sessionId) {
+  return activeSessions.get(
+    String(sessionId)
+  );
+}
+
+/*
+|--------------------------------------------------------------------------
+| GET ACTIVE SESSIONS
+|--------------------------------------------------------------------------
+*/
+
+function getActiveSessions() {
+  return activeSessions;
+}
+
+/*
+|--------------------------------------------------------------------------
+| DEFAULT AUTOMATION SETTINGS
+|--------------------------------------------------------------------------
+*/
+
+function getDefaultAutomationSettings() {
+  return {
+    ...DEFAULT_AUTOMATION
+  };
+}
+
+/*
+|--------------------------------------------------------------------------
+| SEND WELCOME MESSAGE
+|--------------------------------------------------------------------------
+*/
+
+async function sendWelcomeMessage(
   sock,
   sessionId
 ) {
   try {
     if (!sock?.user?.id) {
-      console.warn(
-        `⚠️ CONNECTED MESSAGE: user.id manke [${sessionId}]`
+      logger.warn(
+        `[${sessionId}] Cannot send welcome message: bot JID unavailable.`
       );
 
-      return;
+      return false;
     }
 
-    const user = sock.user;
+    const jid =
+      sock.user.id.split(":")[0];
 
-    const username =
-      user.name ||
-      user.verifiedName ||
-      "Unknown";
+    const message =
+      createWelcomeMessage(sessionId);
 
-    const number =
-      String(user.id || "")
-        .split(":")[0]
-        .split("@")[0]
-        .replace(/\D/g, "") ||
-      "Unknown";
-
-    const connectedMessage = `
-╭━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╮
-┃      🌟 TOPFEROS MD 🌟       ┃
-┃          V1.0.0              ┃
-╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯
-
-╭───────❖ 𝐂𝐎𝐍𝐍𝐄𝐂𝐓𝐄𝐃 ❖───────╮
-│                              │
-│ 🎉 🦁𝕋𝕆ℙ𝔽𝔼ℝ𝕆𝕊 𝕄𝔻 𝕍1.0.0 𝕆ℕ𝕃𝕀ℕ𝔼 🎉
-│                              │
-│ ⚡ Prefix   : .
-│ 🌐 Mode     : Public
-│ 👤 Username : ${username}
-│ 📱 Number   : ${number}
-│                              │
-╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯
-
-╭──────❖ 𝐅𝐄𝐀𝐓𝐔𝐑𝐄𝐒 ❖──────╮
-│                            │
-│ 💞 Allways Online
-│ 🔌 Fake Typing
-│ 🎤 Fake Recording
-│ 🖇️ Auto Status Seen & Like
-│ 😋 Auto Status Reply
-│ 🌈 Auto React
-│ 📞 Anti Call
-│ 🤖 Mode Change
-│ 📥 Media Download Command
-│ 🎞️ Send Song For WhatsApp Channels
-│ 🤖 Smart AI Command & Auto Chat
-│ 🎀 & Many More Commands...
-│                            │
-╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯
-
-╭──────❖ 𝐐𝐔𝐈𝐂𝐊 𝐌𝐄𝐍𝐔 ❖──────╮
-│                              │
-│ 📋 Type .menu
-│    ➜ To view all commands
-│
-│ ⚙️ Type .setting
-│    ➜ To get the settings portal link
-│                              │
-╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯
-
-╭━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╮
-│  🦁  TECH BY TOPFEROS MD
-╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯
-`;
-
-    const logoPath = path.join(
-      __dirname,
-      "..",
-      "assets",
-      "logo.png"
+    await sock.sendMessage(
+      jid,
+      {
+        text: message,
+        mentions: [jid]
+      }
     );
 
-    if (fs.existsSync(logoPath)) {
-      const logo =
-        fs.readFileSync(logoPath);
-
-      await sock.sendMessage(
-        user.id,
-        {
-          image: logo,
-          caption: connectedMessage
-        }
-      );
-    } else {
-      console.warn(
-        `⚠️ Logo pa jwenn: ${logoPath}`
-      );
-
-      await sock.sendMessage(
-        user.id,
-        {
-          text: connectedMessage
-        }
-      );
-    }
-
-    console.log(
-      `✅ CONNECTED MESSAGE SENT [${sessionId}]`
+    logger.info(
+      `[${sessionId}] Welcome message sent.`
     );
 
+    return true;
   } catch (error) {
-    console.error(
-      `❌ CONNECTED MESSAGE ERROR [${sessionId}]`,
-      error?.stack ||
-      error?.message ||
-      error
+    logger.error(
+      {
+        error:
+          error?.stack ||
+          error?.message
+      },
+      `[${sessionId}] Failed to send welcome message.`
     );
+
+    return false;
   }
 }
 
-// ============================================================
-// CLEAR RECONNECT TIMER
-// ============================================================
+/*
+|--------------------------------------------------------------------------
+| CONNECT SESSION
+|--------------------------------------------------------------------------
+*/
 
-function clearReconnectTimer(
-  sessionId
+async function connectSession(
+  number,
+  options = {}
 ) {
+  const sessionId =
+    getSessionId(number);
+
+  /*
+   * Do not create duplicate sockets.
+   */
+
+  const existing =
+    activeSessions.get(sessionId);
+
+  if (existing?.sock) {
+    return existing.sock;
+  }
+
+  /*
+   * Allow automatic reconnect.
+   */
+
+  manuallyStopped.delete(
+    sessionId
+  );
+
+  /*
+   * Session directory.
+   */
+
+  const sessionPath =
+    getSessionPath(sessionId);
+
+  if (!fs.existsSync(sessionPath)) {
+    fs.mkdirSync(sessionPath, {
+      recursive: true
+    });
+  }
+
+  /*
+   * WhatsApp authentication state.
+   */
+
+  const {
+    state,
+    saveCreds
+  } =
+    await useMultiFileAuthState(
+      sessionPath
+    );
+
+  /*
+   * Fetch current Baileys WhatsApp version.
+   */
+
+  let version;
+
+  try {
+    const latest =
+      await fetchLatestBaileysVersion();
+
+    if (latest?.version) {
+      version = latest.version;
+    }
+  } catch (error) {
+    logger.warn(
+      {
+        error:
+          error?.message
+      },
+      `[${sessionId}] Could not fetch latest WhatsApp version.`
+    );
+  }
+
+  /*
+   * Automation settings.
+   *
+   * Panel settings can override these later.
+   */
+
+  const automation = {
+    ...getDefaultAutomationSettings(),
+    ...(options.automation || {})
+  };
+
+  /*
+   * Create socket configuration.
+   */
+
+  const socketConfig = {
+    auth: {
+      creds: state.creds,
+
+      keys: makeCacheableSignalKeyStore(
+        state.keys,
+        logger
+      )
+    },
+
+    browser:
+      Browsers.ubuntu("Chrome"),
+
+    printQRInTerminal: false,
+
+    syncFullHistory: false,
+
+    markOnlineOnConnect:
+      automation.alwaysOnline === true
+  };
+
+  /*
+   * Use fetched version when available.
+   */
+
+  if (version) {
+    socketConfig.version = version;
+  }
+
+  /*
+   * Create WhatsApp socket.
+   */
+
+  const sock =
+    makeWASocket(socketConfig);
+
+  /*
+   * Save active session.
+   */
+
+  activeSessions.set(
+    sessionId,
+    {
+      sock,
+
+      sessionId,
+
+      number: sessionId,
+
+      sessionPath,
+
+      automation,
+
+      connected: false,
+
+      welcomeSent: false,
+
+      createdAt: Date.now(),
+
+      lastConnectedAt: null
+    }
+  );
+
+  /*
+   * Save authentication credentials.
+   *
+   * This is required so updated WhatsApp keys
+   * remain available after restart/reconnect.
+   */
+
+  sock.ev.on(
+    "creds.update",
+    saveCreds
+  );
+
+  /*
+   |--------------------------------------------------------------------------
+   | CONNECTION UPDATE
+   |--------------------------------------------------------------------------
+   */
+
+  sock.ev.on(
+    "connection.update",
+    async (update) => {
+      const {
+        connection,
+        lastDisconnect,
+        qr
+      } = update;
+
+      /*
+       * QR generated.
+       *
+       * The panel can use this later.
+       */
+
+      if (qr) {
+        logger.info(
+          `[${sessionId}] WhatsApp pairing QR generated.`
+        );
+
+        const current =
+          activeSessions.get(
+            sessionId
+          );
+
+        if (current) {
+          current.qr = qr;
+        }
+      }
+
+      /*
+       * CONNECTION OPEN
+       */
+
+      if (connection === "open") {
+        const current =
+          activeSessions.get(
+            sessionId
+          );
+
+        if (!current) {
+          return;
+        }
+
+        current.connected = true;
+
+        current.lastConnectedAt =
+          Date.now();
+
+        current.qr = null;
+
+        logger.info(
+          `[${sessionId}] 🟢 TOPFEROS MD V2.0.0 connected.`
+        );
+
+        /*
+         * Log active automations.
+         */
+
+        logger.info(
+          `[${sessionId}] Automations: ` +
+          `autoStatusSeen=${automation.autoStatusSeen}, ` +
+          `autoStatusReply=${automation.autoStatusReply}, ` +
+          `autoStatusReact=${automation.autoStatusReact}, ` +
+          `antiDelete=${automation.antiDelete}, ` +
+          `antiDeleteMode=${automation.antiDeleteMode}`
+        );
+
+        /*
+         * Send welcome message only once
+         * for this active connection.
+         *
+         * Normal reconnects should not spam
+         * the same welcome message repeatedly.
+         */
+
+        if (!current.welcomeSent) {
+          current.welcomeSent = true;
+
+          await sendWelcomeMessage(
+            sock,
+            sessionId
+          );
+        }
+
+        /*
+         * Clear reconnect timer.
+         */
+
+        const timer =
+          reconnectTimers.get(
+            sessionId
+          );
+
+        if (timer) {
+          clearTimeout(timer);
+
+          reconnectTimers.delete(
+            sessionId
+          );
+        }
+      }
+
+      /*
+       * CONNECTION CLOSED
+       */
+
+      if (connection === "close") {
+        const current =
+          activeSessions.get(
+            sessionId
+          );
+
+        if (current) {
+          current.connected = false;
+        }
+
+        /*
+         * User manually disconnected
+         * from Settings Panel.
+         */
+
+        if (
+          manuallyStopped.has(
+            sessionId
+          )
+        ) {
+          logger.info(
+            `[${sessionId}] 🔴 Session stopped manually.`
+          );
+
+          return;
+        }
+
+        /*
+         * Determine disconnect reason.
+         */
+
+        const statusCode =
+          lastDisconnect?.error?.output
+            ?.statusCode;
+
+        /*
+         * Logged out means WhatsApp
+         * explicitly terminated the session.
+         */
+
+        const shouldReconnect =
+          statusCode !==
+          DisconnectReason.loggedOut;
+
+        logger.warn(
+          `[${sessionId}] Connection closed. ` +
+          `Status=${statusCode || "unknown"} ` +
+          `Reconnect=${shouldReconnect}`
+        );
+
+        /*
+         * Do not automatically reconnect
+         * a logged-out account.
+         *
+         * Session files are NOT deleted here.
+         */
+
+        if (!shouldReconnect) {
+          logger.error(
+            `[${sessionId}] WhatsApp session logged out.`
+          );
+
+          activeSessions.delete(
+            sessionId
+          );
+
+          return;
+        }
+
+        /*
+         * Prevent multiple reconnect timers.
+         */
+
+        if (
+          reconnectTimers.has(
+            sessionId
+          )
+        ) {
+          return;
+        }
+
+        /*
+         * Reconnect after 5 seconds.
+         */
+
+        const timer =
+          setTimeout(
+            async () => {
+              reconnectTimers.delete(
+                sessionId
+              );
+
+              if (
+                manuallyStopped.has(
+                  sessionId
+                )
+              ) {
+                return;
+              }
+
+              try {
+                activeSessions.delete(
+                  sessionId
+                );
+
+                await connectSession(
+                  sessionId,
+                  {
+                    automation
+                  }
+                );
+              } catch (error) {
+                logger.error(
+                  {
+                    error:
+                      error?.stack ||
+                      error?.message
+                  },
+                  `[${sessionId}] Reconnection failed.`
+                );
+              }
+            },
+            5000
+          );
+
+        reconnectTimers.set(
+          sessionId,
+          timer
+        );
+      }
+    }
+  );
+
+  /*
+   |--------------------------------------------------------------------------
+   | MESSAGE EVENTS
+   |--------------------------------------------------------------------------
+   |
+   | connection.js does not contain the AI.
+   |
+   | The main message handler will process
+   | normal WhatsApp commands.
+   |
+   */
+
+  sock.ev.on(
+    "messages.upsert",
+    async (event) => {
+      if (
+        !event ||
+        event.type !== "notify"
+      ) {
+        return;
+      }
+
+      const current =
+        activeSessions.get(
+          sessionId
+        );
+
+      if (
+        !current ||
+        !current.sock
+      ) {
+        return;
+      }
+
+      /*
+       * Message handling belongs to
+       * the dedicated message handler.
+       *
+       * AI status reaction will also be
+       * handled separately.
+       */
+    }
+  );
+
+  /*
+   |--------------------------------------------------------------------------
+   | RETURN SOCKET
+   |--------------------------------------------------------------------------
+   */
+
+  return sock;
+}
+
+/*
+|--------------------------------------------------------------------------
+| DISCONNECT SESSION
+|--------------------------------------------------------------------------
+|
+| IMPORTANT:
+| This does NOT delete the WhatsApp
+| authentication/session files.
+|
+| The user can reconnect later.
+|
+|--------------------------------------------------------------------------
+*/
+
+async function disconnectSession(
+  number
+) {
+  const sessionId =
+    getSessionId(number);
+
+  /*
+   * Stop automatic reconnect.
+   */
+
+  manuallyStopped.add(
+    sessionId
+  );
+
+  /*
+   * Clear pending reconnect timer.
+   */
+
   const timer =
-    reconnectTimers.get(sessionId);
+    reconnectTimers.get(
+      sessionId
+    );
 
   if (timer) {
     clearTimeout(timer);
@@ -285,1233 +820,236 @@ function clearReconnectTimer(
       sessionId
     );
   }
-}
 
-// ============================================================
-// CREATE SOCKET
-// ============================================================
-
-async function createSocket(
-  sessionId
-) {
-  const cleanId =
-    safeSessionId(sessionId);
-
-  if (!cleanId) {
-    throw new Error(
-      "sessionId obligatwa."
-    );
-  }
-
-  // ----------------------------------------------------------
-  // PREVENT DUPLICATE SOCKET
-  // ----------------------------------------------------------
-
-  const existingSocket =
-    active.get(cleanId);
-
-  if (existingSocket) {
-    return existingSocket;
-  }
-
-  // ----------------------------------------------------------
-  // LOAD SESSION
-  // ----------------------------------------------------------
+  /*
+   * Get current session.
+   */
 
   const session =
-    sessionManager.getSession(cleanId);
-
-  if (!session) {
-    throw new Error(
-      `Session introuvable: ${cleanId}`
-    );
-  }
-
-  // ----------------------------------------------------------
-  // IMPORTANT:
-  // Use the SAME authDir provided by sessionManager.
-  // Do NOT create another auth path here.
-  // ----------------------------------------------------------
-
-  const authDir =
-    session.authDir;
-
-  if (!authDir) {
-    throw new Error(
-      `authDir manke pou session ${cleanId}`
-    );
-  }
-
-  fs.mkdirSync(
-    authDir,
-    {
-      recursive: true
-    }
-  );
-
-  console.log(
-    `📁 AUTH DIR [${cleanId}]: ${authDir}`
-  );
-
-  // ----------------------------------------------------------
-  // AUTH STATE
-  // ----------------------------------------------------------
-
-  const {
-    state,
-    saveCreds
-  } =
-    await useMultiFileAuthState(
-      authDir
-    );
-
-  // ----------------------------------------------------------
-  // BAILEYS VERSION
-  // ----------------------------------------------------------
-
-  let version;
-
-  try {
-    const latest =
-      await fetchLatestBaileysVersion();
-
-    if (
-      latest &&
-      Array.isArray(latest.version)
-    ) {
-      version =
-        latest.version;
-    }
-
-  } catch (error) {
-    console.warn(
-      `⚠️ Impossible jwenn latest Baileys version [${cleanId}]`
-    );
-
-    version =
-      undefined;
-  }
-
-  // ----------------------------------------------------------
-  // CREATE SOCKET
-  // ----------------------------------------------------------
-
-  const socketOptions = {
-    ...(version
-      ? {
-          version
-        }
-      : {}),
-
-    auth: {
-      creds:
-        state.creds,
-
-      keys:
-        makeCacheableSignalKeyStore(
-          state.keys,
-          pino({
-            level: "silent"
-          })
-        )
-    },
-
-    browser:
-      Browsers.ubuntu(
-        "Chrome"
-      ),
-
-    logger:
-      pino({
-        level: "silent"
-      }),
-
-    printQRInTerminal:
-      false,
-
-    markOnlineOnConnect:
-      false,
-
-    generateHighQualityLinkPreview:
-      false,
-
-    syncFullHistory:
-      false,
-
-    shouldIgnoreJid:
-      jid => false
-  };
-
-  const sock =
-    makeWASocket(
-      socketOptions
-    );
-
-  // ----------------------------------------------------------
-  // REGISTER ACTIVE SOCKET
-  // ----------------------------------------------------------
-
-  active.set(
-    cleanId,
-    sock
-  );
-
-  sessionManager.setSocket(
-    cleanId,
-    sock
-  );
-
-  sessionManager.updateSession(
-    cleanId,
-    {
-      status:
-        "connecting"
-    }
-  );
-
-  // ----------------------------------------------------------
-  // CREDENTIALS
-  // ----------------------------------------------------------
-
-  sock.ev.on(
-    "creds.update",
-    async () => {
-      try {
-        await saveCreds();
-      } catch (error) {
-        console.error(
-          `❌ CREDS SAVE ERROR [${cleanId}]`,
-          error?.message ||
-          error
-        );
-      }
-    }
-  );
-
-  // ==========================================================
-  // CONNECTION UPDATE
-  // ==========================================================
-
-  sock.ev.on(
-    "connection.update",
-    async ({
-      connection,
-      lastDisconnect,
-      qr
-    }) => {
-      try {
-
-        // ----------------------------------------------------
-        // CONNECTING
-        // ----------------------------------------------------
-
-        if (
-          connection ===
-          "connecting"
-        ) {
-
-          sessionManager.updateSession(
-            cleanId,
-            {
-              status:
-                "connecting"
-            }
-          );
-
-          console.log(
-            `🔄 WhatsApp CONNECTING [${cleanId}]`
-          );
-        }
-
-        // ----------------------------------------------------
-        // QR
-        // ----------------------------------------------------
-
-        if (qr) {
-          console.log(
-            `ℹ️ QR received [${cleanId}] - Pairing Code mode active`
-          );
-        }
-
-        // ----------------------------------------------------
-        // OPEN
-        // ----------------------------------------------------
-
-        if (
-          connection ===
-          "open"
-        ) {
-
-          clearReconnectTimer(
-            cleanId
-          );
-
-          sessionManager.updateSession(
-            cleanId,
-            {
-              status:
-                "connected",
-
-              connected:
-                true,
-
-              pairing:
-                false,
-
-              pairingCode:
-                null
-            }
-          );
-
-          sessionManager.endPairing(
-            cleanId
-          );
-
-          console.log(
-  `✅ WhatsApp CONNECTED: ${cleanId}`
-);
-
-          await autoFollowChannel(sock);
-
-          // --------------------------------------------------
-          // SEND SUCCESS MESSAGE
-          // --------------------------------------------------
-
-          await sendConnectedMessage(
-            sock,
-            cleanId
-          );
-        }
-
-        // ----------------------------------------------------
-        // CLOSE
-        // ----------------------------------------------------
-
-        if (          connection ===
-          "close"
-        ) {
-
-          active.delete(
-            cleanId
-          );
-
-          sessionManager.setSocket(
-            cleanId,
-            null
-          );
-
-          const statusCode =
-            lastDisconnect
-              ?.error
-              ?.output
-              ?.statusCode ??
-            lastDisconnect
-              ?.error
-              ?.statusCode;
-
-          const errorMessage =
-            lastDisconnect
-              ?.error
-              ?.message ||
-            "Unknown connection error";
-
-          console.error(
-            `❌ WhatsApp CONNECTION CLOSED [${cleanId}]`,
-            {
-              statusCode,
-              error:
-                errorMessage
-            }
-          );
-
-          // --------------------------------------------------
-          // LOGGED OUT
-          // --------------------------------------------------
-
-          if (
-            statusCode ===
-            DisconnectReason.loggedOut
-          ) {
-
-            clearReconnectTimer(
-              cleanId
-            );
-
-            sessionManager.updateSession(
-              cleanId,
-              {
-                status:
-                  "logged_out",
-
-                connected:
-                  false,
-
-                pairing:
-                  false,
-
-                pairingCode:
-                  null
-              }
-            );
-
-            console.log(
-              `🚪 WhatsApp LOGGED OUT [${cleanId}]`
-            );
-
-            return;
-          }
-
-          // --------------------------------------------------
-          // BAD SESSION
-          // --------------------------------------------------
-
-          if (
-            statusCode ===
-            DisconnectReason.badSession
-          ) {
-
-            clearReconnectTimer(
-              cleanId
-            );
-
-            sessionManager.updateSession(
-              cleanId,
-              {
-                status:
-                  "error",
-
-                connected:
-                  false,
-
-                pairing:
-                  false,
-
-                pairingCode:
-                  null
-              }
-            );
-
-            console.error(
-              `❌ BAD SESSION [${cleanId}]`
-            );
-
-            return;
-          }
-
-          // --------------------------------------------------
-          // OTHER DISCONNECT
-          // --------------------------------------------------
-
-          sessionManager.updateSession(
-            cleanId,
-            {
-              status:
-                "reconnecting",
-
-              connected:
-                false
-            }
-          );
-
-          // --------------------------------------------------
-          // PREVENT DUPLICATE TIMER
-          // --------------------------------------------------
-
-          if (
-            reconnectTimers.has(
-              cleanId
-            )
-          ) {
-            return;
-          }
-
-          const timer =
-            setTimeout(
-              async () => {
-
-                reconnectTimers.delete(
-                  cleanId
-                );
-
-                try {
-
-                  console.log(
-                    `🔁 Reconnecting [${cleanId}]...`
-                  );
-
-                  await createSocket(
-                    cleanId
-                  );
-
-                } catch (error) {
-
-                  console.error(
-                    `❌ RECONNECT ERROR [${cleanId}]`,
-                    error?.stack ||
-                    error?.message ||
-                    error
-                  );
-                }
-
-              },
-              5000
-            );
-
-          reconnectTimers.set(
-            cleanId,
-            timer
-          );
-        }
-
-      } catch (error) {
-
-        console.error(
-          `❌ CONNECTION UPDATE ERROR [${cleanId}]`,
-          error?.stack ||
-          error?.message ||
-          error
-        );
-      }
-    }
-  );
-
-    // ==========================================================
-  // MESSAGES
-  // ==========================================================
-
-  sock.ev.on(
-    "messages.upsert",
-    async upsert => {
-
-      console.log(
-        "📩 MESSAGES.UPSERT RECEIVED:",
-        upsert?.type,
-        upsert?.messages?.length || 0
-      );
-
-      try {
-
-        if (
-          upsert?.type !==
-          "notify"
-        ) {
-          return;
-        }
-
-        for (
-          const msg of
-          upsert.messages || []
-        ) {
-
-          /*
-           * Pa retire sa.
-           * Li enpòtan pou mesaj san content
-           * pa kraze handler la.
-           */
-          if (
-            !msg?.message
-          ) {
-            continue;
-          }
-
-          // ==================================================
-          // ANTI-DELETE
-          // ==================================================
-
-          const protocolMessage =
-            msg?.message
-              ?.protocolMessage;
-
-          if (
-            protocolMessage
-          ) {
-
-            await antiDelete.handleDeleteEvent(
-              sock,
-              cleanId,
-              msg
-            );
-
-            /*
-             * Protocol message la pa yon
-             * command normal.
-             */
-            continue;
-          }
-
-          // ==================================================
-          // CACHE ORIGINAL MESSAGE
-          // ==================================================
-
-          await antiDelete.handleIncomingMessage(
-            cleanId,
-            msg
-          );
-
-          // ==================================================
-          // NORMAL MESSAGE HANDLER
-          // ==================================================
-
-          if (
-            messageHandler &&
-            typeof
-              messageHandler.handleMessage ===
-              "function"
-          ) {
-
-            await messageHandler.handleMessage(
-              sock,
-              msg,
-              cleanId
-            );
-
-          } else {
-
-            console.error(
-              `❌ handleMessage pa jwenn nan messageHandler.js [${cleanId}]`
-            );
-          }
-        }
-
-      } catch (error) {
-
-        console.error(
-          `❌ MESSAGE HANDLER ERROR [${cleanId}]`,
-          error?.stack ||
-          error?.message ||
-          error
-        );
-      }
-    }
-  );
-
-// ╔════════════════════════════════════════════════════╗
-// ║             🚀 TECH BY TOPFEROS MD               ║
-// ╚════════════════════════════════════════════════════╝
-  // ==========================================================
-  // GROUP PARTICIPANTS
-  // ==========================================================
-
-  sock.ev.on(
-    "group-participants.update",
-    async update => {
-
-      try {
-
-        if (
-          update?.action ===
-            "add" &&
-          welcome?.sendWelcome
-        ) {
-
-          await welcome.sendWelcome(
-            sock,
-            update
-          );
-        }
-
-      } catch (error) {
-
-        console.error(
-          `❌ GROUP EVENT ERROR [${cleanId}]`,
-          error?.stack ||
-          error?.message ||
-          error
-        );
-      }
-    }
-  );
-
-  return sock;
-}
-
-// ============================================================
-// START SESSION
-// ============================================================
-
-async function startSession(
-  sessionId
-) {
-  return createSocket(
-    sessionId
-  );
-}
-
-// ============================================================
-// REQUEST PAIRING CODE
-// ============================================================
-
-async function requestPairingCode(
-  number
-) {
-
-  const clean =
-    cleanNumber(number);
-
-  if (!clean) {
-    throw new Error(
-      "Numéro invalide"
-    );
-  }
-
-  // ----------------------------------------------------------
-  // FIND EXISTING SESSION BY NUMBER
-  // ----------------------------------------------------------
-
-  let session =
-    sessionManager.getSessionByNumber(
-      clean
-    );
-
-  // ----------------------------------------------------------
-  // PREVENT DUPLICATE PAIRING
-  // ----------------------------------------------------------
-
-  if (
-    session?.pairing
-  ) {
-
-    const err =
-      new Error(
-        "PAIRING_IN_PROGRESS"
-      );
-
-    err.code =
-      "PAIRING_IN_PROGRESS";
-
-    throw err;
-  }
-
-  // ----------------------------------------------------------
-  // CREATE SESSION
-  // ----------------------------------------------------------
-
-  if (!session) {
-
-    session =
-      sessionManager.createSession(
-        {
-          sessionId:
-            clean,
-
-          number:
-            clean
-        }
-      );
-
-  } else {
-
-    sessionManager.setNumber(
-      session.sessionId,
-      clean
-    );
-
-    session =
-      sessionManager.getSession(
-        session.sessionId
-      );
-  }
-
-  if (!session) {
-    throw new Error(
-      "Session pa kapab kreye."
-    );
-  }
-
-  const sessionId =
-    session.sessionId;
-
-  // ----------------------------------------------------------
-  // CHECK IF ALREADY CONNECTED
-  // ----------------------------------------------------------
-
-  if (
-    session.connected === true
-  ) {
-
-    const err =
-      new Error(
-        "SESSION_ALREADY_CONNECTED"
-      );
-
-    err.code =
-      "SESSION_ALREADY_CONNECTED";
-
-    throw err;
-  }
-
-  // ----------------------------------------------------------
-  // START PAIRING STATE
-  // ----------------------------------------------------------
-
-  sessionManager.startPairing(
-    sessionId
-  );
-
-  // ----------------------------------------------------------
-  // CREATE SOCKET
-  // ----------------------------------------------------------
-
-  let sock;
-
-  try {
-
-    sock =
-      await createSocket(
-        sessionId
-      );
-
-  } catch (error) {
-
-    sessionManager.updateSession(
-      sessionId,
-      {
-        status:
-          "pairing_error",
-
-        pairing:
-          false,
-
-        pairingCode:
-          null
-      }
-    );
-
-    throw error;
-  }
-
-  // ----------------------------------------------------------
-  // LOAD AUTH STATE AGAIN
-  // ----------------------------------------------------------
-
-  const authDir =
-    session.authDir;
-
-  const {
-    state
-  } =
-    await useMultiFileAuthState(
-      authDir
-    );
-
-  // ----------------------------------------------------------  // IMPORTANT:
-  // PAIRING CODE SHOULD ONLY BE REQUESTED
-  // FOR AN UNREGISTERED AUTH STATE.
-  // ----------------------------------------------------------
-
-  if (
-    state?.creds?.registered
-  ) {
-
-    sessionManager.endPairing(
+    activeSessions.get(
       sessionId
     );
 
-    sessionManager.updateSession(
-      sessionId,
-      {
-        status:
-          "error",
-
-        pairing:
-          false,
-
-        pairingCode:
-          null
-      }
-    );
-
-    const err =
-      new Error(
-        "SESSION_ALREADY_REGISTERED"
-      );
-
-    err.code =
-      "SESSION_ALREADY_REGISTERED";
-
-    throw err;
-  }
-
-  // ----------------------------------------------------------
-  // REQUEST PAIRING CODE
-  // ----------------------------------------------------------
-
-  try {
-
-    /*
-     * Small delay gives the socket a moment
-     * to initialize before WhatsApp receives
-     * the pairing request.
-     */
-
-    await new Promise(
-      resolve =>
-        setTimeout(
-          resolve,
-          1000
-        )
-    );
-
-    const code =
-      await sock.requestPairingCode(
-        clean
-      );
-
-    if (!code) {
-      throw new Error(
-        "WhatsApp pa retounen pairing code."
-      );
-    }
-
-    const normalizedCode =
-      String(code)
-        .trim()
-        .replace(/\s+/g, "");
-
-    sessionManager.setPairingCode(
-      sessionId,
-      normalizedCode
-    );
-
-    sessionManager.updateSession(
-      sessionId,
-      {
-        status:
-          "pairing",
-
-        pairing:
-          true,
-
-        connected:
-          false,
-
-        pairingCode:
-          normalizedCode
-      }
-    );
-
-    console.log(
-      `🔐 PAIRING CODE [${sessionId}]: ${normalizedCode}`
-    );
-
-    return {
-      sessionId,
-
-      number:
-        clean,
-
-      code:
-        normalizedCode,
-
-      socket:
-        sock
-    };
-
-  } catch (error) {
-
-    sessionManager.updateSession(
-      sessionId,
-      {
-        status:
-          "pairing_error",
-
-        pairing:
-          false,
-
-        pairingCode:
-          null
-      }
-    );
-
-    console.error(
-      `❌ PAIRING CODE ERROR [${sessionId}]`,
-      error?.stack ||
-      error?.message ||
-      error
-    );
-
-    throw error;
-  }
-}
-
-// ============================================================
-// STOP SESSION
-// ============================================================
-
-async function stopSession(
-  sessionId
-) {
-
-  const cleanId =
-    safeSessionId(sessionId);
-
-  if (!cleanId) {
+  if (!session?.sock) {
     return false;
   }
 
-  clearReconnectTimer(
-    cleanId
-  );
+  /*
+   * Close socket only.
+   *
+   * Do NOT delete credentials.
+   */
 
-  const sock =
-    active.get(cleanId) ||
-    sessionManager.getSocket(
-      cleanId
+  try {
+    session.sock.end(
+      undefined
     );
-
-  active.delete(
-    cleanId
-  );
-
-  if (sock) {
-
-    try {
-
-      sock.end(
-        new Error(
-          "Session stopped"
-        )
-      );
-
-    } catch {}
+  } catch (error) {
+    logger.warn(
+      {
+        error:
+          error?.message
+      },
+      `[${sessionId}] Error while closing WhatsApp socket.`
+    );
   }
 
-  sessionManager.setSocket(
-    cleanId,
-    null
+  /*
+   * Remove from active memory.
+   *
+   * Session files remain on disk.
+   */
+
+  activeSessions.delete(
+    sessionId
   );
 
-  sessionManager.updateSession(
-    cleanId,
-    {
-      status:
-        "stopped",
-
-      connected:
-        false,
-
-      pairing:
-        false,
-
-      pairingCode:
-        null
-    }
-  );
-
-  console.log(
-    `🛑 SESSION STOPPED [${cleanId}]`
+  logger.info(
+    `[${sessionId}] 🔴 WhatsApp disconnected without deleting session credentials.`
   );
 
   return true;
 }
 
-// ============================================================
-// REMOVE SESSION
-// ============================================================
+/*
+|--------------------------------------------------------------------------
+| RECONNECT SESSION
+|--------------------------------------------------------------------------
+*/
 
-async function removeSession(
-  sessionId
+async function reconnectSession(
+  number
 ) {
+  const sessionId =
+    getSessionId(number);
 
-  const cleanId =
-    safeSessionId(sessionId);
+  /*
+   * Allow reconnect again.
+   */
 
-  if (!cleanId) {
-    return false;
-  }
-
-  clearReconnectTimer(
-    cleanId
+  manuallyStopped.delete(
+    sessionId
   );
 
-  await stopSession(
-    cleanId
-  );
+  /*
+   * Close old socket if it exists.
+   */
 
-  return sessionManager.removeSession(
-    cleanId
-  );
-}
+  const existing =
+    activeSessions.get(
+      sessionId
+    );
 
-// ============================================================
-// RESTORE STORED SESSIONS
-// ============================================================
-
-async function restoreStoredSessions() {
-
-  const ids =
-    sessionManager.getStoredSessionIds();
-
-  const restored = [];
-
-  for (
-    const id of ids
-  ) {
-
+  if (existing?.sock) {
     try {
-
-      const session =
-        sessionManager.getSession(
-          id
-        );
-
-      if (!session) {
-        continue;
-      }
-
+      existing.sock.end(
+        undefined
+      );
+    } catch {
       /*
-       * Do not automatically recreate a session
-       * that was explicitly logged out/stopped.
+       * Ignore socket close errors.
        */
-
-      if (
-        session.status ===
-          "logged_out"
-      ) {
-        continue;
-      }
-
-      await createSocket(
-        id
-      );
-
-      restored.push(
-        id
-      );
-
-    } catch (error) {
-
-      console.error(
-        `❌ RESTORE ERROR [${id}]`,
-        error?.stack ||
-        error?.message ||
-        error
-      );
     }
-  }
 
-  return restored;
-}
-
-// ============================================================
-// ATTACH MESSAGE LISTENER
-// ============================================================
-
-async function attachMessageListener(
-  sock,
-  sessionId
-) {
-
-  if (!sock) {
-    return null;
+    activeSessions.delete(
+      sessionId
+    );
   }
 
   /*
-   * Message listener is already attached
-   * inside createSocket().
+   * Reuse stored authentication.
    */
 
-  return sock;
+  return connectSession(
+    sessionId
+  );
 }
 
-// ============================================================
-// ATTACH CONNECTION LISTENER
-// ============================================================
+/*
+|--------------------------------------------------------------------------
+| IS CONNECTED
+|--------------------------------------------------------------------------
+*/
 
-async function attachConnectionListener(
-  sock,
-  sessionId
+function isConnected(number) {
+  const sessionId =
+    getSessionId(number);
+
+  return Boolean(
+    activeSessions.get(
+      sessionId
+    )?.connected
+  );
+}
+
+/*
+|--------------------------------------------------------------------------
+| GET SESSION AUTOMATION
+|--------------------------------------------------------------------------
+*/
+
+function getSessionAutomation(
+  number
 ) {
+  const sessionId =
+    getSessionId(number);
 
-  if (!sock) {
+  const session =
+    activeSessions.get(
+      sessionId
+    );
+
+  if (!session) {
     return null;
   }
 
+  return {
+    ...session.automation
+  };
+}
+
+/*
+|--------------------------------------------------------------------------
+| UPDATE SESSION AUTOMATION
+|--------------------------------------------------------------------------
+*/
+
+function updateSessionAutomation(
+  number,
+  changes = {}
+) {
+  const sessionId =
+    getSessionId(number);
+
+  const session =
+    activeSessions.get(
+      sessionId
+    );
+
+  if (!session) {
+    return false;
+  }
+
+  session.automation = {
+    ...session.automation,
+    ...changes
+  };
+
   /*
-   * Connection listener is already attached
-   * inside createSocket().
+   * Keep the socket's online state
+   * synchronized with the setting.
    */
 
-  return sock;
-}
-
-// ============================================================
-// START
-// ============================================================
-
-async function start() {
-
-  try {
-
-    const restored =
-      await restoreStoredSessions();
-
-    console.log(
-      `🚀 TOPFEROS MD: ${restored.length} session(s) restored.`
-    );
-
-    return restored;
-
-  } catch (error) {
-
-    console.error(
-      "❌ TOPFEROS START ERROR",
-      error?.stack ||
-      error?.message ||
-      error
-    );
-
-    return [];
-  }
-}
-
-// ============================================================
-// STOP
-// ============================================================
-
-async function stop() {
-
-  const ids = [
-    ...active.keys()
-  ];
-
-  for (
-    const id of ids
+  if (
+    Object.prototype.hasOwnProperty.call(
+      changes,
+      "alwaysOnline"
+    )
   ) {
-
-    await stopSession(
-      id
-    );
+    /*
+     * Baileys connection state is handled
+     * by the socket lifecycle.
+     *
+     * The setting is stored here for
+     * the automation system.
+     */
   }
 
-  reconnectTimers.clear();
+  logger.info(
+    `[${sessionId}] Automation settings updated.`
+  );
 
   return true;
 }
 
-// ============================================================
-// EXPORTS
-// ============================================================
+/*
+|--------------------------------------------------------------------------
+| EXPORTS
+|--------------------------------------------------------------------------
+*/
 
 module.exports = {
+  connectSession,
 
-  createSocket,
+  disconnectSession,
 
-  startSession,
+  reconnectSession,
 
-  requestPairingCode,
+  getSession,
 
-  stopSession,
+  getActiveSessions,
 
-  removeSession,
+  isConnected,
 
-  restoreStoredSessions,
+  getSessionAutomation,
 
-  attachMessageListener,
+  updateSessionAutomation,
 
-  attachConnectionListener,
+  getDefaultAutomationSettings,
 
-  start,
+  createWelcomeMessage,
 
-  stop
+  sendWelcomeMessage,
+
+  SESSIONS_DIR
 };
