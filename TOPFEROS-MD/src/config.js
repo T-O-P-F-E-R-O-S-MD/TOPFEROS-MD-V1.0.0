@@ -43,7 +43,10 @@ function envString(
     return fallback;
   }
 
-  return String(value).trim();
+  const trimmed =
+    String(value).trim();
+
+  return trimmed || fallback;
 }
 
 function envBoolean(
@@ -165,6 +168,7 @@ const bot = {
 const automation = {
   /*
    * Always keep the bot online.
+   * No periodic WhatsApp spam.
    */
 
   alwaysOnline:
@@ -467,9 +471,6 @@ const media = {
 |
 | English is the official default language.
 |
-| Additional languages can be added later
-| without changing the core configuration.
-|
 |--------------------------------------------------------------------------
 */
 
@@ -478,7 +479,13 @@ const languages = {
     "English",
 
   available: [
-    "English"
+    "English",
+    "French",
+    "Spanish",
+    "Dominican Spanish",
+    "Portuguese",
+    "Chinese",
+    "Haitian Creole"
   ]
 };
 
