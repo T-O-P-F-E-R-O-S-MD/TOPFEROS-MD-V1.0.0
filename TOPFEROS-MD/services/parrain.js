@@ -2,6 +2,8 @@
 
 const crypto = require("crypto");
 
+const PARRAIN_CODE_TTL = 60 * 1000;
+
 const parrainCodes = new Map();
 
 function normalizeNumber(number) {
@@ -18,6 +20,38 @@ function generateCode() {
   return `TOP-${randomPart}`;
 }
 
+function createCodeEntry(code) {
+  return {
+    code,
+    createdAt: Date.now(),
+    expiresAt: Date.now() + PARRAIN_CODE_TTL
+  };
+}
+
+function isExpired(entry) {
+  if (!entry) {
+    return true;
+  }
+
+  return Date.now() >= entry.expiresAt;
+}
+
+function removeExpiredCode(number) {
+  const entry = parrainCodes.get(number);
+
+  if (!entry) {
+    return false;
+  }
+
+  if (!isExpired(entry)) {
+    return false;
+  }
+
+  parrainCodes.delete(number);
+
+  return true;
+}
+
 async function generateParrainCode(number) {
   const normalizedNumber = normalizeNumber(number);
 
@@ -25,15 +59,28 @@ async function generateParrainCode(number) {
     throw new Error("A valid phone number is required.");
   }
 
-  const existingCode = parrainCodes.get(normalizedNumber);
+  const existingEntry =
+    parrainCodes.get(normalizedNumber);
 
-  if (existingCode) {
-    return existingCode;
+  // Si ansyen code la toujou valid,
+  // retounen menm code la pou evite kreye plizyè code
+  // pandan menm peryòd 60 segonn lan.
+  if (
+    existingEntry &&
+    !isExpired(existingEntry)
+  ) {
+    return existingEntry.code;
   }
+
+  // Si li ekspire, retire li.
+  removeExpiredCode(normalizedNumber);
 
   const code = generateCode();
 
-  parrainCodes.set(normalizedNumber, code);
+  parrainCodes.set(
+    normalizedNumber,
+    createCodeEntry(code)
+  );
 
   return code;
 }
@@ -45,7 +92,19 @@ function getParrainCode(number) {
     return null;
   }
 
-  return parrainCodes.get(normalizedNumber) || null;
+  const entry =
+    parrainCodes.get(normalizedNumber);
+
+  if (!entry) {
+    return null;
+  }
+
+  if (isExpired(entry)) {
+    parrainCodes.delete(normalizedNumber);
+    return null;
+  }
+
+  return entry.code;
 }
 
 function verifyParrainCode(code) {
@@ -57,12 +116,22 @@ function verifyParrainCode(code) {
     .trim()
     .toUpperCase();
 
-  for (const [number, savedCode] of parrainCodes.entries()) {
-    if (savedCode === normalizedCode) {
+  for (
+    const [number, entry]
+    of parrainCodes.entries()
+  ) {
+    if (isExpired(entry)) {
+      parrainCodes.delete(number);
+      continue;
+    }
+
+    if (entry.code === normalizedCode) {
       return {
         valid: true,
         number,
-        code: savedCode
+        code: entry.code,
+        createdAt: entry.createdAt,
+        expiresAt: entry.expiresAt
       };
     }
   }
@@ -81,11 +150,55 @@ function deleteParrainCode(number) {
     return false;
   }
 
-  return parrainCodes.delete(normalizedNumber);
+  return parrainCodes.delete(
+    normalizedNumber
+  );
 }
 
 function getAllParrainCodes() {
-  return Object.fromEntries(parrainCodes);
+  const activeCodes = {};
+
+  for (
+    const [number, entry]
+    of parrainCodes.entries()
+  ) {
+    if (isExpired(entry)) {
+      parrainCodes.delete(number);
+      continue;
+    }
+
+    activeCodes[number] = {
+      code: entry.code,
+      createdAt: entry.createdAt,
+      expiresAt: entry.expiresAt
+    };
+  }
+
+  return activeCodes;
+}
+
+function cleanupExpiredCodes() {
+  for (
+    const [number, entry]
+    of parrainCodes.entries()
+  ) {
+    if (isExpired(entry)) {
+      parrainCodes.delete(number);
+    }
+  }
+}
+
+const cleanupTimer = setInterval(
+  cleanupExpiredCodes,
+  10 * 1000
+);
+
+// Pa anpeche timer la kenbe Node process la vivan.
+if (
+  cleanupTimer &&
+  typeof cleanupTimer.unref === "function"
+) {
+  cleanupTimer.unref();
 }
 
 module.exports = {
@@ -93,5 +206,7 @@ module.exports = {
   getParrainCode,
   verifyParrainCode,
   deleteParrainCode,
-  getAllParrainCodes
+  getAllParrainCodes,
+  cleanupExpiredCodes,
+  PARRAIN_CODE_TTL
 };
