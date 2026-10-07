@@ -52,8 +52,7 @@ uptime: process.uptime()
 
 const server = app.listen(PORT, () => {
 logger.info(
-"🦁 TOPFEROS MD V2.0.0 server running on port ${PORT}"
-);
+`🦁 TOPFEROS MD V2.0.0 server running on port ${PORT}`
 
 restoreSessions().catch((error) => {
 logger.error(
@@ -104,8 +103,7 @@ return;
 }
 
 logger.info(
-"🔄 Restoring ${sessionIds.length} stored WhatsApp session(s)..."
-);
+`🔄 Restoring ${sessionIds.length} stored WhatsApp session(s)...`
 
 for (const sessionId of sessionIds) {
 const sessionPath =
@@ -160,8 +158,7 @@ return;
 shuttingDown = true;
 
 logger.info(
-"🛑 ${signal} received. Closing TOPFEROS MD V2.0.0..."
-);
+`🛑 ${signal} received. Closing TOPFEROS MD V2.0.0...`
 
 try {
 await connection.disconnectAllSessions();
