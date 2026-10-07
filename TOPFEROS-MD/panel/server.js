@@ -457,7 +457,7 @@ app.post(
 
 app.post(
   "/api/verify",
-  (req, res) => {
+  async (req, res) => {
     try {
       const number =
         cleanNumber(
