@@ -7,7 +7,6 @@ const path = require("path");
 const express = require("express");
 const pino = require("pino");
 
-const config = require("./src/config");
 const connection = require("./src/connection");
 const sessionManager = require("./src/sessionManager");
 
@@ -24,28 +23,23 @@ app.use(express.urlencoded({ extended: true }));
 
 app.get("/", (req, res) => {
 res.status(200).send(`
-<!DOCTYPE html>
-<html lang="en">
+
+<!DOCTYPE html><html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta
-name="viewport"
-content="width=device-width, initial-scale=1.0"
+  name="viewport"
+  content="width=device-width, initial-scale=1.0"
 >
 <title>TOPFEROS MD V2.0.0</title>
-</head>
-
-  <body>
-    <h1>🦁 TOPFEROS MD V2.0.0 🐑</h1>
-    <p>🟢 Status: ONLINE &amp; READY</p>
-    <p>🦁 TECH BY TOPFEROS MD 🐑</p>
-  </body>
+</head><body>
+  <h1>🦁 TOPFEROS MD V2.0.0 🐑</h1>
+  <p>🟢 Status: ONLINE &amp; READY</p>
+  <p>🦁 TECH BY TOPFEROS MD 🐑</p>
+</body>
 </html>
-
-`);
-});
-
-app.get("/health", (req, res) => {
+  `);
+});app.get("/health", (req, res) => {
 res.status(200).json({
 status: "ok",
 bot: "TOPFEROS MD V2.0.0",
@@ -97,9 +91,7 @@ entry.name
 )
 .filter(
 (name) =>
-/^\d{8,15}$/.test(
-name
-)
+/^\d{8,15}$/.test(name)
 );
 
 if (sessionIds.length === 0) {
