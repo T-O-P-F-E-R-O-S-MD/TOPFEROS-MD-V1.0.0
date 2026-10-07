@@ -9,24 +9,6 @@ const pino = require("pino");
 const connection = require("./src/connection");
 const sessionManager = require("./src/sessionManager");
 
-/*
-|--------------------------------------------------------------------------
-| WEB PANEL
-|--------------------------------------------------------------------------
-|
-| panel/server.js se web server prensipal V2 a.
-| Li deja jere:
-|   /
-|   /setting
-|   /api/*
-|
-| index.js pa kreye yon dezyèm Express server.
-|
-|--------------------------------------------------------------------------
-*/
-
-require("./panel/server");
-
 const logger = pino({
   level:
     process.env.LOG_LEVEL ||
@@ -35,20 +17,35 @@ const logger = pino({
 
 /*
 |--------------------------------------------------------------------------
+| WEB PANEL
+|--------------------------------------------------------------------------
+|
+| panel/server.js se sèl web server V2 la.
+|
+| Li jere:
+|   /
+|   /setting
+|   /api/*
+|
+| index.js pa kreye yon dezyèm Express server.
+|--------------------------------------------------------------------------
+*/
+
+require("./panel/server");
+
+/*
+|--------------------------------------------------------------------------
 | RESTORE STORED SESSIONS
 |--------------------------------------------------------------------------
 |
-| Lè application lan kòmanse:
+| Lè aplikasyon an demare:
 |
-| 1. Li sessions directory a.
-| 2. Li chèche sèlman folders ki sanble ak session ID.
-| 3. Li verifye creds.json egziste.
-| 4. Li reconnect chak session atravè connection.js.
+| 1. Kreye/verifye sessions directory.
+| 2. Chèche sèlman session folders ki gen nimewo.
+| 3. Verifye creds.json egziste.
+| 4. Reconnect chak session avèk connection.js.
 |
-| Pa gen nimewo fiks.
-| Pa gen session o aza.
-| Pa gen credentials deletion.
-|
+| Credentials yo pa efase.
 |--------------------------------------------------------------------------
 */
 
@@ -142,6 +139,67 @@ async function restoreSessions() {
     }
   }
 }
+
+/*
+|--------------------------------------------------------------------------
+| GRACEFUL SHUTDOWN
+|--------------------------------------------------------------------------
+|
+| Lè Render voye SIGTERM/SIGINT:
+| - Fèmen sessions yo pwòp
+| - Pa efase credentials
+|--------------------------------------------------------------------------
+*/
+
+let shuttingDown = false;
+
+async function shutdown(
+  signal
+) {
+  if (shuttingDown) {
+    return;
+  }
+
+  shuttingDown = true;
+
+  logger.info(
+    `🛑 ${signal} received. Shutting down TOPFEROS MD V2.0.0...`
+  );
+
+  try {
+    await connection.disconnectAllSessions();
+
+    logger.info(
+      "🦁 TOPFEROS MD V2.0.0 shutdown completed."
+    );
+  } catch (error) {
+    logger.error(
+      {
+        error:
+          error?.stack ||
+          error?.message ||
+          String(error)
+      },
+      "❌ Shutdown error."
+    );
+  } finally {
+    process.exit(0);
+  }
+}
+
+process.once(
+  "SIGTERM",
+  () => {
+    shutdown("SIGTERM");
+  }
+);
+
+process.once(
+  "SIGINT",
+  () => {
+    shutdown("SIGINT");
+  }
+);
 
 /*
 |--------------------------------------------------------------------------
