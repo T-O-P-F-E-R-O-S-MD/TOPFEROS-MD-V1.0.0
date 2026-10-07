@@ -1,533 +1,361 @@
 "use strict";
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🤖 TOPFEROS MD V1.0.0
-// ⚙️ SETTINGS API MODULE
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+const express = require("express");
 
-const settingsPanel =
-  require("../src/settingPanel");
+const settingPanel = require("./settingPanel");
+const sessionManager = require("./sessionManager");
 
+const router = express.Router();
 
 // ============================================================
-// 🧹 CLEAN SESSION ID
+// TOPFEROS MD V2.0.0
+// SETTINGS API
 // ============================================================
 
-function getSessionId(req) {
-
-  return String(
-    req.query?.session ||
-    req.query?.sessionId ||
-    req.body?.sessionId ||
-    req.body?.session ||
-    ""
-  ).trim();
-
+function cleanSessionId(value) {
+  return String(value || "")
+    .replace(/\D/g, "");
 }
 
+function sendError(res, status, message) {
+  return res.status(status).json({
+    success: false,
+    message
+  });
+}
 
-// ============================================================
-// 🔐 CHECK SESSION
-// ============================================================
-
-function checkSession(
-  req,
-  res
-) {
-
-  const sessionId =
-    getSessionId(req);
-
+function requireSession(req, res) {
+  const sessionId = cleanSessionId(
+    req.body?.sessionId ||
+    req.query?.sessionId ||
+    req.params?.sessionId
+  );
 
   if (!sessionId) {
-
-    res.status(400).json({
-      success: false,
-      authenticated: false,
-      error:
-        "sessionId obligatwa."
-    });
-
-    return null;
-  }
-
-
-  if (
-    !settingsPanel ||
-    typeof settingsPanel.isAuthenticated !==
-      "function"
-  ) {
-
-    res.status(503).json({
-      success: false,
-      authenticated: false,
-      error:
-        "settingPanel.js pa disponib."
-    });
-
-    return null;
-  }
-
-
-  const authenticated =
-    settingsPanel.isAuthenticated(
-      sessionId
-    ) === true;
-
-
-  if (!authenticated) {
-
-    res.status(401).json({
-      success: false,
-      authenticated: false,
-      error:
-        "Session panel la pa valide."
-    });
-
-    return null;
-  }
-
-
-  return sessionId;
-
-}
-
-
-// ============================================================
-// 🔌 CHECK BOT CONNECTION
-// ============================================================
-
-function checkBotConnection(
-  res
-) {
-
-  if (
-    !settingsPanel ||
-    typeof settingsPanel.isBotConnected !==
-      "function"
-  ) {
-
-    res.status(503).json({
-      success: false,
-      connected: false,
-      error:
-        "Status bot la pa disponib."
-    });
-
-    return false;
-  }
-
-
-  const connected =
-    settingsPanel.isBotConnected() === true;
-
-
-  if (!connected) {
-
-    res.status(403).json({
-      success: false,
-      connected: false,
-      error:
-        "Bot la pa konekte. Settings yo pa disponib."
-    });
-
-    return false;
-  }
-
-
-  return true;
-
-}
-
-
-// ============================================================
-// ⚙️ REGISTER SETTINGS ROUTES
-// ============================================================
-
-function registerSettingsRoutes(
-  app
-) {
-
-  if (
-    !app ||
-    typeof app.get !== "function" ||
-    typeof app.post !== "function"
-  ) {
-
-    throw new TypeError(
-      "Express app valid obligatwa."
+    sendError(
+      res,
+      400,
+      "Session ID is required."
     );
 
+    return null;
   }
 
-
-  // ==========================================================
-  // 📥 GET SETTINGS
-  // ==========================================================
-
-  app.get(
-    "/api/settings",
-    async (
-      req,
-      res
-    ) => {
-
-      try {
-
-        const sessionId =
-          checkSession(
-            req,
-            res
-          );
-
-
-        if (!sessionId) {
-
-          return;
-        }
-
-
-        if (
-          !checkBotConnection(
-            res
-          )
-        ) {
-
-          return;
-        }
-
-
-        if (
-          typeof settingsPanel.getSettings !==
-            "function"
-        ) {
-
-          return res
-            .status(503)
-            .json({
-              success: false,
-              error:
-                "getSettings() pa disponib."
-            });
-
-        }
-
-
-        const settings =
-          await settingsPanel.getSettings(
-            sessionId
-          );
-
-
-        let botInformation = {};
-
-
-        if (
-          typeof settingsPanel.getBotInformation ===
-            "function"
-        ) {
-
-          botInformation =
-            await settingsPanel.getBotInformation(
-              sessionId
-            );
-
-        }
-
-
-        let botNumber = null;
-
-
-        if (
-          typeof settingsPanel.getPhoneFromSocket ===
-            "function"
-        ) {
-
-          try {
-
-            const session =
-              typeof settingsPanel.getSession ===
-                "function"
-                ? settingsPanel.getSession(
-                    sessionId
-                  )
-                : null;
-
-
-            if (
-              session?.sock
-            ) {
-
-              botNumber =
-                settingsPanel.getPhoneFromSocket(
-                  session.sock
-                );
-
-            }
-
-          } catch (
-            numberError
-          ) {
-
-            console.warn(
-              "[TOPFEROS] Could not read bot number:",
-              numberError?.message ||
-              numberError
-            );
-
-          }
-
-        }
-
-
-        return res.json({
-
-          success: true,
-
-          authenticated: true,
-
-          connected: true,
-
-          sessionId,
-
-          number:
-            botNumber ||
-            botInformation?.number ||
-            null,
-
-          settings:
-            settings || {},
-
-          botInformation:
-            botInformation || {}
-
-        });
-
-      } catch (
-        error
-      ) {
-
-        console.error(
-          "[TOPFEROS] GET /api/settings ERROR:",
-          error?.stack ||
-          error?.message ||
-          error
-        );
-
-
-        return res
-          .status(500)
-          .json({
-
-            success: false,
-
-            error:
-              error?.message ||
-              "Impossible de récupérer les paramètres."
-
-          });
-
-      }
-
-    }
-  );
-
-
-  // ==========================================================
-  // 💾 POST SETTINGS
-  // ==========================================================
-
-  app.post(
-    "/api/settings",
-    async (
-      req,
-      res
-    ) => {
-
-      try {
-
-        const sessionId =
-          checkSession(
-            req,
-            res
-          );
-
-
-        if (!sessionId) {
-
-          return;
-        }
-
-
-        if (
-          !checkBotConnection(
-            res
-          )
-        ) {
-
-          return;
-        }
-
-
-        if (
-          typeof settingsPanel.applySettings !==
-            "function"
-        ) {
-
-          return res
-            .status(503)
-            .json({
-
-              success: false,
-
-              error:
-                "applySettings() pa disponib nan settingPanel.js."
-
-            });
-
-        }
-
-
-        /*
-         * Frontend la ap voye:
-         *
-         * {
-         *   sessionId,
-         *   bot: {...},
-         *   settings: {...}
-         * }
-         *
-         * Nou pran sèlman settings yo isit la.
-         */
-
-        const incomingSettings =
-          req.body?.settings &&
-          typeof req.body.settings ===
-            "object"
-              ? {
-                  ...req.body.settings
-                }
-              : {};
-
-
-        /*
-         * Bot information yo rete apa.
-         */
-
-        const botInformation =
-          req.body?.bot &&
-          typeof req.body.bot ===
-            "object"
-              ? {
-                  ...req.body.bot
-                }
-              : null;
-
-
-        /*
-         * Apply settings.
-         */
-
-        const updatedSettings =
-          await settingsPanel.applySettings(
-            sessionId,
-            incomingSettings
-          );
-
-
-        /*
-         * Apply bot information si backend la
-         * sipòte updateBotInformation().
-         */
-
-        let updatedBot =
-          botInformation;
-
-
-        if (
-          botInformation &&
-          typeof settingsPanel.updateBotInformation ===
-            "function"
-        ) {
-
-          updatedBot =
-            await settingsPanel.updateBotInformation(
-              sessionId,
-              botInformation
-            );
-
-        }
-
-
-        return res.json({
-
-          success: true,
-
-          authenticated: true,
-
-          connected: true,
-
-          sessionId,
-
-          settings:
-            updatedSettings ||
-            {},
-
-          botInformation:
-            updatedBot ||
-            botInformation ||
-            {}
-
-        });
-
-      } catch (
-        error
-      ) {
-
-        console.error(
-          "[TOPFEROS] POST /api/settings ERROR:",
-          error?.stack ||
-          error?.message ||
-          error
-        );
-
-
-        return res
-          .status(500)
-          .json({
-
-            success: false,
-
-            error:
-              error?.message ||
-              "Impossible de sauvegarder les paramètres."
-
-          });
-
-      }
-
-    }
-  );
-
-
-  console.log(
-    "⚙️ TOPFEROS MD SETTINGS API ROUTES REGISTERED"
-  );
-
+  const session =
+    sessionManager.getSession(sessionId);
+
+  if (!session) {
+    sendError(
+      res,
+      404,
+      "Session not found."
+    );
+
+    return null;
+  }
+
+  return sessionId;
 }
 
+// ============================================================
+// GET SETTINGS
+// ============================================================
+
+router.get(
+  "/settings",
+  (req, res) => {
+    try {
+      const sessionId =
+        requireSession(req, res);
+
+      if (!sessionId) {
+        return;
+      }
+
+      const data =
+        settingPanel.getPanelData(
+          sessionId
+        );
+
+      return res.json(data);
+
+    } catch (error) {
+      return sendError(
+        res,
+        500,
+        error.message ||
+          "Unable to load settings."
+      );
+    }
+  }
+);
 
 // ============================================================
-// 📦 EXPORTS
+// SAVE SETTINGS
 // ============================================================
 
-module.exports = {
+router.post(
+  "/settings",
+  (req, res) => {
+    try {
+      const sessionId =
+        requireSession(req, res);
 
-  registerSettingsRoutes
+      if (!sessionId) {
+        return;
+      }
 
-};
+      const result =
+        settingPanel.saveSettings(
+          sessionId,
+          {
+            bot:
+              req.body?.bot || {},
 
+            settings:
+              req.body?.settings || {}
+          }
+        );
 
-// ╔════════════════════════════════════════════════════╗
-// ║             🚀 TECH BY TOPFEROS MD               ║
-// ╚════════════════════════════════════════════════════╝
+      return res.json(result);
+
+    } catch (error) {
+      return sendError(
+        res,
+        400,
+        error.message ||
+          "Unable to save settings."
+      );
+    }
+  }
+);
+
+// ============================================================
+// VERIFY SESSION
+// ============================================================
+
+router.post(
+  "/verify",
+  (req, res) => {
+    try {
+      const sessionId =
+        cleanSessionId(
+          req.body?.sessionId
+        );
+
+      if (!sessionId) {
+        return sendError(
+          res,
+          400,
+          "Session ID is required."
+        );
+      }
+
+      const result =
+        settingPanel.verifySession(
+          sessionId
+        );
+
+      if (!result.success) {
+        return res.status(401).json(
+          result
+        );
+      }
+
+      return res.json(result);
+
+    } catch (error) {
+      return sendError(
+        res,
+        500,
+        error.message ||
+          "Session verification failed."
+      );
+    }
+  }
+);
+
+// ============================================================
+// CONNECTION STATUS
+// ============================================================
+
+router.get(
+  "/connection",
+  (req, res) => {
+    try {
+      const sessionId =
+        requireSession(req, res);
+
+      if (!sessionId) {
+        return;
+      }
+
+      return res.json({
+        success: true,
+
+        connection:
+          settingPanel.getConnectionStatus(
+            sessionId
+          )
+      });
+
+    } catch (error) {
+      return sendError(
+        res,
+        500,
+        error.message ||
+          "Unable to get connection status."
+      );
+    }
+  }
+);
+
+// ============================================================
+// DISCONNECT
+// ============================================================
+
+router.post(
+  "/disconnect",
+  async (req, res) => {
+    try {
+      const sessionId =
+        requireSession(req, res);
+
+      if (!sessionId) {
+        return;
+      }
+
+      const result =
+        await settingPanel.disconnect(
+          sessionId
+        );
+
+      return res.json(result);
+
+    } catch (error) {
+      return sendError(
+        res,
+        500,
+        error.message ||
+          "Unable to disconnect."
+      );
+    }
+  }
+);
+
+// ============================================================
+// RECONNECT
+// ============================================================
+
+router.post(
+  "/reconnect",
+  async (req, res) => {
+    try {
+      const sessionId =
+        requireSession(req, res);
+
+      if (!sessionId) {
+        return;
+      }
+
+      const result =
+        await settingPanel.reconnect(
+          sessionId
+        );
+
+      return res.json(result);
+
+    } catch (error) {
+      return sendError(
+        res,
+        500,
+        error.message ||
+          "Unable to reconnect."
+      );
+    }
+  }
+);
+
+// ============================================================
+// LANGUAGE
+// ============================================================
+
+router.get(
+  "/languages",
+  (req, res) => {
+    return res.json({
+      success: true,
+
+      languages:
+        settingPanel.getLanguages()
+    });
+  }
+);
+
+router.post(
+  "/language",
+  (req, res) => {
+    try {
+      const sessionId =
+        requireSession(req, res);
+
+      if (!sessionId) {
+        return;
+      }
+
+      const result =
+        settingPanel.setPanelLanguage(
+          sessionId,
+          req.body?.language
+        );
+
+      return res.json(result);
+
+    } catch (error) {
+      return sendError(
+        res,
+        400,
+        error.message ||
+          "Unable to change language."
+      );
+    }
+  }
+);
+
+// ============================================================
+// PANEL DATA
+// ============================================================
+
+router.get(
+  "/panel",
+  (req, res) => {
+    try {
+      const sessionId =
+        requireSession(req, res);
+
+      if (!sessionId) {
+        return;
+      }
+
+      return res.json(
+        settingPanel.getPanelData(
+          sessionId
+        )
+      );
+
+    } catch (error) {
+      return sendError(
+        res,
+        500,
+        error.message ||
+          "Unable to load panel data."
+      );
+    }
+  }
+);
+
+// ============================================================
+// EXPORT
+// ============================================================
+
+module.exports = router;
