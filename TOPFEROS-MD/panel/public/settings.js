@@ -7,25 +7,28 @@
 * 
 * V2 settings compatibility helper.
 * 
-* The active settings interface is loaded by:
-* /app.js
+* The active settings interface uses:
+* panel/public/app.js
 * 
-* This file intentionally contains no V1 settings logic,
-* no old authentication endpoint, and no duplicate panel API.
+* This file contains no V1 settings logic.
   */
 
 (() => {
-const STORAGE_KEY = "topferos_session_id";
+const STORAGE_KEY =
+"topferos_session_id";
 
 function getSessionId() {
-const params = new URLSearchParams(
+const params =
+new URLSearchParams(
 window.location.search
 );
 
 return (
   params.get("sessionId") ||
   params.get("session") ||
-  localStorage.getItem(STORAGE_KEY) ||
+  localStorage.getItem(
+    STORAGE_KEY
+  ) ||
   ""
 ).trim();
 
@@ -51,40 +54,48 @@ return sessionId;
 }
 
 function getApiUrl(path) {
-return String(path || "").startsWith("/")
-? String(path)
-: "/${String(path || "")}";
+const value =
+String(path || "");
+
+if (value.startsWith("/")) {
+  return value;
+}
+
+return `/${value}`;
+
 }
 
 async function apiRequest(
 path,
 options = {}
 ) {
-const response = await fetch(
+const response =
+await fetch(
 getApiUrl(path),
 {
 ...options,
 
-    headers: {
-      Accept:
-        "application/json",
+      headers: {
+        Accept:
+          "application/json",
 
-      ...(options.body
-        ? {
-            "Content-Type":
-              "application/json"
-          }
-        : {}),
+        ...(options.body
+          ? {
+              "Content-Type":
+                "application/json"
+            }
+          : {}),
 
-      ...(options.headers || {})
+        ...(options.headers || {})
+      }
     }
-  }
-);
+  );
 
 let data = null;
 
 try {
-  data = await response.json();
+  data =
+    await response.json();
 } catch {
   data = null;
 }
@@ -176,9 +187,7 @@ const result =
     }
   );
 
-if (
-  result?.sessionId
-) {
+if (result?.sessionId) {
   setSessionId(
     result.sessionId
   );
@@ -189,7 +198,8 @@ return result;
 }
 
 async function getSettings(
-sessionId = getSessionId()
+sessionId =
+getSessionId()
 ) {
 if (!sessionId) {
 throw new Error(
@@ -207,7 +217,8 @@ return apiRequest(
 
 async function saveSettings(
 data = {},
-sessionId = getSessionId()
+sessionId =
+getSessionId()
 ) {
 if (!sessionId) {
 throw new Error(
@@ -224,12 +235,10 @@ return apiRequest(
       sessionId,
 
       bot:
-        data.bot ||
-        {},
+        data.bot || {},
 
       settings:
-        data.settings ||
-        {}
+        data.settings || {}
     })
   }
 );
@@ -237,7 +246,8 @@ return apiRequest(
 }
 
 async function getSessionStatus(
-sessionId = getSessionId()
+sessionId =
+getSessionId()
 ) {
 if (!sessionId) {
 throw new Error(
@@ -254,7 +264,8 @@ return apiRequest(
 }
 
 async function disconnect(
-sessionId = getSessionId()
+sessionId =
+getSessionId()
 ) {
 if (!sessionId) {
 throw new Error(
@@ -274,7 +285,8 @@ return apiRequest(
 }
 
 async function reconnect(
-sessionId = getSessionId()
+sessionId =
+getSessionId()
 ) {
 if (!sessionId) {
 throw new Error(
@@ -293,37 +305,24 @@ return apiRequest(
 
 }
 
-/*
-
-* V2 active frontend lives in app.js.
-* If app.js is loaded, expose this helper API
-* without replacing the main TOPFEROS controller.
-  */
-
 window.TOPFEROS_SETTINGS = {
-version:
-"2.0.0",
+version: "2.0.0",
 
 getSessionId,
-
 setSessionId,
 
 getPanelInfo,
-
 getLanguages,
-
 setPanelLanguage,
 
 verifySession,
 
 getSettings,
-
 saveSettings,
 
 getSessionStatus,
 
 disconnect,
-
 reconnect
 
 };
