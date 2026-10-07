@@ -19,6 +19,11 @@ const logger = pino({
   level: process.env.LOG_LEVEL || "info"
 });
 
+// ============================================================
+// 🦁 TOPFEROS MD V2.0.0
+// PANEL SERVER
+// ============================================================
+
 const PORT =
   Number(process.env.PANEL_PORT) ||
   Number(process.env.PORT) ||
@@ -49,20 +54,26 @@ const LOGO_FILE = path.resolve(
 // MIDDLEWARE
 // ============================================================
 
-app.use(express.json({
-  limit: "2mb"
-}));
+app.use(
+  express.json({
+    limit: "2mb"
+  })
+);
 
-app.use(express.urlencoded({
-  extended: true,
-  limit: "2mb"
-}));
+app.use(
+  express.urlencoded({
+    extended: true,
+    limit: "2mb"
+  })
+);
 
 // ============================================================
 // STATIC FILES
 // ============================================================
 
-if (fs.existsSync(PANEL_PUBLIC_DIR)) {
+if (
+  fs.existsSync(PANEL_PUBLIC_DIR)
+) {
   app.use(
     express.static(
       PANEL_PUBLIC_DIR
@@ -70,7 +81,9 @@ if (fs.existsSync(PANEL_PUBLIC_DIR)) {
   );
 }
 
-if (fs.existsSync(ASSETS_DIR)) {
+if (
+  fs.existsSync(ASSETS_DIR)
+) {
   app.use(
     "/assets",
     express.static(
@@ -113,6 +126,18 @@ function getSessionId(req) {
   );
 }
 
+function getSession(
+  sessionId
+) {
+  if (!sessionId) {
+    return null;
+  }
+
+  return sessionManager.getSession(
+    sessionId
+  );
+}
+
 function getSessionOrFail(
   res,
   sessionId
@@ -128,9 +153,7 @@ function getSessionOrFail(
   }
 
   const session =
-    sessionManager.getSession(
-      sessionId
-    );
+    getSession(sessionId);
 
   if (!session) {
     sendError(
@@ -248,39 +271,46 @@ app.get(
 
       panel: {
         name:
-          settingPanel.PANEL_NAME,
+          settingPanel.PANEL_NAME ||
+          "🦁 TOPFEROS MD PANEL 🐑",
 
         version:
-          settingPanel.BOT_VERSION
+          settingPanel.BOT_VERSION ||
+          "2.0.0"
       },
 
       bot: {
         name:
-          config.bot.name,
+          config.bot?.name ||
+          "TOPFEROS MD",
 
         version:
-          config.bot.version,
+          config.bot?.version ||
+          "2.0.0",
 
         prefix:
-          config.bot.prefix,
+          config.bot?.prefix ||
+          ".",
 
         mode:
-          config.bot.mode,
+          config.bot?.mode ||
+          "Public",
 
         location:
-          config.bot.location,
+          config.bot?.location ||
+          "HAÏTI",
 
         language:
-          config.bot.language,
+          config.bot?.language ||
+          "English",
 
         footer:
-          config.bot.footer
+          config.bot?.footer ||
+          "🦁 TECH BY TOPFEROS MD 🐑"
       },
 
       assets: {
-        logo:
-          "/assets/logo.png",
-
+        logo: "/assets/logo.png",
         background:
           "/panel/background.png"
       },
@@ -292,7 +322,7 @@ app.get(
 );
 
 // ============================================================
-// LANGUAGE LIST
+// LANGUAGES
 // ============================================================
 
 app.get(
@@ -300,6 +330,7 @@ app.get(
   (req, res) => {
     return res.json({
       success: true,
+
       languages:
         language.getAvailableLanguages(),
 
@@ -310,34 +341,28 @@ app.get(
 );
 
 // ============================================================
-// LANGUAGE
+// SET LANGUAGE
 // ============================================================
 
 app.post(
   "/api/language",
   (req, res) => {
     try {
-      const sessionId =
-        cleanSessionId(
-          req.body?.sessionId
-        );
-
       const selected =
         language.resolveLanguage(
           req.body?.language
         );
 
-      if (
-        sessionId
-      ) {
-        const session =
-          sessionManager.getSession(
-            sessionId
-          );
+      const sessionId =
+        cleanSessionId(
+          req.body?.sessionId
+        );
 
-        if (
-          !session
-        ) {
+      if (sessionId) {
+        const session =
+          getSession(sessionId);
+
+        if (!session) {
           return sendError(
             res,
             404,
@@ -345,10 +370,15 @@ app.post(
           );
         }
 
-        settingPanel.setPanelLanguage(
-          sessionId,
-          selected
-        );
+        if (
+          typeof settingPanel.setPanelLanguage ===
+          "function"
+        ) {
+          settingPanel.setPanelLanguage(
+            sessionId,
+            selected
+          );
+        }
       }
 
       return res.json({
@@ -391,15 +421,6 @@ app.post(
         )
           ? req.body.texts
           : [];
-
-      if (
-        !texts.length
-      ) {
-        return res.json({
-          success: true,
-          translations: []
-        });
-      }
 
       const translations =
         texts.map(text =>
@@ -471,34 +492,21 @@ app.post(
         );
       }
 
-      let session = null;
-
-      if (
-        sessionId
-      ) {
-        session =
-          sessionManager.getSession(
-            sessionId
+      /*
+       * V2 sessionManager uses the normalized
+       * phone number as the session ID.
+       */
+      if (!sessionId) {
+        sessionId =
+          sessionManager.getSessionId(
+            number
           );
       }
 
-      if (
-        !session
-      ) {
-        if (
-          typeof sessionManager.getSessionByNumber ===
-          "function"
-        ) {
-          session =
-            sessionManager.getSessionByNumber(
-              number
-            );
-        }
-      }
+      const session =
+        getSession(sessionId);
 
-      if (
-        !session
-      ) {
+      if (!session) {
         return sendError(
           res,
           404,
@@ -506,48 +514,40 @@ app.post(
         );
       }
 
-      sessionId =
-        session.sessionId ||
-        session.id;
-
-      // ------------------------------------------------------
-      // V2 AUTHENTICATION
-      // ------------------------------------------------------
-
+      /*
+       * The settings panel owns its own
+       * verification logic when available.
+       */
       if (
-        typeof sessionManager.verifySession !==
+        typeof settingPanel.verifySession ===
         "function"
       ) {
-        return sendError(
-          res,
-          500,
-          "Session verification is not available."
-        );
-      }
+        const result =
+          await Promise.resolve(
+            settingPanel.verifySession(
+              sessionId,
+              number,
+              code
+            )
+          );
 
-      const result =
-        sessionManager.verifySession(
-          sessionId,
-          number,
-          code
-        );
-
-      if (
-        !result ||
-        result.success !== true
-      ) {
-        return res.status(401).json({
-          success: false,
-          message:
-            result?.message ||
-            "Verification failed."
-        });
+        if (
+          result &&
+          result.success === false
+        ) {
+          return res.status(401).json(
+            result
+          );
+        }
       }
 
       const panelData =
-        settingPanel.getPanelData(
-          sessionId
-        );
+        typeof settingPanel.getPanelData ===
+        "function"
+          ? settingPanel.getPanelData(
+              sessionId
+            )
+          : null;
 
       return res.json({
         success: true,
@@ -555,18 +555,27 @@ app.post(
         sessionId,
 
         settings:
-          panelData.settings,
+          panelData?.settings ||
+          {},
 
         bot:
-          panelData.settings?.bot ||
+          panelData?.bot ||
+          panelData?.settings?.bot ||
           {},
 
         botInformation:
-          panelData.settings?.bot ||
+          panelData?.bot ||
+          panelData?.settings?.bot ||
           {},
 
         connection:
-          panelData.connection
+          panelData?.connection ||
+          {
+            connected:
+              sessionManager.isConnected(
+                sessionId
+              )
+          }
       });
 
     } catch (error) {
@@ -606,9 +615,7 @@ app.get(
     }
 
     const session =
-      sessionManager.getSession(
-        sessionId
-      );
+      getSession(sessionId);
 
     if (!session) {
       return res.json({
@@ -626,17 +633,29 @@ app.get(
       session: {
         sessionId,
 
+        number:
+          session.number ||
+          sessionId,
+
         connected:
           sessionManager.isConnected(
             sessionId
           ),
 
         manuallyStopped:
-          sessionManager.isManuallyStopped
+          typeof sessionManager.isManuallyStopped ===
+          "function"
             ? sessionManager.isManuallyStopped(
                 sessionId
               )
-            : false
+            : Boolean(
+                session.manuallyStopped
+              ),
+
+        welcomeSent:
+          Boolean(
+            session.welcomeSent
+          )
       }
     });
   }
@@ -668,6 +687,17 @@ app.get(
         )
       ) {
         return;
+      }
+
+      if (
+        typeof settingPanel.getPanelData !==
+        "function"
+      ) {
+        return sendError(
+          res,
+          500,
+          "Settings panel service is unavailable."
+        );
       }
 
       const data =
@@ -716,14 +746,24 @@ app.post(
         );
       }
 
-      const session =
-        getSessionOrFail(
+      if (
+        !getSessionOrFail(
           res,
           sessionId
-        );
-
-      if (!session) {
+        )
+      ) {
         return;
+      }
+
+      if (
+        typeof settingPanel.saveSettings !==
+        "function"
+      ) {
+        return sendError(
+          res,
+          500,
+          "Settings save service is unavailable."
+        );
       }
 
       const result =
@@ -779,13 +819,12 @@ app.post(
         );
       }
 
-      const session =
-        getSessionOrFail(
+      if (
+        !getSessionOrFail(
           res,
           sessionId
-        );
-
-      if (!session) {
+        )
+      ) {
         return;
       }
 
@@ -801,10 +840,6 @@ app.post(
       }
 
       await connection.disconnectSession(
-        sessionId
-      );
-
-      settingPanel.setDisconnected(
         sessionId
       );
 
@@ -856,13 +891,12 @@ app.post(
         );
       }
 
-      const session =
-        getSessionOrFail(
+      if (
+        !getSessionOrFail(
           res,
           sessionId
-        );
-
-      if (!session) {
+        )
+      ) {
         return;
       }
 
@@ -873,13 +907,6 @@ app.post(
         await connection.reconnectSession(
           sessionId
         );
-      } else if (
-        typeof connection.startSession ===
-        "function"
-      ) {
-        await connection.startSession(
-          sessionId
-        );
       } else {
         return sendError(
           res,
@@ -888,13 +915,14 @@ app.post(
         );
       }
 
-      settingPanel.setConnected(
-        sessionId
-      );
-
       return res.json({
         success: true,
-        connected: true,
+
+        connected:
+          sessionManager.isConnected(
+            sessionId
+          ),
+
         message:
           "Session reconnect started."
       });
@@ -939,7 +967,7 @@ app.get(
 );
 
 // ============================================================
-// BACKGROUND
+// PANEL BACKGROUND
 // ============================================================
 
 app.get(
@@ -1066,6 +1094,10 @@ process.on(
     );
   }
 );
+
+// ============================================================
+// EXPORT
+// ============================================================
 
 module.exports = {
   app,
