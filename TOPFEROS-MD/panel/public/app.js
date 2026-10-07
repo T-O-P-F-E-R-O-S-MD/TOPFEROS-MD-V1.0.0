@@ -19,7 +19,7 @@
     sessionId: "",
     language: "en",
     panelData: null,
-    languages: [],
+    languages: {},
     verified: false,
     saving: false
   };
@@ -59,7 +59,10 @@
     state.sessionId = String(sessionId || "").trim();
 
     if (state.sessionId) {
-      localStorage.setItem("topferos_session_id", state.sessionId);
+      localStorage.setItem(
+        "topferos_session_id",
+        state.sessionId
+      );
     }
   }
 
@@ -77,7 +80,11 @@
       ...options,
       headers: {
         Accept: "application/json",
-        ...(options.body ? { "Content-Type": "application/json" } : {}),
+        ...(options.body
+          ? {
+              "Content-Type": "application/json"
+            }
+          : {}),
         ...(options.headers || {})
       }
     });
@@ -112,7 +119,8 @@
     const notification = document.createElement("div");
 
     notification.id = "topferos-notification";
-    notification.className = `topferos-notification ${type}`;
+    notification.className =
+      `topferos-notification ${type}`;
     notification.textContent = message;
 
     document.body.appendChild(notification);
@@ -126,18 +134,28 @@
     }, 3000);
   }
 
-  function setLoading(button, loading, loadingText = "Loading...") {
+  function setLoading(
+    button,
+    loading,
+    loadingText = "Loading..."
+  ) {
     if (!button) return;
 
     if (loading) {
-      button.dataset.originalText = button.textContent;
+      if (!button.dataset.originalText) {
+        button.dataset.originalText =
+          button.textContent;
+      }
+
       button.disabled = true;
       button.textContent = loadingText;
     } else {
       button.disabled = false;
 
       if (button.dataset.originalText) {
-        button.textContent = button.dataset.originalText;
+        button.textContent =
+          button.dataset.originalText;
+
         delete button.dataset.originalText;
       }
     }
@@ -153,8 +171,15 @@
         ? "🟢 CONNECTED"
         : "🔴 DISCONNECTED";
 
-      element.classList.toggle("connected", connected);
-      element.classList.toggle("disconnected", !connected);
+      element.classList.toggle(
+        "connected",
+        connected
+      );
+
+      element.classList.toggle(
+        "disconnected",
+        !connected
+      );
     });
 
     const connectButtons = $$(
@@ -210,200 +235,549 @@
 
     if (!wrapper) return;
 
-    wrapper.classList.toggle("active", input.checked);
-    wrapper.classList.toggle("inactive", !input.checked);
+    wrapper.classList.toggle(
+      "active",
+      input.checked
+    );
+
+    wrapper.classList.toggle(
+      "inactive",
+      !input.checked
+    );
 
     const label = wrapper.querySelector(
       "[data-switch-label], .switch-label, .status-label"
     );
 
     if (label) {
-      label.textContent = input.checked ? "🟢 ON" : "🔴 OFF";
+      label.textContent = input.checked
+        ? "🟢 ON"
+        : "🔴 OFF";
     }
   }
 
   function bindSwitches() {
-    $$("input[type='checkbox']").forEach((input) => {
-      updateSwitchVisual(input);
-
-      input.addEventListener("change", () => {
+    $$("input[type='checkbox']").forEach(
+      (input) => {
         updateSwitchVisual(input);
-      });
-    });
+
+        if (input.dataset.switchBound === "true") {
+          return;
+        }
+
+        input.dataset.switchBound = "true";
+
+        input.addEventListener(
+          "change",
+          () => {
+            updateSwitchVisual(input);
+          }
+        );
+      }
+    );
   }
 
   function normalizeAutomation(settings = {}) {
     return {
-      alwaysOnline: settings.alwaysOnline !== false,
-      fakeTyping: settings.fakeTyping === true,
-      fakeRecording: settings.fakeRecording === true,
-      autoStatusSeen: settings.autoStatusSeen !== false,
-      autoStatusReply: settings.autoStatusReply !== false,
-      autoStatusReact: settings.autoStatusReact !== false,
-      antiDelete: settings.antiDelete !== false,
-      antiCall: settings.antiCall === true,
-      antiBug: settings.antiBug === true,
-      antiBotFilter: settings.antiBotFilter === true,
-      antiDeleteMode: settings.antiDeleteMode || "private",
-      antiBotAction: settings.antiBotAction || "Delete",
-      antiBlockNumbers: Array.isArray(settings.antiBlockNumbers)
-        ? settings.antiBlockNumbers
-        : []
+      alwaysOnline:
+        settings.alwaysOnline !== false,
+
+      fakeTyping:
+        settings.fakeTyping === true,
+
+      fakeRecording:
+        settings.fakeRecording === true,
+
+      autoStatusSeen:
+        settings.autoStatusSeen !== false,
+
+      autoStatusReply:
+        settings.autoStatusReply !== false,
+
+      autoStatusReact:
+        settings.autoStatusReact !== false,
+
+      antiDelete:
+        settings.antiDelete !== false,
+
+      antiCall:
+        settings.antiCall === true,
+
+      antiBug:
+        settings.antiBug === true,
+
+      antiBotFilter:
+        settings.antiBotFilter === true,
+
+      antiDeleteMode:
+        settings.antiDeleteMode ||
+        "private",
+
+      antiBotAction:
+        settings.antiBotAction ||
+        "Delete",
+
+      antiBlockNumbers:
+        Array.isArray(
+          settings.antiBlockNumbers
+        )
+          ? settings.antiBlockNumbers
+          : []
     };
   }
 
   function normalizeBot(settings = {}) {
     return {
-      ownerNumber: settings.ownerNumber || "",
-      name: settings.name || "TOPFEROS MD",
-      location: settings.location || "HAÏTI",
-      age: settings.age ?? 14,
-      prefix: settings.prefix || ".",
-      footer: settings.footer || "🦁 TECH BY TOPFEROS MD 🐑",
-      mode: settings.mode || "Public",
-      language: settings.language || state.language || "en"
+      ownerNumber:
+        settings.ownerNumber || "",
+
+      name:
+        settings.name ||
+        "TOPFEROS MD",
+
+      location:
+        settings.location ||
+        "HAÏTI",
+
+      age:
+        settings.age ?? 14,
+
+      prefix:
+        settings.prefix || ".",
+
+      footer:
+        settings.footer ||
+        "🦁 TECH BY TOPFEROS MD 🐑",
+
+      mode:
+        settings.mode ||
+        "Public",
+
+      language:
+        settings.language ||
+        state.language ||
+        "en"
     };
   }
 
-  function normalizeGroupAutomation(settings = {}) {
+  function normalizeGroupAutomation(
+    settings = {}
+  ) {
     return {
-      enabled: settings.enabled === true,
-      groupGid: settings.groupGid || "",
-      timezone: settings.timezone || "Atlantic/Port-au-Prince",
-      closeTime: settings.closeTime || "15:00",
-      openTime: settings.openTime || "06:00",
-      principles: settings.principles || "",
-      warningLimit: Number(settings.warningLimit || 3)
+      enabled:
+        settings.enabled === true,
+
+      groupGid:
+        settings.groupGid || "",
+
+      timezone:
+        settings.timezone ||
+        "Atlantic/Port-au-Prince",
+
+      closeTime:
+        settings.closeTime ||
+        "15:00",
+
+      openTime:
+        settings.openTime ||
+        "06:00",
+
+      principles:
+        settings.principles || "",
+
+      warningLimit:
+        Number(settings.warningLimit || 3)
     };
   }
 
   function fillBotSettings(bot = {}) {
     const data = normalizeBot(bot);
 
-    setFieldValue("ownerNumber", data.ownerNumber);
-    setFieldValue("botName", data.name);
-    setFieldValue("location", data.location);
-    setFieldValue("age", data.age);
-    setFieldValue("prefix", data.prefix);
-    setFieldValue("footer", data.footer);
-    setFieldValue("mode", data.mode);
-    setFieldValue("botLanguage", data.language);
+    setFieldValue(
+      "ownerNumber",
+      data.ownerNumber
+    );
+
+    setFieldValue(
+      "botName",
+      data.name
+    );
+
+    setFieldValue(
+      "location",
+      data.location
+    );
+
+    setFieldValue(
+      "age",
+      data.age
+    );
+
+    setFieldValue(
+      "prefix",
+      data.prefix
+    );
+
+    setFieldValue(
+      "footer",
+      data.footer
+    );
+
+    setFieldValue(
+      "mode",
+      data.mode
+    );
+
+    setFieldValue(
+      "botLanguage",
+      data.language
+    );
   }
 
-  function fillAutomationSettings(automation = {}) {
-    const data = normalizeAutomation(automation);
+  function fillAutomationSettings(
+    automation = {}
+  ) {
+    const data =
+      normalizeAutomation(automation);
 
-    setFieldValue("alwaysOnline", data.alwaysOnline);
-    setFieldValue("fakeTyping", data.fakeTyping);
-    setFieldValue("fakeRecording", data.fakeRecording);
-    setFieldValue("autoStatusSeen", data.autoStatusSeen);
-    setFieldValue("autoStatusReply", data.autoStatusReply);
-    setFieldValue("autoStatusReact", data.autoStatusReact);
-    setFieldValue("antiDelete", data.antiDelete);
-    setFieldValue("antiCall", data.antiCall);
-    setFieldValue("antiBug", data.antiBug);
-    setFieldValue("antiBotFilter", data.antiBotFilter);
+    setFieldValue(
+      "alwaysOnline",
+      data.alwaysOnline
+    );
 
-    setFieldValue("antiDeleteMode", data.antiDeleteMode);
-    setFieldValue("antiBotAction", data.antiBotAction);
+    setFieldValue(
+      "fakeTyping",
+      data.fakeTyping
+    );
 
-    const numbers = Array.isArray(data.antiBlockNumbers)
-      ? data.antiBlockNumbers.join("\n")
-      : "";
+    setFieldValue(
+      "fakeRecording",
+      data.fakeRecording
+    );
 
-    setFieldValue("antiBlockNumbers", numbers);
+    setFieldValue(
+      "autoStatusSeen",
+      data.autoStatusSeen
+    );
+
+    setFieldValue(
+      "autoStatusReply",
+      data.autoStatusReply
+    );
+
+    setFieldValue(
+      "autoStatusReact",
+      data.autoStatusReact
+    );
+
+    setFieldValue(
+      "antiDelete",
+      data.antiDelete
+    );
+
+    setFieldValue(
+      "antiCall",
+      data.antiCall
+    );
+
+    setFieldValue(
+      "antiBug",
+      data.antiBug
+    );
+
+    setFieldValue(
+      "antiBotFilter",
+      data.antiBotFilter
+    );
+
+    setFieldValue(
+      "antiDeleteMode",
+      data.antiDeleteMode
+    );
+
+    setFieldValue(
+      "antiBotAction",
+      data.antiBotAction
+    );
+
+    const numbers =
+      Array.isArray(
+        data.antiBlockNumbers
+      )
+        ? data.antiBlockNumbers.join("\n")
+        : "";
+
+    setFieldValue(
+      "antiBlockNumbers",
+      numbers
+    );
 
     bindSwitches();
   }
 
   function fillGroupSettings(group = {}) {
-    const data = normalizeGroupAutomation(group);
+    const data =
+      normalizeGroupAutomation(group);
 
-    setFieldValue("groupAutomationEnabled", data.enabled);
-    setFieldValue("groupGid", data.groupGid);
-    setFieldValue("timezone", data.timezone);
-    setFieldValue("closeTime", data.closeTime);
-    setFieldValue("openTime", data.openTime);
-    setFieldValue("groupPrinciples", data.principles);
-    setFieldValue("warningLimit", data.warningLimit);
+    setFieldValue(
+      "groupAutomationEnabled",
+      data.enabled
+    );
+
+    setFieldValue(
+      "groupGid",
+      data.groupGid
+    );
+
+    setFieldValue(
+      "timezone",
+      data.timezone
+    );
+
+    setFieldValue(
+      "closeTime",
+      data.closeTime
+    );
+
+    setFieldValue(
+      "openTime",
+      data.openTime
+    );
+
+    setFieldValue(
+      "groupPrinciples",
+      data.principles
+    );
+
+    setFieldValue(
+      "warningLimit",
+      data.warningLimit
+    );
 
     bindSwitches();
   }
 
   function collectBotSettings() {
-    const age = Number(getFieldValue("age", 14));
+    const age = Number(
+      getFieldValue("age", 14)
+    );
 
     return {
-      ownerNumber: getFieldValue("ownerNumber"),
-      name: getFieldValue("botName", "TOPFEROS MD").trim(),
-      location: getFieldValue("location", "HAÏTI").trim(),
-      age: Number.isFinite(age) ? age : 14,
-      prefix: getFieldValue("prefix", ".").trim() || ".",
+      ownerNumber:
+        getFieldValue("ownerNumber"),
+
+      name:
+        getFieldValue(
+          "botName",
+          "TOPFEROS MD"
+        ).trim(),
+
+      location:
+        getFieldValue(
+          "location",
+          "HAÏTI"
+        ).trim(),
+
+      age:
+        Number.isFinite(age)
+          ? age
+          : 14,
+
+      prefix:
+        getFieldValue(
+          "prefix",
+          "."
+        ).trim() || ".",
+
       footer:
         getFieldValue(
           "footer",
           "🦁 TECH BY TOPFEROS MD 🐑"
         ).trim(),
-      mode: getFieldValue("mode", "Public"),
-      language: getFieldValue("botLanguage", state.language)
+
+      mode:
+        getFieldValue(
+          "mode",
+          "Public"
+        ),
+
+      language:
+        getFieldValue(
+          "botLanguage",
+          state.language
+        )
     };
   }
 
   function collectAutomationSettings() {
-    const antiBlockText = getFieldValue("antiBlockNumbers", "");
+    const antiBlockText =
+      getFieldValue(
+        "antiBlockNumbers",
+        ""
+      );
 
-    const antiBlockNumbers = antiBlockText
-      .split(/\r?\n|,/)
-      .map((number) => number.trim())
-      .filter(Boolean);
+    const antiBlockNumbers =
+      antiBlockText
+        .split(/\r?\n|,/)
+        .map((number) =>
+          number.trim()
+        )
+        .filter(Boolean);
 
     return {
-      alwaysOnline: Boolean(getFieldValue("alwaysOnline")),
-      fakeTyping: Boolean(getFieldValue("fakeTyping")),
-      fakeRecording: Boolean(getFieldValue("fakeRecording")),
-      autoStatusSeen: Boolean(getFieldValue("autoStatusSeen")),
-      autoStatusReply: Boolean(getFieldValue("autoStatusReply")),
-      autoStatusReact: Boolean(getFieldValue("autoStatusReact")),
-      antiDelete: Boolean(getFieldValue("antiDelete")),
-      antiCall: Boolean(getFieldValue("antiCall")),
-      antiBug: Boolean(getFieldValue("antiBug")),
-      antiBotFilter: Boolean(getFieldValue("antiBotFilter")),
-      antiDeleteMode: getFieldValue("antiDeleteMode", "private"),
-      antiBotAction: getFieldValue("antiBotAction", "Delete"),
+      alwaysOnline:
+        Boolean(
+          getFieldValue(
+            "alwaysOnline"
+          )
+        ),
+
+      fakeTyping:
+        Boolean(
+          getFieldValue(
+            "fakeTyping"
+          )
+        ),
+
+      fakeRecording:
+        Boolean(
+          getFieldValue(
+            "fakeRecording"
+          )
+        ),
+
+      autoStatusSeen:
+        Boolean(
+          getFieldValue(
+            "autoStatusSeen"
+          )
+        ),
+
+      autoStatusReply:
+        Boolean(
+          getFieldValue(
+            "autoStatusReply"
+          )
+        ),
+
+      autoStatusReact:
+        Boolean(
+          getFieldValue(
+            "autoStatusReact"
+          )
+        ),
+
+      antiDelete:
+        Boolean(
+          getFieldValue(
+            "antiDelete"
+          )
+        ),
+
+      antiCall:
+        Boolean(
+          getFieldValue(
+            "antiCall"
+          )
+        ),
+
+      antiBug:
+        Boolean(
+          getFieldValue(
+            "antiBug"
+          )
+        ),
+
+      antiBotFilter:
+        Boolean(
+          getFieldValue(
+            "antiBotFilter"
+          )
+        ),
+
+      antiDeleteMode:
+        getFieldValue(
+          "antiDeleteMode",
+          "private"
+        ),
+
+      antiBotAction:
+        getFieldValue(
+          "antiBotAction",
+          "Delete"
+        ),
+
       antiBlockNumbers
     };
   }
 
   function collectGroupSettings() {
-    const warningLimit = Number(
-      getFieldValue("warningLimit", 3)
-    );
+    const warningLimit =
+      Number(
+        getFieldValue(
+          "warningLimit",
+          3
+        )
+      );
 
     return {
-      enabled: Boolean(getFieldValue("groupAutomationEnabled")),
-      groupGid: getFieldValue("groupGid").trim(),
-      timezone: getFieldValue(
-        "timezone",
-        "Atlantic/Port-au-Prince"
-      ),
-      closeTime: getFieldValue("closeTime", "15:00"),
-      openTime: getFieldValue("openTime", "06:00"),
-      principles: getFieldValue("groupPrinciples"),
-      warningLimit: Number.isFinite(warningLimit)
-        ? warningLimit
-        : 3
+      enabled:
+        Boolean(
+          getFieldValue(
+            "groupAutomationEnabled"
+          )
+        ),
+
+      groupGid:
+        getFieldValue(
+          "groupGid"
+        ).trim(),
+
+      timezone:
+        getFieldValue(
+          "timezone",
+          "Atlantic/Port-au-Prince"
+        ),
+
+      closeTime:
+        getFieldValue(
+          "closeTime",
+          "15:00"
+        ),
+
+      openTime:
+        getFieldValue(
+          "openTime",
+          "06:00"
+        ),
+
+      principles:
+        getFieldValue(
+          "groupPrinciples"
+        ),
+
+      warningLimit:
+        Number.isFinite(
+          warningLimit
+        )
+          ? warningLimit
+          : 3
     };
   }
 
   function collectSettings() {
     return {
       bot: collectBotSettings(),
-      automation: collectAutomationSettings(),
-      groupAutomation: collectGroupSettings()
+      automation:
+        collectAutomationSettings(),
+      groupAutomation:
+        collectGroupSettings()
     };
   }
 
-  function validateSettings(settings) {
+  function validateSettings(
+    settings
+  ) {
     const bot = settings.bot;
 
     if (!bot.name) {
@@ -418,12 +792,20 @@
       return "FOOTER cannot be empty.";
     }
 
-    if (!["Public", "Privé", "Group"].includes(bot.mode)) {
+    if (
+      ![
+        "Public",
+        "Privé",
+        "Group"
+      ].includes(bot.mode)
+    ) {
       return "Invalid bot mode.";
     }
 
     if (
-      !Number.isFinite(Number(bot.age)) ||
+      !Number.isFinite(
+        Number(bot.age)
+      ) ||
       Number(bot.age) < 1
     ) {
       return "AGE must be a valid number.";
@@ -433,29 +815,104 @@
   }
 
   async function loadPanelData() {
-    const data = await request(API.panel);
+    const data =
+      await request(API.panel);
 
     state.panelData = data;
 
     if (data?.language) {
-      state.language = data.language;
+      state.language =
+        data.language;
     }
 
     if (data?.languages) {
-      state.languages = data.languages;
+      state.languages =
+        normalizeLanguages(
+          data.languages
+        );
     }
 
     return data;
   }
 
+  function normalizeLanguages(
+    languages
+  ) {
+    if (!languages) {
+      return {};
+    }
+
+    /*
+     * language.js V2 returns:
+     * {
+     *   en: "English",
+     *   fr: "French",
+     *   es: "Spanish",
+     *   es_do: "Dominican Spanish",
+     *   pt: "Portuguese",
+     *   zh: "Chinese",
+     *   ht: "Haitian Creole"
+     * }
+     */
+
+    if (
+      !Array.isArray(languages) &&
+      typeof languages === "object"
+    ) {
+      return {
+        ...languages
+      };
+    }
+
+    if (Array.isArray(languages)) {
+      const result = {};
+
+      languages.forEach(
+        (language) => {
+          if (
+            typeof language ===
+            "string"
+          ) {
+            result[language] =
+              language;
+            return;
+          }
+
+          const code =
+            language?.code ||
+            language?.id ||
+            language?.value;
+
+          const name =
+            language?.name ||
+            language?.label ||
+            code;
+
+          if (code) {
+            result[code] =
+              name;
+          }
+        }
+      );
+
+      return result;
+    }
+
+    return {};
+  }
+
   async function loadLanguages() {
-    const data = await request(API.languages);
+    const data =
+      await request(
+        API.languages
+      );
 
     state.languages =
-      data?.languages ||
-      data?.available ||
-      data ||
-      [];
+      normalizeLanguages(
+        data?.languages ||
+        data?.available ||
+        data
+      );
 
     renderLanguageOptions();
 
@@ -467,95 +924,161 @@
       "#language, #panelLanguage, #botLanguage, [data-language-select]"
     );
 
-    if (!selects.length) return;
+    if (!selects.length) {
+      return;
+    }
 
-    const languages = state.languages;
+    const languages =
+      normalizeLanguages(
+        state.languages
+      );
 
-    if (!Array.isArray(languages)) return;
+    const entries =
+      Object.entries(
+        languages
+      );
 
-    selects.forEach((select) => {
-      const current = select.value || state.language;
+    if (!entries.length) {
+      return;
+    }
 
-      select.innerHTML = "";
+    selects.forEach(
+      (select) => {
+        const current =
+          select.value ||
+          state.language;
 
-      languages.forEach((language) => {
-        const value =
-          typeof language === "string"
-            ? language
-            : language.code || language.id || language.value;
+        select.innerHTML = "";
 
-        const label =
-          typeof language === "string"
-            ? language
-            : language.name || language.label || value;
+        entries.forEach(
+          ([code, label]) => {
+            const option =
+              document.createElement(
+                "option"
+              );
 
-        if (!value) return;
+            option.value = code;
+            option.textContent =
+              label;
 
-        const option = document.createElement("option");
+            if (
+              code === current ||
+              (
+                !current &&
+                code === state.language
+              )
+            ) {
+              option.selected =
+                true;
+            }
 
-        option.value = value;
-        option.textContent = label;
+            select.appendChild(
+              option
+            );
+          }
+        );
 
-        if (value === current || value === state.language) {
-          option.selected = true;
+        if (
+          state.language &&
+          languages[state.language]
+        ) {
+          select.value =
+            state.language;
         }
-
-        select.appendChild(option);
-      });
-    });
+      }
+    );
   }
 
-  async function changeLanguage(language) {
-    if (!language) return;
+  async function changeLanguage(
+    language
+  ) {
+    if (!language) {
+      return;
+    }
 
-    state.language = language;
+    state.language =
+      language;
 
     try {
-      await request(API.language, {
-        method: "POST",
-        body: JSON.stringify({
-          sessionId: state.sessionId,
-          language
-        })
-      });
+      await request(
+        API.language,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            sessionId:
+              state.sessionId,
+            language
+          })
+        }
+      );
+
+      renderLanguageOptions();
 
       await translatePage();
 
-      notify("Language updated.", "success");
+      notify(
+        "Language updated.",
+        "success"
+      );
     } catch (error) {
-      notify(error.message, "error");
+      notify(
+        error.message,
+        "error"
+      );
     }
   }
 
   async function translatePage() {
-    const elements = $$("[data-i18n]");
+    const elements =
+      $$("[data-i18n]");
 
-    if (!elements.length) return;
+    if (!elements.length) {
+      return;
+    }
 
-    for (const element of elements) {
-      const key = element.dataset.i18n;
+    for (
+      const element of elements
+    ) {
+      const key =
+        element.dataset.i18n;
 
-      if (!key) continue;
+      if (!key) {
+        continue;
+      }
 
       try {
-        const result = await request(API.translate, {
-          method: "POST",
-          body: JSON.stringify({
-            key,
-            language: state.language
-          })
-        });
+        const result =
+          await request(
+            API.translate,
+            {
+              method: "POST",
+              body: JSON.stringify({
+                key,
+                language:
+                  state.language
+              })
+            }
+          );
 
-        if (result?.text !== undefined) {
-          element.textContent = result.text;
+        if (
+          result?.text !==
+          undefined
+        ) {
+          element.textContent =
+            result.text;
         }
       } catch {
-        // Keep original text if translation is unavailable.
+        /*
+         * Keep original text if
+         * translation is unavailable.
+         */
       }
     }
   }
 
-  async function verifySession(sessionId = state.sessionId) {
+  async function verifySession(
+    sessionId = state.sessionId
+  ) {
     if (!sessionId) {
       state.verified = false;
       setConnectionStatus(false);
@@ -565,60 +1088,115 @@
     setSessionId(sessionId);
 
     try {
-      const data = await request(
-        API.session(state.sessionId)
-      );
+      const data =
+        await request(
+          API.session(
+            state.sessionId
+          )
+        );
 
       const connected =
         data?.connected === true ||
         data?.session?.connected === true ||
-        data?.status === "connected";
+        data?.status ===
+          "connected";
 
-      state.verified = Boolean(
-        data?.exists !== false
+      const exists =
+        data?.exists !== false;
+
+      state.verified =
+        Boolean(exists);
+
+      setConnectionStatus(
+        connected
       );
-
-      setConnectionStatus(connected);
 
       return state.verified;
     } catch (error) {
       state.verified = false;
+
       setConnectionStatus(false);
 
-      notify(error.message, "error");
+      notify(
+        error.message,
+        "error"
+      );
 
       return false;
     }
   }
 
-  async function verifyNumberAndCode(number, code) {
-    if (!number || !code) {
-      notify("NUMBER and CODE are required.", "error");
+  async function verifyNumberAndCode(
+    number,
+    code
+  ) {
+    const cleanNumber =
+      String(
+        number || ""
+      ).trim();
+
+    const cleanCode =
+      String(
+        code || ""
+      ).trim();
+
+    if (
+      !cleanNumber ||
+      !cleanCode
+    ) {
+      notify(
+        "NUMBER and CODE are required.",
+        "error"
+      );
+
       return false;
     }
 
     try {
-      const data = await request(API.verify, {
-        method: "POST",
-        body: JSON.stringify({
-          number,
-          code,
-          sessionId: state.sessionId
-        })
-      });
+      const data =
+        await request(
+          API.verify,
+          {
+            method: "POST",
+            body: JSON.stringify({
+              number:
+                cleanNumber,
+              code:
+                cleanCode,
+              sessionId:
+                state.sessionId
+            })
+          }
+        );
 
       if (data?.sessionId) {
-        setSessionId(data.sessionId);
+        setSessionId(
+          data.sessionId
+        );
       }
 
+      /*
+       * Backend already returned
+       * HTTP 2xx, therefore the
+       * verification request itself
+       * succeeded.
+       */
       state.verified = true;
 
-      notify("Session verified successfully.", "success");
+      notify(
+        "Session verified successfully.",
+        "success"
+      );
 
       return true;
     } catch (error) {
       state.verified = false;
-      notify(error.message, "error");
+
+      notify(
+        error.message,
+        "error"
+      );
+
       return false;
     }
   }
@@ -628,11 +1206,12 @@
       return null;
     }
 
-    const data = await request(
-      `${API.settings}?sessionId=${encodeURIComponent(
-        state.sessionId
-      )}`
-    );
+    const data =
+      await request(
+        `${API.settings}?sessionId=${encodeURIComponent(
+          state.sessionId
+        )}`
+      );
 
     const settings =
       data?.settings ||
@@ -640,39 +1219,64 @@
       data;
 
     if (settings?.bot) {
-      fillBotSettings(settings.bot);
+      fillBotSettings(
+        settings.bot
+      );
     }
 
     if (settings?.automation) {
-      fillAutomationSettings(settings.automation);
+      fillAutomationSettings(
+        settings.automation
+      );
     }
 
-    if (settings?.groupAutomation) {
-      fillGroupSettings(settings.groupAutomation);
+    if (
+      settings?.groupAutomation
+    ) {
+      fillGroupSettings(
+        settings.groupAutomation
+      );
     }
 
     if (settings?.language) {
-      state.language = settings.language;
+      state.language =
+        settings.language;
     }
 
+    renderLanguageOptions();
     bindSwitches();
 
     return settings;
   }
 
   async function saveSettings() {
-    if (state.saving) return;
-
-    if (!state.sessionId) {
-      notify("No session selected.", "error");
+    if (state.saving) {
       return false;
     }
 
-    const settings = collectSettings();
-    const validationError = validateSettings(settings);
+    if (!state.sessionId) {
+      notify(
+        "No session selected.",
+        "error"
+      );
+
+      return false;
+    }
+
+    const settings =
+      collectSettings();
+
+    const validationError =
+      validateSettings(
+        settings
+      );
 
     if (validationError) {
-      notify(validationError, "error");
+      notify(
+        validationError,
+        "error"
+      );
+
       return false;
     }
 
@@ -682,40 +1286,73 @@
       "[data-action='save'], #saveButton"
     );
 
-    buttons.forEach((button) => {
-      setLoading(button, true, "Saving...");
-    });
+    buttons.forEach(
+      (button) => {
+        setLoading(
+          button,
+          true,
+          "Saving..."
+        );
+      }
+    );
 
     try {
-      await request(API.settings, {
-        method: "POST",
-        body: JSON.stringify({
-          sessionId: state.sessionId,
-          bot: settings.bot,
-          automation: settings.automation,
-          groupAutomation: settings.groupAutomation,
-          settings
-        })
-      });
+      await request(
+        API.settings,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            sessionId:
+              state.sessionId,
 
-      notify("Settings saved successfully.", "success");
+            bot:
+              settings.bot,
+
+            automation:
+              settings.automation,
+
+            groupAutomation:
+              settings.groupAutomation,
+
+            settings
+          })
+        }
+      );
+
+      notify(
+        "Settings saved successfully.",
+        "success"
+      );
 
       return true;
     } catch (error) {
-      notify(error.message, "error");
+      notify(
+        error.message,
+        "error"
+      );
+
       return false;
     } finally {
       state.saving = false;
 
-      buttons.forEach((button) => {
-        setLoading(button, false);
-      });
+      buttons.forEach(
+        (button) => {
+          setLoading(
+            button,
+            false
+          );
+        }
+      );
     }
   }
 
   async function disconnectSession() {
     if (!state.sessionId) {
-      notify("No session selected.", "error");
+      notify(
+        "No session selected.",
+        "error"
+      );
+
       return false;
     }
 
@@ -723,19 +1360,31 @@
       "[data-action='disconnect'], #disconnectButton"
     );
 
-    buttons.forEach((button) => {
-      setLoading(button, true, "Disconnecting...");
-    });
+    buttons.forEach(
+      (button) => {
+        setLoading(
+          button,
+          true,
+          "Disconnecting..."
+        );
+      }
+    );
 
     try {
-      await request(API.disconnect, {
-        method: "POST",
-        body: JSON.stringify({
-          sessionId: state.sessionId
-        })
-      });
+      await request(
+        API.disconnect,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            sessionId:
+              state.sessionId
+          })
+        }
+      );
 
-      setConnectionStatus(false);
+      setConnectionStatus(
+        false
+      );
 
       notify(
         "Disconnected. Session credentials were kept.",
@@ -744,18 +1393,31 @@
 
       return true;
     } catch (error) {
-      notify(error.message, "error");
+      notify(
+        error.message,
+        "error"
+      );
+
       return false;
     } finally {
-      buttons.forEach((button) => {
-        setLoading(button, false);
-      });
+      buttons.forEach(
+        (button) => {
+          setLoading(
+            button,
+            false
+          );
+        }
+      );
     }
   }
 
   async function reconnectSession() {
     if (!state.sessionId) {
-      notify("No session selected.", "error");
+      notify(
+        "No session selected.",
+        "error"
+      );
+
       return false;
     }
 
@@ -763,92 +1425,162 @@
       "[data-action='connect'], #connectButton, #reconnectButton"
     );
 
-    buttons.forEach((button) => {
-      setLoading(button, true, "Connecting...");
-    });
+    buttons.forEach(
+      (button) => {
+        setLoading(
+          button,
+          true,
+          "Connecting..."
+        );
+      }
+    );
 
     try {
-      await request(API.reconnect, {
-        method: "POST",
-        body: JSON.stringify({
-          sessionId: state.sessionId
-        })
-      });
+      await request(
+        API.reconnect,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            sessionId:
+              state.sessionId
+          })
+        }
+      );
 
       notify(
         "Reconnect requested.",
         "success"
       );
 
-      await new Promise((resolve) =>
-        setTimeout(resolve, 1500)
+      await new Promise(
+        (resolve) => {
+          setTimeout(
+            resolve,
+            1500
+          );
+        }
       );
 
       await verifySession();
 
       return true;
     } catch (error) {
-      notify(error.message, "error");
+      notify(
+        error.message,
+        "error"
+      );
+
       return false;
     } finally {
-      buttons.forEach((button) => {
-        setLoading(button, false);
-      });
+      buttons.forEach(
+        (button) => {
+          setLoading(
+            button,
+            false
+          );
+        }
+      );
     }
   }
 
   function bindButtons() {
-    $$("[data-action]").forEach((button) => {
-      if (button.dataset.bound === "true") return;
+    $$("[data-action]").forEach(
+      (button) => {
+        if (
+          button.dataset.bound ===
+          "true"
+        ) {
+          return;
+        }
 
-      button.dataset.bound = "true";
+        button.dataset.bound =
+          "true";
 
-      const action = button.dataset.action;
+        const action =
+          button.dataset.action;
 
-      if (action === "save") {
-        button.addEventListener("click", saveSettings);
+        if (action === "save") {
+          button.addEventListener(
+            "click",
+            saveSettings
+          );
+        }
+
+        if (
+          action ===
+          "disconnect"
+        ) {
+          button.addEventListener(
+            "click",
+            disconnectSession
+          );
+        }
+
+        if (
+          action === "connect"
+        ) {
+          button.addEventListener(
+            "click",
+            reconnectSession
+          );
+        }
+
+        if (
+          action === "reconnect"
+        ) {
+          button.addEventListener(
+            "click",
+            reconnectSession
+          );
+        }
       }
+    );
 
-      if (action === "disconnect") {
-        button.addEventListener("click", disconnectSession);
-      }
+    const saveButton =
+      $("#saveButton");
 
-      if (action === "connect") {
-        button.addEventListener("click", reconnectSession);
-      }
+    if (
+      saveButton &&
+      saveButton.dataset.bound !==
+        "true"
+    ) {
+      saveButton.dataset.bound =
+        "true";
 
-      if (action === "reconnect") {
-        button.addEventListener("click", reconnectSession);
-      }
-    });
-
-    const saveButton = $("#saveButton");
-
-    if (saveButton && !saveButton.dataset.bound) {
-      saveButton.dataset.bound = "true";
-      saveButton.addEventListener("click", saveSettings);
+      saveButton.addEventListener(
+        "click",
+        saveSettings
+      );
     }
 
-    const disconnectButton = $("#disconnectButton");
+    const disconnectButton =
+      $("#disconnectButton");
 
     if (
       disconnectButton &&
-      !disconnectButton.dataset.bound
+      disconnectButton.dataset.bound !==
+        "true"
     ) {
-      disconnectButton.dataset.bound = "true";
+      disconnectButton.dataset.bound =
+        "true";
+
       disconnectButton.addEventListener(
         "click",
         disconnectSession
       );
     }
 
-    const reconnectButton = $("#reconnectButton");
+    const reconnectButton =
+      $("#reconnectButton");
 
     if (
       reconnectButton &&
-      !reconnectButton.dataset.bound
+      reconnectButton.dataset.bound !==
+        "true"
     ) {
-      reconnectButton.dataset.bound = "true";
+      reconnectButton.dataset.bound =
+        "true";
+
       reconnectButton.addEventListener(
         "click",
         reconnectSession
@@ -859,31 +1591,63 @@
   function bindLanguageControls() {
     $$(
       "#language, #panelLanguage, [data-language-select]"
-    ).forEach((select) => {
-      if (select.dataset.bound === "true") return;
+    ).forEach(
+      (select) => {
+        if (
+          select.dataset.bound ===
+          "true"
+        ) {
+          return;
+        }
 
-      select.dataset.bound = "true";
+        select.dataset.bound =
+          "true";
 
-      select.addEventListener("change", () => {
-        changeLanguage(select.value);
-      });
-    });
+        select.addEventListener(
+          "change",
+          () => {
+            changeLanguage(
+              select.value
+            );
+          }
+        );
+      }
+    );
   }
 
   function bindAutoRefresh() {
-    window.setInterval(async () => {
-      if (!state.sessionId) return;
+    if (
+      window.__TOPFEROS_AUTO_REFRESH__
+    ) {
+      return;
+    }
 
-      try {
-        await verifySession();
-      } catch {
-        // Do not interrupt the panel.
-      }
-    }, 5000);
+    window.__TOPFEROS_AUTO_REFRESH__ =
+      true;
+
+    window.setInterval(
+      async () => {
+        if (!state.sessionId) {
+          return;
+        }
+
+        try {
+          await verifySession();
+        } catch {
+          /*
+           * Do not interrupt
+           * the panel.
+           */
+        }
+      },
+      5000
+    );
   }
 
   async function initialize() {
-    setSessionId(getSessionId());
+    setSessionId(
+      getSessionId()
+    );
 
     bindButtons();
     bindSwitches();
@@ -892,25 +1656,35 @@
     try {
       await loadPanelData();
     } catch {
-      // Panel data can be loaded later.
+      /*
+       * Panel data can be loaded later.
+       */
     }
 
     try {
       await loadLanguages();
     } catch {
-      // Language endpoint may not be ready yet.
+      /*
+       * Language endpoint may
+       * not be ready yet.
+       */
     }
 
+    renderLanguageOptions();
     bindLanguageControls();
 
     if (state.sessionId) {
-      const verified = await verifySession();
+      const verified =
+        await verifySession();
 
       if (verified) {
         try {
           await loadSettings();
         } catch (error) {
-          notify(error.message, "error");
+          notify(
+            error.message,
+            "error"
+          );
         }
       }
     }
@@ -925,7 +1699,8 @@
 
   /*
    * Public functions.
-   * HTML buttons can call these directly.
+   * HTML buttons can call
+   * these directly.
    */
 
   window.TOPFEROS = {
@@ -945,9 +1720,14 @@
 
     saveSettings,
 
-    connect: reconnectSession,
-    reconnect: reconnectSession,
-    disconnect: disconnectSession,
+    connect:
+      reconnectSession,
+
+    reconnect:
+      reconnectSession,
+
+    disconnect:
+      disconnectSession,
 
     changeLanguage,
     translatePage,
@@ -957,20 +1737,37 @@
     notify
   };
 
-  // Backward-friendly global functions for HTML onclick handlers.
-  window.verifySettings = verifySession;
-  window.saveSettings = saveSettings;
-  window.reconnectSettings = reconnectSession;
-  window.disconnectSettings = disconnectSession;
-  window.selectSettingsLanguage = changeLanguage;
+  /*
+   * Backward-compatible
+   * global functions for
+   * HTML onclick handlers.
+   */
+
+  window.verifySettings =
+    verifySession;
+
+  window.saveSettings =
+    saveSettings;
+
+  window.reconnectSettings =
+    reconnectSession;
+
+  window.disconnectSettings =
+    disconnectSession;
+
+  window.selectSettingsLanguage =
+    changeLanguage;
 
   if (
-    document.readyState === "loading"
+    document.readyState ===
+    "loading"
   ) {
     document.addEventListener(
       "DOMContentLoaded",
       initialize,
-      { once: true }
+      {
+        once: true
+      }
     );
   } else {
     initialize();
