@@ -1,2940 +1,978 @@
 "use strict";
 
-/* =========================
-   URL / SESSION
-========================= */
-
-const params = new URLSearchParams(
-  window.location.search
-);
-
-let sessionId =
-  params.get("session") || "";
-
-let currentLanguage = "en";
-
-try {
-
-  const savedLanguage =
-    localStorage.getItem(
-      "topferos_settings_language"
-    );
-
-  if (
-    savedLanguage
-  ) {
-
-    currentLanguage =
-      savedLanguage;
-
-  }
-
-} catch (error) {
-
-  console.warn(
-    "Could not restore language:",
-    error
-  );
-
-}
-
-let settings = {};
-let botInformation = {};
-
-let statusTimer = null;
-
-let pairingInProgress = false;
-
-let pairingCooldownTimer = null;
-let pairingCooldownSeconds = 0;
-
-const PAIRING_COOLDOWN = 90;
-
-/* =========================
-   🤖 AI PANEL TRANSLATION
-========================= */
-
-let translationInProgress = false;
-
-const translationCache = new Map();
-
-async function translatePanelUI() {
-
-  if (
-    currentLanguage === "en" ||
-    translationInProgress
-  ) {
-    return;
-  }
-
-  translationInProgress = true;
-
-  try {
-
-    const elements = [];
-
-    /*
-     * Chèche tout eleman ki gen tèks vizib.
-     * Nou pa pran script/style.
-     */
-    document
-      .querySelectorAll(
-        "button, label, p, h1, h2, h3, h4, h5, h6, span, small, div"
-      )
-      .forEach(element => {
-
-        if (
-          element.closest("script") ||
-          element.closest("style") ||
-          element.classList.contains("slider") ||
-          element.classList.contains("hidden")
-        ) {
-          return;
-        }
-
-        const text =
-          element.textContent
-            ?.replace(/\s+/g, " ")
-            .trim();
-
-        if (
-          !text ||
-          text.length > 300
-        ) {
-          return;
-        }
-
-        /*
-         * Evite pran gwo parent containers
-         * ki gen plizyè lòt tèks ladan yo.
-         */
-        const hasElementChild =
-          Array.from(
-            element.children || []
-          ).some(child => {
-
-            const childText =
-              child.textContent
-                ?.replace(/\s+/g, " ")
-                .trim();
-
-            return (
-              childText &&
-              text.includes(childText) &&
-              childText !== text
-            );
-
-          });
-
-        if (
-          hasElementChild
-        ) {
-          return;
-        }
-
-        elements.push({
-          element,
-          text
-        });
-
-      });
-
-
-    /*
-     * Placeholder yo
-     */
-    document
-      .querySelectorAll(
-        "input[placeholder], textarea[placeholder]"
-      )
-      .forEach(element => {
-
-        const text =
-          element
-            .getAttribute("placeholder")
-            ?.trim();
-
-        if (!text) {
-          return;
-        }
-
-        elements.push({
-          element,
-          text,
-          type: "placeholder"
-        });
-
-      });
-
-
-    if (
-      !elements.length
-    ) {
-      return;
-    }
-
-
-    /*
-     * Cache
-     */
-    const textsToTranslate = [];
-
-    const uniqueTexts =
-      new Set();
-
-
-    for (
-      const item of elements
-    ) {
-
-      if (
-        translationCache.has(
-          `${currentLanguage}:${item.text}`
-        )
-      ) {
-        continue;
-      }
-
-      if (
-        !uniqueTexts.has(
-          item.text
-        )
-      ) {
-
-        uniqueTexts.add(
-          item.text
-        );
-
-        textsToTranslate.push(
-          item.text
-        );
-
-      }
-
-    }
-
-
-    /*
-     * AI API sèlman si gen nouvo tèks.
-     */
-    if (
-      textsToTranslate.length
-    ) {
-
-      const response =
-        await fetch(
-          "/api/translate",
-          {
-            method: "POST",
-
-            headers: {
-              "Content-Type":
-                "application/json"
-            },
-
-            body:
-              JSON.stringify({
-                language:
-                  currentLanguage,
-
-                texts:
-                  textsToTranslate
-              })
-          }
-        );
-
-
-      if (
-        response.ok
-      ) {
-
-        const data =
-          await response.json();
-
-
-        /*
-         * API a ka retounen:
-         *
-         * translations: [...]
-         *
-         * oswa
-         *
-         * translations: {
-         *   "English text": "Texte français"
-         * }
-         */
-
-        const translations =
-          data.translations;
-
-
-        if (
-          Array.isArray(
-            translations
-          )
-        ) {
-
-          textsToTranslate.forEach(
-            (
-              original,
-              index
-            ) => {
-
-              const translated =
-                translations[index];
-
-              if (
-                typeof translated ===
-                "string" &&
-                translated.trim()
-              ) {
-
-                translationCache.set(
-                  `${currentLanguage}:${original}`,
-                  translated.trim()
-                );
-
-              }
-
-            }
-          );
-
-        } else if (
-          translations &&
-          typeof translations ===
-            "object"
-        ) {
-
-          textsToTranslate.forEach(
-            original => {
-
-              const translated =
-                translations[original];
-
-              if (
-                typeof translated ===
-                "string" &&
-                translated.trim()
-              ) {
-
-                translationCache.set(
-                  `${currentLanguage}:${original}`,
-                  translated.trim()
-                );
-
-              }
-
-            }
-          );
-
-        }
-
-      }
-
-    }
-
-
-    /*
-     * Aplike translations yo.
-     */
-    for (
-      const item of elements
-    ) {
-
-      const translated =
-        translationCache.get(
-          `${currentLanguage}:${item.text}`
-        );
-
-
-      if (
-        !translated
-      ) {
-        continue;
-      }
-
-
-      if (
-        item.type ===
-        "placeholder"
-      ) {
-
-        item.element
-          .setAttribute(
-            "placeholder",
-            translated
-          );
-
-      } else {
-
-        item.element.textContent =
-          translated;
-
-      }
-
-    }
-
-  } catch (error) {
-
-    /*
-     * AI pa disponib:
-     * panel la rete nan lang orijinal li.
-     */
-    console.warn(
-      "⚠️ AI panel translation unavailable:",
-      error?.message ||
-      error
-    );
-
-  } finally {
-
-    translationInProgress =
-      false;
-
-  }
-
-}
-
-/* =========================
-   SETTINGS GROUPS
-========================= */
-
-const groups = {
-
-  general: [
-    ["publicMode", "Public Mode"],
-    ["privateMode", "Private Mode"],
-    ["alwaysOnline", "Always Online"],
-    ["fakeTyping", "Fake Typing"],
-    ["fakeRecording", "Fake Recording"]
-  ],
-
-  protection: [
-    ["antiCall", "Anti Call"],
-    ["antiDelete", "Anti Delete"],
-    ["antiSpam", "Anti Spam"],
-    ["antiLink", "Anti Link"],
-    ["antiRobot", "Anti Robot"]
-  ],
-
-  status: [
-    ["autoStatus", "Auto Status"],
-    ["statusReply", "Status Reply"],
-    ["statusLike", "Status Like"],
-  ],
-
-  group: [
-    ["groupAntiSpam", "Group Anti Spam"],
-    ["groupAntiLink", "Group Anti Link"],
-    ["groupAntiDelete", "Group Anti Delete"],
-    ["groupClose", "Group Close"],
-    ["groupOpen", "Group Open"]
-  ],
-
-  ai: [
-    ["aiChat", "AI Chat"]
-  ]
-
-};
-
-
-/* =========================
-   DOM READY
-========================= */
-
-document.addEventListener(
-  "DOMContentLoaded",
-  async () => {
-
-    setupSettingsCodeInput();
-
-    setupPhoneInput();
-
-    /*
-     * ============================================================
-     * SETTINGS LINK DIRECT
-     *
-     * https://topferos-md-v1-0-0.onrender.com/setting
-     *
-     * Lè moun antre sou /setting, pa voye li nan
-     * Language / Pairing / Parrain Code.
-     * Montre Settings Login dirèkteman.
-     * ============================================================
-     */
-
-    const currentPath =
-      window.location.pathname
-        .replace(/\/+$/, "");
-
-    
-    if (
-  currentPath === "/setting"
-) {
-
-  /*
-   * ============================================================
-   * SETTINGS PANEL FLOW
-   *
-   * /setting
-   *    ↓
-   * Language Selection
-   *    ↓
-   * Settings Login
-   *    ↓
-   * Number + Settings Code
-   *    ↓
-   * Verify
-   *    ↓
-   * Settings Dashboard
-   * ============================================================
-   */
-
-  showLanguage();
-
-  return;
-
-}
-
-
-    /*
-     * ============================================================
-     * ANSYEN LINK AVEC SESSION
-     *
-     * ?session=...
-     * ============================================================
-     */
-
-    if (sessionId) {
-
-      const valid =
-        await validateSession(
-          sessionId
-        );
-
-      if (valid) {
-
-        showSettingsLogin();
-
-        return;
-
-      }
-
-      sessionId = "";
-
-    }
-
-
-    /*
-     * ============================================================
-     * NORMAL HOME / PAIRING PAGE
-     * ============================================================
-     */
-
-    showLanguage();
-
-    checkExistingConnection();
-
-  }
-);
-
-
-/* =========================
-   SHORT DOM FUNCTION
-========================= */
-
-function $(id) {
-  return document.getElementById(id);
-}
-
-
-/* =========================
-   SCREEN CONTROL
-========================= */
-
-function hideAllScreens() {
-
-  $("languageScreen")?.classList.add(
-    "hidden"
-  );
-
-  $("connectScreen")?.classList.add(
-    "hidden"
-  );
-
-  $("loginScreen")?.classList.add(
-    "hidden"
-  );
-
-  $("dashboard")?.classList.add(
-    "hidden"
-  );
-
-
-  /*
-   * Main logo la retounen pou
-   * Language / Connect / Settings Login.
-   */
-
-  $("mainLogo")?.classList.remove(
-    "hidden"
-  );
-
-}
-
-/* =========================
-   LANGUAGE
-========================= */
-
-async function selectLanguage(language) {
-
-  /*
-   * ============================================================
-   * SAVE SELECTED LANGUAGE
-   * ============================================================
-   */
-
-  currentLanguage =
-    String(
-      language || "en"
-    )
-      .trim()
-      .toLowerCase();
-
-
-  /*
-   * ============================================================
-   * CHECK CURRENT PAGE
-   *
-   * /setting = SETTINGS FLOW
-   * lòt route = CONNECT / PAIRING FLOW
-   * ============================================================
-   */
-
-  const currentPath =
-    window.location.pathname
-      .replace(/\/+$/, "");
-
-  const isSettingsPage =
-    currentPath === "/setting";
-
-
-  /*
-   * ============================================================
-   * SAVE LANGUAGE LOCALLY
-   * ============================================================
-   */
-
-  try {
-
-    localStorage.setItem(
-      "topferos_settings_language",
-      currentLanguage
-    );
-
-  } catch (error) {
-
-    console.warn(
-      "Could not save language:",
-      error
-    );
-
-  }
-
-
-  /*
-   * ============================================================
-   * SETTINGS PANEL
-   *
-   * /setting
-   *    ↓
-   * Language
-   *    ↓
-   * Settings Login
-   * ============================================================
-   */
-
-  if (isSettingsPage) {
-
-    hideAllScreens();
-
-    $("loginScreen")?.classList.remove(
-      "hidden"
-    );
-
-    await translatePanelUI();
-
-    return;
-  }
-
-
-  /*
-   * ============================================================
-   * NORMAL CONNECT / PAIRING
-   *
-   * Language
-   *    ↓
-   * Connect Bot
-   *    ↓
-   * Pairing Code
-   * ============================================================
-   */
-
-  hideAllScreens();
-
-  $("connectScreen")?.classList.remove(
-    "hidden"
-  );
-
-
-  /*
-   * Save language for normal connection flow.
-   */
-
-  try {
-
-    await sendLanguage(
-      currentLanguage
-    );
-
-  } catch (error) {
-
-    console.warn(
-      "Could not save language:",
-      error
-    );
-
-  }
-
-
-  /*
-   * Translate Connect interface.
-   */
-
-  await translatePanelUI();
-
-
-  /*
-   * Start connection monitoring.
-   */
-
-  startConnectionMonitor();
-
-}
-
-
-/* =========================
-   SEND LANGUAGE
-========================= */
-
-async function sendLanguage(
-  language
-) {
-
-  try {
-
-    await fetch(
-      "/api/language",
-      {
-        method: "POST",
-
-        headers: {
-          "Content-Type":
-            "application/json"
-        },
-
-        body: JSON.stringify({
-          sessionId,
-          language
-        })
-
-      }
-    );
-
-  } catch (error) {
-
-    console.error(
-      "Language error:",
-      error
-    );
-
-  }
-
-}
-
-
-/* =========================
-   PHONE INPUT
-========================= */
-
-function setupPhoneInput() {
-
-  const input =
-    $("phoneNumber");
-
-  /*
-   * Pa gen input number sou Settings Login?
-   * Sa pa dwe bloke paj la.
-   */
-
-  if (!input) {
-    return;
-  }
-
-
-  input.addEventListener(
-    "input",
-    event => {
-
-      event.target.value =
-        event.target.value
-          .replace(/\D/g, "");
-
-    }
-  );
-
-
-  input.addEventListener(
-    "keydown",
-    event => {
-
-      if (
-        event.key ===
-        "Enter"
-      ) {
-
-        requestPairingCode();
-
-      }
-
-    }
-  );
-
-}
-
-
-/* =========================
-   REQUEST PAIRING CODE
-========================= */
-
-async function requestPairingCode() {
-
-  if (
-    pairingInProgress
-  ) {
-
-    return;
-
-  }
-
-
-  if (
-    pairingCooldownSeconds > 0
-  ) {
-
-    updatePairingCooldownUI();
-
-    return;
-
-  }
-
-
-  const input =
-    $("phoneNumber");
-
-  const button =
-    $("pairingButton");
-
-  const message =
-    $("pairingMessage");
-
-  const pairingBox =
-    $("pairingBox");
-
-  const codeElement =
-    $("pairingCode");
-
-  const copyButton =
-    $("copyPairingButton");
-
-  const status =
-    $("connectStatus");
-
-
-  const number =
-    input?.value
-      .trim()
-      .replace(/\D/g, "") || "";
-
-
-  /* =========================
-     VALIDATE NUMBER
-  ========================== */
-
-  if (!number) {
-
-    showPairingMessage(
-      "❌ Mete nimewo WhatsApp ou an.",
-      true
-    );
-
-    return;
-
-  }
-
-
-  if (
-    number.length < 8
-  ) {
-
-    showPairingMessage(
-      "❌ Nimewo WhatsApp la pa valab.",
-      true
-    );
-
-    return;
-
-  }
-
-
-  /* =========================
-     UI LOADING
-  ========================== */
-
-  pairingInProgress =
-    true;
-
-
-  if (button) {
-
-    button.disabled =
-      true;
-
-    button.textContent =
-      "⏳ GENERATING...";
-
-  }
-
-
-  if (pairingBox) {
-
-    pairingBox.classList.add(
-      "hidden"
-    );
-
-  }
-
-
-  if (codeElement) {
-
-    codeElement.textContent =
-      "----";
-
-  }
-
-
-  if (copyButton) {
-
-    copyButton.disabled =
-      true;
-
-    copyButton.textContent =
-      "📋 COPY CODE";
-
-  }
-
-
-  if (status) {
-
-    status.textContent =
-      "🟡 Generating Pairing Code...";
-
-  }
-
-
-  if (message) {
-
-    message.textContent =
-      "";
-
-  }
-
-
-  /* =========================
-     REQUEST SERVER
-  ========================== */
-
-  try {
-
-    const response =
-      await fetch(
-        "/api/pairing",
-        {
-          method: "POST",
-
-          headers: {
-            "Content-Type":
-              "application/json"
-          },
-
-          body: JSON.stringify({
-            number
-          })
-
-        }
-      );
-
-
-    let data = {};
-
-    try {
-
-      data =
-        await response.json();
-
-    } catch {
-
-      data = {};
-
-    }
-
-
-    /* =========================
-       SERVER ERROR
-    ========================== */
-
-    if (
-      !response.ok ||
-      !data.success
-    ) {
-
-      const error =
-        new Error(
-          data.message ||
-          data.error ||
-          "PAIRING_FAILED"
-        );
-
-
-      if (
-        data.cooldownSeconds
-      ) {
-
-        startPairingCooldown(
-          Number(
-            data.cooldownSeconds
-          )
-        );
-
-      }
-
-
-      throw error;
-
-    }
-
-
-    /* =========================
-       SAVE SESSION ID
-    ========================== */
-
-    if (
-      data.sessionId
-    ) {
-
-      sessionId =
-        String(
-          data.sessionId
-        );
-
-    }
-
-
-    /* =========================
-       VALIDATE SERVER CODE
-    ========================== */
-
-    const rawCode =
-      String(
-        data.code || ""
-      )
-      .replace(/\s/g, "")
-      .toUpperCase();
-
-
-    if (
-      !rawCode
-    ) {
-
-      throw new Error(
-        "SERVER_RETURNED_EMPTY_PAIRING_CODE"
-      );
-
-    }
-
-
-    if (
-      rawCode.length !== 8
-    ) {
-
-      console.warn(
-        "Unexpected pairing code length:",
-        rawCode.length,
-        rawCode
-      );
-
-    }
-
-
-    /* =========================
-       SHOW CODE
-    ========================== */
-
-    if (codeElement) {
-
-      codeElement.textContent =
-        formatPairingCode(
-          rawCode
-        );
-
-    }
-
-
-    if (copyButton) {
-
-      copyButton.disabled =
-        false;
-
-      copyButton.textContent =
-        "📋 COPY CODE";
-
-    }
-
-
-    if (pairingBox) {
-
-      pairingBox.classList.remove(
-        "hidden"
-      );
-
-    }
-
-
-    if (status) {
-
-      status.textContent =
-        "🟡 Pairing Code generated. Waiting for WhatsApp...";
-
-    }
-
-
-    showPairingMessage(
-      "✅ Pairing Code la pare. Antre li nan WhatsApp ou.",
-      false
-    );
-
-
-    /* =========================
-       COOLDOWN
-    ========================== */
-
-    startPairingCooldown(
-      Number(
-        data.cooldownSeconds ||
-        PAIRING_COOLDOWN
-      )
-    );
-
-
-    /* =========================
-       MONITOR CONNECTION
-    ========================== */
-
-    startConnectionMonitor();
-
-  } catch (error) {
-
-    console.error(
-      "Pairing error:",
-      error
-    );
-
-
-    if (status) {
-
-      status.textContent =
-        "🔴 Connection failed.";
-
-    }
-
-
-    showPairingMessage(
-      "❌ " +
-        (
-          error.message ||
-          "Pa kapab kreye Pairing Code la."
-        ),
-      true
-    );
-
-  } finally {
-
-    pairingInProgress =
-      false;
-
-
-    updatePairingCooldownUI();
-
-  }
-
-}
-
-
-/* =========================
-   FORMAT PAIRING CODE
-========================= */
-
-function formatPairingCode(
-  code
-) {
-
-  if (!code) {
-
-    return "----";
-
-  }
-
-
-  const clean =
-    String(code)
-      .replace(/\s/g, "")
-      .toUpperCase();
-
-
-  if (
-    clean.length <= 4
-  ) {
-
-    return clean;
-
-  }
-
-
-  return clean
-    .match(/.{1,4}/g)
-    .join(" ");
-
-}
-
-
-/* =========================
-   COPY PAIRING CODE
-========================= */
-
-async function copyPairingCode() {
-
-  const codeElement =
-    $("pairingCode");
-
-  const button =
-    $("copyPairingButton");
-
-
-  if (!codeElement) {
-
-    return;
-
-  }
-
-
-  const code =
-    codeElement.textContent
-      .trim()
-      .replace(/\s/g, "")
-      .toUpperCase();
-
-
-  if (
-    !code ||
-    code === "----"
-  ) {
-
-    showPairingMessage(
-      "❌ Pa gen Pairing Code pou kopye.",
-      true
-    );
-
-    return;
-
-  }
-
-
-  try {
-
-    if (
-      navigator.clipboard &&
-      window.isSecureContext
-    ) {
-
-      await navigator.clipboard.writeText(
-        code
-      );
-
-    } else {
-
-      const textarea =
-        document.createElement(
-          "textarea"
-        );
-
-      textarea.value =
-        code;
-
-      textarea.style.position =
-        "fixed";
-
-      textarea.style.left =
-        "-9999px";
-
-      textarea.style.top =
-        "0";
-
-      textarea.setAttribute(
-        "readonly",
-        ""
-      );
-
-      document.body.appendChild(
-        textarea
-      );
-
-      textarea.focus();
-
-      textarea.select();
-
-      textarea.setSelectionRange(
-        0,
-        textarea.value.length
-      );
-
-      const copied =
-        document.execCommand(
-          "copy"
-        );
-
-      textarea.remove();
-
-      if (!copied) {
-
-        throw new Error(
-          "COPY_FAILED"
-        );
-
-      }
-
-    }
-
-
-    if (button) {
-
-      button.disabled =
-        true;
-
-      button.textContent =
-        "✅ COPIED!";
-
-      setTimeout(
-        () => {
-
-          button.disabled =
-            false;
-
-          button.textContent =
-            "📋 COPY CODE";
-
-        },
-        2000
-      );
-
-    }
-
-
-    showPairingMessage(
-      "✅ Pairing Code la kopye. Ou ka kole li nan WhatsApp.",
-      false
-    );
-
-
-  } catch (error) {
-
-    console.error(
-      "Copy pairing code error:",
-      error
-    );
-
-
-    showPairingMessage(
-      "❌ Pa kapab kopye code la. Seleksyone code la epi kopye li manyèlman.",
-      true
-    );
-
-  }
-
-}
-
-
-/* =========================
-   PAIRING MESSAGE
-========================= */
-
-function showPairingMessage(
-  message,
-  error = false
-) {
-
-  const element =
-    $("pairingMessage");
-
-  if (!element) {
-
-    return;
-
-  }
-
-
-  element.textContent =
-    message;
-
-  element.className =
-    "message " +
-    (
-      error
-        ? "error"
-        : "success"
-    );
-
-}
-
-
-/* =========================
-   PAIRING COOLDOWN
-========================= */
-
-function startPairingCooldown(
-  seconds
-) {
-
-  stopPairingCooldown(
-    false
-  );
-
-
-  pairingCooldownSeconds =
-    Math.max(
-      0,
-      Number(seconds) ||
-      PAIRING_COOLDOWN
-    );
-
-
-  updatePairingCooldownUI();
-
-
-  if (
-    pairingCooldownSeconds <= 0
-  ) {
-
-    return;
-
-  }
-
-
-  pairingCooldownTimer =
-    setInterval(
-      () => {
-
-        pairingCooldownSeconds--;
-
-        updatePairingCooldownUI();
-
-
-        if (
-          pairingCooldownSeconds <= 0
-        ) {
-
-          stopPairingCooldown();
-
-        }
-
-      },
-      1000
-    );
-
-}
-
-
-/* =========================
-   UPDATE COOLDOWN UI
-========================= */
-
-function updatePairingCooldownUI() {
-
-  const button =
-    $("pairingButton");
-
-  if (!button) {
-
-    return;
-
-  }
-
-
-  if (
-    pairingInProgress
-  ) {
-
-    button.disabled =
-      true;
-
-    button.textContent =
-      "⏳ GENERATING...";
-
-    return;
-
-  }
-
-
-  if (
-    pairingCooldownSeconds > 0
-  ) {
-
-    button.disabled =
-      true;
-
-    button.textContent =
-      `⏳ WAIT ${pairingCooldownSeconds}s`;
-
-    return;
-
-  }
-
-
-  button.disabled =
-    false;
-
-  button.textContent =
-    "🔐 GET PAIRING CODE";
-
-}
-
-
-/* =========================
-   STOP COOLDOWN
-========================= */
-
-function stopPairingCooldown(
-  updateUI = true
-) {
-
-  if (
-    pairingCooldownTimer
-  ) {
-
-    clearInterval(
-      pairingCooldownTimer
-    );
-
-    pairingCooldownTimer =
-      null;
-
-  }
-
-
-  pairingCooldownSeconds =
-    0;
-
-
-  if (updateUI) {
-
-    updatePairingCooldownUI();
-
-  }
-
-}
-
-
-/* =========================
-   CONNECTION MONITOR
-========================= */
-
-function startConnectionMonitor() {
-
-  if (statusTimer) {
-
-    clearInterval(
-      statusTimer
-    );
-
-  }
-
-
-  checkBotStatus();
-
-
-  statusTimer =
-    setInterval(
-      checkBotStatus,
-      3000
-    );
-
-}
-
-
-/* =========================
-   CHECK BOT STATUS
-========================= */
-
-async function checkBotStatus() {
-
-  try {
-
-    const response =
-      await fetch(
-        "/api/status",
-        {
-          cache: "no-store"
-        }
-      );
-
-
-    const data =
-      await response.json();
-
-
-    if (
-      !response.ok ||
-      !data.success
-    ) {
-
-      return;
-
-    }
-
-
-    if (
-      data.connected
-    ) {
-
-      updateConnectionUI(
-        true,
-        data.number || ""
-      );
-
-
-      stopConnectionMonitor();
-
-      stopPairingCooldown();
-
-
-      await findConnectedSession(
-        data.number || ""
-      );
-
-
-    } else {
-
-      updateConnectionUI(
-        false,
-        ""
-      );
-
-    }
-
-  } catch (error) {
-
-    console.error(
-      "Status check error:",
-      error
-    );
-
-  }
-
-}
-
-
-/* =========================
-   UPDATE CONNECTION UI
-========================= */
-
-function updateConnectionUI(
-  connected,
-  number = ""
-) {
-
-  const status =
-    $("connectStatus");
-
-
-  if (!status) {
-
-    return;
-
-  }
-
-
-  if (
-    connected
-  ) {
-
-    status.textContent =
-      "🟢 WhatsApp Bot Connected";
-
-
-    showPairingMessage(
-      "✅ Bot la konekte avèk siksè.",
-      false
-    );
-
-
-    if (
-      $("botNumber")
-    ) {
-
-      $("botNumber").value =
-        number;
-
-    }
-
-
-  } else {
-
-    status.textContent =
-      "⚪ Waiting for WhatsApp connection...";
-
-  }
-
-}
-
-
-/* =========================
-   STOP CONNECTION MONITOR
-========================= */
-
-function stopConnectionMonitor() {
-
-  if (statusTimer) {
-
-    clearInterval(
-      statusTimer
-    );
-
-    statusTimer =
-      null;
-
-  }
-
-}
-
-
-/* =========================
-   FIND CONNECTED SESSION
-========================= */
-
-async function findConnectedSession(
-  number = ""
-) {
-
-  if (
-    sessionId
-  ) {
-
-    const valid =
-      await validateSession(
-        sessionId
-      );
-
-
-    if (valid) {
-
-      showSettingsLogin();
-
-      return;
-
-    }
-
-  }
-
-
-  if (
-    number
-  ) {
-
-    showPairingMessage(
-      "🟢 Bot la konekte. Louvri Settings Link ou a pou antre Settings Code la.",
-      false
-    );
-
-  }
-
-}
-
-
-/* =========================
-   CHECK EXISTING CONNECTION
-========================= */
-
-async function checkExistingConnection() {
-
-  try {
-
-    const response =
-      await fetch(
-        "/api/status",
-        {
-          cache: "no-store"
-        }
-      );
-
-
-    const data =
-      await response.json();
-
-
-    if (
-      data.success &&
-      data.connected
-    ) {
-
-      updateConnectionUI(
-        true,
-        data.number || ""
-      );
-
-    }
-
-  } catch (error) {
-
-    console.error(
-      "Initial status error:",
-      error
-    );
-
-  }
-
-}
-
-
-/* =========================
-   VALIDATE SESSION
-========================= */
-
-async function validateSession(
-  id
-) {
-
-  if (!id) {
-
-    return false;
-
-  }
-
-
-  try {
-
-    const response =
-      await fetch(
-        `/api/session/${encodeURIComponent(
-          id
-        )}`,
-        {
-          cache: "no-store"
-        }
-      );
-
-
-    const data =
-      await response.json();
-
+/*
+ * TOPFEROS MD V2.0.0
+ * panel/public/app.js
+ *
+ * Frontend logic for:
+ * - Panel language
+ * - Session verification
+ * - Settings loading/saving
+ * - Connect / disconnect
+ * - Automation switches
+ * - Group automation
+ * - Bot information
+ */
+
+(() => {
+  const state = {
+    sessionId: "",
+    language: "en",
+    panelData: null,
+    languages: [],
+    verified: false,
+    saving: false
+  };
+
+  const API = {
+    panel: "/api/panel",
+    languages: "/api/languages",
+    language: "/api/language",
+    translate: "/api/translate",
+    verify: "/api/verify",
+    settings: "/api/settings",
+    session: (id) => `/api/session/${encodeURIComponent(id)}`,
+    disconnect: "/api/session/disconnect",
+    reconnect: "/api/session/reconnect"
+  };
+
+  const $ = (selector, root = document) => {
+    return root.querySelector(selector);
+  };
+
+  const $$ = (selector, root = document) => {
+    return Array.from(root.querySelectorAll(selector));
+  };
+
+  function getSessionId() {
+    const params = new URLSearchParams(window.location.search);
 
     return (
-      response.ok &&
-      data.success &&
-      data.exists
-    );
-
-
-  } catch (error) {
-
-    console.error(
-      "Session validation error:",
-      error
-    );
-
-
-    return false;
-
+      params.get("sessionId") ||
+      params.get("session") ||
+      localStorage.getItem("topferos_session_id") ||
+      ""
+    ).trim();
   }
 
-}
+  function setSessionId(sessionId) {
+    state.sessionId = String(sessionId || "").trim();
 
-
-/* =========================
-   SETTINGS LOGIN
-========================= */
-
-function showSettingsLogin() {
-
-  hideAllScreens();
-
-
-  $("loginScreen")?.classList.remove(
-    "hidden"
-  );
-
-
-  /*
-   * Netwaye ansyen mesaj login.
-   */
-
-  if (
-    $("loginMessage")
-  ) {
-
-    $("loginMessage").textContent =
-      "";
-
+    if (state.sessionId) {
+      localStorage.setItem("topferos_session_id", state.sessionId);
+    }
   }
 
-}
-
-
-/* =========================
-   BACK TO CONNECT
-========================= */
-
-function backToConnect() {
-
-  hideAllScreens();
-
-
-  $("connectScreen")?.classList.remove(
-    "hidden"
-  );
-
-
-  startConnectionMonitor();
-
-}
-
-
-/* =========================
-   GET SETTINGS LOGIN NUMBER
-========================= */
-
-function getSettingsLoginNumber() {
-
-  /*
-   * Sipòte plizyè non input pou pa kraze
-   * HTML aktyèl la.
-   */
-
-  const input =
-    $("ownerNumber") ||
-    $("settingsNumber") ||
-    $("loginNumber") ||
-    $("phoneNumber");
-
-
-  return (
-    input?.value
-      ?.trim()
-      .replace(/\D/g, "") ||
-    ""
-  );
-
-}
-
-
-/* =========================
-   VERIFY SETTINGS
-========================= */
-
-async function verifySettings() {
-
-  const code =
-    $("settingsCode")
-      ?.value
-      .trim()
-      .toUpperCase() || "";
-
-
-  /*
-   * Sou nouvo /setting flow la,
-   * sessionId pa obligatwa.
-   *
-   * Server la ap jwenn session lan
-   * avèk number + settings code.
-   */
-
-  const loginNumber =
-    getSettingsLoginNumber();
-
-
-  if (!code) {
-
-    showLoginMessage(
-      "❌ Mete Settings Code la.",
-      true
-    );
-
-    return;
-
+  function escapeHtml(value) {
+    return String(value ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
   }
 
+  async function request(url, options = {}) {
+    const response = await fetch(url, {
+      ...options,
+      headers: {
+        Accept: "application/json",
+        ...(options.body ? { "Content-Type": "application/json" } : {}),
+        ...(options.headers || {})
+      }
+    });
 
-  if (
-    !/^[A-Z0-9]{6}$/.test(
-      code
-    )
-  ) {
+    let data = null;
 
-    showLoginMessage(
-      "❌ Settings Code la dwe gen 6 karaktè.",
-      true
-    );
-
-    return;
-
-  }
-
-
-  /*
-   * Si gen sessionId ansyen fason an,
-   * li ka toujou itilize.
-   *
-   * Men sou /setting nòmal,
-   * nou voye number + code.
-   */
-
-  const button =
-    $("verifyButton");
-
-
-  if (button) {
-
-    button.disabled =
-      true;
-
-    button.textContent =
-      "⏳ VERIFYING...";
-
-  }
-
-
-  try {
-
-    const body = {
-      code
-    };
-
-
-    /*
-     * Ajoute number si li disponib.
-     */
-
-    if (
-      loginNumber
-    ) {
-
-      body.number =
-        loginNumber;
-
+    try {
+      data = await response.json();
+    } catch {
+      data = null;
     }
 
+    if (!response.ok) {
+      const message =
+        data?.message ||
+        data?.error ||
+        `Request failed with status ${response.status}`;
 
-    /*
-     * Ajoute sessionId sèlman si URL la
-     * te gen ansyen ?session=...
-     */
-
-    if (
-      sessionId
-    ) {
-
-      body.sessionId =
-        sessionId;
-
+      throw new Error(message);
     }
 
+    return data;
+  }
 
-    const response =
-      await fetch(
-        "/api/verify",
-        {
-          method: "POST",
+  function notify(message, type = "info") {
+    const existing = $("#topferos-notification");
 
-          headers: {
-            "Content-Type":
-              "application/json"
-          },
+    if (existing) {
+      existing.remove();
+    }
 
-          body: JSON.stringify(
-            body
-          )
+    const notification = document.createElement("div");
 
-        }
-      );
+    notification.id = "topferos-notification";
+    notification.className = `topferos-notification ${type}`;
+    notification.textContent = message;
 
+    document.body.appendChild(notification);
 
-    const data =
-      await response.json();
+    window.setTimeout(() => {
+      notification.classList.add("hide");
 
+      window.setTimeout(() => {
+        notification.remove();
+      }, 300);
+    }, 3000);
+  }
 
-    if (
-      !response.ok ||
-      !data.success
-    ) {
+  function setLoading(button, loading, loadingText = "Loading...") {
+    if (!button) return;
 
-      showLoginMessage(
-        data.error ||
-          "❌ Settings Code pa kòrèk.",
-        true
-      );
+    if (loading) {
+      button.dataset.originalText = button.textContent;
+      button.disabled = true;
+      button.textContent = loadingText;
+    } else {
+      button.disabled = false;
 
+      if (button.dataset.originalText) {
+        button.textContent = button.dataset.originalText;
+        delete button.dataset.originalText;
+      }
+    }
+  }
+
+  function setConnectionStatus(connected) {
+    const statusElements = $$(
+      "[data-connection-status], #connectionStatus, .connection-status"
+    );
+
+    statusElements.forEach((element) => {
+      element.textContent = connected
+        ? "🟢 CONNECTED"
+        : "🔴 DISCONNECTED";
+
+      element.classList.toggle("connected", connected);
+      element.classList.toggle("disconnected", !connected);
+    });
+
+    const connectButtons = $$(
+      "[data-action='connect'], #connectButton, #reconnectButton"
+    );
+
+    const disconnectButtons = $$(
+      "[data-action='disconnect'], #disconnectButton"
+    );
+
+    connectButtons.forEach((button) => {
+      button.disabled = connected;
+    });
+
+    disconnectButtons.forEach((button) => {
+      button.disabled = !connected;
+    });
+  }
+
+  function setFieldValue(id, value) {
+    const element = document.getElementById(id);
+
+    if (!element) return;
+
+    if (element.type === "checkbox") {
+      element.checked = Boolean(value);
+      updateSwitchVisual(element);
       return;
-
     }
 
+    element.value = value ?? "";
+  }
 
-    /*
-     * ============================================================
-     * SESSION ID SOTI SERVER
-     * ============================================================
-     */
+  function getFieldValue(id, fallback = "") {
+    const element = document.getElementById(id);
 
-    if (
-      data.sessionId
-    ) {
+    if (!element) return fallback;
 
-      sessionId =
-        String(
-          data.sessionId
-        );
-
+    if (element.type === "checkbox") {
+      return element.checked;
     }
 
+    return element.value;
+  }
 
-    /*
-     * ============================================================
-     * SETTINGS
-     * ============================================================
-     */
+  function updateSwitchVisual(input) {
+    if (!input) return;
 
-    settings =
-      data.settings ||
-      {};
+    const wrapper =
+      input.closest("[data-switch]") ||
+      input.closest(".switch") ||
+      input.parentElement;
 
+    if (!wrapper) return;
 
-    botInformation =
-      data.botInformation ||
-      {};
+    wrapper.classList.toggle("active", input.checked);
+    wrapper.classList.toggle("inactive", !input.checked);
 
+    const label = wrapper.querySelector(
+      "[data-switch-label], .switch-label, .status-label"
+    );
 
-    /*
-     * Si server la pa voye settings nan verify,
-     * chaje yo kounye a.
-     */
+    if (label) {
+      label.textContent = input.checked ? "🟢 ON" : "🔴 OFF";
+    }
+  }
+
+  function bindSwitches() {
+    $$("input[type='checkbox']").forEach((input) => {
+      updateSwitchVisual(input);
+
+      input.addEventListener("change", () => {
+        updateSwitchVisual(input);
+      });
+    });
+  }
+
+  function normalizeAutomation(settings = {}) {
+    return {
+      alwaysOnline: settings.alwaysOnline !== false,
+      fakeTyping: settings.fakeTyping === true,
+      fakeRecording: settings.fakeRecording === true,
+      autoStatusSeen: settings.autoStatusSeen !== false,
+      autoStatusReply: settings.autoStatusReply !== false,
+      autoStatusReact: settings.autoStatusReact !== false,
+      antiDelete: settings.antiDelete !== false,
+      antiCall: settings.antiCall === true,
+      antiBug: settings.antiBug === true,
+      antiBotFilter: settings.antiBotFilter === true,
+      antiDeleteMode: settings.antiDeleteMode || "private",
+      antiBotAction: settings.antiBotAction || "Delete",
+      antiBlockNumbers: Array.isArray(settings.antiBlockNumbers)
+        ? settings.antiBlockNumbers
+        : []
+    };
+  }
+
+  function normalizeBot(settings = {}) {
+    return {
+      ownerNumber: settings.ownerNumber || "",
+      name: settings.name || "TOPFEROS MD",
+      location: settings.location || "HAÏTI",
+      age: settings.age ?? 14,
+      prefix: settings.prefix || ".",
+      footer: settings.footer || "🦁 TECH BY TOPFEROS MD 🐑",
+      mode: settings.mode || "Public",
+      language: settings.language || state.language || "en"
+    };
+  }
+
+  function normalizeGroupAutomation(settings = {}) {
+    return {
+      enabled: settings.enabled === true,
+      groupGid: settings.groupGid || "",
+      timezone: settings.timezone || "Atlantic/Port-au-Prince",
+      closeTime: settings.closeTime || "15:00",
+      openTime: settings.openTime || "06:00",
+      principles: settings.principles || "",
+      warningLimit: Number(settings.warningLimit || 3)
+    };
+  }
+
+  function fillBotSettings(bot = {}) {
+    const data = normalizeBot(bot);
+
+    setFieldValue("ownerNumber", data.ownerNumber);
+    setFieldValue("botName", data.name);
+    setFieldValue("location", data.location);
+    setFieldValue("age", data.age);
+    setFieldValue("prefix", data.prefix);
+    setFieldValue("footer", data.footer);
+    setFieldValue("mode", data.mode);
+    setFieldValue("botLanguage", data.language);
+  }
+
+  function fillAutomationSettings(automation = {}) {
+    const data = normalizeAutomation(automation);
+
+    setFieldValue("alwaysOnline", data.alwaysOnline);
+    setFieldValue("fakeTyping", data.fakeTyping);
+    setFieldValue("fakeRecording", data.fakeRecording);
+    setFieldValue("autoStatusSeen", data.autoStatusSeen);
+    setFieldValue("autoStatusReply", data.autoStatusReply);
+    setFieldValue("autoStatusReact", data.autoStatusReact);
+    setFieldValue("antiDelete", data.antiDelete);
+    setFieldValue("antiCall", data.antiCall);
+    setFieldValue("antiBug", data.antiBug);
+    setFieldValue("antiBotFilter", data.antiBotFilter);
+
+    setFieldValue("antiDeleteMode", data.antiDeleteMode);
+    setFieldValue("antiBotAction", data.antiBotAction);
+
+    const numbers = Array.isArray(data.antiBlockNumbers)
+      ? data.antiBlockNumbers.join("\n")
+      : "";
+
+    setFieldValue("antiBlockNumbers", numbers);
+
+    bindSwitches();
+  }
+
+  function fillGroupSettings(group = {}) {
+    const data = normalizeGroupAutomation(group);
+
+    setFieldValue("groupAutomationEnabled", data.enabled);
+    setFieldValue("groupGid", data.groupGid);
+    setFieldValue("timezone", data.timezone);
+    setFieldValue("closeTime", data.closeTime);
+    setFieldValue("openTime", data.openTime);
+    setFieldValue("groupPrinciples", data.principles);
+    setFieldValue("warningLimit", data.warningLimit);
+
+    bindSwitches();
+  }
+
+  function collectBotSettings() {
+    const age = Number(getFieldValue("age", 14));
+
+    return {
+      ownerNumber: getFieldValue("ownerNumber"),
+      name: getFieldValue("botName", "TOPFEROS MD").trim(),
+      location: getFieldValue("location", "HAÏTI").trim(),
+      age: Number.isFinite(age) ? age : 14,
+      prefix: getFieldValue("prefix", ".").trim() || ".",
+      footer:
+        getFieldValue(
+          "footer",
+          "🦁 TECH BY TOPFEROS MD 🐑"
+        ).trim(),
+      mode: getFieldValue("mode", "Public"),
+      language: getFieldValue("botLanguage", state.language)
+    };
+  }
+
+  function collectAutomationSettings() {
+    const antiBlockText = getFieldValue("antiBlockNumbers", "");
+
+    const antiBlockNumbers = antiBlockText
+      .split(/\r?\n|,/)
+      .map((number) => number.trim())
+      .filter(Boolean);
+
+    return {
+      alwaysOnline: Boolean(getFieldValue("alwaysOnline")),
+      fakeTyping: Boolean(getFieldValue("fakeTyping")),
+      fakeRecording: Boolean(getFieldValue("fakeRecording")),
+      autoStatusSeen: Boolean(getFieldValue("autoStatusSeen")),
+      autoStatusReply: Boolean(getFieldValue("autoStatusReply")),
+      autoStatusReact: Boolean(getFieldValue("autoStatusReact")),
+      antiDelete: Boolean(getFieldValue("antiDelete")),
+      antiCall: Boolean(getFieldValue("antiCall")),
+      antiBug: Boolean(getFieldValue("antiBug")),
+      antiBotFilter: Boolean(getFieldValue("antiBotFilter")),
+      antiDeleteMode: getFieldValue("antiDeleteMode", "private"),
+      antiBotAction: getFieldValue("antiBotAction", "Delete"),
+      antiBlockNumbers
+    };
+  }
+
+  function collectGroupSettings() {
+    const warningLimit = Number(
+      getFieldValue("warningLimit", 3)
+    );
+
+    return {
+      enabled: Boolean(getFieldValue("groupAutomationEnabled")),
+      groupGid: getFieldValue("groupGid").trim(),
+      timezone: getFieldValue(
+        "timezone",
+        "Atlantic/Port-au-Prince"
+      ),
+      closeTime: getFieldValue("closeTime", "15:00"),
+      openTime: getFieldValue("openTime", "06:00"),
+      principles: getFieldValue("groupPrinciples"),
+      warningLimit: Number.isFinite(warningLimit)
+        ? warningLimit
+        : 3
+    };
+  }
+
+  function collectSettings() {
+    return {
+      bot: collectBotSettings(),
+      automation: collectAutomationSettings(),
+      groupAutomation: collectGroupSettings()
+    };
+  }
+
+  function validateSettings(settings) {
+    const bot = settings.bot;
+
+    if (!bot.name) {
+      return "BOT NAME cannot be empty.";
+    }
+
+    if (!bot.prefix) {
+      return "PREFIX cannot be empty.";
+    }
+
+    if (!bot.footer) {
+      return "FOOTER cannot be empty.";
+    }
+
+    if (!["Public", "Privé", "Group"].includes(bot.mode)) {
+      return "Invalid bot mode.";
+    }
 
     if (
-      sessionId
+      !Number.isFinite(Number(bot.age)) ||
+      Number(bot.age) < 1
     ) {
+      return "AGE must be a valid number.";
+    }
+
+    return null;
+  }
+
+  async function loadPanelData() {
+    const data = await request(API.panel);
+
+    state.panelData = data;
+
+    if (data?.language) {
+      state.language = data.language;
+    }
+
+    if (data?.languages) {
+      state.languages = data.languages;
+    }
+
+    return data;
+  }
+
+  async function loadLanguages() {
+    const data = await request(API.languages);
+
+    state.languages =
+      data?.languages ||
+      data?.available ||
+      data ||
+      [];
+
+    renderLanguageOptions();
+
+    return state.languages;
+  }
+
+  function renderLanguageOptions() {
+    const selects = $$(
+      "#language, #panelLanguage, #botLanguage, [data-language-select]"
+    );
+
+    if (!selects.length) return;
+
+    const languages = state.languages;
+
+    if (!Array.isArray(languages)) return;
+
+    selects.forEach((select) => {
+      const current = select.value || state.language;
+
+      select.innerHTML = "";
+
+      languages.forEach((language) => {
+        const value =
+          typeof language === "string"
+            ? language
+            : language.code || language.id || language.value;
+
+        const label =
+          typeof language === "string"
+            ? language
+            : language.name || language.label || value;
+
+        if (!value) return;
+
+        const option = document.createElement("option");
+
+        option.value = value;
+        option.textContent = label;
+
+        if (value === current || value === state.language) {
+          option.selected = true;
+        }
+
+        select.appendChild(option);
+      });
+    });
+  }
+
+  async function changeLanguage(language) {
+    if (!language) return;
+
+    state.language = language;
+
+    try {
+      await request(API.language, {
+        method: "POST",
+        body: JSON.stringify({
+          sessionId: state.sessionId,
+          language
+        })
+      });
+
+      await translatePage();
+
+      notify("Language updated.", "success");
+    } catch (error) {
+      notify(error.message, "error");
+    }
+  }
+
+  async function translatePage() {
+    const elements = $$("[data-i18n]");
+
+    if (!elements.length) return;
+
+    for (const element of elements) {
+      const key = element.dataset.i18n;
+
+      if (!key) continue;
 
       try {
+        const result = await request(API.translate, {
+          method: "POST",
+          body: JSON.stringify({
+            key,
+            language: state.language
+          })
+        });
 
-        const settingsResponse =
-          await fetch(
-            `/api/settings?sessionId=${encodeURIComponent(
-              sessionId
-            )}`,
-            {
-              cache:
-                "no-store"
-            }
-          );
-
-
-        const settingsData =
-          await settingsResponse.json();
-
-
-        if (
-          settingsResponse.ok &&
-          settingsData.success
-        ) {
-
-          settings =
-            settingsData.settings ||
-            settings;
-
-
-          botInformation =
-            settingsData.botInformation ||
-            botInformation;
-
+        if (result?.text !== undefined) {
+          element.textContent = result.text;
         }
+      } catch {
+        // Keep original text if translation is unavailable.
+      }
+    }
+  }
 
-      } catch (settingsError) {
+  async function verifySession(sessionId = state.sessionId) {
+    if (!sessionId) {
+      state.verified = false;
+      setConnectionStatus(false);
+      return false;
+    }
 
-        console.warn(
-          "Could not load settings after verification:",
-          settingsError
-        );
+    setSessionId(sessionId);
 
+    try {
+      const data = await request(
+        API.session(state.sessionId)
+      );
+
+      const connected =
+        data?.connected === true ||
+        data?.session?.connected === true ||
+        data?.status === "connected";
+
+      state.verified = Boolean(
+        data?.exists !== false
+      );
+
+      setConnectionStatus(connected);
+
+      return state.verified;
+    } catch (error) {
+      state.verified = false;
+      setConnectionStatus(false);
+
+      notify(error.message, "error");
+
+      return false;
+    }
+  }
+
+  async function verifyNumberAndCode(number, code) {
+    if (!number || !code) {
+      notify("NUMBER and CODE are required.", "error");
+      return false;
+    }
+
+    try {
+      const data = await request(API.verify, {
+        method: "POST",
+        body: JSON.stringify({
+          number,
+          code,
+          sessionId: state.sessionId
+        })
+      });
+
+      if (data?.sessionId) {
+        setSessionId(data.sessionId);
       }
 
+      state.verified = true;
+
+      notify("Session verified successfully.", "success");
+
+      return true;
+    } catch (error) {
+      state.verified = false;
+      notify(error.message, "error");
+      return false;
     }
-
-
-    /*
-     * ============================================================
-     * OPEN DASHBOARD
-     * ============================================================
-     */
-
-    openDashboard();
-
-
-  } catch (error) {
-
-    console.error(
-      "Verification error:",
-      error
-    );
-
-
-    showLoginMessage(
-      "❌ Erè koneksyon ak server la.",
-      true
-    );
-
-
-  } finally {
-
-    if (button) {
-
-      button.disabled =
-        false;
-
-      button.textContent =
-        "🔓 VERIFY / CONNECT";
-
-    }
-
   }
 
-}
+  async function loadSettings() {
+    if (!state.sessionId) {
+      return null;
+    }
 
-
-/* =========================
-   LOGIN MESSAGE
-========================= */
-
-function showLoginMessage(
-  message,
-  error = false
-) {
-
-  const element =
-    $("loginMessage");
-
-
-  if (!element) {
-
-    return;
-
-  }
-
-
-  element.textContent =
-    message;
-
-
-  element.className =
-    "message " +
-    (
-      error
-        ? "error"
-        : "success"
+    const data = await request(
+      `${API.settings}?sessionId=${encodeURIComponent(
+        state.sessionId
+      )}`
     );
 
-}
+    const settings =
+      data?.settings ||
+      data?.data ||
+      data;
 
+    if (settings?.bot) {
+      fillBotSettings(settings.bot);
+    }
 
-/* =========================
-   OPEN DASHBOARD
-========================= */
-async function openDashboard() {
+    if (settings?.automation) {
+      fillAutomationSettings(settings.automation);
+    }
 
-  stopConnectionMonitor();
+    if (settings?.groupAutomation) {
+      fillGroupSettings(settings.groupAutomation);
+    }
 
+    if (settings?.language) {
+      state.language = settings.language;
+    }
 
-  hideAllScreens();
+    bindSwitches();
 
+    return settings;
+  }
 
-  $("dashboard")?.classList.remove(
-    "hidden"
-  );
+  async function saveSettings() {
+    if (state.saving) return;
 
+    if (!state.sessionId) {
+      notify("No session selected.", "error");
+      return false;
+    }
 
-  renderBotInformation();
+    const settings = collectSettings();
+    const validationError = validateSettings(settings);
 
+    if (validationError) {
+      notify(validationError, "error");
+      return false;
+    }
 
-  renderSettings(
-    "generalSettings",
-    groups.general
-  );
+    state.saving = true;
 
+    const buttons = $$(
+      "[data-action='save'], #saveButton"
+    );
 
-  renderSettings(
-    "protectionSettings",
-    groups.protection
-  );
+    buttons.forEach((button) => {
+      setLoading(button, true, "Saving...");
+    });
 
+    try {
+      await request(API.settings, {
+        method: "POST",
+        body: JSON.stringify({
+          sessionId: state.sessionId,
+          bot: settings.bot,
+          automation: settings.automation,
+          groupAutomation: settings.groupAutomation,
+          settings
+        })
+      });
 
-  renderSettings(
-    "statusSettings",
-    groups.status
-  );
+      notify("Settings saved successfully.", "success");
 
+      return true;
+    } catch (error) {
+      notify(error.message, "error");
+      return false;
+    } finally {
+      state.saving = false;
 
-  renderSettings(
-    "groupSettings",
-    groups.group
-  );
+      buttons.forEach((button) => {
+        setLoading(button, false);
+      });
+    }
+  }
 
+  async function disconnectSession() {
+    if (!state.sessionId) {
+      notify("No session selected.", "error");
+      return false;
+    }
 
-  renderSettings(
-    "aiSettings",
-    groups.ai
-  );
+    const buttons = $$(
+      "[data-action='disconnect'], #disconnectButton"
+    );
 
+    buttons.forEach((button) => {
+      setLoading(button, true, "Disconnecting...");
+    });
+
+    try {
+      await request(API.disconnect, {
+        method: "POST",
+        body: JSON.stringify({
+          sessionId: state.sessionId
+        })
+      });
+
+      setConnectionStatus(false);
+
+      notify(
+        "Disconnected. Session credentials were kept.",
+        "success"
+      );
+
+      return true;
+    } catch (error) {
+      notify(error.message, "error");
+      return false;
+    } finally {
+      buttons.forEach((button) => {
+        setLoading(button, false);
+      });
+    }
+  }
+
+  async function reconnectSession() {
+    if (!state.sessionId) {
+      notify("No session selected.", "error");
+      return false;
+    }
+
+    const buttons = $$(
+      "[data-action='connect'], #connectButton, #reconnectButton"
+    );
+
+    buttons.forEach((button) => {
+      setLoading(button, true, "Connecting...");
+    });
+
+    try {
+      await request(API.reconnect, {
+        method: "POST",
+        body: JSON.stringify({
+          sessionId: state.sessionId
+        })
+      });
+
+      notify(
+        "Reconnect requested.",
+        "success"
+      );
+
+      await new Promise((resolve) =>
+        setTimeout(resolve, 1500)
+      );
+
+      await verifySession();
+
+      return true;
+    } catch (error) {
+      notify(error.message, "error");
+      return false;
+    } finally {
+      buttons.forEach((button) => {
+        setLoading(button, false);
+      });
+    }
+  }
+
+  function bindButtons() {
+    $$("[data-action]").forEach((button) => {
+      if (button.dataset.bound === "true") return;
+
+      button.dataset.bound = "true";
+
+      const action = button.dataset.action;
+
+      if (action === "save") {
+        button.addEventListener("click", saveSettings);
+      }
+
+      if (action === "disconnect") {
+        button.addEventListener("click", disconnectSession);
+      }
+
+      if (action === "connect") {
+        button.addEventListener("click", reconnectSession);
+      }
+
+      if (action === "reconnect") {
+        button.addEventListener("click", reconnectSession);
+      }
+    });
+
+    const saveButton = $("#saveButton");
+
+    if (saveButton && !saveButton.dataset.bound) {
+      saveButton.dataset.bound = "true";
+      saveButton.addEventListener("click", saveSettings);
+    }
+
+    const disconnectButton = $("#disconnectButton");
+
+    if (
+      disconnectButton &&
+      !disconnectButton.dataset.bound
+    ) {
+      disconnectButton.dataset.bound = "true";
+      disconnectButton.addEventListener(
+        "click",
+        disconnectSession
+      );
+    }
+
+    const reconnectButton = $("#reconnectButton");
+
+    if (
+      reconnectButton &&
+      !reconnectButton.dataset.bound
+    ) {
+      reconnectButton.dataset.bound = "true";
+      reconnectButton.addEventListener(
+        "click",
+        reconnectSession
+      );
+    }
+  }
+
+  function bindLanguageControls() {
+    $$(
+      "#language, #panelLanguage, [data-language-select]"
+    ).forEach((select) => {
+      if (select.dataset.bound === "true") return;
+
+      select.dataset.bound = "true";
+
+      select.addEventListener("change", () => {
+        changeLanguage(select.value);
+      });
+    });
+  }
+
+  function bindAutoRefresh() {
+    window.setInterval(async () => {
+      if (!state.sessionId) return;
+
+      try {
+        await verifySession();
+      } catch {
+        // Do not interrupt the panel.
+      }
+    }, 5000);
+  }
+
+  async function initialize() {
+    setSessionId(getSessionId());
+
+    bindButtons();
+    bindSwitches();
+    bindLanguageControls();
+
+    try {
+      await loadPanelData();
+    } catch {
+      // Panel data can be loaded later.
+    }
+
+    try {
+      await loadLanguages();
+    } catch {
+      // Language endpoint may not be ready yet.
+    }
+
+    bindLanguageControls();
+
+    if (state.sessionId) {
+      const verified = await verifySession();
+
+      if (verified) {
+        try {
+          await loadSettings();
+        } catch (error) {
+          notify(error.message, "error");
+        }
+      }
+    }
+
+    await translatePage();
+
+    bindButtons();
+    bindSwitches();
+    bindLanguageControls();
+    bindAutoRefresh();
+  }
 
   /*
-   * 🤖 AI TRANSLATION
-   *
-   * Nou tann dashboard la fin
-   * render settings yo avan AI
-   * tradui tout interface la.
+   * Public functions.
+   * HTML buttons can call these directly.
    */
-  await translatePanelUI();
 
-}
+  window.TOPFEROS = {
+    state,
 
+    initialize,
 
-/* =========================
-   BOT INFORMATION
-========================= */
+    getSessionId,
+    setSessionId,
 
-function renderBotInformation() {
+    verifySession,
+    verifyNumberAndCode,
 
-  if (
-    $("botName")
-  ) {
+    loadPanelData,
+    loadLanguages,
+    loadSettings,
 
-    $("botName").value =
-      botInformation.name ||
-      "TOPFEROS MD";
+    saveSettings,
 
-  }
+    connect: reconnectSession,
+    reconnect: reconnectSession,
+    disconnect: disconnectSession,
 
+    changeLanguage,
+    translatePage,
 
-  if (
-    $("botNumber")
-  ) {
+    collectSettings,
 
-    $("botNumber").value =
-      botInformation.number ||
-      "";
+    notify
+  };
 
-  }
-
-
-  if (
-    $("botPrefix")
-  ) {
-
-    $("botPrefix").value =
-      botInformation.prefix ||
-      ".";
-
-  }
-
+  // Backward-friendly global functions for HTML onclick handlers.
+  window.verifySettings = verifySession;
+  window.saveSettings = saveSettings;
+  window.reconnectSettings = reconnectSession;
+  window.disconnectSettings = disconnectSession;
+  window.selectSettingsLanguage = changeLanguage;
 
   if (
-    $("botMode")
+    document.readyState === "loading"
   ) {
-
-    updateModeDisplay();
-
-  }
-
-}
-
-
-/* =========================
-   MODE DISPLAY
-========================= */
-
-function updateModeDisplay() {
-
-  if (
-    !$("botMode")
-  ) {
-
-    return;
-
-  }
-
-
-  $("botMode").value =
-    settings.privateMode
-      ? "Private"
-      : "Public";
-
-}
-
-
-/* =========================
-   RENDER SETTINGS
-========================= */
-
-function renderSettings(
-  containerId,
-  list
-) {
-
-  const container =
-    $(containerId);
-
-
-  if (!container) {
-
-    return;
-
-  }
-
-
-  container.innerHTML =
-    "";
-
-
-  for (
-    const [key, label]
-    of list
-  ) {
-
-    const row =
-      document.createElement(
-        "div"
-      );
-
-
-    row.className =
-      "setting";
-
-
-    const span =
-      document.createElement(
-        "span"
-      );
-
-
-    span.textContent =
-      label;
-
-
-    const labelElement =
-      document.createElement(
-        "label"
-      );
-
-
-    labelElement.className =
-      "switch";
-
-
-    const input =
-      document.createElement(
-        "input"
-      );
-
-
-    input.type =
-      "checkbox";
-
-
-    input.dataset.setting =
-      key;
-
-
-    input.checked =
-      !!settings[key];
-
-
-    const slider =
-      document.createElement(
-        "span"
-      );
-
-
-    slider.className =
-      "slider";
-
-
-    labelElement.appendChild(
-      input
+    document.addEventListener(
+      "DOMContentLoaded",
+      initialize,
+      { once: true }
     );
-
-
-    labelElement.appendChild(
-      slider
-    );
-
-
-    row.appendChild(
-      span
-    );
-
-
-    row.appendChild(
-      labelElement
-    );
-
-
-    container.appendChild(
-      row
-    );
-
-
-    input.addEventListener(
-      "change",
-      () => {
-
-        const settingKey =
-          input.dataset.setting;
-
-
-        settings[settingKey] =
-          input.checked;
-
-
-        if (
-          settingKey ===
-            "publicMode" &&
-          input.checked
-        ) {
-
-          settings.privateMode =
-            false;
-
-          refreshSwitch(
-            "privateMode"
-          );
-
-        }
-
-
-        if (
-          settingKey ===
-            "privateMode" &&
-          input.checked
-        ) {
-
-          settings.publicMode =
-            false;
-
-          refreshSwitch(
-            "publicMode"
-          );
-
-        }
-
-
-        if (
-          settingKey ===
-            "groupClose" &&
-          input.checked
-        ) {
-
-          settings.groupOpen =
-            false;
-
-          refreshSwitch(
-            "groupOpen"
-          );
-
-        }
-
-
-        if (
-          settingKey ===
-            "groupOpen" &&
-          input.checked
-        ) {
-
-          settings.groupClose =
-            false;
-
-          refreshSwitch(
-            "groupClose"
-          );
-
-        }
-
-
-        updateModeDisplay();
-
-      }
-    );
-
+  } else {
+    initialize();
   }
-
-}
-
-
-/* =========================
-   REFRESH SWITCH
-========================= */
-
-function refreshSwitch(
-  key
-) {
-
-  const input =
-    document.querySelector(
-      `input[data-setting="${key}"]`
-    );
-
-
-  if (input) {
-
-    input.checked =
-      !!settings[key];
-
-  }
-
-}
-
-
-/* =========================
-   SAVE SETTINGS
-========================= */
-
-async function saveSettings() {
-
-  const saveButton =
-    $("saveButton");
-
-
-  const saveMessage =
-    $("saveMessage");
-
-
-  const name =
-    $("botName")
-      ?.value
-      .trim() ||
-    "TOPFEROS MD";
-
-
-  const prefix =
-    $("botPrefix")
-      ?.value
-      .trim() ||
-    ".";
-
-
-  botInformation.name =
-    name;
-
-
-  botInformation.prefix =
-    prefix;
-
-
-  if (!sessionId) {
-
-    if (saveMessage) {
-
-      saveMessage.textContent =
-        "❌ Session bot la pa jwenn.";
-
-      saveMessage.className =
-        "message error";
-
-    }
-
-    return;
-
-  }
-
-
-  if (saveButton) {
-
-    saveButton.disabled =
-      true;
-
-    saveButton.textContent =
-      "⏳ SAVING...";
-
-  }
-
-
-  if (saveMessage) {
-
-    saveMessage.textContent =
-      "";
-
-  }
-
-
-  try {
-
-    const response =
-      await fetch(
-        "/api/settings",
-        {
-          method: "POST",
-
-          headers: {
-            "Content-Type":
-              "application/json"
-          },
-
-          body: JSON.stringify({
-            sessionId,
-            settings,
-            botInformation
-          })
-
-        }
-      );
-
-
-    const data =
-      await response.json();
-
-
-    if (
-      !response.ok ||
-      !data.success
-    ) {
-
-      throw new Error(
-        data.error ||
-        "SAVE_FAILED"
-      );
-
-    }
-
-
-    settings =
-      data.settings ||
-      settings;
-
-
-    botInformation =
-      data.botInformation ||
-      botInformation;
-
-
-    renderBotInformation();
-
-
-    if (saveMessage) {
-
-      saveMessage.textContent =
-        "✅ Settings yo sove avèk siksè.";
-
-      saveMessage.className =
-        "message success";
-
-    }
-
-
-  } catch (error) {
-
-    console.error(
-      "Save settings error:",
-      error
-    );
-
-
-    if (saveMessage) {
-
-      saveMessage.textContent =
-        "❌ Pa kapab sove settings yo.";
-
-      saveMessage.className =
-        "message error";
-
-    }
-
-  } finally {
-
-    if (saveButton) {
-
-      saveButton.disabled =
-        false;
-
-      saveButton.textContent =
-        "💾 SAVE SETTINGS";
-
-    }
-
-  }
-
-}
-
-
-/* =========================
-   LOGOUT
-========================= */
-
-async function logoutPanel() {
-
-  try {
-
-    if (
-      sessionId
-    ) {
-
-      await fetch(
-        "/api/logout",
-        {
-          method: "POST",
-
-          headers: {
-            "Content-Type":
-              "application/json"
-          },
-
-          body: JSON.stringify({
-            sessionId
-          })
-
-        }
-      );
-
-    }
-
-  } catch (error) {
-
-    console.error(
-      "Logout error:",
-      error
-    );
-
-  }
-
-
-  settings = {};
-
-  botInformation = {};
-
-  sessionId = "";
-
-
-  stopPairingCooldown();
-
-  stopConnectionMonitor();
-
-
-  window.location.href =
-    window.location.pathname;
-
-}
-
-
-/* =========================
-   SETTINGS CODE INPUT
-========================= */
-
-function setupSettingsCodeInput() {
-
-  const input =
-    $("settingsCode");
-
-
-  if (!input) {
-
-    return;
-
-  }
-
-
-  input.addEventListener(
-    "input",
-    event => {
-
-      event.target.value =
-        event.target.value
-          .toUpperCase()
-          .replace(
-            /[^A-Z0-9]/g,
-            ""
-          )
-          .slice(0, 6);
-
-    }
-  );
-
-
-  input.addEventListener(
-    "keydown",
-    event => {
-
-      if (
-        event.key ===
-        "Enter"
-      ) {
-
-        verifySettings();
-
-      }
-
-    }
-  );
-
-}
-
-
-/* =========================
-   GLOBAL FUNCTIONS
-========================= */
-
-window.selectLanguage =
-  selectLanguage;
-
-
-window.requestPairingCode =
-  requestPairingCode;
-
-
-window.copyPairingCode =
-  copyPairingCode;
-
-
-window.verifySettings =
-  verifySettings;
-
-
-window.saveSettings =
-  saveSettings;
-
-
-window.logoutPanel =
-  logoutPanel;
-
-
-window.backToConnect =
-  backToConnect;
+})();
