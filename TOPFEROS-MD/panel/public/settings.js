@@ -1568,52 +1568,7 @@ async function verifySession() {
     return false;
   }
 }
-  try {
-
-    const response =
-      await fetch(
-        `/api/auth?session=${encodeURIComponent(
-          sessionId
-        )}`,
-        {
-          method: "GET",
-          cache: "no-store"
-        }
-      );
-
-
-    if (
-      !response.ok
-    ) {
-
-      return false;
-
-    }
-
-
-    const result =
-      await response.json();
-
-
-    return (
-      result.success === true &&
-      result.connected === true
-    );
-
-  } catch (error) {
-
-    console.error(
-      "❌ SETTINGS AUTH ERROR:",
-      error
-    );
-
-    return false;
-
-  }
-
-}
-
-
+  
 // ============================================================
 // 🔒 DISABLE SAVE
 // ============================================================
