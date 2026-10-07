@@ -21,6 +21,9 @@ const {
 const config =
   require("./config");
 
+const sessionManager =
+  require("./sessionManager");
+
 const {
   handleMessage
 } = require("./messageHandler");
@@ -74,10 +77,53 @@ if (
 |--------------------------------------------------------------------------
 | ACTIVE SESSIONS
 |--------------------------------------------------------------------------
+|
+| IMPORTANT:
+| src/sessionManager.js is the single
+| source of truth for active V2 sessions.
+|
+| Credentials remain on disk when a session
+| is removed from active memory.
+|--------------------------------------------------------------------------
 */
 
-const activeSessions =
-  new Map();
+const activeSessions = {
+  get(sessionId) {
+    return sessionManager.getSession(
+      sessionId
+    );
+  },
+
+  set(sessionId, session) {
+    return sessionManager.registerSession(
+      sessionId,
+      session
+    );
+  },
+
+  delete(sessionId) {
+    return Boolean(
+      sessionManager.removeSession(
+        sessionId
+      )
+    );
+  },
+
+  has(sessionId) {
+    return sessionManager.hasSession(
+      sessionId
+    );
+  },
+
+  keys() {
+    return sessionManager
+      .getActiveSessions()
+      .map(
+        (session) =>
+          session.sessionId
+      )[Symbol.iterator]();
+  }
+};
 
 const reconnectTimers =
   new Map();
