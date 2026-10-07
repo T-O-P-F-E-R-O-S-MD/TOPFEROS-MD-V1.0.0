@@ -1,363 +1,366 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8">
-
   <meta
     name="viewport"
     content="width=device-width, initial-scale=1.0"
   >
 
-  <meta
-    name="theme-color"
-    content="#000000"
-  >
+  <title>TOPFEROS MD V2.0.0</title>
 
-  <title>TOPFEROS MD PANEL</title>
+  <meta
+    name="description"
+    content="TOPFEROS MD V2.0.0 Settings Panel"
+  >
 
   <link
     rel="stylesheet"
-    href="/style.css?v=31"
+    href="/style.css"
   >
 </head>
 
 <body>
 
-  <main class="container">
+  <!-- =====================================================
+       TOPFEROS MD V2.0.0
+       MAIN PANEL
+       ===================================================== -->
 
-    <!-- =========================
-         MAIN LOGO
-    ========================== -->
+  <main class="panel-page">
 
-    <img
-      id="mainLogo"
-      src="/assets/logo.png"
-      class="logo"
-      alt="TOPFEROS MD"
-    >
+    <!-- BACKGROUND -->
+    <div class="panel-background" aria-hidden="true"></div>
 
-    <h1>🔗 TOPFEROS MD PANEL 🦁</h1>
+    <!-- PANEL -->
+    <section class="panel-card">
 
+      <!-- LOGO -->
+      <div class="panel-logo-wrapper">
+        <img
+          id="panelLogo"
+          class="panel-logo"
+          src="/assets/logo.png"
+          alt="TOPFEROS MD"
+          onerror="this.style.display='none'"
+        >
+      </div>
 
-    <!-- =========================
-         1. LANGUAGE
-    ========================== -->
+      <!-- HEADER -->
+      <header class="panel-header">
 
-    <section
-      id="languageScreen"
-      class="screen"
-    >
+        <h1>
+          🦁 TOPFEROS MD 🐑
+        </h1>
 
-      <h2>🌐 Language</h2>
+        <p class="panel-version">
+          V2.0.0
+        </p>
 
-      <p class="description">
-        Anglais | Français | Espagnol
-      </p>
+        <div
+          id="connectionStatus"
+          class="connection-status disconnected"
+          data-connection-status
+        >
+          🔴 DISCONNECTED
+        </div>
 
-      <button
-        type="button"
-        onclick="selectLanguage('en')"
-      >
-        🇬🇧 Anglais
-      </button>
-
-      <button
-        type="button"
-        onclick="selectLanguage('fr')"
-      >
-        🇫🇷 Français
-      </button>
-
-      <button
-        type="button"
-        onclick="selectLanguage('es')"
-      >
-        🇪🇸 Espagnol
-      </button>
-
-    </section>
+      </header>
 
 
-    <!-- =========================
-         2. NUMBER + CODE
-    ========================== -->
+      <!-- =================================================
+           LANGUAGE
+           ================================================= -->
 
-    <section
-      id="connectScreen"
-      class="screen hidden"
-    >
+      <section class="panel-section">
 
-      <h2>🔗 TOPFEROS MD PANEL 🦁</h2>
+        <div class="section-title">
+          🌐 LANGUAGE
+        </div>
 
-      <div class="loginNumberRow">
+        <div class="field-group">
 
-        <div class="phoneField">
+          <label for="panelLanguage">
+            PANEL LANGUAGE
+          </label>
 
-          <label for="phoneNumber">
-            📱 Number
+          <select
+            id="panelLanguage"
+            data-language-select
+          >
+            <option value="en">
+              🇺🇸 English
+            </option>
+
+            <option value="fr">
+              🇫🇷 Français
+            </option>
+
+            <option value="es">
+              🇪🇸 Español
+            </option>
+
+            <option value="es_do">
+              🇩🇴 Español Dominicano
+            </option>
+
+            <option value="pt">
+              🇵🇹 Português
+            </option>
+
+            <option value="zh">
+              🇨🇳 中文
+            </option>
+
+            <option value="ht">
+              🇭🇹 Kreyòl Ayisyen
+            </option>
+          </select>
+
+        </div>
+
+      </section>
+
+
+      <!-- =================================================
+           SESSION
+           ================================================= -->
+
+      <section class="panel-section">
+
+        <div class="section-title">
+          🔐 SESSION
+        </div>
+
+        <div class="field-group">
+
+          <label for="ownerNumber">
+            NUMBER
           </label>
 
           <input
-            id="phoneNumber"
-            type="tel"
-            inputmode="numeric"
-            autocomplete="tel"
-            placeholder="509XXXXXXXX"
+            id="ownerNumber"
+            type="text"
+            inputmode="tel"
+            autocomplete="off"
+            placeholder="WhatsApp number"
           >
 
         </div>
 
-        <div
-          class="phoneDecoration"
-          aria-hidden="true"
-        >
-          ✦ ━ 📱 ━ 🔗 ━ 🟢 ━ 🦁 ✦
+        <div class="field-group">
+
+          <label for="sessionId">
+            SESSION ID
+          </label>
+
+          <input
+            id="sessionId"
+            type="text"
+            autocomplete="off"
+            placeholder="Session ID"
+          >
+
         </div>
 
-      </div>
-
-
-      <!-- =========================
-           SETTINGS CODE
-      ========================== -->
-
-      <label for="settingsCode">
-        🔐 Code
-      </label>
-
-      <input
-        id="settingsCode"
-        type="text"
-        maxlength="6"
-        minlength="6"
-        autocomplete="off"
-        autocapitalize="characters"
-        placeholder="RJ5JMJ"
-      >
-
-
-      <!-- =========================
-           COPY CODE
-      ========================== -->
-
-      <button
-        id="copyCodeButton"
-        type="button"
-        class="secondaryButton"
-        onclick="copySettingsCode()"
-      >
-        📋 COPY CODE
-      </button>
-
-
-      <!-- =========================
-           VERIFY
-      ========================== -->
-
-      <button
-        id="verifyButton"
-        type="button"
-        onclick="verifySettingsCode()"
-      >
-        🔐 VERIFY
-      </button>
-
-
-      <!-- =========================
-           CONNECTION STATUS
-      ========================== -->
-
-      <div
-        id="connectStatus"
-        class="statusBox"
-      >
-        ⚪ NOT CONNECTED
-      </div>
-
-      <p
-        id="pairingMessage"
-        class="message"
-      ></p>
-
-
-      <!-- =========================
-           ONLY SETTINGS LINK
-      ========================== -->
-
-      <button
-        id="openSettingsButton"
-        class="secondaryButton"
-        type="button"
-        onclick="window.location.href='/setting'"
-      >
-        ⚙️ SETTINGS PANEL
-      </button>
-
-    </section>
-
-
-    <!-- =========================
-         3. SETTINGS PANEL
-    ========================== -->
-
-    <section
-      id="dashboard"
-      class="hidden"
-    >
-
-      <!-- =========================
-           SETTINGS HEADER
-      ========================== -->
-
-      <div class="dashboardHeader">
-
-        <img
-          src="/assets/logo.png"
-          class="dashboardLogo"
-          alt="TOPFEROS MD"
+        <button
+          type="button"
+          class="panel-button primary"
+          data-action="connect"
+          id="connectButton"
         >
+          🟢 CONNECT
+        </button>
 
-        <h2>
-          ⚙️ TOPFEROS MD PANEL SETTINGS 🦁
-        </h2>
+        <button
+          type="button"
+          class="panel-button danger"
+          data-action="disconnect"
+          id="disconnectButton"
+          disabled
+        >
+          🔴 DISCONNECT
+        </button>
 
-        <p id="connectionState">
-          🟢 CONNECTED | 🔴 NOT CONNECTED
-        </p>
-
-      </div>
-
-
-      <!-- =========================
-           BASIC INFO
-      ========================== -->
-
-      <div class="card">
-
-        <h3>
-          -------------- BASIC INFO -------------
-        </h3>
-
-        <div class="infoGrid">
-
-          <label>
-            OWNER NUMBER
-
-            <input
-              id="ownerNumberVisible"
-              type="text"
-              value="TRUE"
-              readonly
-            >
-          </label>
+      </section>
 
 
-          <label>
+      <!-- =================================================
+           BOT INFORMATION
+           ================================================= -->
+
+      <section class="panel-section">
+
+        <div class="section-title">
+          ⚡ INFO BASIC
+        </div>
+
+        <div class="field-group">
+
+          <label for="botName">
             BOT NAME
-
-            <input
-              id="botName"
-              type="text"
-              value="TOPFEROS MD"
-              autocomplete="off"
-            >
           </label>
 
+          <input
+            id="botName"
+            type="text"
+            value="TOPFEROS MD"
+            autocomplete="off"
+          >
 
-          <label>
+        </div>
+
+        <div class="field-group">
+
+          <label for="location">
             LOCATION
-
-            <input
-              id="botLocation"
-              type="text"
-              value="TOPFEROS CHINWA"
-              autocomplete="off"
-            >
           </label>
 
+          <input
+            id="location"
+            type="text"
+            value="HAÏTI"
+            autocomplete="off"
+          >
 
-          <label>
-            AGE
+        </div>
+
+        <div class="field-row">
+
+          <div class="field-group">
+
+            <label for="age">
+              AGE
+            </label>
 
             <input
-              id="botAge"
+              id="age"
               type="number"
-              value="20"
-              min="0"
-              max="100"
+              min="1"
+              value="14"
             >
-          </label>
 
+          </div>
 
-          <label>
-            PREFIX
+          <div class="field-group">
+
+            <label for="prefix">
+              PREFIX
+            </label>
 
             <input
-              id="botPrefix"
+              id="prefix"
               type="text"
               value="."
               maxlength="5"
-              autocomplete="off"
             >
-          </label>
 
-
-          <label>
-            FOOTER
-
-            <input
-              id="botFooter"
-              type="text"
-              value="🦁 TECH BY TOPFEROS MD 🐑"
-              autocomplete="off"
-            >
-          </label>
-
-
-          <label>
-            MODE
-
-            <select id="botMode">
-
-              <option value="public">
-                PUBLIC
-              </option>
-
-              <option value="private">
-                PRIVATE
-              </option>
-
-              <option value="group">
-                GROUP
-              </option>
-
-            </select>
-
-          </label>
+          </div>
 
         </div>
 
-      </div>
+
+        <div class="field-group">
+
+          <label for="mode">
+            MODE
+          </label>
+
+          <select id="mode">
+
+            <option value="Public">
+              Public
+            </option>
+
+            <option value="Privé">
+              Privé
+            </option>
+
+            <option value="Group">
+              Group
+            </option>
+
+          </select>
+
+        </div>
 
 
-      <!-- =========================
-           SYSTEM AUTOMATION
-      ========================== -->
+        <div class="field-group">
 
-      <div class="card">
+          <label for="footer">
+            FOOTER
+          </label>
 
-        <h3>
-          ⚡ SYSTEM AUTOMATION
-        </h3>
+          <input
+            id="footer"
+            type="text"
+            value="🦁 TECH BY TOPFEROS MD 🐑"
+            autocomplete="off"
+          >
+
+        </div>
+
+        <div class="field-group">
+
+          <label for="botLanguage">
+            BOT LANGUAGE
+          </label>
+
+          <select
+            id="botLanguage"
+          >
+
+            <option value="en">
+              🇺🇸 English
+            </option>
+
+            <option value="fr">
+              🇫🇷 Français
+            </option>
+
+            <option value="es">
+              🇪🇸 Español
+            </option>
+
+            <option value="es_do">
+              🇩🇴 Español Dominicano
+            </option>
+
+            <option value="pt">
+              🇵🇹 Português
+            </option>
+
+            <option value="zh">
+              🇨🇳 中文
+            </option>
+
+            <option value="ht">
+              🇭🇹 Kreyòl Ayisyen
+            </option>
+
+          </select>
+
+        </div>
+
+      </section>
 
 
-        <!-- Always Online -->
+      <!-- =================================================
+           AUTOMATION
+           ================================================= -->
 
-        <div class="settingRow">
+      <section class="panel-section">
+
+        <div class="section-title">
+          ⚡ AUTOMATISATION
+        </div>
+
+
+        <!-- ALWAYS ONLINE -->
+        <div class="switch-row">
 
           <span>
-            Always Online
+            🟢 Always Online
           </span>
 
           <label class="switch">
@@ -365,6 +368,7 @@
             <input
               id="alwaysOnline"
               type="checkbox"
+              checked
             >
 
             <span class="slider"></span>
@@ -374,12 +378,11 @@
         </div>
 
 
-        <!-- Fake Typing -->
-
-        <div class="settingRow">
+        <!-- FAKE TYPING -->
+        <div class="switch-row">
 
           <span>
-            Fake Typing
+            ⌨️ Fake Typing
           </span>
 
           <label class="switch">
@@ -396,12 +399,11 @@
         </div>
 
 
-        <!-- Fake Recording -->
-
-        <div class="settingRow">
+        <!-- FAKE RECORDING -->
+        <div class="switch-row">
 
           <span>
-            Fake Recording
+            🎙️ Fake Recording
           </span>
 
           <label class="switch">
@@ -418,19 +420,19 @@
         </div>
 
 
-        <!-- AI Chat -->
-
-        <div class="settingRow">
+        <!-- STATUS SEEN -->
+        <div class="switch-row">
 
           <span>
-            AI Chat
+            👁️ Auto Status Seen
           </span>
 
           <label class="switch">
 
             <input
-              id="aiChat"
+              id="autoStatusSeen"
               type="checkbox"
+              checked
             >
 
             <span class="slider"></span>
@@ -440,19 +442,19 @@
         </div>
 
 
-        <!-- Auto Status Like -->
-
-        <div class="settingRow">
+        <!-- STATUS REPLY -->
+        <div class="switch-row">
 
           <span>
-            Auto Status LIKE
+            💬 Auto Status Reply
           </span>
 
           <label class="switch">
 
             <input
-              id="autoStatusLike"
+              id="autoStatusReply"
               type="checkbox"
+              checked
             >
 
             <span class="slider"></span>
@@ -462,12 +464,76 @@
         </div>
 
 
-        <!-- Anti Call -->
-
-        <div class="settingRow">
+        <!-- STATUS REACT -->
+        <div class="switch-row">
 
           <span>
-            Anti Call
+            ❤️ Auto Status React
+          </span>
+
+          <label class="switch">
+
+            <input
+              id="autoStatusReact"
+              type="checkbox"
+              checked
+            >
+
+            <span class="slider"></span>
+
+          </label>
+
+        </div>
+
+
+        <!-- ANTI DELETE -->
+        <div class="switch-row">
+
+          <span>
+            🛡️ Anti Delete
+          </span>
+
+          <label class="switch">
+
+            <input
+              id="antiDelete"
+              type="checkbox"
+              checked
+            >
+
+            <span class="slider"></span>
+
+          </label>
+
+        </div>
+
+
+        <div class="field-group">
+
+          <label for="antiDeleteMode">
+            ANTI DELETE MODE
+          </label>
+
+          <select id="antiDeleteMode">
+
+            <option value="private">
+              An privé
+            </option>
+
+            <option value="same_chat">
+              Nan menm chat la
+            </option>
+
+          </select>
+
+        </div>
+
+
+        <!-- ANTI CALL -->
+        <div class="switch-row">
+
+          <span>
+            📞 Anti-Call
           </span>
 
           <label class="switch">
@@ -484,137 +550,11 @@
         </div>
 
 
-        <!-- Anti Delete -->
-
-        <div class="settingRow">
-
-          <span>
-            Anti Delete
-          </span>
-
-          <label class="switch">
-
-            <input
-              id="antiDelete"
-              type="checkbox"
-            >
-
-            <span class="slider"></span>
-
-          </label>
-
-        </div>
-
-
-        <!-- Anti Delete Action -->
-
-        <div class="settingRow">
+        <!-- ANTI BUG -->
+        <div class="switch-row">
 
           <span>
-            ANTI-DELETE
-          </span>
-
-          <select id="antiDeleteMode">
-
-            <option value="same-chat">
-              Same Chat
-            </option>
-
-            <option value="all-chats">
-              All Chats
-            </option>
-
-            <option value="owner">
-              Owner
-            </option>
-
-            <option value="group">
-              Group
-            </option>
-
-          </select>
-
-        </div>
-
-
-        <!-- Anti Delete Send To -->
-
-        <div class="settingRow">
-
-          <span>
-            SEND TO
-          </span>
-
-          <select id="antiDeleteSendTo">
-
-            <option value="owner">
-              OWNER
-            </option>
-
-            <option value="group">
-              GROUP
-            </option>
-
-            <option value="same-chat">
-              SAME CHAT
-            </option>
-
-          </select>
-
-        </div>
-
-
-        <!-- Anti Spam -->
-
-        <div class="settingRow">
-
-          <span>
-            Anti Spam
-          </span>
-
-          <label class="switch">
-
-            <input
-              id="antiSpam"
-              type="checkbox"
-            >
-
-            <span class="slider"></span>
-
-          </label>
-
-        </div>
-
-
-        <!-- Anti Spam Action -->
-
-        <div class="settingRow">
-
-          <span>
-            ANTI-SPAM
-          </span>
-
-          <select id="antiSpamMode">
-
-            <option value="delete-copy">
-              Delete &amp; Copy
-            </option>
-
-            <option value="delete-message">
-              Delete Message
-            </option>
-
-          </select>
-
-        </div>
-
-
-        <!-- Anti Bug -->
-
-        <div class="settingRow">
-
-          <span>
-            Anti Bug
+            🛡️ Anti-Bug Protection
           </span>
 
           <label class="switch">
@@ -631,18 +571,17 @@
         </div>
 
 
-        <!-- Anti Bot -->
-
-        <div class="settingRow">
+        <!-- ANTI BOT -->
+        <div class="switch-row">
 
           <span>
-            Anti Bot
+            🤖 Anti-Bot Filtre
           </span>
 
           <label class="switch">
 
             <input
-              id="antiBot"
+              id="antiBotFilter"
               type="checkbox"
             >
 
@@ -652,76 +591,137 @@
 
         </div>
 
-      </div>
+
+        <div class="field-group">
+
+          <label for="antiBotAction">
+            ANTI-BOT ACTION
+          </label>
+
+          <select id="antiBotAction">
+
+            <option value="Delete">
+              Delete
+            </option>
+
+            <option value="Warn">
+              Warn
+            </option>
+
+            <option value="Block">
+              Block
+            </option>
+
+          </select>
+
+        </div>
 
 
-      <!-- =========================
-           AUTOMATION GROUP
-      ========================== -->
+        <!-- ANTI BLOCK -->
+        <div class="field-group">
 
-      <div class="card">
+          <label for="antiBlockNumbers">
+            ANTI-BLOCK NUMBERS
+          </label>
 
-        <h3>
-          🕦 AUTOMATION GROUP
-        </h3>
+          <textarea
+            id="antiBlockNumbers"
+            rows="4"
+            placeholder="One number per line"
+          ></textarea>
+
+        </div>
+
+      </section>
 
 
-        <div class="groupGrid">
+      <!-- =================================================
+           GROUP AUTOMATION
+           ================================================= -->
+
+      <section class="panel-section">
+
+        <div class="section-title">
+          🕦 GROUPE AUTOMATISATIONS
+        </div>
 
 
-          <!-- GROUP JID -->
+        <!-- GROUP AUTOMATION ENABLE -->
+        <div class="switch-row">
 
-          <label>
+          <span>
+            👥 Group Automation
+          </span>
 
-            GROUP JID
+          <label class="switch">
 
             <input
-              id="groupJid"
-              type="text"
-              placeholder="num or link admin"
-              autocomplete="off"
+              id="groupAutomationEnabled"
+              type="checkbox"
             >
 
+            <span class="slider"></span>
+
           </label>
 
+        </div>
 
-          <!-- TIME ZONE -->
 
-          <label>
+        <div class="field-group">
 
+          <label for="groupGid">
+            GROUP GID / ADMIN LINK
+          </label>
+
+          <input
+            id="groupGid"
+            type="text"
+            autocomplete="off"
+            placeholder="Group ID or admin link"
+          >
+
+        </div>
+
+
+        <div class="field-group">
+
+          <label for="timezone">
             TIME ZONE
-
-            <select id="timeZone">
-
-              <option value="America/Port-au-Prince">
-                🌍 Atlantique UTC-04:00
-              </option>
-
-            </select>
-
           </label>
 
+          <select id="timezone">
 
-          <!-- CLOSE TIME -->
+            <option value="Atlantic/Port-au-Prince">
+              l'Atlantique UTC-04
+            </option>
 
-          <label>
+          </select>
 
-            CLOSE TIME
+        </div>
+
+
+        <div class="field-row">
+
+          <div class="field-group">
+
+            <label for="closeTime">
+              CLOSE TIME
+            </label>
 
             <input
               id="closeTime"
               type="time"
-              value="12:00"
+              value="15:00"
             >
 
-          </label>
+          </div>
 
 
-          <!-- OPEN TIME -->
+          <div class="field-group">
 
-          <label>
-
-            OPEN TIME
+            <label for="openTime">
+              OPEN TIME
+            </label>
 
             <input
               id="openTime"
@@ -729,68 +729,83 @@
               value="06:00"
             >
 
-          </label>
-
-
-          <!-- GROUP BIO -->
-
-          <label>
-
-            GROUP BIO
-
-            <input
-              id="groupBio"
-              type="text"
-              placeholder="bio or print"
-              autocomplete="off"
-            >
-
-          </label>
+          </div>
 
         </div>
 
-      </div>
+
+        <div class="field-group">
+
+          <label for="groupPrinciples">
+            GROUP BIO / PRINCIPLES
+          </label>
+
+          <textarea
+            id="groupPrinciples"
+            rows="5"
+            placeholder="Group rules and principles"
+          ></textarea>
+
+        </div>
 
 
-      <!-- =========================
-           APP SAVE
-      ========================== -->
+        <div class="field-group">
 
-      <button
-        id="saveButton"
-        class="saveButton"
-        type="button"
-        onclick="saveSettings()"
-      >
-        💾 APP SAVE
-      </button>
+          <label for="warningLimit">
+            VIOLATION LIMIT
+          </label>
 
-      <p
-        id="saveMessage"
-        class="message"
-      ></p>
+          <input
+            id="warningLimit"
+            type="number"
+            min="1"
+            value="3"
+          >
 
+          <small>
+            1️⃣ Warning → 2️⃣ Warning → 3️⃣ Remove
+          </small>
 
-      <!-- =========================
-           EXIT
-      ========================== -->
+        </div>
 
-      <button
-        id="logoutButton"
-        class="secondaryButton"
-        type="button"
-        onclick="logoutPanel()"
-      >
-        🚪
-      </button>
+      </section>
 
 
-      <!-- =========================
+      <!-- =================================================
+           ACTIONS
+           ================================================= -->
+
+      <section class="panel-actions">
+
+        <button
+          type="button"
+          class="panel-button save"
+          data-action="save"
+          id="saveButton"
+        >
+          💾 SAVE
+        </button>
+
+        <button
+          type="button"
+          class="panel-button danger"
+          data-action="disconnect"
+          id="disconnectButtonBottom"
+        >
+          🚪
+        </button>
+
+      </section>
+
+
+      <!-- =================================================
            FOOTER
-      ========================== -->
+           ================================================= -->
 
-      <footer>
-        🦁 TECH TOPFEROS MD 🐑
+      <footer class="panel-footer">
+
+        🦁 TECH BY TOPFEROS MD 🐑
+
       </footer>
 
     </section>
@@ -798,12 +813,8 @@
   </main>
 
 
-  <!-- =========================
-       JAVASCRIPT
-  ========================== -->
-
-  <script src="/app.js?v=31"></script>
+  <!-- APP JS -->
+  <script src="/app.js"></script>
 
 </body>
-
 </html>
