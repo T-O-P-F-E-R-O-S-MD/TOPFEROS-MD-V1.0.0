@@ -10,6 +10,14 @@ const {
   attachStatusHandler
 } = require("./statusHandler");
 
+const {
+  sendMenu
+} = require("../commands/menu");
+
+const {
+  parrainCommand
+} = require("../commands/parrain");
+
 /*
 |--------------------------------------------------------------------------
 | TOPFEROS MD V2.0.0
@@ -80,9 +88,7 @@ function registerCommand(
       .replace(/^\./, "");
 
   const aliases =
-    Array.isArray(
-      options.aliases
-    )
+    Array.isArray(options.aliases)
       ? options.aliases
           .map((alias) =>
             String(alias)
@@ -97,17 +103,12 @@ function registerCommand(
     commandName,
     {
       handler,
-
       aliases,
-
       description:
-        options.description ||
-        "",
-
+        options.description || "",
       usage:
         options.usage ||
         `.${commandName}`,
-
       category:
         options.category ||
         "GENERAL"
@@ -183,7 +184,7 @@ function extractMessageText(
     return (
       message.conversation ||
       ""
-    );
+    ).trim();
   }
 
   if (
@@ -193,7 +194,7 @@ function extractMessageText(
       message.extendedTextMessage
         ?.text ||
       ""
-    );
+    ).trim();
   }
 
   if (
@@ -203,7 +204,7 @@ function extractMessageText(
       message.imageMessage
         ?.caption ||
       ""
-    );
+    ).trim();
   }
 
   if (
@@ -213,7 +214,7 @@ function extractMessageText(
       message.videoMessage
         ?.caption ||
       ""
-    );
+    ).trim();
   }
 
   return "";
@@ -424,14 +425,10 @@ function parseCommand(
 
   return {
     prefix,
-
     command,
-
     args: parts,
-
     text:
       parts.join(" "),
-
     raw:
       withoutPrefix
   };
@@ -496,8 +493,10 @@ async function reactToMessage(
       message.key.remoteJid,
       {
         react: {
-          text: emoji,
-          key: message.key
+          text:
+            emoji.trim(),
+          key:
+            message.key
         }
       }
     );
@@ -638,7 +637,8 @@ function buildContext(
       getPrefix(),
 
     bot:
-      config?.bot || {},
+      config?.bot ||
+      {},
 
     config,
 
@@ -663,57 +663,17 @@ function buildContext(
 
 /*
 |--------------------------------------------------------------------------
-| DEFAULT COMMAND: MENU
+| COMMAND: MENU
 |--------------------------------------------------------------------------
 */
 
 registerCommand(
   "menu",
   async (ctx) => {
-    const menu = `
-╭━━━〔 🦁 TOPFEROS MD V2.0.0 🐑 〕━━━╮
-┃
-┃ ✨ COMMAND MENU
-┃
-┃ 👥 GROUP
-┃ ├─ .group
-┃ ├─ .rules
-┃ └─ .warn
-┃
-┃ 🛡️ SECURITY
-┃ ├─ .antidelete
-┃ ├─ .anticall
-┃ ├─ .antibug
-┃ └─ .antibot
-┃
-┃ ⚡ AUTOMATION
-┃ ├─ .alwaysonline
-┃ ├─ .autoreply
-┃ ├─ .autoreact
-┃ └─ .status
-┃
-┃ 🤖 AI
-┃ ├─ .ai
-┃ └─ .prompt
-┃
-┃ 🎵 MEDIA
-┃ ├─ .play song
-┃ ├─ .play v
-┃ └─ .video
-┃
-┃ ⚙️ SYSTEM
-┃ ├─ .language
-┃ └─ .info
-┃
-┃ ⚙️ SETTINGS
-┃ └─ .setting
-┃
-╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯
-
-🦁 TECH BY TOPFEROS MD 🐑
-`;
-
-    await ctx.send(menu);
+    await sendMenu(
+      ctx.sock,
+      ctx.message
+    );
 
     return {
       success: true
@@ -723,6 +683,9 @@ registerCommand(
     description:
       "Display the TOPFEROS MD command menu.",
 
+    usage:
+      ".menu",
+
     category:
       "SYSTEM"
   }
@@ -730,7 +693,33 @@ registerCommand(
 
 /*
 |--------------------------------------------------------------------------
-| DEFAULT COMMAND: INFO
+| COMMAND: PARRAIN
+|--------------------------------------------------------------------------
+*/
+
+registerCommand(
+  "parrain",
+  async (ctx) => {
+    return parrainCommand(
+      ctx.sock,
+      ctx.message
+    );
+  },
+  {
+    description:
+      "Generate a TOPFEROS MD Parrain code.",
+
+    usage:
+      ".parrain",
+
+    category:
+      "SYSTEM"
+  }
+);
+
+/*
+|--------------------------------------------------------------------------
+| COMMAND: INFO
 |--------------------------------------------------------------------------
 */
 
@@ -753,7 +742,7 @@ registerCommand(
 ╰━━━━━━━━━━━━━━━━━━━━━━━━━━╯
 
 🦁 TECH BY TOPFEROS MD 🐑
-`;
+`.trim();
 
     await ctx.send(info);
 
@@ -765,6 +754,9 @@ registerCommand(
     description:
       "Display bot information.",
 
+    usage:
+      ".info",
+
     category:
       "SYSTEM"
   }
@@ -772,7 +764,12 @@ registerCommand(
 
 /*
 |--------------------------------------------------------------------------
-| DEFAULT COMMAND: AI
+| COMMAND: AI
+|--------------------------------------------------------------------------
+|
+| The generic AI service will be connected
+| through the dedicated AI service.
+|
 |--------------------------------------------------------------------------
 */
 
@@ -781,7 +778,13 @@ registerCommand(
   async (ctx) => {
     if (!ctx.text) {
       await ctx.send(
-        `🤖 Please provide a question.\n\nExample:\n.ai What is artificial intelligence?\n\n🦁 TECH BY TOPFEROS MD 🐑`
+        [
+          "🤖 Please provide a question.",
+          "",
+          `Example: ${ctx.prefix}ai What is artificial intelligence?`,
+          "",
+          "🦁 TECH BY TOPFEROS MD 🐑"
+        ].join("\n")
       );
 
       return {
@@ -789,12 +792,29 @@ registerCommand(
       };
     }
 
+    /*
+     * AI service connection is intentionally
+     * kept separate from the message router.
+     *
+     * This prevents the message handler from
+     * inventing an API or provider.
+     */
+
     await ctx.send(
-      `🤖 AI REQUEST RECEIVED\n\nYour request:\n${ctx.text}\n\n⚙️ AI service is being prepared.\n\n🦁 TECH BY TOPFEROS MD 🐑`
+      [
+        "🤖 AI REQUEST RECEIVED",
+        "",
+        `📝 ${ctx.text}`,
+        "",
+        "⚙️ AI service is not connected yet.",
+        "",
+        "🦁 TECH BY TOPFEROS MD 🐑"
+      ].join("\n")
     );
 
     return {
-      success: true
+      success: true,
+      pending: true
     };
   },
   {
@@ -811,7 +831,7 @@ registerCommand(
 
 /*
 |--------------------------------------------------------------------------
-| DEFAULT COMMAND: PROMPT
+| COMMAND: PROMPT
 |--------------------------------------------------------------------------
 */
 
@@ -820,7 +840,13 @@ registerCommand(
   async (ctx) => {
     if (!ctx.text) {
       await ctx.send(
-        `🤖 Please provide a prompt request.\n\nExample:\n.prompt Create a cinematic lion logo\n\n🦁 TECH BY TOPFEROS MD 🐑`
+        [
+          "🤖 Please provide a prompt request.",
+          "",
+          `Example: ${ctx.prefix}prompt Create a cinematic lion logo`,
+          "",
+          "🦁 TECH BY TOPFEROS MD 🐑"
+        ].join("\n")
       );
 
       return {
@@ -829,11 +855,20 @@ registerCommand(
     }
 
     await ctx.send(
-      `🤖 PROMPT REQUEST RECEIVED\n\n${ctx.text}\n\n⚙️ Prompt AI service is being prepared.\n\n🦁 TECH BY TOPFEROS MD 🐑`
+      [
+        "🤖 PROMPT REQUEST RECEIVED",
+        "",
+        `📝 ${ctx.text}`,
+        "",
+        "⚙️ Prompt AI service is not connected yet.",
+        "",
+        "🦁 TECH BY TOPFEROS MD 🐑"
+      ].join("\n")
     );
 
     return {
-      success: true
+      success: true,
+      pending: true
     };
   },
   {
@@ -850,20 +885,22 @@ registerCommand(
 
 /*
 |--------------------------------------------------------------------------
-| DEFAULT COMMAND: SETTING
+| COMMAND: PLAY
 |--------------------------------------------------------------------------
 */
 
 registerCommand(
-  "setting",
+  "play",
   async (ctx) => {
-    const panelUrl =
-      process.env.SETTINGS_PANEL_URL ||
-      "";
-
-    if (!panelUrl) {
+    if (!ctx.text) {
       await ctx.send(
-        `⚙️ SETTINGS PANEL\n\nThe Settings Panel URL has not been configured yet.\n\n🦁 TECH BY TOPFEROS MD 🐑`
+        [
+          "🎵 Please provide what you want to play.",
+          "",
+          `Example: ${ctx.prefix}play song Artist - Song`,
+          "",
+          "🦁 TECH BY TOPFEROS MD 🐑"
+        ].join("\n")
       );
 
       return {
@@ -872,16 +909,140 @@ registerCommand(
     }
 
     await ctx.send(
-      `⚙️ TOPFEROS MD SETTINGS\n\nOpen the Settings Panel:\n${panelUrl}\n\n🦁 TECH BY TOPFEROS MD 🐑`
+      [
+        "🎵 MEDIA REQUEST RECEIVED",
+        "",
+        `📝 ${ctx.text}`,
+        "",
+        "⚙️ Media service is not connected yet.",
+        "",
+        "🦁 TECH BY TOPFEROS MD 🐑"
+      ].join("\n")
     );
 
     return {
-      success: true
+      success: true,
+      pending: true
+    };
+  },
+  {
+    description:
+      "Play or download media.",
+
+    usage:
+      ".play <type> <query>",
+
+    category:
+      "MEDIA"
+  }
+);
+
+/*
+|--------------------------------------------------------------------------
+| COMMAND: VIDEO
+|--------------------------------------------------------------------------
+*/
+
+registerCommand(
+  "video",
+  async (ctx) => {
+    if (!ctx.text) {
+      await ctx.send(
+        [
+          "🎬 Please provide a video URL.",
+          "",
+          `Example: ${ctx.prefix}video https://example.com/video`,
+          "",
+          "🦁 TECH BY TOPFEROS MD 🐑"
+        ].join("\n")
+      );
+
+      return {
+        success: false
+      };
+    }
+
+    await ctx.send(
+      [
+        "🎬 VIDEO REQUEST RECEIVED",
+        "",
+        `🔗 ${ctx.text}`,
+        "",
+        "⚙️ Video service is not connected yet.",
+        "",
+        "🦁 TECH BY TOPFEROS MD 🐑"
+      ].join("\n")
+    );
+
+    return {
+      success: true,
+      pending: true
+    };
+  },
+  {
+    description:
+      "Download and send a video.",
+
+    usage:
+      ".video <url>",
+
+    category:
+      "MEDIA"
+  }
+);
+
+/*
+|--------------------------------------------------------------------------
+| COMMAND: SETTING
+|--------------------------------------------------------------------------
+*/
+
+registerCommand(
+  "setting",
+  async (ctx) => {
+    const panelUrl =
+      config?.panels?.settingsUrl ||
+      process.env.SETTINGS_PANEL_URL ||
+      "";
+
+    if (!panelUrl) {
+      await ctx.send(
+        [
+          "⚙️ TOPFEROS MD SETTINGS",
+          "",
+          "❌ The Settings Panel URL has not been configured yet.",
+          "",
+          "🦁 TECH BY TOPFEROS MD 🐑"
+        ].join("\n")
+      );
+
+      return {
+        success: false
+      };
+    }
+
+    await ctx.send(
+      [
+        "⚙️ TOPFEROS MD SETTINGS",
+        "",
+        "🔗 Open the Settings Panel:",
+        panelUrl,
+        "",
+        "🦁 TECH BY TOPFEROS MD 🐑"
+      ].join("\n")
+    );
+
+    return {
+      success: true,
+      url: panelUrl
     };
   },
   {
     description:
       "Open the TOPFEROS MD Settings Panel.",
+
+    usage:
+      ".setting",
 
     category:
       "SETTINGS"
@@ -894,9 +1055,11 @@ registerCommand(
 |--------------------------------------------------------------------------
 |
 | Kept as a compatibility helper.
+|
 | connection.js already attaches the status
 | handler for each socket, so this function
 | prevents duplicate listeners.
+|
 |--------------------------------------------------------------------------
 */
 
@@ -1077,7 +1240,13 @@ async function handleMessage(
       await sendText(
         sock,
         jid,
-        `❌ Unknown command: ${getPrefix()}${parsed.command}\n\n📖 Type ${getPrefix()}menu to see available commands.\n\n🦁 TECH BY TOPFEROS MD 🐑`
+        [
+          `❌ Unknown command: ${getPrefix()}${parsed.command}`,
+          "",
+          `📖 Type ${getPrefix()}menu to see available commands.`,
+          "",
+          "🦁 TECH BY TOPFEROS MD 🐑"
+        ].join("\n")
       );
 
       return {
@@ -1135,7 +1304,11 @@ async function handleMessage(
         await sendText(
           sock,
           jid,
-          `❌ An error occurred while processing your request.\n\n🦁 TECH BY TOPFEROS MD 🐑`
+          [
+            "❌ An error occurred while processing your request.",
+            "",
+            "🦁 TECH BY TOPFEROS MD 🐑"
+          ].join("\n")
         );
       }
     } catch {
