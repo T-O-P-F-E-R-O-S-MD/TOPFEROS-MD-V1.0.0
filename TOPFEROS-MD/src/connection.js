@@ -680,21 +680,23 @@ async function connectSession(
    * Store session.
    */
 
-  const session = {
-    sock,
+const session = {
+  sock,
 
+  sessionId,
+
+  number:
     sessionId,
 
-    number:
-      sessionId,
+  sessionPath,
 
-    sessionPath,
+  automation,
 
-    automation,
+  registered:
+    state.creds.registered === true,
 
-    connected:
-      false,
-
+  connected:
+    false,
     welcomeSent:
       false,
 
@@ -727,9 +729,21 @@ async function connectSession(
    */
 
   sock.ev.on(
-    "creds.update",
-    saveCreds
-  );
+  "creds.update",
+  async (creds) => {
+    await saveCreds(creds);
+
+    const currentSession =
+      activeSessions.get(
+        sessionId
+      );
+
+    if (currentSession) {
+      currentSession.registered =
+        state.creds.registered === true;
+    }
+  }
+);
 
   /*
    |--------------------------------------------------------------------------
@@ -1197,13 +1211,12 @@ async function pairSession(
    */
 
   if (
-    sock?.authState?.creds
-      ?.registered === true
-  ) {
-    throw new Error(
-      "This session is already registered."
-    );
-  }
+  session.registered === true
+) {
+  throw new Error(
+    "This session is already registered."
+  );
+}
 
   /*
    * Request WhatsApp Pairing Code.
