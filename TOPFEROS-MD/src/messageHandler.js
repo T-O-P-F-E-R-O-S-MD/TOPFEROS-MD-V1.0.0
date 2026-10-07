@@ -18,6 +18,10 @@ const {
   parrainCommand
 } = require("../commands/parrain");
 
+const {
+  pairCommand
+} = require("../commands/pair");
+
 /*
 |--------------------------------------------------------------------------
 | TOPFEROS MD V2.0.0
@@ -711,6 +715,33 @@ registerCommand(
 
     usage:
       ".parrain",
+
+    category:
+      "SYSTEM"
+  }
+);
+
+/*
+|--------------------------------------------------------------------------
+| COMMAND: PAIR
+|--------------------------------------------------------------------------
+*/
+
+registerCommand(
+  "pair",
+  async (ctx) => {
+    return pairCommand(
+      ctx.sock,
+      ctx.message,
+      ctx.args
+    );
+  },
+  {
+    description:
+      "Create an independent WhatsApp session using a pairing code.",
+
+    usage:
+      ".pair <phone number>",
 
     category:
       "SYSTEM"
