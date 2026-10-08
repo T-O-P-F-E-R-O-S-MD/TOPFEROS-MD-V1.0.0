@@ -2,7 +2,7 @@
 
 // ╔════════════════════════════════════════════════════╗
 // ║              🦁 TOPFEROS MD V2.0.0               ║
-// ║                   REMOVE COMMAND                  ║
+// ║                 TAG ALL COMMAND                  ║
 // ╚════════════════════════════════════════════════════╝
 
 const {
@@ -11,72 +11,13 @@ const {
 
 /*
 |--------------------------------------------------------------------------
-| JID HELPERS
+| TAG ALL COMMAND
 |--------------------------------------------------------------------------
 */
 
-function normalizeJid(jid) {
-  if (!jid) {
-    return "";
-  }
-
-  return String(jid)
-    .trim()
-    .replace(/:\d+(?=@)/, "");
-}
-
-/*
-|--------------------------------------------------------------------------
-| CHECK BOT ADMIN
-|--------------------------------------------------------------------------
-*/
-
-function isBotAdmin(
-  metadata,
-  botJid
-) {
-  const normalizedBot =
-    normalizeJid(
-      botJid
-    );
-
-  return Boolean(
-    metadata?.participants?.some(
-      (participant) =>
-        normalizeJid(
-          participant?.id
-        ) === normalizedBot &&
-        (
-          participant?.admin === "admin" ||
-          participant?.admin === "superadmin"
-        )
-    )
-  );
-}
-
-/*
-|--------------------------------------------------------------------------
-| GET GROUP OWNER
-|--------------------------------------------------------------------------
-*/
-
-function getGroupOwner(metadata) {
-  return normalizeJid(
-    metadata?.owner ||
-    metadata?.subjectOwner ||
-    ""
-  );
-}
-
-/*
-|--------------------------------------------------------------------------
-| REMOVE COMMAND
-|--------------------------------------------------------------------------
-*/
-
-async function removeCommand(ctx) {
+async function tagAllCommand(ctx) {
   /*
-   * Group only.
+   * This command works ONLY inside groups.
    */
 
   if (!ctx.isGroup) {
@@ -98,7 +39,7 @@ async function removeCommand(ctx) {
   }
 
   /*
-   * Get current group metadata.
+   * Get group metadata.
    */
 
   let metadata;
@@ -110,7 +51,7 @@ async function removeCommand(ctx) {
       );
   } catch (error) {
     console.error(
-      "[REMOVE] Group metadata error:",
+      "[TAGALL] Group metadata error:",
       error?.stack ||
         error
     );
@@ -134,26 +75,32 @@ async function removeCommand(ctx) {
   }
 
   /*
-   * Check bot admin status.
+   * Get all valid participants.
    */
 
-  const botJid =
-    normalizeJid(
-      ctx.sock?.user?.id ||
-      ""
-    );
+  const participants =
+    Array.isArray(
+      metadata?.participants
+    )
+      ? metadata.participants
+      : [];
+
+  const mentions =
+    participants
+      .map(
+        (participant) =>
+          participant?.id
+      )
+      .filter(Boolean);
 
   if (
-    !isBotAdmin(
-      metadata,
-      botJid
-    )
+    mentions.length === 0
   ) {
     await ctx.send(
       [
-        "❌ BOT IS NOT ADMIN",
+        "❌ NO MEMBERS FOUND",
         "",
-        "I need to be a group admin to remove members.",
+        "I could not find any group members to tag.",
         "",
         "🦁 TECH BY TOPFEROS MD 🐑"
       ].join("\n")
@@ -162,190 +109,89 @@ async function removeCommand(ctx) {
     return {
       success: false,
       reason:
-        "Bot is not a group admin."
+        "No participants found."
     };
   }
 
   /*
-   * Identify the group owner.
+   * Use the command text as an optional message.
+   *
+   * Example:
+   * .tagall Hello everyone
+   *
+   * If no text is provided, use the default message.
    */
 
-  const groupOwner =
-    getGroupOwner(
-      metadata
+  const customText =
+    String(
+      ctx.text || ""
+    ).trim();
+
+  const header =
+    customText ||
+    "📢 Attention everyone!";
+
+  /*
+   * Build a clean mention list.
+   */
+
+  const mentionLines =
+    mentions.map(
+      (jid) =>
+        `@${String(jid)
+          .split("@")[0]
+          .split(":")[0]}`
     );
 
-  /*
-   * Build the removal list.
-   *
-   * Protect:
-   * - Group owner
-   * - Bot itself
-   * - All admins
-   */
+  const message = [
+    "╭━━━〔 📢 TAG ALL 〕━━━╮",
+    "",
+    header,
+    "",
+    mentionLines.join(" "),
+    "",
+    "╰━━━━━━━━━━━━━━━━━━━━╯",
+    "",
+    "🦁 TECH BY TOPFEROS MD 🐑",
+    "",
+    "🌐 *Web Connect*",
+    "└──➤TRUE",
+    "🌐 *Web Channel*",
+    "└──➤https://whatsapp.com/channel/0029Vb98522IXnlxdL8Sxj2m"
+  ].join("\n");
 
-  const removableMembers =
-    Array.isArray(
-      metadata?.participants
-    )
-      ? metadata.participants.filter(
-          (participant) => {
-            const participantJid =
-              normalizeJid(
-                participant?.id
-              );
-
-            const isOwner =
-              Boolean(
-                groupOwner &&
-                participantJid ===
-                  groupOwner
-              );
-
-            const isBot =
-              Boolean(
-                botJid &&
-                participantJid ===
-                  botJid
-              );
-
-            const isAdmin =
-              participant?.admin ===
-                "admin" ||
-              participant?.admin ===
-                "superadmin";
-
-            return (
-              participantJid &&
-              !isOwner &&
-              !isBot &&
-              !isAdmin
-            );
-          }
-        )
-      : [];
-
-  /*
-   * Nothing to remove.
-   */
-
-  if (
-    removableMembers.length === 0
-  ) {
-    await ctx.send(
-      [
-        "ℹ️ NOTHING TO REMOVE",
-        "",
-        "There are no removable members in this group.",
-        "",
-        "The group owner and administrators were protected.",
-        "",
-        "🦁 TECH BY TOPFEROS MD 🐑"
-      ].join("\n")
+  try {
+    await ctx.sock.sendMessage(
+      ctx.jid,
+      {
+        text: message,
+        mentions
+      },
+      {
+        quoted:
+          ctx.message
+      }
     );
 
     return {
       success: true,
-      removed: 0,
-      failed: 0,
-      protected:
-        metadata?.participants?.length ||
-        0
+      tagged:
+        mentions.length
+    };
+  } catch (error) {
+    console.error(
+      "[TAGALL] Send error:",
+      error?.stack ||
+        error
+    );
+
+    return {
+      success: false,
+      error:
+        error?.message ||
+        String(error)
     };
   }
-
-  /*
-   * Remove members one by one.
-   *
-   * Doing this sequentially is safer than sending
-   * a very large request at once.
-   */
-
-  let removed = 0;
-  let failed = 0;
-
-  for (
-    const participant of
-      removableMembers
-  ) {
-    const participantJid =
-      normalizeJid(
-        participant?.id
-      );
-
-    if (!participantJid) {
-      failed++;
-      continue;
-    }
-
-    try {
-      const result =
-        await ctx.sock.groupParticipantsUpdate(
-          ctx.jid,
-          [participantJid],
-          "remove"
-        );
-
-      const update =
-        Array.isArray(result)
-          ? result[0]
-          : result;
-
-      const status =
-        String(
-          update?.status ||
-          ""
-        );
-
-      if (
-        status &&
-        status !== "200"
-      ) {
-        failed++;
-        continue;
-      }
-
-      removed++;
-    } catch (error) {
-      failed++;
-
-      console.error(
-        "[REMOVE] Failed to remove:",
-        participantJid,
-        error?.message ||
-          error
-      );
-    }
-  }
-
-  /*
-   * Final report.
-   */
-
-  await ctx.send(
-    [
-      "╭━━━〔 🗑️ REMOVE 〕━━━╮",
-      "┃",
-      `┃ ✅ Removed : ${removed}`,
-      `┃ ❌ Failed  : ${failed}`,
-      `┃ 👑 Owner   : Protected`,
-      "┃",
-      "┃ Admins and the bot were protected.",
-      "┃",
-      "╰━━━━━━━━━━━━━━━━━━━━━╯",
-      "",
-      "🦁 TECH BY TOPFEROS MD 🐑"
-    ].join("\n")
-  );
-
-  return {
-    success:
-      failed === 0,
-    removed,
-    failed,
-    ownerProtected:
-      groupOwner || null
-  };
 }
 
 /*
@@ -355,19 +201,24 @@ async function removeCommand(ctx) {
 */
 
 registerCommand(
-  "remove",
-  removeCommand,
+  "tagall",
+  tagAllCommand,
   {
-    aliases: [],
+    aliases: [
+      "everyone"
+    ],
+
     description:
-      "Remove all removable members from the current group while protecting the group owner.",
+      "Mention all members in the current group.",
+
     usage:
-      ".remove",
+      ".tagall [message]",
+
     category:
       "GROUP"
   }
 );
 
 module.exports = {
-  removeCommand
+  tagAllCommand
 };
