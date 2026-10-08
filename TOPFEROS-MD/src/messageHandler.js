@@ -34,6 +34,10 @@ const {
   aiCommand
 } = require("../commands/ai");
 
+const {
+  playCommand
+} = require("../commands/play");
+
 /*
 |--------------------------------------------------------------------------
 | TOPFEROS MD V2.0.0
@@ -908,45 +912,14 @@ registerCommand(
 registerCommand(
   "play",
   async (ctx) => {
-    if (!ctx.text) {
-      await ctx.send(
-        [
-          "🎵 Please provide what you want to play.",
-          "",
-          `Example: ${ctx.prefix}play song Artist - Song`,
-          "",
-          "🦁 TECH BY TOPFEROS MD 🐑"
-        ].join("\n")
-      );
-
-      return {
-        success: false
-      };
-    }
-
-    await ctx.send(
-      [
-        "🎵 MEDIA REQUEST RECEIVED",
-        "",
-        `📝 ${ctx.text}`,
-        "",
-        "⚙️ Media service is not connected yet.",
-        "",
-        "🦁 TECH BY TOPFEROS MD 🐑"
-      ].join("\n")
-    );
-
-    return {
-      success: true,
-      pending: true
-    };
+    return playCommand(ctx);
   },
   {
     description:
-      "Play or download media.",
+      "Download and send authorized audio or video media.",
 
     usage:
-      ".play <type> <query>",
+      ".play <song|video> <direct-url>",
 
     category:
       "MEDIA"
