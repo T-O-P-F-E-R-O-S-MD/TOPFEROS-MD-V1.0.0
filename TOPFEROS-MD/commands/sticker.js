@@ -1,98 +1,179 @@
 "use strict";
 
-const {
-    downloadMediaMessage
-} = require("@whiskeysockets/baileys");
+// ╔════════════════════════════════════════════════════╗
+// ║              🦁 TOPFEROS MD V2.0.0               ║
+// ║                  STICKER COMMAND                 ║
+// ╚════════════════════════════════════════════════════╝
 
 const {
-    registerCommand
+  registerCommand
 } = require("../src/messageHandler");
 
-registerCommand(
-    "sticker",
-    async (ctx) => {
-        try {
-            const quoted =
-                ctx.message?.message?.extendedTextMessage?.contextInfo
-                    ?.quotedMessage;
+function getQuotedMessage(message) {
+  return (
+    message?.message?.extendedTextMessage
+      ?.contextInfo?.quotedMessage ||
+    null
+  );
+}
 
-            if (!quoted) {
-                await ctx.send(
-                    "❌ Reply to an image or a short video with .sticker"
-                );
-                return;
-            }
+async function stickerCommand(ctx) {
+  const quoted =
+    getQuotedMessage(
+      ctx.message
+    );
 
-            const image =
-                quoted.imageMessage;
+  const imageMessage =
+    quoted?.imageMessage;
 
-            const video =
-                quoted.videoMessage;
+  const videoMessage =
+    quoted?.videoMessage;
 
-            if (!image && !video) {
-                await ctx.send(
-                    "❌ The replied message must contain an image or video."
-                );
-                return;
-            }
+  if (
+    !imageMessage &&
+    !videoMessage
+  ) {
+    await ctx.send(
+      [
+        "❌ MEDIA REQUIRED",
+        "",
+        "Reply to an image or a short video with:",
+        `${ctx.prefix}sticker`,
+        "",
+        "🦁 TECH BY TOPFEROS MD 🐑"
+      ].join("\n")
+    );
 
-            if (video) {
-                const seconds =
-                    Number(video.seconds || 0);
+    return {
+      success: false,
+      reason:
+        "No supported media found."
+    };
+  }
 
-                if (seconds > 10) {
-                    await ctx.send(
-                        "❌ Video must be 10 seconds or less."
-                    );
-                    return;
-                }
-            }
+  if (
+    videoMessage &&
+    Number(
+      videoMessage.seconds ||
+        0
+    ) > 10
+  ) {
+    await ctx.send(
+      [
+        "❌ VIDEO TOO LONG",
+        "",
+        "Please use a short video for the sticker.",
+        "",
+        "🦁 TECH BY TOPFEROS MD 🐑"
+      ].join("\n")
+    );
 
-            const mediaMessage = {
-                key: {
-                    remoteJid: ctx.jid,
-                    fromMe: false,
-                    id: ctx.message?.key?.id
-                },
-                message: quoted
-            };
+    return {
+      success: false,
+      reason:
+        "Video is too long."
+    };
+  }
 
-            const media =
-                await downloadMediaMessage(
-                    mediaMessage,
-                    "buffer",
-                    {},
-                    {
-                        logger: console
-                    }
-                );
+  try {
+    const quotedMessage =
+      imageMessage
+        ? {
+            imageMessage
+          }
+        : {
+            videoMessage
+          };
 
-            if (!media) {
-                await ctx.send(
-                    "❌ Unable to download the media."
-                );
-                return;
-            }
-
-            await ctx.sock.sendMessage(
-                ctx.jid,
-                {
-                    sticker: media
-                }
-            );
-
-        } catch (error) {
-            console.error(
-                "[STICKER ERROR]",
-                error
-            );
-
-            await ctx.send(
-                "❌ Failed to create the sticker."
-            );
+    const media =
+      await ctx.sock.downloadMediaMessage(
+        {
+          key: {
+            remoteJid:
+              ctx.jid,
+            fromMe:
+              false,
+            id:
+              ctx.message?.key?.id ||
+              ""
+          },
+          message:
+            quotedMessage
+        },
+        "buffer",
+        {},
+        {
+          logger:
+            ctx.sock?.logger
         }
-    },
-    {
-        aliases: ["s"]
+      );
+
+    if (!media) {
+      throw new Error(
+        "Media download returned no data."
+      );
     }
+
+    await ctx.sock.sendMessage(
+      ctx.jid,
+      {
+        sticker: media
+      },
+      {
+        quoted:
+          ctx.message
+      }
+    );
+
+    return {
+      success: true,
+      type:
+        imageMessage
+          ? "image"
+          : "video"
+    };
+  } catch (error) {
+    console.error(
+      "[STICKER] Error:",
+      error?.stack ||
+        error
+    );
+
+    await ctx.send(
+      [
+        "❌ STICKER FAILED",
+        "",
+        "I could not create the sticker from this media.",
+        "",
+        "🦁 TECH BY TOPFEROS MD 🐑"
+      ].join("\n")
+    );
+
+    return {
+      success: false,
+      error:
+        error?.message ||
+        String(error)
+    };
+  }
+}
+
+registerCommand(
+  "sticker",
+  stickerCommand,
+  {
+    aliases: [
+      "s"
+    ],
+    description:
+      "Convert a replied image or short video into a sticker.",
+    usage:
+      ".sticker",
+    category:
+      "MEDIA"
+  }
 );
+
+module.exports = {
+  stickerCommand
+};
