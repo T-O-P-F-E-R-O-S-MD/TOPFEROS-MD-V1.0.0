@@ -1,0 +1,387 @@
+"use strict";
+
+// ╔════════════════════════════════════════════════════╗
+// ║              🦁 TOPFEROS MD V2.0.0               ║
+// ║                 VIEW ONCE SERVICE                ║
+// ╚════════════════════════════════════════════════════╝
+
+const {
+  downloadContentFromMessage
+} = require("@whiskeysockets/baileys");
+
+/*
+|--------------------------------------------------------------------------
+| GET VIEW ONCE MESSAGE
+|--------------------------------------------------------------------------
+*/
+
+function getViewOnceMessage(message) {
+  if (!message) {
+    return null;
+  }
+
+  /*
+   * VIEW ONCE V1
+   */
+
+  if (
+    message.viewOnceMessage?.message
+  ) {
+    return message.viewOnceMessage.message;
+  }
+
+  /*
+   * VIEW ONCE V2
+   */
+
+  if (
+    message.viewOnceMessageV2?.message
+  ) {
+    return message.viewOnceMessageV2.message;
+  }
+
+  /*
+   * VIEW ONCE V2 EXTENSION
+   */
+
+  if (
+    message.viewOnceMessageV2Extension?.message
+  ) {
+    return message.viewOnceMessageV2Extension.message;
+  }
+
+  return null;
+}
+
+/*
+|--------------------------------------------------------------------------
+| GET MEDIA
+|--------------------------------------------------------------------------
+*/
+
+function getViewOnceMedia(message) {
+  const viewOnce =
+    getViewOnceMessage(message);
+
+  if (!viewOnce) {
+    return null;
+  }
+
+  if (viewOnce.imageMessage) {
+    return {
+      type: "image",
+      message: viewOnce.imageMessage
+    };
+  }
+
+  if (viewOnce.videoMessage) {
+    return {
+      type: "video",
+      message: viewOnce.videoMessage
+    };
+  }
+
+  return null;
+}
+
+/*
+|--------------------------------------------------------------------------
+| DOWNLOAD MEDIA
+|--------------------------------------------------------------------------
+*/
+
+async function downloadViewOnce(message) {
+  const media =
+    getViewOnceMedia(message);
+
+  if (!media) {
+    return null;
+  }
+
+  const stream =
+    await downloadContentFromMessage(
+      media.message,
+      media.type
+    );
+
+  const chunks = [];
+
+  for await (
+    const chunk of stream
+  ) {
+    chunks.push(
+      Buffer.from(chunk)
+    );
+  }
+
+  return {
+    type: media.type,
+
+    buffer:
+      Buffer.concat(chunks),
+
+    mimetype:
+      media.message.mimetype ||
+      (
+        media.type === "image"
+          ? "image/jpeg"
+          : "video/mp4"
+      ),
+
+    caption:
+      media.message.caption ||
+      ""
+  };
+}
+
+/*
+|--------------------------------------------------------------------------
+| SEND DECODED VIEW ONCE
+|--------------------------------------------------------------------------
+*/
+
+async function sendDecodedViewOnce(
+  sock,
+  jid,
+  message,
+  options = {}
+) {
+  const decoded =
+    await downloadViewOnce(
+      message
+    );
+
+  if (!decoded) {
+    return {
+      success: false,
+      reason:
+        "Not a supported ViewOnce message."
+    };
+  }
+
+  if (
+    decoded.type === "image"
+  ) {
+    await sock.sendMessage(
+      jid,
+      {
+        image:
+          decoded.buffer,
+
+        mimetype:
+          decoded.mimetype,
+
+        caption:
+          decoded.caption ||
+          undefined
+      },
+      {
+        quoted:
+          options.quoted || undefined
+      }
+    );
+  }
+
+  if (
+    decoded.type === "video"
+  ) {
+    await sock.sendMessage(
+      jid,
+      {
+        video:
+          decoded.buffer,
+
+        mimetype:
+          decoded.mimetype,
+
+        caption:
+          decoded.caption ||
+          undefined
+      },
+      {
+        quoted:
+          options.quoted || undefined
+      }
+    );
+  }
+
+  return {
+    success: true,
+    type:
+      decoded.type
+  };
+}
+
+/*
+|--------------------------------------------------------------------------
+| GET QUOTED MESSAGE
+|--------------------------------------------------------------------------
+*/
+
+function getQuotedMessage(message) {
+  const content =
+    message?.message;
+
+  if (!content) {
+    return null;
+  }
+
+  const containers = [
+    content.extendedTextMessage,
+    content.imageMessage,
+    content.videoMessage,
+    content.documentMessage
+  ];
+
+  for (
+    const container of containers
+  ) {
+    const quoted =
+      container
+        ?.contextInfo
+        ?.quotedMessage;
+
+    if (quoted) {
+      return quoted;
+    }
+  }
+
+  return null;
+}
+
+/*
+|--------------------------------------------------------------------------
+| VV2 COMMAND
+|--------------------------------------------------------------------------
+*/
+
+async function vv2Command(ctx) {
+  const quoted =
+    getQuotedMessage(
+      ctx.message
+    );
+
+  if (!quoted) {
+    await ctx.send(
+      [
+        "❌ VIEW ONCE NOT FOUND",
+        "",
+        "Reply sou ViewOnce photo/video a epi tape:",
+        `${ctx.prefix}vv2`,
+        "",
+        "🦁 TECH BY TOPFEROS MD 🐑"
+      ].join("\n")
+    );
+
+    return {
+      success: false
+    };
+  }
+
+  const result =
+    await sendDecodedViewOnce(
+      ctx.sock,
+      ctx.jid,
+      quoted,
+      {
+        quoted:
+          ctx.message
+      }
+    );
+
+  if (!result.success) {
+    await ctx.send(
+      [
+        "❌ INVALID VIEW ONCE",
+        "",
+        "Mwen pa jwenn yon ViewOnce photo/video sou mesaj ou reply la.",
+        "",
+        "🦁 TECH BY TOPFEROS MD 🐑"
+      ].join("\n")
+    );
+  }
+
+  return result;
+}
+
+/*
+|--------------------------------------------------------------------------
+| AUTO VIEW ONCE IN DM
+|--------------------------------------------------------------------------
+|
+| Lè ViewOnce antre dirèkteman nan DM bot la,
+| pa bezwen prefix.
+|
+|--------------------------------------------------------------------------
+*/
+
+async function handleAutoViewOnce(
+  sock,
+  message
+) {
+  const jid =
+    message?.key?.remoteJid ||
+    "";
+
+  /*
+   * Pa trete groups.
+   */
+
+  if (
+    jid.endsWith("@g.us")
+  ) {
+    return {
+      success: false,
+      ignored: true
+    };
+  }
+
+  /*
+   * Pa trete status.
+   */
+
+  if (
+    jid === "status@broadcast"
+  ) {
+    return {
+      success: false,
+      ignored: true
+    };
+  }
+
+  /*
+   * Verifye si se ViewOnce.
+   */
+
+  const media =
+    getViewOnceMedia(
+      message?.message
+    );
+
+  if (!media) {
+    return {
+      success: false,
+      ignored: true
+    };
+  }
+
+  /*
+   * Dekode epi voye nan menm DM lan.
+   */
+
+  return sendDecodedViewOnce(
+    sock,
+    jid,
+    message.message
+  );
+}
+
+module.exports = {
+  vv2Command,
+  handleAutoViewOnce,
+  getViewOnceMessage,
+  getViewOnceMedia,
+  downloadViewOnce,
+  sendDecodedViewOnce,
+  getQuotedMessage
+};
