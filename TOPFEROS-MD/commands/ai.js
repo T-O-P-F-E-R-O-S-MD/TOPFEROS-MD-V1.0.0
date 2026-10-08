@@ -1,24 +1,13 @@
 "use strict";
 
-/*
-|--------------------------------------------------------------------------
-| TOPFEROS MD V2.0.0
-| GEMINI AI COMMAND
-|--------------------------------------------------------------------------
-|
-| Gemini API Free Tier
-| Google Search grounding
-|
-|--------------------------------------------------------------------------
-*/
-
 const {
   GoogleGenAI
 } = require("@google/genai");
 
 /*
 |--------------------------------------------------------------------------
-| GEMINI CLIENT
+| TOPFEROS MD V2.0.0
+| GEMINI AI COMMAND
 |--------------------------------------------------------------------------
 */
 
@@ -80,7 +69,7 @@ async function aiCommand(ctx) {
       await ai.models.generateContent({
         model:
           process.env.GEMINI_MODEL ||
-          "gemini-3.8-flash",
+          "gemini-2.5-flash",
 
         contents:
           ctx.text,
@@ -170,12 +159,6 @@ async function aiCommand(ctx) {
     };
   }
 }
-
-/*
-|--------------------------------------------------------------------------
-| EXPORTS
-|--------------------------------------------------------------------------
-*/
 
 module.exports = {
   aiCommand
