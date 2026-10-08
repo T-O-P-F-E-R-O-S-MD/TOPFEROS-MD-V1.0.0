@@ -30,6 +30,10 @@ const {
   pairCommand
 } = require("../commands/pair");
 
+const {
+  aiCommand
+} = require("../commands/ai");
+
 /*
 |--------------------------------------------------------------------------
 | TOPFEROS MD V2.0.0
@@ -827,38 +831,7 @@ registerCommand(
 registerCommand(
   "ai",
   async (ctx) => {
-    if (!ctx.text) {
-      await ctx.send(
-        [
-          "🤖 Please provide a question.",
-          "",
-          `Example: ${ctx.prefix}ai What is artificial intelligence?`,
-          "",
-          "🦁 TECH BY TOPFEROS MD 🐑"
-        ].join("\n")
-      );
-
-      return {
-        success: false
-      };
-    }
-
-    await ctx.send(
-      [
-        "🤖 AI REQUEST RECEIVED",
-        "",
-        `📝 ${ctx.text}`,
-        "",
-        "⚙️ AI service is not connected yet.",
-        "",
-        "🦁 TECH BY TOPFEROS MD 🐑"
-      ].join("\n")
-    );
-
-    return {
-      success: true,
-      pending: true
-    };
+    return aiCommand(ctx);
   },
   {
     description:
