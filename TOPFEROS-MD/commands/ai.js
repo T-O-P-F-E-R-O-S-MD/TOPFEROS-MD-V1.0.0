@@ -3,29 +3,31 @@
 /*
 |--------------------------------------------------------------------------
 | TOPFEROS MD V2.0.0
-| AI COMMAND
+| GEMINI AI COMMAND
 |--------------------------------------------------------------------------
 |
-| OpenAI Responses API + Web Search
+| Gemini API Free Tier
+| Google Search grounding
 |
 |--------------------------------------------------------------------------
 */
 
-const OpenAI =
-  require("openai");
+const {
+  GoogleGenAI
+} = require("@google/genai");
 
 /*
 |--------------------------------------------------------------------------
-| OPENAI CLIENT
+| GEMINI CLIENT
 |--------------------------------------------------------------------------
 */
 
 const apiKey =
-  process.env.OPENAI_API_KEY || "";
+  process.env.GEMINI_API_KEY || "";
 
-const openai =
+const ai =
   apiKey
-    ? new OpenAI({
+    ? new GoogleGenAI({
         apiKey
       })
     : null;
@@ -37,10 +39,6 @@ const openai =
 */
 
 async function aiCommand(ctx) {
-  /*
-   * Check question
-   */
-
   if (!ctx.text) {
     await ctx.send(
       [
@@ -57,18 +55,14 @@ async function aiCommand(ctx) {
     };
   }
 
-  /*
-   * Check API configuration
-   */
-
-  if (!openai) {
+  if (!ai) {
     await ctx.send(
       [
         "🤖 TOPFEROS MD AI",
         "",
-        "❌ OpenAI API key is not configured.",
+        "❌ Gemini API key is not configured.",
         "",
-        "⚙️ Add OPENAI_API_KEY to your environment variables.",
+        "⚙️ Add GEMINI_API_KEY to your environment variables.",
         "",
         "🦁 TECH BY TOPFEROS MD 🐑"
       ].join("\n")
@@ -77,98 +71,43 @@ async function aiCommand(ctx) {
     return {
       success: false,
       reason:
-        "OPENAI_API_KEY is missing."
+        "GEMINI_API_KEY is missing."
     };
   }
 
   try {
-    /*
-     * Tell the user that the request is being processed.
-     */
-
-    await ctx.send(
-      [
-        "🤖 TOPFEROS MD AI",
-        "",
-        "⏳ Thinking..."
-      ].join("\n")
-    );
-
-    /*
-     |--------------------------------------------------------------------------
-     | OPENAI RESPONSES API
-     |--------------------------------------------------------------------------
-     |
-     | Web search is enabled.
-     | The model decides when a web search is useful.
-     |
-     |--------------------------------------------------------------------------
-     */
-
     const response =
-      await openai.responses.create({
+      await ai.models.generateContent({
         model:
-          process.env.OPENAI_MODEL ||
-          "gpt-5.5",
+          process.env.GEMINI_MODEL ||
+          "gemini-3.8-flash",
 
-        tools: [
-          {
-            type:
-              "web_search"
-          }
-        ],
+        contents:
+          ctx.text,
 
-        tool_choice:
-          "auto",
+        config: {
+          systemInstruction:
+            [
+              "You are the official AI assistant for TOPFEROS MD.",
+              "Give accurate, useful, and clear answers.",
+              "Use Google Search when the question requires current or changing information.",
+              "Do not invent facts.",
+              "If information is uncertain, clearly say so.",
+              "Answer in the same language used by the user whenever possible.",
+              "Keep answers suitable for a general audience."
+            ].join(" "),
 
-        input: [
-          {
-            role:
-              "system",
-
-            content:
-              [
-                {
-                  type:
-                    "input_text",
-
-                  text:
-                    [
-                      "You are the official AI assistant for TOPFEROS MD.",
-                      "Give accurate, useful, and clear answers.",
-                      "When the question requires current or changing information, use web search.",
-                      "Do not invent facts.",
-                      "If you are uncertain, clearly say so.",
-                      "Answer in the same language used by the user whenever possible."
-                    ].join(" ")
-                }
-              ]
-          },
-          {
-            role:
-              "user",
-
-            content:
-              [
-                {
-                  type:
-                    "input_text",
-
-                  text:
-                    ctx.text
-                }
-              ]
-          }
-        ]
+          tools: [
+            {
+              googleSearch: {}
+            }
+          ]
+        }
       });
-
-    /*
-     * Get the final text response.
-     */
 
     const answer =
       String(
-        response?.output_text ||
+        response?.text ||
           ""
       ).trim();
 
@@ -186,13 +125,9 @@ async function aiCommand(ctx) {
       return {
         success: false,
         reason:
-          "Empty AI response."
+          "Empty Gemini response."
       };
     }
-
-    /*
-     * Send the AI answer to WhatsApp.
-     */
 
     await ctx.send(
       [
@@ -210,7 +145,7 @@ async function aiCommand(ctx) {
     };
   } catch (error) {
     console.error(
-      "[OPENAI AI] Error:",
+      "[GEMINI AI] Error:",
       error?.stack ||
         error
     );
