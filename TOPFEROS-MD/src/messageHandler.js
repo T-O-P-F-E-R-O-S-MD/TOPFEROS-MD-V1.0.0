@@ -1313,6 +1313,12 @@ async function handleMessage(
         parsed
       );
 
+      await reactToMessage(
+       sock,
+       message,
+       "🦁"
+       );
+
     /*
     |--------------------------------------------------------------------------
     | OWNER COMMAND STATISTICS
