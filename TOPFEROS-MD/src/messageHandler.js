@@ -7,6 +7,10 @@ const {
 const config = require("./config");
 
 const {
+  recordOwnerCommand
+} = require("./ownerStats");
+
+const {
   handleAutoViewOnce
 } = require("../services/viewOnce");
 
@@ -31,32 +35,10 @@ const {
 | TOPFEROS MD V2.0.0
 | MESSAGE HANDLER
 |--------------------------------------------------------------------------
-|
-| Handles incoming WhatsApp messages and commands.
-|
-| Status reactions are handled separately by:
-|
-| services/aiReactionService.js
-|              ↓
-| src/statusHandler.js
-|
-|--------------------------------------------------------------------------
-*/
-
-/*
-|--------------------------------------------------------------------------
-| STATUS HANDLER REGISTRY
-|--------------------------------------------------------------------------
 */
 
 const attachedSockets =
   new WeakSet();
-
-/*
-|--------------------------------------------------------------------------
-| COMMAND REGISTRY
-|--------------------------------------------------------------------------
-*/
 
 const commands =
   new Map();
@@ -315,6 +297,64 @@ function normalizeJid(
 
 /*
 |--------------------------------------------------------------------------
+| NORMALIZE PHONE NUMBER
+|--------------------------------------------------------------------------
+*/
+
+function normalizePhone(
+  value
+) {
+  return String(
+    value || ""
+  )
+    .replace(
+      /@s\.whatsapp\.net$/i,
+      ""
+    )
+    .replace(
+      /[^0-9]/g,
+      ""
+    );
+}
+
+/*
+|--------------------------------------------------------------------------
+| CHECK OWNER
+|--------------------------------------------------------------------------
+*/
+
+function isOwner(
+  message
+) {
+  const configuredOwner =
+    config?.ownerNumber ||
+    config?.owner?.number ||
+    config?.bot?.ownerNumber ||
+    process.env.OWNER_NUMBER ||
+    "";
+
+  const ownerNumber =
+    normalizePhone(
+      configuredOwner
+    );
+
+  if (!ownerNumber) {
+    return false;
+  }
+
+  const senderNumber =
+    normalizePhone(
+      getSenderJid(message)
+    );
+
+  return Boolean(
+    senderNumber &&
+    senderNumber === ownerNumber
+  );
+}
+
+/*
+|--------------------------------------------------------------------------
 | IS BOT MESSAGE
 |--------------------------------------------------------------------------
 */
@@ -556,28 +596,13 @@ function canProcessMessage(
   const group =
     isGroup(jid);
 
-  /*
-   * PUBLIC MODE
-   * Tout mesaj ki pa status ka trete.
-   */
-
   if (mode === "public") {
     return true;
   }
 
-  /*
-   * PRIVATE MODE
-   * Se DM sèlman.
-   */
-
   if (mode === "private") {
     return !group;
   }
-
-  /*
-   * GROUP MODE
-   * Se group sèlman.
-   */
 
   if (
     mode === "group" ||
@@ -585,11 +610,6 @@ function canProcessMessage(
   ) {
     return group;
   }
-
-  /*
-   * Unknown mode:
-   * default to public behavior.
-   */
 
   return true;
 }
@@ -625,6 +645,9 @@ function buildContext(
 
     isStatus:
       isStatus(jid),
+
+    isOwner:
+      isOwner(message),
 
     command:
       parsed?.command ||
@@ -799,11 +822,6 @@ registerCommand(
 |--------------------------------------------------------------------------
 | COMMAND: AI
 |--------------------------------------------------------------------------
-|
-| The generic AI service will be connected
-| through the dedicated AI service.
-|
-|--------------------------------------------------------------------------
 */
 
 registerCommand(
@@ -824,14 +842,6 @@ registerCommand(
         success: false
       };
     }
-
-    /*
-     * AI service connection is intentionally
-     * kept separate from the message router.
-     *
-     * This prevents the message handler from
-     * inventing an API or provider.
-     */
 
     await ctx.send(
       [
@@ -1086,14 +1096,6 @@ registerCommand(
 |--------------------------------------------------------------------------
 | ATTACH STATUS AI
 |--------------------------------------------------------------------------
-|
-| Kept as a compatibility helper.
-|
-| connection.js already attaches the status
-| handler for each socket, so this function
-| prevents duplicate listeners.
-|
-|--------------------------------------------------------------------------
 */
 
 function attachStatusAI(
@@ -1184,7 +1186,7 @@ async function handleMessage(
       getChatJid(message);
 
     /*
-     * Status is handled by statusHandler.js.
+     * Status is handled separately.
      */
 
     if (
@@ -1215,45 +1217,37 @@ async function handleMessage(
       };
     }
 
-/*
-|--------------------------------------------------------------------------
-| AUTO VIEW ONCE IN PRIVATE DM
-|--------------------------------------------------------------------------
-|
-| Lè yon ViewOnce antre dirèkteman nan DM bot la,
-| bot la dekode li otomatikman san prefix.
-|
-|--------------------------------------------------------------------------
-*/
+    /*
+    |--------------------------------------------------------------------------
+    | AUTO VIEW ONCE IN PRIVATE DM
+    |--------------------------------------------------------------------------
+    */
 
-if (
-  !isGroup(jid) &&
-  !isStatus(jid) &&
-  !message?.key?.fromMe
-) {
-  const autoViewOnce =
-    await handleAutoViewOnce(
-      sock,
-      message
-    );
+    if (
+      !isGroup(jid) &&
+      !isStatus(jid) &&
+      !message?.key?.fromMe
+    ) {
+      const autoViewOnce =
+        await handleAutoViewOnce(
+          sock,
+          message
+        );
 
-  if (
-    autoViewOnce?.success
-  ) {
-    return {
-      success: true,
-
-      command:
-        "auto-viewonce",
-
-      result:
-        autoViewOnce,
-
-      sessionId:
-        sessionId || null
-    };
-  }
-}
+      if (
+        autoViewOnce?.success
+      ) {
+        return {
+          success: true,
+          command:
+            "auto-viewonce",
+          result:
+            autoViewOnce,
+          sessionId:
+            sessionId || null
+        };
+      }
+    }
 
     /*
      * Extract message text.
@@ -1283,13 +1277,6 @@ if (
       parseCommand(
         messageText
       );
-
-    /*
-     * Normal text without prefix.
-     *
-     * Natural-language AI will be connected
-     * through the AI service.
-     */
 
     if (!parsed) {
       return {
@@ -1339,6 +1326,42 @@ if (
         message,
         parsed
       );
+
+    /*
+    |--------------------------------------------------------------------------
+    | OWNER COMMAND STATISTICS
+    |--------------------------------------------------------------------------
+    |
+    | Only valid registered commands used by
+    | the configured OWNER are counted.
+    |
+    |--------------------------------------------------------------------------
+    */
+
+    if (
+      context.isOwner
+    ) {
+      try {
+        const ownerStats =
+          recordOwnerCommand(
+            found.name
+          );
+
+        /*
+         * Keep the latest statistics
+         * available to the command context.
+         */
+
+        context.bot.ownerStats =
+          ownerStats;
+      } catch (statsError) {
+        console.error(
+          "[OWNER STATS] Record failed:",
+          statsError?.stack ||
+            statsError
+        );
+      }
+    }
 
     /*
      * Execute command.
@@ -1470,5 +1493,7 @@ module.exports = {
 
   reactToMessage,
 
-  attachStatusAI
+  attachStatusAI,
+
+  isOwner
 };
