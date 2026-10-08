@@ -7,6 +7,10 @@ const {
 const config = require("./config");
 
 const {
+  handleAutoViewOnce
+} = require("../services/viewOnce");
+
+const {
   attachStatusHandler
 } = require("./statusHandler");
 
@@ -548,6 +552,46 @@ function canProcessMessage(
 
   const jid =
     getChatJid(message);
+
+/*
+|--------------------------------------------------------------------------
+| AUTO VIEW ONCE IN PRIVATE DM
+|--------------------------------------------------------------------------
+|
+| ViewOnce ki antre dirèkteman nan DM bot la
+| ap dekode otomatikman san prefix.
+|
+|--------------------------------------------------------------------------
+*/
+
+if (
+  !isGroup(jid) &&
+  jid !== "status@broadcast" &&
+  !message?.key?.fromMe
+) {
+  const autoViewOnce =
+    await handleAutoViewOnce(
+      sock,
+      message
+    );
+
+  if (
+    autoViewOnce?.success
+  ) {
+    return {
+      success: true,
+
+      command:
+        "auto-viewonce",
+
+      result:
+        autoViewOnce,
+
+      sessionId:
+        sessionId || null
+    };
+  }
+}
 
   /*
    * Public:
