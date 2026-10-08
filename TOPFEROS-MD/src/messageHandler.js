@@ -6,6 +6,9 @@ const {
 
 const config = require("./config");
 
+const sessionManager =
+  require("./sessionManager");
+
 const {
   recordOwnerCommand
 } = require("./ownerStats");
@@ -429,7 +432,30 @@ function isStatus(
 |--------------------------------------------------------------------------
 */
 
-function getPrefix() {
+function getPrefix(
+  sessionId = ""
+) {
+  if (sessionId) {
+    try {
+      const session =
+        sessionManager.getSession(
+          sessionId
+        );
+
+      const sessionPrefix =
+        String(
+          session?.bot?.prefix ||
+          ""
+        ).trim();
+
+      if (sessionPrefix) {
+        return sessionPrefix;
+      }
+    } catch {
+      // Fall back to global configuration.
+    }
+  }
+
   return (
     config?.bot?.prefix ||
     "."
@@ -443,10 +469,13 @@ function getPrefix() {
 */
 
 function parseCommand(
-  text
+  text,
+  sessionId = ""
 ) {
   const prefix =
-    getPrefix();
+  getPrefix(
+    sessionId
+  );
 
   const cleanText =
     String(text || "")
@@ -1220,9 +1249,10 @@ async function handleMessage(
      */
 
     const parsed =
-      parseCommand(
-        messageText
-      );
+  parseCommand(
+    messageText,
+    sessionId
+  );
 
     if (!parsed) {
       return {
