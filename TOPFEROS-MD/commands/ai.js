@@ -1,212 +1,46 @@
 "use strict";
 
-// ╔════════════════════════════════════════════════════╗
-// ║              🦁 TOPFEROS MD V2.0.0               ║
-// ║                    AI COMMAND                    ║
-// ╚════════════════════════════════════════════════════╝
-
-const {
-  registerCommand
-} = require("../src/messageHandler");
-
-const {
-  askAI,
-  isAIConfigured
-} = require("../services/ai");
-
 /*
 |--------------------------------------------------------------------------
-| AI QUESTION COMMAND
+| TOPFEROS MD V2.0.0
+| AI COMMAND
 |--------------------------------------------------------------------------
 */
 
 async function aiCommand(ctx) {
-  try {
-    /*
-    |--------------------------------------------------------------------------
-    | CHECK AI CONFIGURATION
-    |--------------------------------------------------------------------------
-    */
-
-    if (!isAIConfigured()) {
-      await ctx.send(
-        [
-          "❌ AI NOT CONFIGURED",
-          "",
-          "The AI service is not configured yet.",
-          "",
-          "Please check:",
-          "• AI_API_URL",
-          "• AI_API_KEY",
-          "• AI_MODEL",
-          "",
-          "🦁 TECH BY TOPFEROS MD 🐑"
-        ].join("\n")
-      );
-
-      return {
-        success: false,
-        reason:
-          "AI is not configured."
-      };
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | GET QUESTION
-    |--------------------------------------------------------------------------
-    */
-
-    const question =
-      String(
-        ctx.text || ""
-      ).trim();
-
-    if (!question) {
-      await ctx.send(
-        [
-          "╭━━━〔 🤖 AI QUESTION 〕━━━╮",
-          "",
-          "Ask me anything.",
-          "",
-          "Example:",
-          "`.ai What is artificial intelligence?`",
-          "",
-          "Alias:",
-          "`.ask Your question`",
-          "",
-          "╰━━━━━━━━━━━━━━━━━━━━━━╯",
-          "",
-          "🦁 TECH BY TOPFEROS MD 🐑"
-        ].join("\n")
-      );
-
-      return {
-        success: false,
-        reason:
-          "No question provided."
-      };
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | SHOW PROCESSING REACTION
-    |--------------------------------------------------------------------------
-    */
-
-    try {
-      await ctx.react("🤔");
-    } catch {
-      // Ignore reaction errors.
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | ASK AI
-    |--------------------------------------------------------------------------
-    */
-
-    const answer =
-      await askAI(
-        question
-      );
-
-    /*
-    |--------------------------------------------------------------------------
-    | SEND ANSWER
-    |--------------------------------------------------------------------------
-    */
-
-    const message = [
-      "╭━━━〔 🤖 TOPFEROS AI 〕━━━╮",
-      "",
-      `❓ ${question}`,
-      "",
-      "💬 Answer:",
-      "",
-      answer,
-      "",
-      "╰━━━━━━━━━━━━━━━━━━━━━━╯",
-      "",
-      "🦁 TECH BY TOPFEROS MD 🐑",
-      "",
-      "🌐 *Web Connect*",
-      "└──➤TRUE",
-      "🌐 *Web Channel*",
-      "└──➤https://whatsapp.com/channel/0029Vb98522IXnlxdL8Sxj2m"
-    ].join("\n");
-
-    await ctx.send(
-      message
-    );
-
-    try {
-      await ctx.react("✅");
-    } catch {
-      // Ignore reaction errors.
-    }
-
-    return {
-      success: true
-    };
-  } catch (error) {
-    console.error(
-      "[AI] Error:",
-      error?.stack ||
-        error
-    );
-
-    try {
-      await ctx.react("❌");
-    } catch {
-      // Ignore reaction errors.
-    }
-
+  if (!ctx.text) {
     await ctx.send(
       [
-        "❌ AI ERROR",
+        "🤖 Please provide a question.",
         "",
-        "I could not process your question right now.",
-        "",
-        "Please try again later.",
+        `Example: ${ctx.prefix}ai What is artificial intelligence?`,
         "",
         "🦁 TECH BY TOPFEROS MD 🐑"
       ].join("\n")
     );
 
     return {
-      success: false,
-      error:
-        error?.message ||
-        String(error)
+      success: false
     };
   }
+
+  await ctx.send(
+    [
+      "🤖 AI REQUEST RECEIVED",
+      "",
+      `📝 ${ctx.text}`,
+      "",
+      "⚙️ AI service is not connected yet.",
+      "",
+      "🦁 TECH BY TOPFEROS MD 🐑"
+    ].join("\n")
+  );
+
+  return {
+    success: true,
+    pending: true
+  };
 }
-
-/*
-|--------------------------------------------------------------------------
-| REGISTER COMMAND
-|--------------------------------------------------------------------------
-*/
-
-registerCommand(
-  "ai",
-  aiCommand,
-  {
-    aliases: [
-      "ask"
-    ],
-
-    description:
-      "Ask the TOPFEROS MD AI a question.",
-
-    usage:
-      ".ai <question>",
-
-    category:
-      "AI"
-  }
-);
 
 module.exports = {
   aiCommand
