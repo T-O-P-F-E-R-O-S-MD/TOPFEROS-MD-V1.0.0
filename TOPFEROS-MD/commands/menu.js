@@ -77,6 +77,7 @@ function buildMenu(message) {
 │ 📞 Anti Call
 │ 🛡️ Anti Delete
 │ 🤖 Anti Bot Protection
+│ 👁️ ViewOnce / VV2
 │ 👥 Group Management
 │ 🕦 Group Automation
 │ 🧠 Smart AI & Auto Chat
@@ -90,6 +91,9 @@ function buildMenu(message) {
 │                              │
 │ 📋 Type ${prefix}menu
 │    ➜ To view all commands
+│
+│ 👁️ Type ${prefix}vv2
+│    ➜ Decode a replied ViewOnce
 │
 │ ⚙️ Type ${prefix}setting
 │    ➜ To open the settings portal
