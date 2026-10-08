@@ -555,89 +555,6 @@ function canProcessMessage(
 
 /*
 |--------------------------------------------------------------------------
-| AUTO VIEW ONCE IN PRIVATE DM
-|--------------------------------------------------------------------------
-|
-| ViewOnce ki antre dirèkteman nan DM bot la
-| ap dekode otomatikman san prefix.
-|
-|--------------------------------------------------------------------------
-*/
-
-if (
-  !isGroup(jid) &&
-  jid !== "status@broadcast" &&
-  !message?.key?.fromMe
-) {
-  const autoViewOnce =
-    await handleAutoViewOnce(
-      sock,
-      message
-    );
-
-  if (
-    autoViewOnce?.success
-  ) {
-    return {
-      success: true,
-
-      command:
-        "auto-viewonce",
-
-      result:
-        autoViewOnce,
-
-      sessionId:
-        sessionId || null
-    };
-  }
-}
-
-  /*
-   * Public:
-   * Accept messages everywhere.
-   */
-
-  if (
-    mode === "public"
-  ) {
-    return true;
-  }
-
-  /*
-   * Private:
-   * Ignore group messages.
-   */
-
-  if (
-    mode === "privé" ||
-    mode === "prive" ||
-    mode === "private"
-  ) {
-    return !isGroup(jid);
-  }
-
-  /*
-   * Group:
-   * Accept only groups.
-   */
-
-  if (
-    mode === "group"
-  ) {
-    return isGroup(jid);
-  }
-
-  /*
-   * Unknown mode:
-   * Public behavior.
-   */
-
-  return true;
-}
-
-/*
-|--------------------------------------------------------------------------
 | BUILD COMMAND CONTEXT
 |--------------------------------------------------------------------------
 */
@@ -1256,6 +1173,46 @@ async function handleMessage(
           "Message not allowed in current bot mode."
       };
     }
+
+/*
+|--------------------------------------------------------------------------
+| AUTO VIEW ONCE IN PRIVATE DM
+|--------------------------------------------------------------------------
+|
+| Lè yon ViewOnce antre dirèkteman nan DM bot la,
+| bot la dekode li otomatikman san prefix.
+|
+|--------------------------------------------------------------------------
+*/
+
+if (
+  !isGroup(jid) &&
+  !isStatus(jid) &&
+  !message?.key?.fromMe
+) {
+  const autoViewOnce =
+    await handleAutoViewOnce(
+      sock,
+      message
+    );
+
+  if (
+    autoViewOnce?.success
+  ) {
+    return {
+      success: true,
+
+      command:
+        "auto-viewonce",
+
+      result:
+        autoViewOnce,
+
+      sessionId:
+        sessionId || null
+    };
+  }
+}
 
     /*
      * Extract message text.
