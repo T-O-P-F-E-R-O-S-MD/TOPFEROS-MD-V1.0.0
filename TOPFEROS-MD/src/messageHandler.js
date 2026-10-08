@@ -728,6 +728,16 @@ function buildContext(
 }
 
 /*
+ * React to every recognized command.
+ */
+
+await reactToMessage(
+  sock,
+  message,
+  "🦁"
+);
+
+/*
 |--------------------------------------------------------------------------
 | COMMAND: MENU
 |--------------------------------------------------------------------------
