@@ -9,19 +9,31 @@ const {
   registerCommand
 } = require("../src/messageHandler");
 
-const config = require("../config");
+const {
+  getOwnerStats
+} = require("../src/ownerStats");
 
-function formatNumber(number) {
+const config =
+  require("../config");
+
+function formatNumber(
+  number
+) {
   if (!number) {
     return "Not configured";
   }
 
   return String(number)
-    .replace(/@s\.whatsapp\.net$/i, "")
+    .replace(
+      /@s\.whatsapp\.net$/i,
+      ""
+    )
     .trim();
 }
 
-function formatDate(date) {
+function formatDate(
+  date
+) {
   if (!date) {
     return "Not available";
   }
@@ -47,41 +59,59 @@ function formatDate(date) {
   );
 }
 
-async function ownerCommand(ctx) {
+async function ownerCommand(
+  ctx
+) {
   try {
     const ownerName =
-      config.ownerName ||
+      config?.ownerName ||
+      config?.owner?.name ||
+      config?.bot?.ownerName ||
+      process.env.OWNER_NAME ||
       "TOPFEROS MD";
 
     const ownerNumber =
       formatNumber(
-        config.ownerNumber
+        config?.ownerNumber ||
+        config?.owner?.number ||
+        config?.bot?.ownerNumber ||
+        process.env.OWNER_NUMBER
       );
 
+    /*
+    |--------------------------------------------------------------------------
+    | LOAD REAL OWNER STATISTICS
+    |--------------------------------------------------------------------------
+    */
+
     const stats =
-      ctx.bot?.ownerStats ||
-      {};
+      getOwnerStats();
 
     const firstUsedAt =
       stats.firstUsedAt ||
-      config.botCreatedAt ||
       null;
 
     const totalCommands =
       Number(
         stats.totalCommands ||
-          0
+        0
       );
 
     const todayCommands =
       Number(
         stats.todayCommands ||
-          0
+        0
       );
 
     const mostUsedCommand =
       stats.mostUsedCommand ||
       "No data yet";
+
+    /*
+    |--------------------------------------------------------------------------
+    | OWNER MESSAGE
+    |--------------------------------------------------------------------------
+    */
 
     const message = [
       "╭━━━〔 🦁 TOPFEROS MD 〕━━━╮",
@@ -118,12 +148,14 @@ async function ownerCommand(ctx) {
         text: message
       },
       {
-        quoted: ctx.message
+        quoted:
+          ctx.message
       }
     );
 
     return {
-      success: true
+      success: true,
+      stats
     };
   } catch (error) {
     console.error(
@@ -148,10 +180,13 @@ registerCommand(
     aliases: [
       "creator"
     ],
+
     description:
-      "Show owner information and activity statistics.",
+      "Show owner information and real activity statistics.",
+
     usage:
       ".owner",
+
     category:
       "INFO"
   }
