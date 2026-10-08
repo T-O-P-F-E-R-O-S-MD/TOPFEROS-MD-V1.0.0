@@ -71,24 +71,16 @@ app.use(
 // STATIC FILES
 // ============================================================
 
-if (
-  fs.existsSync(PANEL_PUBLIC_DIR)
-) {
+if (fs.existsSync(PANEL_PUBLIC_DIR)) {
   app.use(
-    express.static(
-      PANEL_PUBLIC_DIR
-    )
+    express.static(PANEL_PUBLIC_DIR)
   );
 }
 
-if (
-  fs.existsSync(ASSETS_DIR)
-) {
+if (fs.existsSync(ASSETS_DIR)) {
   app.use(
     "/assets",
-    express.static(
-      ASSETS_DIR
-    )
+    express.static(ASSETS_DIR)
   );
 }
 
@@ -126,9 +118,7 @@ function getSessionId(req) {
   );
 }
 
-function getSession(
-  sessionId
-) {
+function getSession(sessionId) {
   if (!sessionId) {
     return null;
   }
@@ -168,6 +158,45 @@ function getSessionOrFail(
   return session;
 }
 
+function getActiveSessionCount() {
+  if (
+    typeof sessionManager.getActiveSessions ===
+    "function"
+  ) {
+    const sessions =
+      sessionManager.getActiveSessions();
+
+    if (Array.isArray(sessions)) {
+      return sessions.length;
+    }
+
+    if (
+      sessions &&
+      typeof sessions.size === "number"
+    ) {
+      return sessions.size;
+    }
+
+    if (
+      sessions &&
+      typeof sessions === "object"
+    ) {
+      return Object.keys(sessions).length;
+    }
+  }
+
+  if (
+    typeof sessionManager.getActiveSessionCount ===
+    "function"
+  ) {
+    return Number(
+      sessionManager.getActiveSessionCount()
+    ) || 0;
+  }
+
+  return 0;
+}
+
 // ============================================================
 // HOME
 // ============================================================
@@ -181,12 +210,8 @@ app.get(
         "index.html"
       );
 
-    if (
-      fs.existsSync(indexPath)
-    ) {
-      return res.sendFile(
-        indexPath
-      );
+    if (fs.existsSync(indexPath)) {
+      return res.sendFile(indexPath);
     }
 
     return res.status(200).send(`
@@ -221,12 +246,10 @@ app.get(
     const settingPath =
       path.join(
         PANEL_PUBLIC_DIR,
-        "setting.html"
+        "settings.html"
       );
 
-    if (
-      !fs.existsSync(settingPath)
-    ) {
+    if (!fs.existsSync(settingPath)) {
       return sendError(
         res,
         404,
@@ -234,9 +257,7 @@ app.get(
       );
     }
 
-    return res.sendFile(
-      settingPath
-    );
+    return res.sendFile(settingPath);
   }
 );
 
@@ -253,8 +274,7 @@ app.get(
       bot: "TOPFEROS MD",
       version: "2.0.0",
       uptime: process.uptime(),
-      sessions:
-        sessionManager.getActiveSessionCount()
+      sessions: getActiveSessionCount()
     });
   }
 );
@@ -415,6 +435,34 @@ app.post(
           req.body?.language
         );
 
+      const key =
+        String(
+          req.body?.key || ""
+        ).trim();
+
+      /*
+       * app.js uses one translation key
+       * at a time.
+       */
+      if (key) {
+        const text =
+          language.getText(
+            selected,
+            key
+          );
+
+        return res.json({
+          success: true,
+          language: selected,
+          key,
+          text
+        });
+      }
+
+      /*
+       * Keep support for an array of
+       * translation values as well.
+       */
       const texts =
         Array.isArray(
           req.body?.texts
@@ -423,7 +471,7 @@ app.post(
           : [];
 
       const translations =
-        texts.map(text =>
+        texts.map((text) =>
           language.getText(
             selected,
             String(text || "")
@@ -493,8 +541,8 @@ app.post(
       }
 
       /*
-       * V2 sessionManager uses the normalized
-       * phone number as the session ID.
+       * V2 uses the normalized phone
+       * number as the session ID.
        */
       if (!sessionId) {
         sessionId =
@@ -514,10 +562,6 @@ app.post(
         );
       }
 
-      /*
-       * The settings panel owns its own
-       * verification logic when available.
-       */
       if (
         typeof settingPanel.verifySession ===
         "function"
@@ -705,9 +749,7 @@ app.get(
           sessionId
         );
 
-      return res.json(
-        data
-      );
+      return res.json(data);
 
     } catch (error) {
       logger.error(
@@ -766,21 +808,39 @@ app.post(
         );
       }
 
+      const incomingSettings =
+        req.body?.settings || {};
+
+      const automation =
+        req.body?.automation ||
+        incomingSettings.automation ||
+        {};
+
+      const groupAutomation =
+        req.body?.groupAutomation ||
+        incomingSettings.groupAutomation ||
+        {};
+
       const result =
         settingPanel.saveSettings(
           sessionId,
           {
             bot:
-              req.body?.bot || {},
+              req.body?.bot ||
+              incomingSettings.bot ||
+              {},
 
-            settings:
-              req.body?.settings || {}
+            settings: {
+              ...incomingSettings,
+
+              automation,
+
+              groupAutomation
+            }
           }
         );
 
-      return res.json(
-        result
-      );
+      return res.json(result);
 
     } catch (error) {
       logger.error(
@@ -802,71 +862,91 @@ app.post(
 // DISCONNECT
 // ============================================================
 
-app.post(
-  "/api/session/:sessionId/disconnect",
-  async (req, res) => {
-    try {
-      const sessionId =
-        cleanSessionId(
-          req.params.sessionId
-        );
+async function handleDisconnect(
+  req,
+  res,
+  sessionId
+) {
+  try {
+    const cleanId =
+      cleanSessionId(sessionId);
 
-      if (!sessionId) {
-        return sendError(
-          res,
-          400,
-          "Invalid session ID."
-        );
-      }
-
-      if (
-        !getSessionOrFail(
-          res,
-          sessionId
-        )
-      ) {
-        return;
-      }
-
-      if (
-        typeof connection.disconnectSession !==
-        "function"
-      ) {
-        return sendError(
-          res,
-          500,
-          "Disconnect is not available."
-        );
-      }
-
-      await connection.disconnectSession(
-        sessionId
+    if (!cleanId) {
+      return sendError(
+        res,
+        400,
+        "Invalid session ID."
       );
+    }
 
-      return res.json({
-        success: true,
+    if (
+      !getSessionOrFail(
+        res,
+        cleanId
+      )
+    ) {
+      return;
+    }
 
-        connected: false,
-
-        credentialsKept: true,
-
-        message:
-          "Session disconnected. Credentials were kept."
-      });
-
-    } catch (error) {
-      logger.error(
-        error,
-        "❌ DISCONNECT ERROR"
-      );
-
+    if (
+      typeof connection.disconnectSession !==
+      "function"
+    ) {
       return sendError(
         res,
         500,
-        error.message ||
-          "Unable to disconnect session."
+        "Disconnect is not available."
       );
     }
+
+    await connection.disconnectSession(
+      cleanId
+    );
+
+    return res.json({
+      success: true,
+      connected: false,
+      credentialsKept: true,
+      message:
+        "Session disconnected. Credentials were kept."
+    });
+
+  } catch (error) {
+    logger.error(
+      error,
+      "❌ DISCONNECT ERROR"
+    );
+
+    return sendError(
+      res,
+      500,
+      error.message ||
+        "Unable to disconnect session."
+    );
+  }
+}
+
+// Frontend route used by app.js.
+app.post(
+  "/api/session/disconnect",
+  async (req, res) => {
+    return handleDisconnect(
+      req,
+      res,
+      req.body?.sessionId
+    );
+  }
+);
+
+// REST-style route.
+app.post(
+  "/api/session/:sessionId/disconnect",
+  async (req, res) => {
+    return handleDisconnect(
+      req,
+      res,
+      req.params.sessionId
+    );
   }
 );
 
@@ -874,72 +954,95 @@ app.post(
 // RECONNECT
 // ============================================================
 
-app.post(
-  "/api/session/:sessionId/reconnect",
-  async (req, res) => {
-    try {
-      const sessionId =
-        cleanSessionId(
-          req.params.sessionId
-        );
+async function handleReconnect(
+  req,
+  res,
+  sessionId
+) {
+  try {
+    const cleanId =
+      cleanSessionId(sessionId);
 
-      if (!sessionId) {
-        return sendError(
-          res,
-          400,
-          "Invalid session ID."
-        );
-      }
-
-      if (
-        !getSessionOrFail(
-          res,
-          sessionId
-        )
-      ) {
-        return;
-      }
-
-      if (
-        typeof connection.reconnectSession ===
-        "function"
-      ) {
-        await connection.reconnectSession(
-          sessionId
-        );
-      } else {
-        return sendError(
-          res,
-          500,
-          "Reconnect is not available."
-        );
-      }
-
-      return res.json({
-        success: true,
-
-        connected:
-          sessionManager.isConnected(
-            sessionId
-          ),
-
-        message:
-          "Session reconnect started."
-      });
-
-    } catch (error) {
-      logger.error(
-        error,
-        "❌ RECONNECT ERROR"
+    if (!cleanId) {
+      return sendError(
+        res,
+        400,
+        "Invalid session ID."
       );
+    }
 
+    if (
+      !getSessionOrFail(
+        res,
+        cleanId
+      )
+    ) {
+      return;
+    }
+
+    if (
+      typeof connection.reconnectSession !==
+      "function"
+    ) {
       return sendError(
         res,
         500,
-        error.message ||
-          "Unable to reconnect session."
+        "Reconnect is not available."
       );
     }
+
+    await connection.reconnectSession(
+      cleanId
+    );
+
+    return res.json({
+      success: true,
+
+      connected:
+        sessionManager.isConnected(
+          cleanId
+        ),
+
+      message:
+        "Session reconnect started."
+    });
+
+  } catch (error) {
+    logger.error(
+      error,
+      "❌ RECONNECT ERROR"
+    );
+
+    return sendError(
+      res,
+      500,
+      error.message ||
+        "Unable to reconnect session."
+    );
+  }
+}
+
+// Frontend route used by app.js.
+app.post(
+  "/api/session/reconnect",
+  async (req, res) => {
+    return handleReconnect(
+      req,
+      res,
+      req.body?.sessionId
+    );
+  }
+);
+
+// REST-style route.
+app.post(
+  "/api/session/:sessionId/reconnect",
+  async (req, res) => {
+    return handleReconnect(
+      req,
+      res,
+      req.params.sessionId
+    );
   }
 );
 
@@ -950,9 +1053,7 @@ app.post(
 app.get(
   "/api/assets/logo",
   (req, res) => {
-    if (
-      !fs.existsSync(LOGO_FILE)
-    ) {
+    if (!fs.existsSync(LOGO_FILE)) {
       return sendError(
         res,
         404,
@@ -1015,9 +1116,7 @@ app.use(
       "❌ PANEL SERVER ERROR"
     );
 
-    if (
-      res.headersSent
-    ) {
+    if (res.headersSent) {
       return next(error);
     }
 
@@ -1047,9 +1146,7 @@ const server =
 // SHUTDOWN
 // ============================================================
 
-function shutdown(
-  signal
-) {
+function shutdown(signal) {
   logger.info(
     `🛑 ${signal} received. Closing panel server...`
   );
@@ -1077,7 +1174,7 @@ process.on(
 
 process.on(
   "uncaughtException",
-  error => {
+  (error) => {
     logger.error(
       error,
       "❌ UNCAUGHT EXCEPTION"
@@ -1087,7 +1184,7 @@ process.on(
 
 process.on(
   "unhandledRejection",
-  reason => {
+  (reason) => {
     logger.error(
       reason,
       "❌ UNHANDLED REJECTION"
