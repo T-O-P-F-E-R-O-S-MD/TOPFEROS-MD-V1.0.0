@@ -1,0 +1,97 @@
+"use strict";
+
+// ╔════════════════════════════════════════════════════╗
+// ║              🦁 TOPFEROS MD V2.0.0               ║
+// ║                   PING COMMAND                   ║
+// ╚════════════════════════════════════════════════════╝
+
+const {
+  registerCommand
+} = require("../src/messageHandler");
+
+async function pingCommand(ctx) {
+  try {
+    const messageTimestamp =
+      Number(
+        ctx.message?.messageTimestamp || 0
+      );
+
+    let responseTime = 0;
+
+    if (messageTimestamp > 0) {
+      responseTime = Math.max(
+        0,
+        Date.now() -
+          messageTimestamp * 1000
+      );
+    }
+
+    await ctx.sock.sendMessage(
+      ctx.jid,
+      {
+        text:
+          [
+            "🏓 PONG!",
+            "",
+            `⚡ Response: ${responseTime} ms`,
+            "🤖 Bot: TOPFEROS MD",
+            "📦 Version: V2.0.0",
+            "",
+            "🦁 TECH BY TOPFEROS MD 🐑"
+          ].join("\n")
+      },
+      {
+        quoted:
+          ctx.message
+      }
+    );
+
+    return {
+      success: true,
+      responseTime
+    };
+  } catch (error) {
+    console.error(
+      "[PING] Error:",
+      error?.stack ||
+        error
+    );
+
+    await ctx.send(
+      [
+        "❌ PING FAILED",
+        "",
+        "The bot could not calculate the response time.",
+        "",
+        "🦁 TECH BY TOPFEROS MD 🐑"
+      ].join("\n")
+    );
+
+    return {
+      success: false,
+      error:
+        error?.message ||
+        String(error)
+    };
+  }
+}
+
+registerCommand(
+  "ping",
+  pingCommand,
+  {
+    aliases: [
+      "p"
+    ],
+    description:
+      "Check bot response time and status.",
+    usage:
+      ".ping",
+    category:
+      "UTILITY"
+  }
+);
+
+module.exports = {
+  pingCommand
+};
