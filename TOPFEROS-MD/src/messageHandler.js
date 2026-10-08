@@ -553,6 +553,47 @@ function canProcessMessage(
   const jid =
     getChatJid(message);
 
+  const group =
+    isGroup(jid);
+
+  /*
+   * PUBLIC MODE
+   * Tout mesaj ki pa status ka trete.
+   */
+
+  if (mode === "public") {
+    return true;
+  }
+
+  /*
+   * PRIVATE MODE
+   * Se DM sèlman.
+   */
+
+  if (mode === "private") {
+    return !group;
+  }
+
+  /*
+   * GROUP MODE
+   * Se group sèlman.
+   */
+
+  if (
+    mode === "group" ||
+    mode === "groups"
+  ) {
+    return group;
+  }
+
+  /*
+   * Unknown mode:
+   * default to public behavior.
+   */
+
+  return true;
+}
+
 /*
 |--------------------------------------------------------------------------
 | BUILD COMMAND CONTEXT
