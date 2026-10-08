@@ -23,6 +23,7 @@
   "license": "MIT",
   "dependencies": {
     "@whiskeysockets/baileys": "npm:@dexterid/baileys@2.2.9",
+    "@google/genai": "^1.21.0",
     "axios": "^1.7.9",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
