@@ -3,6 +3,8 @@
 const path = require("path");
 const fs = require("fs");
 
+const crypto = require("crypto");
+
 const config = require("./config");
 const sessionManager = require("./sessionManager");
 const language = require("./language");
@@ -34,6 +36,64 @@ const BACKGROUND_PATH = path.resolve(
 // ============================================================
 
 const panelSessions = new Map();
+
+const panelAccessCodes = new Map();
+
+const PANEL_CODE_TTL = 5 * 60 * 1000;
+
+function generatePanelAccessCode(sessionId) {
+  const id = normalizeSessionId(sessionId);
+
+  if (!id || !sessionManager.getSession(id)) {
+    throw new Error("Active bot session is required.");
+  }
+
+  if (!sessionManager.isConnected(id)) {
+    throw new Error("The bot must be connected.");
+  }
+
+  const code = crypto
+    .randomInt(0, 1000000)
+    .toString()
+    .padStart(6, "0");
+
+  panelAccessCodes.set(id, {
+    code,
+    expiresAt: Date.now() + PANEL_CODE_TTL
+  });
+
+  return code;
+}
+
+function verifyPanelAccessCode(sessionId, submittedCode) {
+  const id = normalizeSessionId(sessionId);
+  const record = panelAccessCodes.get(id);
+
+  if (!id || !record) {
+    return false;
+  }
+
+  if (
+    Date.now() > record.expiresAt ||
+    !sessionManager.isConnected(id)
+  ) {
+    panelAccessCodes.delete(id);
+    return false;
+  }
+
+  if (String(submittedCode || "").trim() !== record.code) {
+    return false;
+  }
+
+  panelAccessCodes.delete(id);
+  return true;
+}
+
+function clearPanelAccessCode(sessionId) {
+  return panelAccessCodes.delete(
+    normalizeSessionId(sessionId)
+  );
+}
 
 // ============================================================
 // HELPERS
