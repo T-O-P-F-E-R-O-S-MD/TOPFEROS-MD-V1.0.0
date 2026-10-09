@@ -57,13 +57,11 @@ body {
 .panel-background {
   position: fixed;
   inset: 0;
-  z-index: -2;
-  background:
-    linear-gradient(
-      rgba(0, 0, 0, 0.68),
-      rgba(0, 0, 0, 0.82)
-    ),
-    url("/panel/background.png") center / cover no-repeat;
+  z-index: -1;
+  background-image: url("/panel-background.png");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
 }
 
 .panel-background::after {
