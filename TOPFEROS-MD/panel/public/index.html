@@ -1,843 +1,447 @@
+
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ht">
 <head>
   <meta charset="UTF-8">
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
-  >
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#10131d">
+  <meta name="description" content="TOPFEROS MD V2.0.0 Connect Panel">
+  <title>🦁 TOPFEROS MD PANEL 🐑</title>
+  <link rel="stylesheet" href="/style.css">
 
-  <title>TOPFEROS MD V2.0.0</title>
+  <style>
+    body {
+      background: #10131d;
+      color: #fff;
+    }
 
-  <meta
-    name="description"
-    content="TOPFEROS MD V2.0.0 Settings Panel"
-  >
+    .connect-card {
+      width: min(100%, 480px);
+      margin: 0 auto;
+      padding: 24px;
+      border: 1px solid #d9ad42;
+      border-radius: 22px;
+      background: rgba(12, 15, 25, .96);
+      box-shadow: 0 12px 40px #0008;
+      text-align: center;
+    }
 
-  <link
-    rel="stylesheet"
-    href="/style.css"
-  >
+    .connect-logo {
+      display: block;
+      width: 100px;
+      height: 100px;
+      object-fit: contain;
+      margin: 0 auto 14px;
+      border-radius: 50%;
+    }
+
+    .connect-title {
+      margin: 8px 0;
+      font-size: 22px;
+      line-height: 1.5;
+    }
+
+    .gold {
+      color: #f5c451;
+    }
+
+    .connect-subtitle {
+      color: #b9bfd0;
+      font-size: 13px;
+      margin-bottom: 24px;
+    }
+
+    .connect-screen[hidden] {
+      display: none !important;
+    }
+
+    .connect-field {
+      width: 100%;
+      padding: 13px;
+      margin: 10px 0;
+      color: #fff;
+      background: #191e2d;
+      border: 1px solid #41485b;
+      border-radius: 10px;
+      font-size: 15px;
+    }
+
+    .connect-button {
+      width: 100%;
+      padding: 13px;
+      margin-top: 10px;
+      border: 0;
+      border-radius: 10px;
+      background: #f5c451;
+      color: #17120a;
+      font-size: 15px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .connect-button.secondary {
+      background: #252c3d;
+      color: white;
+      border: 1px solid #4b5368;
+    }
+
+    .connect-button:disabled {
+      opacity: .6;
+      cursor: wait;
+    }
+
+    .connect-code-box {
+      margin-top: 18px;
+      padding: 18px 12px;
+      border: 1px dashed #f5c451;
+      border-radius: 12px;
+      overflow-wrap: anywhere;
+    }
+
+    #parrainCode {
+      color: #f5c451;
+      font-size: 25px;
+      font-weight: bold;
+      letter-spacing: 2px;
+    }
+
+    #statusMessage {
+      min-height: 22px;
+      margin-top: 14px;
+      color: #d6d9e3;
+      font-size: 13px;
+      overflow-wrap: anywhere;
+    }
+
+    .connect-footer {
+      margin-top: 26px;
+      padding-top: 16px;
+      border-top: 1px solid #34394a;
+      color: #f5c451;
+      font-size: 12px;
+      font-weight: bold;
+    }
+  </style>
 </head>
 
 <body>
-
-  <!-- =====================================================
-       TOPFEROS MD V2.0.0
-       MAIN PANEL
-       ===================================================== -->
-
   <main class="panel-page">
-
-    <!-- BACKGROUND -->
     <div class="panel-background" aria-hidden="true"></div>
 
-    <!-- PANEL -->
-    <section class="panel-card">
+    <section class="connect-card">
+      <img
+        class="connect-logo"
+        src="/assets/logo.png"
+        alt="TOPFEROS MD"
+        onerror="this.style.display='none'"
+      >
 
-      <!-- LOGO -->
-      <div class="panel-logo-wrapper">
-        <img
-          id="panelLogo"
-          class="panel-logo"
-          src="/assets/logo.png"
-          alt="TOPFEROS MD"
-          onerror="this.style.display='none'"
-        >
-      </div>
+      <h1 class="connect-title">
+        🦁 TOPFEROS MD PANEL 🐑
+      </h1>
 
-      <!-- HEADER -->
-      <header class="panel-header">
+      <p class="connect-subtitle">V2.0.0 · CONNECT PANEL</p>
 
-        <h1>
-          🦁 TOPFEROS MD 🐑
-        </h1>
+      <!-- PREMIER ÉCRAN : LANGUE -->
+      <section id="languageScreen" class="connect-screen">
+        <h2 class="gold">CHWAZI YON LANG🌐</h2>
 
-        <p class="panel-version">
-          V2.0.0
+        <label for="languageSelect">Chwazi lang ou</label>
+
+        <select id="languageSelect" class="connect-field">
+          <option value="">-- Chwazi yon lang --</option>
+          <option value="ht">🇭🇹 Kreyòl Ayisyen</option>
+          <option value="en">🇺🇸 English</option>
+          <option value="fr">🇫🇷 Français</option>
+          <option value="es">🇪🇸 Español</option>
+          <option value="es_do">🇩🇴 Español Dominicano</option>
+          <option value="pt">🇵🇹 Português</option>
+          <option value="zh">🇨🇳 中文</option>
+        </select>
+
+        <button id="continueButton" class="connect-button" type="button">
+          KONTINYE ➜
+        </button>
+      </section>
+
+      <!-- DEZYÈM EKRAN : KÒD PARENAJ -->
+      <section id="parrainScreen" class="connect-screen" hidden>
+        <h2 id="formTitle" class="gold">🔐 KÒD PARENAJ</h2>
+
+        <p id="instructions">
+          Antre nimewo WhatsApp ou ak kòd peyi a.
         </p>
 
-        <div
-          id="connectionStatus"
-          class="connection-status disconnected"
-          data-connection-status
-        >
-          🔴 DISCONNECTED
-        </div>
-
-      </header>
-
-
-      <!-- =================================================
-           LANGUAGE
-           ================================================= -->
-
-      <section class="panel-section">
-
-        <div class="section-title">
-          🌐 LANGUAGE
-        </div>
-
-        <div class="field-group">
-
-          <label for="panelLanguage">
-            PANEL LANGUAGE
-          </label>
-
-          <select
-            id="panelLanguage"
-            data-language-select
-          >
-            <option value="en">
-              🇺🇸 English
-            </option>
-
-            <option value="fr">
-              🇫🇷 Français
-            </option>
-
-            <option value="es">
-              🇪🇸 Español
-            </option>
-
-            <option value="es_do">
-              🇩🇴 Español Dominicano
-            </option>
-
-            <option value="pt">
-              🇵🇹 Português
-            </option>
-
-            <option value="zh">
-              🇨🇳 中文
-            </option>
-
-            <option value="ht">
-              🇭🇹 Kreyòl Ayisyen
-            </option>
-          </select>
-
-        </div>
-
-      </section>
-
-
-      <!-- =================================================
-           SESSION
-           ================================================= -->
-
-      <section class="panel-section">
-
-        <div class="section-title">
-          🔐 SESSION
-        </div>
-
-        <div class="field-group">
-
-          <label for="ownerNumber">
-            NUMBER
-          </label>
-
+        <form id="parrainForm">
           <input
-            id="ownerNumber"
-            type="text"
-            inputmode="tel"
-            autocomplete="off"
-            placeholder="WhatsApp number"
+            id="phoneNumber"
+            class="connect-field"
+            type="tel"
+            inputmode="numeric"
+            autocomplete="tel"
+            placeholder="Egzanp: 509XXXXXXXX"
+            required
           >
 
+          <button id="generateButton" class="connect-button" type="submit">
+            🦁 JENERE KÒD LA
+          </button>
+        </form>
+
+        <div id="codeBox" class="connect-code-box" hidden>
+          <div id="parrainCode"></div>
+
+          <button id="copyButton" class="connect-button secondary" type="button">
+            📋 KOPYE KÒD LA
+          </button>
+
+          <p id="expiration"></p>
         </div>
 
-        <div class="field-group">
-
-          <label for="sessionId">
-            SESSION ID
-          </label>
-
-          <input
-            id="sessionId"
-            type="text"
-            autocomplete="off"
-            placeholder="Session ID"
-          >
-
-        </div>
-
-        <button
-          type="button"
-          class="panel-button primary"
-          data-action="connect"
-          id="connectButton"
-        >
-          🟢 CONNECT
+        <button id="backButton" class="connect-button secondary" type="button">
+          ← RETOUNEN CHWAZI LANG
         </button>
 
-<div id="pairingResult" class="field-group" hidden>
-  <label for="pairingCode">🔑 WHATSAPP PAIRING CODE</label>
-
-  <input
-    id="pairingCode"
-    type="text"
-    readonly
-    autocomplete="off"
-  >
-
-  <button
-    type="button"
-    id="copyPairingCode"
-    class="panel-button primary"
-  >
-    📋 COPY CODE
-  </button>
-
-  <p id="pairingMessage">
-    Louvri WhatsApp sou telefòn ou pou antre kòd la.
-  </p>
-</div>
-
-        <button
-          type="button"
-          class="panel-button danger"
-          data-action="disconnect"
-          id="disconnectButton"
-          disabled
-        >
-          🔴 DISCONNECT
-        </button>
-
+        <p id="statusMessage" role="status" aria-live="polite"></p>
       </section>
 
-
-      <!-- =================================================
-           BOT INFORMATION
-           ================================================= -->
-
-      <section class="panel-section">
-
-        <div class="section-title">
-          ⚡ INFO BASIC
-        </div>
-
-        <div class="field-group">
-
-          <label for="botName">
-            BOT NAME
-          </label>
-
-          <input
-            id="botName"
-            type="text"
-            value="TOPFEROS MD"
-            autocomplete="off"
-          >
-
-        </div>
-
-        <div class="field-group">
-
-          <label for="location">
-            LOCATION
-          </label>
-
-          <input
-            id="location"
-            type="text"
-            value="HAÏTI"
-            autocomplete="off"
-          >
-
-        </div>
-
-        <div class="field-row">
-
-          <div class="field-group">
-
-            <label for="age">
-              AGE
-            </label>
-
-            <input
-              id="age"
-              type="number"
-              min="1"
-              value="14"
-            >
-
-          </div>
-
-          <div class="field-group">
-
-            <label for="prefix">
-              PREFIX
-            </label>
-
-            <input
-              id="prefix"
-              type="text"
-              value="."
-              maxlength="5"
-            >
-
-          </div>
-
-        </div>
-
-
-        <div class="field-group">
-
-          <label for="mode">
-            MODE
-          </label>
-
-          <select id="mode">
-
-            <option value="Public">
-              Public
-            </option>
-
-            <option value="Privé">
-              Privé
-            </option>
-
-            <option value="Group">
-              Group
-            </option>
-
-          </select>
-
-        </div>
-
-
-        <div class="field-group">
-
-          <label for="footer">
-            FOOTER
-          </label>
-
-          <input
-            id="footer"
-            type="text"
-            value="🦁 TECH BY TOPFEROS MD 🐑"
-            autocomplete="off"
-          >
-
-        </div>
-
-        <div class="field-group">
-
-          <label for="botLanguage">
-            BOT LANGUAGE
-          </label>
-
-          <select
-            id="botLanguage"
-          >
-
-            <option value="en">
-              🇺🇸 English
-            </option>
-
-            <option value="fr">
-              🇫🇷 Français
-            </option>
-
-            <option value="es">
-              🇪🇸 Español
-            </option>
-
-            <option value="es_do">
-              🇩🇴 Español Dominicano
-            </option>
-
-            <option value="pt">
-              🇵🇹 Português
-            </option>
-
-            <option value="zh">
-              🇨🇳 中文
-            </option>
-
-            <option value="ht">
-              🇭🇹 Kreyòl Ayisyen
-            </option>
-
-          </select>
-
-        </div>
-
-      </section>
-
-
-      <!-- =================================================
-           AUTOMATION
-           ================================================= -->
-
-      <section class="panel-section">
-
-        <div class="section-title">
-          ⚡ AUTOMATISATION
-        </div>
-
-
-        <!-- ALWAYS ONLINE -->
-        <div class="switch-row">
-
-          <span>
-            🟢 Always Online
-          </span>
-
-          <label class="switch">
-
-            <input
-              id="alwaysOnline"
-              type="checkbox"
-              checked
-            >
-
-            <span class="slider"></span>
-
-          </label>
-
-        </div>
-
-
-        <!-- FAKE TYPING -->
-        <div class="switch-row">
-
-          <span>
-            ⌨️ Fake Typing
-          </span>
-
-          <label class="switch">
-
-            <input
-              id="fakeTyping"
-              type="checkbox"
-            >
-
-            <span class="slider"></span>
-
-          </label>
-
-        </div>
-
-
-        <!-- FAKE RECORDING -->
-        <div class="switch-row">
-
-          <span>
-            🎙️ Fake Recording
-          </span>
-
-          <label class="switch">
-
-            <input
-              id="fakeRecording"
-              type="checkbox"
-            >
-
-            <span class="slider"></span>
-
-          </label>
-
-        </div>
-
-
-        <!-- STATUS SEEN -->
-        <div class="switch-row">
-
-          <span>
-            👁️ Auto Status Seen
-          </span>
-
-          <label class="switch">
-
-            <input
-              id="autoStatusSeen"
-              type="checkbox"
-              checked
-            >
-
-            <span class="slider"></span>
-
-          </label>
-
-        </div>
-
-
-        <!-- STATUS REPLY -->
-        <div class="switch-row">
-
-          <span>
-            💬 Auto Status Reply
-          </span>
-
-          <label class="switch">
-
-            <input
-              id="autoStatusReply"
-              type="checkbox"
-              checked
-            >
-
-            <span class="slider"></span>
-
-          </label>
-
-        </div>
-
-
-        <!-- STATUS REACT -->
-        <div class="switch-row">
-
-          <span>
-            ❤️ Auto Status React
-          </span>
-
-          <label class="switch">
-
-            <input
-              id="autoStatusReact"
-              type="checkbox"
-              checked
-            >
-
-            <span class="slider"></span>
-
-          </label>
-
-        </div>
-
-
-        <!-- ANTI DELETE -->
-        <div class="switch-row">
-
-          <span>
-            🛡️ Anti Delete
-          </span>
-
-          <label class="switch">
-
-            <input
-              id="antiDelete"
-              type="checkbox"
-              checked
-            >
-
-            <span class="slider"></span>
-
-          </label>
-
-        </div>
-
-
-        <div class="field-group">
-
-          <label for="antiDeleteMode">
-            ANTI DELETE MODE
-          </label>
-
-          <select id="antiDeleteMode">
-
-            <option value="private">
-              An privé
-            </option>
-
-            <option value="same_chat">
-              Nan menm chat la
-            </option>
-
-          </select>
-
-        </div>
-
-
-        <!-- ANTI CALL -->
-        <div class="switch-row">
-
-          <span>
-            📞 Anti-Call
-          </span>
-
-          <label class="switch">
-
-            <input
-              id="antiCall"
-              type="checkbox"
-            >
-
-            <span class="slider"></span>
-
-          </label>
-
-        </div>
-
-
-        <!-- ANTI BUG -->
-        <div class="switch-row">
-
-          <span>
-            🛡️ Anti-Bug Protection
-          </span>
-
-          <label class="switch">
-
-            <input
-              id="antiBug"
-              type="checkbox"
-            >
-
-            <span class="slider"></span>
-
-          </label>
-
-        </div>
-
-
-        <!-- ANTI BOT -->
-        <div class="switch-row">
-
-          <span>
-            🤖 Anti-Bot Filtre
-          </span>
-
-          <label class="switch">
-
-            <input
-              id="antiBotFilter"
-              type="checkbox"
-            >
-
-            <span class="slider"></span>
-
-          </label>
-
-        </div>
-
-
-        <div class="field-group">
-
-          <label for="antiBotAction">
-            ANTI-BOT ACTION
-          </label>
-
-          <select id="antiBotAction">
-
-            <option value="Delete">
-              Delete
-            </option>
-
-            <option value="Warn">
-              Warn
-            </option>
-
-            <option value="Block">
-              Block
-            </option>
-
-          </select>
-
-        </div>
-
-
-        <!-- ANTI BLOCK -->
-        <div class="field-group">
-
-          <label for="antiBlockNumbers">
-            ANTI-BLOCK NUMBERS
-          </label>
-
-          <textarea
-            id="antiBlockNumbers"
-            rows="4"
-            placeholder="One number per line"
-          ></textarea>
-
-        </div>
-
-      </section>
-
-
-      <!-- =================================================
-           GROUP AUTOMATION
-           ================================================= -->
-
-      <section class="panel-section">
-
-        <div class="section-title">
-          🕦 GROUPE AUTOMATISATIONS
-        </div>
-
-
-        <!-- GROUP AUTOMATION ENABLE -->
-        <div class="switch-row">
-
-          <span>
-            👥 Group Automation
-          </span>
-
-          <label class="switch">
-
-            <input
-              id="groupAutomationEnabled"
-              type="checkbox"
-            >
-
-            <span class="slider"></span>
-
-          </label>
-
-        </div>
-
-
-        <div class="field-group">
-
-          <label for="groupGid">
-            GROUP GID / ADMIN LINK
-          </label>
-
-          <input
-            id="groupGid"
-            type="text"
-            autocomplete="off"
-            placeholder="Group ID or admin link"
-          >
-
-        </div>
-
-
-        <div class="field-group">
-
-          <label for="timezone">
-            TIME ZONE
-          </label>
-
-          <select id="timezone">
-
-            <option value="Atlantic/Port-au-Prince">
-              l'Atlantique UTC-04
-            </option>
-
-          </select>
-
-        </div>
-
-
-        <div class="field-row">
-
-          <div class="field-group">
-
-            <label for="closeTime">
-              CLOSE TIME
-            </label>
-
-            <input
-              id="closeTime"
-              type="time"
-              value="15:00"
-            >
-
-          </div>
-
-
-          <div class="field-group">
-
-            <label for="openTime">
-              OPEN TIME
-            </label>
-
-            <input
-              id="openTime"
-              type="time"
-              value="06:00"
-            >
-
-          </div>
-
-        </div>
-
-
-        <div class="field-group">
-
-          <label for="groupPrinciples">
-            GROUP BIO / PRINCIPLES
-          </label>
-
-          <textarea
-            id="groupPrinciples"
-            rows="5"
-            placeholder="Group rules and principles"
-          ></textarea>
-
-        </div>
-
-
-        <div class="field-group">
-
-          <label for="warningLimit">
-            VIOLATION LIMIT
-          </label>
-
-          <input
-            id="warningLimit"
-            type="number"
-            min="1"
-            value="3"
-          >
-
-          <small>
-            1️⃣ Warning → 2️⃣ Warning → 3️⃣ Remove
-          </small>
-
-        </div>
-
-      </section>
-
-
-      <!-- =================================================
-           ACTIONS
-           ================================================= -->
-
-      <section class="panel-actions">
-
-        <button
-          type="button"
-          class="panel-button save"
-          data-action="save"
-          id="saveButton"
-        >
-          💾 SAVE
-        </button>
-
-        <button
-          type="button"
-          class="panel-button danger"
-          data-action="disconnect"
-          id="disconnectButtonBottom"
-        >
-          🚪
-        </button>
-
-      </section>
-
-
-      <!-- =================================================
-           FOOTER
-           ================================================= -->
-
-      <footer class="panel-footer">
-
+      <footer class="connect-footer">
         🦁 TECH BY TOPFEROS MD 🐑
-
       </footer>
-
     </section>
-
   </main>
 
+  <script>
+    "use strict";
 
-  <!-- APP JS -->
-  <script src="/app.js"></script>
+    (() => {
+      const $ = (id) => document.getElementById(id);
 
+      const languageScreen = $("languageScreen");
+      const parrainScreen = $("parrainScreen");
+      const languageSelect = $("languageSelect");
+      const phoneInput = $("phoneNumber");
+      const form = $("parrainForm");
+      const generateButton = $("generateButton");
+      const codeBox = $("codeBox");
+      const codeElement = $("parrainCode");
+      const statusMessage = $("statusMessage");
+      const expiration = $("expiration");
+
+      const translations = {
+        ht: {
+          title: "🔐 KÒD PARENAJ",
+          instructions: "Antre nimewo WhatsApp ou ak kòd peyi a.",
+          placeholder: "Egzanp: 509XXXXXXXX",
+          generate: "🦁 JENERE KÒD LA",
+          copy: "📋 KOPYE KÒD LA",
+          copied: "✅ Kòd la kopye avèk siksè!",
+          copyFailed: "Kopye kòd la manyèlman, tanpri.",
+          invalid: "Antre yon nimewo telefòn valab.",
+          failed: "Nou pa kapab jenere kòd la. Eseye ankò.",
+          expired: "Kòd la valab pandan {seconds} segonn.",
+          back: "← RETOUNEN CHWAZI LANG",
+          choose: "Tanpri chwazi yon lang anvan ou kontinye."
+        },
+        en: {
+          title: "🔐 REFERRAL CODE",
+          instructions: "Enter your WhatsApp number with its country code.",
+          placeholder: "Example: 15551234567",
+          generate: "🦁 GENERATE CODE",
+          copy: "📋 COPY CODE",
+          copied: "✅ Code copied successfully!",
+          copyFailed: "Please copy the code manually.",
+          invalid: "Enter a valid phone number.",
+          failed: "Could not generate the code. Try again.",
+          expired: "Code valid for {seconds} seconds.",
+          back: "← BACK TO LANGUAGE",
+          choose: "Please choose a language first."
+        },
+        fr: {
+          title: "🔐 CODE DE PARRAINAGE",
+          instructions: "Entrez votre numéro WhatsApp avec l'indicatif du pays.",
+          placeholder: "Exemple : 33612345678",
+          generate: "🦁 GÉNÉRER LE CODE",
+          copy: "📋 COPIER LE CODE",
+          copied: "✅ Code copié avec succès !",
+          copyFailed: "Veuillez copier le code manuellement.",
+          invalid: "Entrez un numéro de téléphone valide.",
+          failed: "Impossible de générer le code. Réessayez.",
+          expired: "Code valable pendant {seconds} secondes.",
+          back: "← RETOUR AUX LANGUES",
+          choose: "Veuillez d'abord choisir une langue."
+        },
+        es: {
+          title: "🔐 CÓDIGO DE REFERIDO",
+          instructions: "Introduce tu número de WhatsApp con el código del país.",
+          placeholder: "Ejemplo: 34612345678",
+          generate: "🦁 GENERAR CÓDIGO",
+          copy: "📋 COPIAR CÓDIGO",
+          copied: "✅ ¡Código copiado correctamente!",
+          copyFailed: "Copia el código manualmente.",
+          invalid: "Introduce un número de teléfono válido.",
+          failed: "No se pudo generar el código. Inténtalo de nuevo.",
+          expired: "Código válido durante {seconds} segundos.",
+          back: "← VOLVER A IDIOMAS",
+          choose: "Selecciona un idioma primero."
+        },
+        es_do: {
+          title: "🔐 CÓDIGO DE REFERIDO",
+          instructions: "Pon tu número de WhatsApp con el código del país.",
+          placeholder: "Ejemplo: 18091234567",
+          generate: "🦁 GENERAR EL CÓDIGO",
+          copy: "📋 COPIAR EL CÓDIGO",
+          copied: "✅ ¡Código copiado correctamente!",
+          copyFailed: "Copia el código manualmente, por favor.",
+          invalid: "Pon un número de teléfono válido.",
+          failed: "No se pudo generar el código. Inténtalo otra vez.",
+          expired: "El código vence en {seconds} segundos.",
+          back: "← VOLVER A ELEGIR IDIOMA",
+          choose: "Elige un idioma primero."
+        },
+        pt: {
+          title: "🔐 CÓDIGO DE INDICAÇÃO",
+          instructions: "Digite seu número do WhatsApp com o código do país.",
+          placeholder: "Exemplo: 5511999999999",
+          generate: "🦁 GERAR CÓDIGO",
+          copy: "📋 COPIAR CÓDIGO",
+          copied: "✅ Código copiado com sucesso!",
+          copyFailed: "Copie o código manualmente, por favor.",
+          invalid: "Digite um número de telefone válido.",
+          failed: "Não foi possível gerar o código. Tente novamente.",
+          expired: "Código válido por {seconds} segundos.",
+          back: "← VOLTAR AOS IDIOMAS",
+          choose: "Escolha um idioma primeiro."
+        },
+        zh: {
+          title: "🔐 推荐码",
+          instructions: "请输入包含国家区号的 WhatsApp 电话号码。",
+          placeholder: "例如：8613800138000",
+          generate: "🦁 生成推荐码",
+          copy: "📋 复制推荐码",
+          copied: "✅ 推荐码已复制！",
+          copyFailed: "请手动复制推荐码。",
+          invalid: "请输入有效的电话号码。",
+          failed: "无法生成推荐码，请重试。",
+          expired: "推荐码将在 {seconds} 秒后过期。",
+          back: "← 返回语言选择",
+          choose: "请先选择一种语言。"
+        }
+      };
+
+      let selectedLanguage = "ht";
+      let currentCode = "";
+
+      function applyLanguage(lang) {
+        const t = translations[lang] || translations.ht;
+
+        document.documentElement.lang = lang === "zh" ? "zh" : lang;
+        $("formTitle").textContent = t.title;
+        $("instructions").textContent = t.instructions;
+        phoneInput.placeholder = t.placeholder;
+        generateButton.textContent = t.generate;
+        $("copyButton").textContent = t.copy;
+        $("backButton").textContent = t.back;
+      }
+
+      $("continueButton").addEventListener("click", () => {
+        const lang = languageSelect.value;
+
+        if (!translations[lang]) {
+          alert(translations.ht.choose);
+          return;
+        }
+
+        selectedLanguage = lang;
+        applyLanguage(lang);
+
+        languageScreen.hidden = true;
+        parrainScreen.hidden = false;
+        statusMessage.textContent = "";
+      });
+
+      $("backButton").addEventListener("click", () => {
+        parrainScreen.hidden = true;
+        languageScreen.hidden = false;
+        statusMessage.textContent = "";
+      });
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+
+        const t = translations[selectedLanguage];
+        const number = phoneInput.value.replace(/\D/g, "");
+
+        if (number.length < 8 || number.length > 15) {
+          statusMessage.textContent = t.invalid;
+          return;
+        }
+
+        generateButton.disabled = true;
+        codeBox.hidden = true;
+        statusMessage.textContent = "";
+
+        try {
+          const response = await fetch("/api/parrain", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Accept": "application/json"
+            },
+            body: JSON.stringify({
+              number,
+              language: selectedLanguage
+            })
+          });
+
+          const result = await response.json().catch(() => null);
+
+          if (!response.ok || !result?.success || !result?.code) {
+            throw new Error(result?.message || t.failed);
+          }
+
+          currentCode = String(result.code);
+          codeElement.textContent = currentCode;
+          codeBox.hidden = false;
+
+          const seconds = Number(result.expiresInSeconds);
+          expiration.textContent =
+            Number.isFinite(seconds) && seconds > 0
+              ? t.expired.replace("{seconds}", String(seconds))
+              : "";
+
+        } catch (error) {
+          statusMessage.textContent = error.message || t.failed;
+        } finally {
+          generateButton.disabled = false;
+        }
+      });
+
+      $("copyButton").addEventListener("click", async () => {
+        if (!currentCode) return;
+
+        const t = translations[selectedLanguage];
+
+        try {
+          await navigator.clipboard.writeText(currentCode);
+          statusMessage.textContent = t.copied;
+        } catch {
+          const temp = document.createElement("textarea");
+          temp.value = currentCode;
+          temp.style.position = "fixed";
+          temp.style.opacity = "0";
+          document.body.appendChild(temp);
+          temp.select();
+
+          const success = document.execCommand("copy");
+          temp.remove();
+
+          statusMessage.textContent = success
+            ? t.copied
+            : t.copyFailed;
+        }
+      });
+    })();
+  </script>
 </body>
 </html>
