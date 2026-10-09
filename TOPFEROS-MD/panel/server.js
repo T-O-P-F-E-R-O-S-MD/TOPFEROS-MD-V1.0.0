@@ -798,65 +798,61 @@ app.post(
       }
 
       if (
-        typeof settingPanel.saveSettings !==
-        "function"
-      ) {
-        return sendError(
-          res,
-          500,
-          "Settings save service is unavailable."
-        );
-      }
-
-      const incomingSettings =
-        req.body?.settings || {};
-
-      const automation =
-        req.body?.automation ||
-        incomingSettings.automation ||
-        {};
-
-      const groupAutomation =
-        req.body?.groupAutomation ||
-        incomingSettings.groupAutomation ||
-        {};
-
-      const result =
-        settingPanel.saveSettings(
-          sessionId,
-          {
-            bot:
-              req.body?.bot ||
-              incomingSettings.bot ||
-              {},
-
-            settings: {
-              ...incomingSettings,
-
-              automation,
-
-              groupAutomation
-            }
-          }
-        );
-
-      return res.json(result);
-
-    } catch (error) {
-      logger.error(
-        error,
-        "❌ SAVE SETTINGS ERROR"
-      );
-
-      return sendError(
-        res,
-        400,
-        error.message ||
-          "Unable to save settings."
-      );
-    }
+    typeof settingPanel.verifyPanelAccessCode !==
+    "function"
+  ) {
+    return sendError(
+      res,
+      500,
+      "Settings access-code verification is unavailable."
+    );
   }
-);
+
+  const actualNumber =
+    cleanNumber(
+      session.number ||
+      sessionId
+    );
+
+  if (actualNumber !== number) {
+    return sendError(
+      res,
+      401,
+      "The phone number does not match this session."
+    );
+  }
+
+  const codeIsValid =
+    settingPanel.verifyPanelAccessCode(
+      sessionId,
+      code
+    );
+
+  if (!codeIsValid) {
+    return sendError(
+      res,
+      401,
+      "Invalid, expired, or inactive settings code."
+    );
+  }
+
+  const sessionVerification =
+    await Promise.resolve(
+      settingPanel.verifySession(
+        sessionId
+      )
+    );
+
+  if (
+    !sessionVerification?.success
+  ) {
+    return sendError(
+      res,
+      401,
+      sessionVerification?.message ||
+        "Settings session verification failed."
+    );
+  }
 
 // ============================================================
 // DISCONNECT
