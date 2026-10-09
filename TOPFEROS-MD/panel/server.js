@@ -14,12 +14,6 @@ const connection = require("../src/connection");
 const language = require("../src/language");
 const parrainService = require("../services/parrain");
 
-const path = require("path");
-
-app.get("/panel-background.png", (req, res) => {
-  res.sendFile(path.join(__dirname, "background.png"));
-});
-
 const app = express();
 
 const logger = pino({
@@ -51,6 +45,10 @@ const BACKGROUND_FILE = path.resolve(
   __dirname,
   "background.png"
 );
+
+app.get("/panel-background.png", (req, res) => {
+  res.sendFile(BACKGROUND_FILE);
+});
 
 const LOGO_FILE = path.resolve(
   ASSETS_DIR,
