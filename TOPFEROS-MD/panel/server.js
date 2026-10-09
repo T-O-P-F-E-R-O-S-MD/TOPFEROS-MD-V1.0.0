@@ -427,9 +427,10 @@ app.post(
   }
 );
 
-// ============================================================
-// TRANSLATION
-// ============================================================
+
+ // ============================================================
+ // TRANSLATION
+ // ============================================================
 
 app.post(
   "/api/translate",
@@ -440,18 +441,23 @@ app.post(
           req.body?.language
         );
 
+      if (!selected) {
+        return sendError(
+          res,
+          400,
+          "Unsupported language."
+        );
+      }
+
       const key =
         String(
           req.body?.key || ""
         ).trim();
 
-      /*
-       * app.js uses one translation key
-       * at a time.
-       */
       if (key) {
-        const text =
+        const translated =
           language.getText(
+            key,
             selected,
             key
           );
@@ -460,14 +466,10 @@ app.post(
           success: true,
           language: selected,
           key,
-          text
+          text: translated
         });
       }
 
-      /*
-       * Keep support for an array of
-       * translation values as well.
-       */
       const texts =
         Array.isArray(
           req.body?.texts
@@ -476,19 +478,22 @@ app.post(
           : [];
 
       const translations =
-        texts.map((text) =>
-          language.getText(
+        texts.map((item) => {
+          const original =
+            String(item || "");
+
+          return language.getText(
+            original,
             selected,
-            String(text || "")
-          )
-        );
+            original
+          );
+        });
 
       return res.json({
         success: true,
         language: selected,
         translations
       });
-
     } catch (error) {
       logger.error(
         error,
@@ -503,6 +508,7 @@ app.post(
     }
   }
 );
+
 
 // ============================================================
 // VERIFY SETTINGS SESSION
