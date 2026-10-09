@@ -30,6 +30,7 @@
     language: "/api/language",
     translate: "/api/translate",
     verify: "/api/verify",
+    pair: "/api/pair",
     settings: "/api/settings",
     session: (id) => `/api/session/${encodeURIComponent(id)}`,
     disconnect: "/api/session/disconnect",
@@ -56,15 +57,21 @@
   }
 
   function setSessionId(sessionId) {
-    state.sessionId = String(sessionId || "").trim();
+  state.sessionId = String(sessionId || "").trim();
 
-    if (state.sessionId) {
-      localStorage.setItem(
-        "topferos_session_id",
-        state.sessionId
-      );
-    }
+  if (state.sessionId) {
+    localStorage.setItem(
+      "topferos_session_id",
+      state.sessionId
+    );
   }
+
+  const sessionInput = $("#sessionId");
+
+  if (sessionInput) {
+    sessionInput.value = state.sessionId;
+  }
+}
 
   function escapeHtml(value) {
     return String(value ?? "")
@@ -1483,6 +1490,106 @@
     }
   }
 
+async function requestPairingCode() {
+  const numberInput = $("#ownerNumber");
+  const resultBox = $("#pairingResult");
+  const codeInput = $("#pairingCode");
+  const messageBox = $("#pairingMessage");
+  const connectButton = $("#connectButton");
+
+  const number = String(
+    numberInput?.value || ""
+  ).replace(/\D/g, "");
+
+  if (number.length < 8 || number.length > 15) {
+    notify(
+      "Antre nimewo WhatsApp ou ak kòd peyi a.",
+      "error"
+    );
+    return false;
+  }
+
+  if (resultBox) {
+    resultBox.hidden = true;
+  }
+
+  setLoading(
+    connectButton,
+    true,
+    "Requesting code..."
+  );
+
+  try {
+    const data = await request(API.pair, {
+      method: "POST",
+      body: JSON.stringify({ number })
+    });
+
+    if (!data?.success || !data?.pairingCode) {
+      throw new Error(
+        data?.message || "WhatsApp pa retounen yon kòd pairing."
+      );
+    }
+
+    if (data.sessionId) {
+      setSessionId(data.sessionId);
+    }
+
+    if (codeInput) {
+      codeInput.value = data.pairingCode;
+    }
+
+    if (resultBox) {
+      resultBox.hidden = false;
+    }
+
+    if (messageBox) {
+      messageBox.textContent =
+        "Sou WhatsApp: Linked devices > Link a device > Link with phone number, epi antre kòd la.";
+    }
+
+    notify(
+      "Kòd WhatsApp la pare. Antre li sou telefòn ou.",
+      "success"
+    );
+
+    return true;
+  } catch (error) {
+    notify(
+      error.message || "Nou pa kapab jwenn kòd la.",
+      "error"
+    );
+    return false;
+  } finally {
+    setLoading(connectButton, false);
+  }
+}
+
+async function copyPairingCode() {
+  const codeInput = $("#pairingCode");
+  const code = codeInput?.value?.trim();
+
+  if (!code) {
+    notify("Pa gen kòd pou kopye.", "error");
+    return;
+  }
+
+  try {
+    await navigator.clipboard.writeText(code);
+    notify("Kòd la kopye.", "success");
+  } catch {
+    codeInput.focus();
+    codeInput.select();
+
+    const copied = document.execCommand("copy");
+
+    notify(
+      copied ? "Kòd la kopye." : "Chwazi kòd la epi kopye li.",
+      copied ? "success" : "error"
+    );
+  }
+}
+
   function bindButtons() {
     $$("[data-action]").forEach(
       (button) => {
@@ -1516,14 +1623,24 @@
           );
         }
 
-        if (
-          action === "connect"
-        ) {
-          button.addEventListener(
-            "click",
-            reconnectSession
-          );
-        }
+        if (action === "connect") {
+  button.addEventListener(
+    "click",
+    requestPairingCode
+
+const copyButton = $("#copyPairingCode");
+
+if (
+  copyButton &&
+  copyButton.dataset.bound !== "true"
+) {
+  copyButton.dataset.bound = "true";
+
+  copyButton.addEventListener(
+    "click",
+    copyPairingCode
+  );
+}
 
         if (
           action === "reconnect"
