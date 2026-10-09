@@ -12,6 +12,7 @@ const settingPanel = require("../src/settingPanel");
 const sessionManager = require("../src/sessionManager");
 const connection = require("../src/connection");
 const language = require("../src/language");
+const parrainService = require("../services/parrain");
 
 const app = express();
 
@@ -1029,6 +1030,69 @@ app.post("/api/pair", async (req, res) => {
       res,
       400,
       error?.message || "Nou pa kapab kreye kòd pairing la."
+    );
+  }
+});
+
+// ============================================================
+// 🦁 PARRAIN CODE API
+// ============================================================
+
+app.post("/api/parrain", async (req, res) => {
+  try {
+    const number = cleanNumber(req.body?.number);
+
+    if (
+      !number ||
+      number.length < 8 ||
+      number.length > 15
+    ) {
+      return sendError(
+        res,
+        400,
+        "Antre yon nimewo telefòn valab ak kòd peyi a."
+      );
+    }
+
+    if (
+      typeof parrainService.generateParrainCode !==
+      "function"
+    ) {
+      return sendError(
+        res,
+        500,
+        "Sèvis kòd parennaj la pa disponib."
+      );
+    }
+
+    const code =
+      await parrainService.generateParrainCode(number);
+
+    const expiresInSeconds =
+      Math.floor(
+        parrainService.PARRAIN_CODE_TTL / 1000
+      );
+
+    return res.json({
+      success: true,
+      number,
+      code,
+      expiresInSeconds,
+      message: "Kòd parennaj la jenere avèk siksè."
+    });
+  } catch (error) {
+    logger.error(
+      {
+        error: error?.message || String(error)
+      },
+      "PARRAIN CODE API ERROR"
+    );
+
+    return sendError(
+      res,
+      500,
+      error?.message ||
+        "Nou pa kapab jenere kòd parennaj la."
     );
   }
 });
