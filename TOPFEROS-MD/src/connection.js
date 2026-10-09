@@ -1278,9 +1278,9 @@ async function pairSession(
       sessionId;
 
     const code =
-      await sock.requestPairingCode(
-        sessionId
-      );
+  await sock.requestPairingCode(
+    sessionId
+  );
 
     if (!code) {
       session.pairing =
