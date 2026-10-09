@@ -1590,120 +1590,69 @@ async function copyPairingCode() {
   }
 }
 
+
   function bindButtons() {
-    $$("[data-action]").forEach(
-      (button) => {
-        if (
-          button.dataset.bound ===
-          "true"
-        ) {
-          return;
-        }
-
-        button.dataset.bound =
-          "true";
-
-        const action =
-          button.dataset.action;
-
-        if (action === "save") {
-          button.addEventListener(
-            "click",
-            saveSettings
-          );
-        }
-
-        if (
-          action ===
-          "disconnect"
-        ) {
-          button.addEventListener(
-            "click",
-            disconnectSession
-          );
-        }
-
-        if (action === "connect") {
-  button.addEventListener(
-    "click",
-    requestPairingCode
-
-const copyButton = $("#copyPairingCode");
-
-if (
-  copyButton &&
-  copyButton.dataset.bound !== "true"
-) {
-  copyButton.dataset.bound = "true";
-
-  copyButton.addEventListener(
-    "click",
-    copyPairingCode
-  );
-}
-
-        if (
-          action === "reconnect"
-        ) {
-          button.addEventListener(
-            "click",
-            reconnectSession
-          );
-        }
+    $$("[data-action]").forEach((button) => {
+      if (button.dataset.bound === "true") {
+        return;
       }
-    );
 
-    const saveButton =
-      $("#saveButton");
+      button.dataset.bound = "true";
 
-    if (
-      saveButton &&
-      saveButton.dataset.bound !==
-        "true"
-    ) {
-      saveButton.dataset.bound =
-        "true";
+      const action = button.dataset.action;
 
-      saveButton.addEventListener(
-        "click",
-        saveSettings
-      );
+      if (action === "save") {
+        button.addEventListener("click", saveSettings);
+      } else if (action === "disconnect") {
+        button.addEventListener("click", disconnectSession);
+      } else if (action === "connect") {
+        button.addEventListener("click", requestPairingCode);
+      } else if (action === "reconnect") {
+        button.addEventListener("click", reconnectSession);
+      }
+    });
+
+    const saveButton = $("#saveButton");
+
+    if (saveButton && saveButton.dataset.bound !== "true") {
+      saveButton.dataset.bound = "true";
+      saveButton.addEventListener("click", saveSettings);
     }
 
-    const disconnectButton =
-      $("#disconnectButton");
+    const disconnectButton = $("#disconnectButton");
 
     if (
       disconnectButton &&
-      disconnectButton.dataset.bound !==
-        "true"
+      disconnectButton.dataset.bound !== "true"
     ) {
-      disconnectButton.dataset.bound =
-        "true";
-
+      disconnectButton.dataset.bound = "true";
       disconnectButton.addEventListener(
         "click",
         disconnectSession
       );
     }
 
-    const reconnectButton =
-      $("#reconnectButton");
+    const reconnectButton = $("#reconnectButton");
 
     if (
       reconnectButton &&
-      reconnectButton.dataset.bound !==
-        "true"
+      reconnectButton.dataset.bound !== "true"
     ) {
-      reconnectButton.dataset.bound =
-        "true";
-
+      reconnectButton.dataset.bound = "true";
       reconnectButton.addEventListener(
         "click",
         reconnectSession
       );
     }
+
+    const copyButton = $("#copyPairingCode");
+
+    if (copyButton && copyButton.dataset.bound !== "true") {
+      copyButton.dataset.bound = "true";
+      copyButton.addEventListener("click", copyPairingCode);
+    }
   }
+
 
   function bindLanguageControls() {
     $$(
