@@ -46,7 +46,8 @@
       <!-- HEADER -->
       <header class="panel-header">
 
-        <h1>
+        
+        <h1 data-i18n="panel_title">
           🦁 TOPFEROS MD PANEL SETTINGS 🐑
         </h1>
 
@@ -54,10 +55,12 @@
           V2.0.0
         </p>
 
+        
         <div
           id="connectionStatus"
           class="connection-status disconnected"
           data-connection-status
+          data-i18n="disconnected"
         >
           🔴 DISCONNECTED
         </div>
@@ -68,13 +71,15 @@
       <!-- LANGUAGE -->
       <section class="panel-section">
 
-        <div class="section-title">
+        
+        <div class="section-title" data-i18n="language_title">
           🌐 LANGUAGE
         </div>
 
         <div class="field-group">
 
-          <label for="panelLanguage">
+          
+          <label for="panelLanguage" data-i18n="panel_language">
             PANEL LANGUAGE
           </label>
 
@@ -119,13 +124,15 @@
       <!-- SESSION VERIFICATION -->
       <section class="panel-section">
 
-        <div class="section-title">
+        
+        <div class="section-title" data-i18n="session_verification">
           🔐 SESSION VERIFICATION
         </div>
 
         <div class="field-group">
 
-          <label for="ownerNumber">
+          
+          <label for="ownerNumber" data-i18n="number">
             NUMBER
           </label>
 
@@ -141,7 +148,8 @@
 
         <div class="field-group">
 
-          <label for="verificationCode">
+          
+          <label for="verificationCode" data-i18n="code">
             CODE
           </label>
 
@@ -154,10 +162,12 @@
 
         </div>
 
+        
         <button
           type="button"
           class="panel-button primary"
           id="verifyButton"
+          data-i18n="verify"
         >
           🔐 VERIFY
         </button>
