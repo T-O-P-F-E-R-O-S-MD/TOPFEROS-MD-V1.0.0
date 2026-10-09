@@ -507,133 +507,72 @@ app.post(
   "/api/verify",
   async (req, res) => {
     try {
-      const number =
-        cleanNumber(
-          req.body?.number
-        );
+      const number = cleanNumber(req.body?.number);
+      const code = String(req.body?.code || "")
+        .trim()
+        .toUpperCase();
 
-      const code =
-        String(
-          req.body?.code || ""
-        )
-          .trim()
-          .toUpperCase();
-
-      let sessionId =
-        cleanSessionId(
-          req.body?.sessionId
-        );
+      let sessionId = cleanSessionId(req.body?.sessionId);
 
       if (!number) {
-        return sendError(
-          res,
-          400,
-          "Phone number is required."
-        );
+        return sendError(res, 400, "Phone number is required.");
       }
 
-      if (!code) {
-        return sendError(
-          res,
-          400,
-          "Settings code is required."
-        );
+      if (!/^[A-Z0-9]{6}$/.test(code)) {
+        return sendError(res, 400, "Enter the 6-character settings code.");
       }
 
-      /*
-       * V2 uses the normalized phone
-       * number as the session ID.
-       */
       if (!sessionId) {
-        sessionId =
-          sessionManager.getSessionId(
-            number
-          );
+        sessionId = sessionManager.getSessionId(number);
       }
 
-      const session =
-        getSession(sessionId);
+      const session = getSession(sessionId);
 
       if (!session) {
+        return sendError(res, 404, "No session found for this number.");
+      }
+
+      const actualNumber = cleanNumber(session.number || sessionId);
+
+      if (actualNumber !== number) {
+        return sendError(res, 401, "The phone number does not match this session.");
+      }
+
+      if (typeof settingPanel.verifyPanelAccessCode !== "function") {
+        return sendError(res, 500, "Settings access-code verification is unavailable.");
+      }
+
+      if (!settingPanel.verifyPanelAccessCode(sessionId, code)) {
+        return sendError(res, 401, "Invalid or inactive settings code.");
+      }
+
+      const sessionVerification = await Promise.resolve(
+        settingPanel.verifySession(sessionId)
+      );
+
+      if (!sessionVerification?.success) {
         return sendError(
           res,
-          404,
-          "No session found for this number."
+          401,
+          sessionVerification?.message || "Settings session verification failed."
         );
       }
 
-      if (
-        typeof settingPanel.verifySession ===
-        "function"
-      ) {
-        const result =
-          await Promise.resolve(
-            settingPanel.verifySession(
-              sessionId,
-              number,
-              code
-            )
-          );
-
-        if (
-          result &&
-          result.success === false
-        ) {
-          return res.status(401).json(
-            result
-          );
-        }
-      }
-
-      const panelData =
-        typeof settingPanel.getPanelData ===
-        "function"
-          ? settingPanel.getPanelData(
-              sessionId
-            )
-          : null;
+      const panelData = settingPanel.getPanelData(sessionId);
 
       return res.json({
         success: true,
-
         sessionId,
-
-        settings:
-          panelData?.settings ||
-          {},
-
-        bot:
-          panelData?.bot ||
-          panelData?.settings?.bot ||
-          {},
-
-        botInformation:
-          panelData?.bot ||
-          panelData?.settings?.bot ||
-          {},
-
-        connection:
-          panelData?.connection ||
-          {
-            connected:
-              sessionManager.isConnected(
-                sessionId
-              )
-          }
+        settings: panelData?.settings || {},
+        bot: panelData?.bot || panelData?.settings?.bot || {},
+        botInformation: panelData?.bot || panelData?.settings?.bot || {},
+        connection: panelData?.connection || {
+          connected: sessionManager.isConnected(sessionId)
+        }
       });
-
     } catch (error) {
-      logger.error(
-        error,
-        "❌ VERIFY ERROR"
-      );
-
-      return sendError(
-        res,
-        500,
-        error.message ||
-          "Verification failed."
-      );
+      logger.error(error, "❌ VERIFY ERROR");
+      return sendError(res, 500, error.message || "Verification failed.");
     }
   }
 );
@@ -775,84 +714,32 @@ app.post(
   "/api/settings",
   (req, res) => {
     try {
-      const sessionId =
-        cleanSessionId(
-          req.body?.sessionId
-        );
+      const sessionId = cleanSessionId(req.body?.sessionId);
 
       if (!sessionId) {
-        return sendError(
-          res,
-          400,
-          "Session ID is required."
-        );
+        return sendError(res, 400, "Session ID is required.");
       }
 
-      if (
-        !getSessionOrFail(
-          res,
-          sessionId
-        )
-      ) {
+      if (!getSessionOrFail(res, sessionId)) {
         return;
       }
 
-      if (
-    typeof settingPanel.verifyPanelAccessCode !==
-    "function"
-  ) {
-    return sendError(
-      res,
-      500,
-      "Settings access-code verification is unavailable."
-    );
+      if (typeof settingPanel.saveSettings !== "function") {
+        return sendError(res, 500, "Settings save service is unavailable.");
+      }
+
+      const result = settingPanel.saveSettings(sessionId, {
+        bot: req.body?.bot || {},
+        settings: req.body?.settings || {}
+      });
+
+      return res.json(result);
+    } catch (error) {
+      logger.error(error, "❌ SAVE SETTINGS ERROR");
+      return sendError(res, 400, error.message || "Unable to save settings.");
+    }
   }
-
-  const actualNumber =
-    cleanNumber(
-      session.number ||
-      sessionId
-    );
-
-  if (actualNumber !== number) {
-    return sendError(
-      res,
-      401,
-      "The phone number does not match this session."
-    );
-  }
-
-  const codeIsValid =
-    settingPanel.verifyPanelAccessCode(
-      sessionId,
-      code
-    );
-
-  if (!codeIsValid) {
-    return sendError(
-      res,
-      401,
-      "Invalid, expired, or inactive settings code."
-    );
-  }
-
-  const sessionVerification =
-    await Promise.resolve(
-      settingPanel.verifySession(
-        sessionId
-      )
-    );
-
-  if (
-    !sessionVerification?.success
-  ) {
-    return sendError(
-      res,
-      401,
-      sessionVerification?.message ||
-        "Settings session verification failed."
-    );
-  }
+);
 
 // ============================================================
 // DISCONNECT
