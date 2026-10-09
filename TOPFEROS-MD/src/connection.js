@@ -1172,167 +1172,149 @@ const session = {
 |--------------------------------------------------------------------------
 */
 
-async function pairSession(
-  number
-) {
-  const sessionId =
-    getSessionId(number);
+async function pairSession(number) {
+  const sessionId = getSessionId(number);
 
-  /*
-   * Basic phone-number validation.
-   */
-
-  if (
-    sessionId.length < 8 ||
-    sessionId.length > 15
-  ) {
+  if (sessionId.length < 8 || sessionId.length > 15) {
     throw new Error(
-      "Invalid phone number. Use country code + number."
+      "Nimewo a pa valab. Mete kòd peyi a ak nimewo a sèlman."
     );
   }
 
-  /*
-   * Do not create another socket if
-   * this session is already connected.
-   */
+  let session = activeSessions.get(sessionId);
 
-  const existing =
-    activeSessions.get(
-      sessionId
-    );
-
-  if (
-    existing?.sock &&
-    existing.connected === true
-  ) {
+  if (session?.connected) {
     throw new Error(
-      "This number is already connected."
+      "Nimewo sa a deja konekte ak TOPFEROS MD."
     );
   }
 
-    /*
-   * Do not reuse an old pairing code.
-   * A new code must be requested from WhatsApp.
-   */
-
-  if (
-    existing?.pairing &&
-    existing?.pairingCode
-  ) {
-    existing.pairing = false;
-    existing.pairingCode = null;
-    existing.pairingNumber = null;
-  }
-
-  /*
-   * Create a normal session first.
-   */
-
-  const sock =
-    await connectSession(
-      sessionId
-    );
-
-  /*
-   * Get the session object.
-   */
-
-  const session =
-    activeSessions.get(
-      sessionId
-    );
-
-  if (!session) {
+  // Pa mande yon lòt kòd pandan premye demann lan poko fini.
+  if (session?.pairing) {
     throw new Error(
-      "Session could not be created."
+      "Gen yon demann kòd ki deja an kou. Tanpri tann."
     );
   }
 
-  /*
-   * The session may already have
-   * valid credentials.
-   */
+  // Si gen yon ansyen socket ki poko konekte, fèmen li anvan
+  // nou lanse yon nouvo demann pou menm nimewo a.
+  if (session?.sock) {
+    try {
+      session.sock.end(undefined);
+    } catch (_) {}
 
-  if (
-  session.registered === true
-) {
-  throw new Error(
-    "This session is already registered."
-  );
-}
+    activeSessions.delete(sessionId);
+  }
 
-  /*
-   * Request WhatsApp Pairing Code.
-   *
-   * The @dexterid/baileys package used
-   * by this project exposes:
-   *
-   * sock.requestPairingCode(number)
-   */
+  const sock = await connectSession(sessionId);
+
+  session = activeSessions.get(sessionId);
+
+  if (!session || !sock) {
+    throw new Error(
+      "Nou pa kapab inisyalize koneksyon WhatsApp la."
+    );
+  }
+
+  if (session.registered || sock.authState?.creds?.registered) {
+    throw new Error(
+      "Sesyon sa a deja anrejistre. Eseye rekonekte li olye ou mande yon nouvo kòd."
+    );
+  }
+
+  session.pairing = true;
+  session.pairingNumber = sessionId;
+  session.pairingCode = null;
 
   try {
-    session.pairing =
-      true;
+    // Tann WhatsApp voye evènman qr la, ki sèvi kòm siyal
+    // pou socket la pare pou mande kòd pairing lan.
+    if (!session.qr) {
+      await new Promise((resolve, reject) => {
+        let finished = false;
 
-    session.pairingNumber =
-      sessionId;
+        const cleanup = () => {
+          clearTimeout(timer);
+          sock.ev.off("connection.update", onUpdate);
+        };
 
-    const code =
-  await sock.requestPairingCode(
-    sessionId
-  );
+        const timer = setTimeout(() => {
+          if (finished) return;
+          finished = true;
+          cleanup();
+          reject(
+            new Error(
+              "WhatsApp pa t pare nan tan an. Tanpri eseye ankò."
+            )
+          );
+        }, 30000);
 
-    if (!code) {
-      session.pairing =
-        false;
+        const onUpdate = (update) => {
+          if (finished) return;
 
-      session.pairingNumber =
-        null;
+          if (update.qr) {
+            finished = true;
+            cleanup();
+            resolve();
+            return;
+          }
 
+          if (update.connection === "close") {
+            finished = true;
+            cleanup();
+            reject(
+              new Error(
+                "Koneksyon WhatsApp la fèmen anvan li te bay kòd la."
+              )
+            );
+          }
+        };
+
+        sock.ev.on("connection.update", onUpdate);
+
+        // Verifye ankò apre nou fin enstale listener la.
+        if (session.qr && !finished) {
+          finished = true;
+          cleanup();
+          resolve();
+        }
+      });
+    }
+
+    if (session.registered || sock.authState?.creds?.registered) {
       throw new Error(
-        "WhatsApp did not return a pairing code."
+        "Sesyon sa a deja anrejistre; pa bezwen nouvo kòd."
       );
     }
 
-    /*
-     * Keep the original code.
-     *
-     * WhatsApp pairing codes can contain
-     * letters and numbers. We do not modify
-     * the value returned by Baileys.
-     */
+    const code = await sock.requestPairingCode(sessionId);
 
-    session.pairingCode =
-      String(code).trim();
+    if (!code) {
+      throw new Error(
+        "WhatsApp pa retounen yon kòd pairing."
+      );
+    }
+
+    session.pairingCode = String(code).trim();
 
     logger.info(
-      `[${sessionId}] Pairing code generated successfully.`
+      `[${sessionId}] WhatsApp pairing code generated.`
     );
 
     return {
       sessionId,
-
-      pairingCode:
-        session.pairingCode
+      pairingCode: session.pairingCode
     };
   } catch (error) {
-    session.pairing =
-      false;
-
-    session.pairingNumber =
-      null;
-
-    session.pairingCode =
-      null;
+    session.pairing = false;
+    session.pairingNumber = null;
+    session.pairingCode = null;
 
     logger.error(
       {
-        error:
-          error?.stack ||
-          error?.message ||
-          String(error)
+        error: error?.stack || error?.message || String(error)
       },
-      `[${sessionId}] Failed to generate pairing code.`
+      `[${sessionId}] Pairing failed.`
     );
 
     throw error;
