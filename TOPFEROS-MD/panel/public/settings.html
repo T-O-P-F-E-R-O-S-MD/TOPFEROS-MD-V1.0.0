@@ -141,21 +141,6 @@
 
         <div class="field-group">
 
-          <label for="sessionId">
-            SESSION ID
-          </label>
-
-          <input
-            id="sessionId"
-            type="text"
-            autocomplete="off"
-            placeholder="Session ID"
-          >
-
-        </div>
-
-        <div class="field-group">
-
           <label for="verificationCode">
             CODE
           </label>
@@ -180,40 +165,7 @@
       </section>
 
 
-      <!-- CONNECTION -->
-      <section class="panel-section">
-
-        <div class="section-title">
-          🔌 CONNECTION
-        </div>
-
-        <div class="connection-actions">
-
-          <button
-            type="button"
-            class="panel-button primary"
-            data-action="connect"
-            id="reconnectButton"
-          >
-            🟢 CONNECTED
-          </button>
-
-          <button
-            type="button"
-            class="panel-button danger"
-            data-action="disconnect"
-            id="disconnectButton"
-          >
-            🔴 DISCONNECT
-          </button>
-
-        </div>
-
-        <p class="panel-note">
-          Disconnecting does not delete saved session credentials.
-        </p>
-
-      </section>
+      <div id="settingsContent" hidden>
 
 
       <!-- INFO BASIC -->
@@ -362,10 +314,7 @@
 
         </div>
 
-      </section>
-
-
-      <!-- AUTOMATISATION -->
+      </section>      <!-- AUTOMATISATION -->
       <section class="panel-section">
 
         <div class="section-title">
@@ -649,10 +598,7 @@
 
         </div>
 
-      </section>
-
-
-      <!-- GROUP AUTOMATISATIONS -->
+      </section>      <!-- GROUP AUTOMATISATIONS -->
       <section class="panel-section">
 
         <div class="section-title">
@@ -842,22 +788,7 @@
       </section>
 
 
-      <!-- EXIT -->
-      <section class="panel-actions">
-
-        <button
-          type="button"
-          class="panel-button danger"
-          data-action="disconnect"
-          id="disconnectButtonBottom"
-        >
-          🚪
-        </button>
-
-      </section>
-
-
-      <!-- FOOTER -->
+      </div>      <!-- FOOTER -->
       <footer class="panel-footer">
 
         🦁 TECH BY TOPFEROS MD 🐑
@@ -874,8 +805,11 @@
 
   <script>
     /*
-     * Settings verification.
-     * The backend remains the authority for verification.
+     * Verify the owner and reveal settings only after
+     * successful verification.
+     *
+     * Session credentials remain managed by app.js.
+     * No visible SESSION ID field is required.
      */
 
     document.addEventListener("DOMContentLoaded", () => {
@@ -886,87 +820,84 @@
       const numberInput =
         document.getElementById("ownerNumber");
 
-      const sessionInput =
-        document.getElementById("sessionId");
-
       const codeInput =
         document.getElementById("verificationCode");
 
-      if (sessionInput && window.TOPFEROS) {
-        const current =
-          window.TOPFEROS.getSessionId();
+      const verificationSection =
+        verifyButton?.closest(".panel-section");
 
-        if (current) {
-          sessionInput.value = current;
-        }
-      }
+      const settingsContent =
+        document.getElementById("settingsContent");
 
       if (!verifyButton) return;
 
-      verifyButton.addEventListener(
-        "click",
-        async () => {
+      verifyButton.addEventListener("click", async () => {
 
-          const number =
-            numberInput?.value?.trim();
+        const number =
+          numberInput?.value?.trim();
 
-          const code =
-            codeInput?.value?.trim();
+        const code =
+          codeInput?.value?.trim();
 
-          const sessionId =
-            sessionInput?.value?.trim();
+        if (!number || !code) {
+          window.TOPFEROS?.notify(
+            "NUMBER and CODE are required.",
+            "error"
+          );
 
-          if (
-            sessionId &&
-            window.TOPFEROS
-          ) {
-            window.TOPFEROS.setSessionId(
-              sessionId
+          return;
+        }
+
+        verifyButton.disabled = true;
+        verifyButton.textContent = "VERIFYING...";
+
+        try {
+
+          const success =
+            await window.TOPFEROS.verifyNumberAndCode(
+              number,
+              code
             );
-          }
 
-          if (
-            !number ||
-            !code
-          ) {
+          if (!success) return;
+
+          const sessionVerified =
+            await window.TOPFEROS.verifySession();
+
+          if (!sessionVerified) {
             window.TOPFEROS?.notify(
-              "NUMBER and CODE are required.",
+              "Session verification failed. Please check your session.",
               "error"
             );
 
             return;
           }
 
-          verifyButton.disabled = true;
-          verifyButton.textContent =
-            "VERIFYING...";
+          await window.TOPFEROS.loadSettings();
 
-          try {
-
-            const success =
-              await window.TOPFEROS.verifyNumberAndCode(
-                number,
-                code
-              );
-
-            if (success) {
-
-              await window.TOPFEROS.verifySession();
-
-              await window.TOPFEROS.loadSettings();
-
-            }
-
-          } finally {
-
-            verifyButton.disabled = false;
-            verifyButton.textContent =
-              "🔐 VERIFY";
-
+          if (verificationSection) {
+            verificationSection.hidden = true;
           }
 
+          if (settingsContent) {
+            settingsContent.hidden = false;
+          }
+
+        } catch (error) {
+
+          window.TOPFEROS?.notify(
+            error?.message || "Verification failed.",
+            "error"
+          );
+
+        } finally {
+
+          verifyButton.disabled = false;
+          verifyButton.textContent = "🔐 VERIFY";
+
         }
-      );
+
+      });
 
     });
   </script>
