@@ -996,92 +996,72 @@
     );
   }
 
-  async function changeLanguage(
-    language
-  ) {
-    if (!language) {
-      return;
-    }
+  
+  async function changeLanguage(language) {
+    if (!language) return;
 
-    state.language =
-      language;
+    state.language = language;
+
+    // Kenbe lang itilizatè a chwazi a.
+    localStorage.setItem(
+      "topferos_panel_language",
+      language
+    );
 
     try {
-      await request(
-        API.language,
-        {
-          method: "POST",
-          body: JSON.stringify({
-            sessionId:
-              state.sessionId,
-            language
-          })
-        }
-      );
-
-      renderLanguageOptions();
-
-      await translatePage();
-
-      notify(
-        "Language updated.",
-        "success"
-      );
+      await request(API.language, {
+        method: "POST",
+        body: JSON.stringify({
+          sessionId: state.sessionId,
+          language
+        })
+      });
     } catch (error) {
-      notify(
-        error.message,
-        "error"
+      console.error(
+        "Unable to save panel language:",
+        error
       );
     }
+
+    renderLanguageOptions();
+
+    // Tradui paj la tousuit apre chwa a.
+    await translatePage();
   }
 
   async function translatePage() {
-    const elements =
-      $$("[data-i18n]");
+    const elements = $$("[data-i18n]");
 
-    if (!elements.length) {
-      return;
-    }
-
-    for (
-      const element of elements
-    ) {
-      const key =
-        element.dataset.i18n;
-
-      if (!key) {
-        continue;
-      }
+    for (const element of elements) {
+      const key = element.dataset.i18n;
+      if (!key) continue;
 
       try {
-        const result =
-          await request(
-            API.translate,
-            {
-              method: "POST",
-              body: JSON.stringify({
-                key,
-                language:
-                  state.language
-              })
-            }
-          );
+        const result = await request(API.translate, {
+          method: "POST",
+          body: JSON.stringify({
+            key,
+            language: state.language
+          })
+        });
 
         if (
-          result?.text !==
-          undefined
+          result?.success &&
+          typeof result.text === "string" &&
+          result.text !== key
         ) {
-          element.textContent =
-            result.text;
+          element.textContent = result.text;
         }
-      } catch {
-        /*
-         * Keep original text if
-         * translation is unavailable.
-         */
+      } catch (error) {
+        console.error(
+          "Translation failed for:",
+          key,
+          error
+        );
       }
     }
   }
+
 
   async function verifySession(
     sessionId = state.sessionId
