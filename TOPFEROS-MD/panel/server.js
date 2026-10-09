@@ -976,6 +976,64 @@ app.get(
 );
 
 // ============================================================
+// 🦁 WHATSAPP PAIRING API
+// ============================================================
+
+app.post("/api/pair", async (req, res) => {
+  try {
+    const number = cleanNumber(req.body?.number);
+
+    if (!number || number.length < 8 || number.length > 15) {
+      return sendError(
+        res,
+        400,
+        "Antre nimewo WhatsApp la ak kòd peyi a."
+      );
+    }
+
+    if (typeof connection.pairSession !== "function") {
+      return sendError(
+        res,
+        500,
+        "Fonksyon WhatsApp pairing la pa disponib."
+      );
+    }
+
+    const result = await connection.pairSession(number);
+
+    if (!result?.pairingCode) {
+      return sendError(
+        res,
+        502,
+        "WhatsApp pa bay yon kòd pairing. Eseye ankò."
+      );
+    }
+
+    return res.json({
+      success: true,
+      sessionId: result.sessionId,
+      number,
+      pairingCode: result.pairingCode,
+      message:
+        "Kòd la soti nan WhatsApp. Antre li sou telefòn ou pou konekte."
+    });
+  } catch (error) {
+    logger.error(
+      {
+        error: error?.message || String(error)
+      },
+      "WHATSAPP PAIRING ERROR"
+    );
+
+    return sendError(
+      res,
+      400,
+      error?.message || "Nou pa kapab kreye kòd pairing la."
+    );
+  }
+});
+
+// ============================================================
 // 404
 // ============================================================
 
