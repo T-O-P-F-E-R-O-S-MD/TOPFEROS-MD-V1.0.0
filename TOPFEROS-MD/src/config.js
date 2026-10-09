@@ -110,11 +110,13 @@ const bot = {
       "2.0.0"
     ),
 
-  prefix:
-    envString(
-      "BOT_PREFIX",
-      "."
-    ),
+  
+prefix:
+  envString(
+    "BOT_PREFIX",
+    envString("PREFIX", ".")
+  ),
+
 
   mode:
     envString(
