@@ -1210,21 +1210,18 @@ async function pairSession(
     );
   }
 
-  /*
-   * If a pairing code is already waiting,
-   * return the existing one.
+    /*
+   * Do not reuse an old pairing code.
+   * A new code must be requested from WhatsApp.
    */
 
   if (
     existing?.pairing &&
     existing?.pairingCode
   ) {
-    return {
-      sessionId,
-
-      pairingCode:
-        existing.pairingCode
-    };
+    existing.pairing = false;
+    existing.pairingCode = null;
+    existing.pairingNumber = null;
   }
 
   /*
