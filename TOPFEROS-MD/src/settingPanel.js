@@ -39,7 +39,18 @@ const panelSessions = new Map();
 
 const panelAccessCodes = new Map();
 
-const PANEL_CODE_TTL = 5 * 60 * 1000;
+function createPanelAccessCode() {
+  const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  let code = "";
+
+  for (let i = 0; i < 6; i++) {
+    code += characters[
+      crypto.randomInt(0, characters.length)
+    ];
+  }
+
+  return code;
+}
 
 function generatePanelAccessCode(sessionId) {
   const id = normalizeSessionId(sessionId);
@@ -52,49 +63,52 @@ function generatePanelAccessCode(sessionId) {
     throw new Error("The bot must be connected.");
   }
 
-  const code = crypto
-    .randomInt(0, 1000000)
-    .toString()
-    .padStart(6, "0");
+  // Keep the same code for this session.
+  const existingCode = panelAccessCodes.get(id);
 
-  panelAccessCodes.set(id, {
-    code,
-    expiresAt: Date.now() + PANEL_CODE_TTL
-  });
+  if (existingCode) {
+    return existingCode;
+  }
+
+  const code = createPanelAccessCode();
+
+  panelAccessCodes.set(id, code);
 
   return code;
 }
 
 function verifyPanelAccessCode(sessionId, submittedCode) {
   const id = normalizeSessionId(sessionId);
-  const record = panelAccessCodes.get(id);
 
-  if (!id || !record) {
+  if (!id || !sessionManager.getSession(id)) {
     return false;
   }
 
-  if (
-    Date.now() > record.expiresAt ||
-    !sessionManager.isConnected(id)
-  ) {
-    panelAccessCodes.delete(id);
+  if (!sessionManager.isConnected(id)) {
     return false;
   }
 
-  if (String(submittedCode || "").trim() !== record.code) {
+  const savedCode = panelAccessCodes.get(id);
+
+  if (!savedCode) {
     return false;
   }
 
-  panelAccessCodes.delete(id);
-  return true;
-}
-
-function clearPanelAccessCode(sessionId) {
-  return panelAccessCodes.delete(
-    normalizeSessionId(sessionId)
+  return (
+    String(submittedCode || "").trim().toUpperCase() ===
+    savedCode
   );
 }
 
+function clearPanelAccessCode(sessionId) {
+  const id = normalizeSessionId(sessionId);
+
+  if (!id) {
+    return false;
+  }
+
+  return panelAccessCodes.delete(id);
+}
 // ============================================================
 // HELPERS
 // ============================================================
@@ -945,6 +959,10 @@ module.exports = {
   getDefaultSettings,
   getSessionSettings,
   getPanelData,
+
+  generatePanelAccessCode,
+  verifyPanelAccessCode,
+  clearPanelAccessCode,
 
   saveSettings,
 
