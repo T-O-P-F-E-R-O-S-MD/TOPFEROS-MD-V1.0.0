@@ -1171,7 +1171,6 @@ const session = {
 |
 |--------------------------------------------------------------------------
 */
-
 async function pairSession(number) {
   const sessionId = getSessionId(number);
 
@@ -1199,8 +1198,7 @@ async function pairSession(number) {
   }
 
   /*
-   * Pa fèmen yon socket ki deja ap eseye konekte
-   * san nou pa verifye eta li.
+   * Fèmen ansyen socket la si li egziste.
    */
   if (session?.sock) {
     try {
@@ -1216,10 +1214,11 @@ async function pairSession(number) {
     activeSessions.delete(sessionId);
   }
 
-  let sock;
-
   try {
-    sock = await connectSession(sessionId);
+    /*
+     * Kreye sesyon WhatsApp la.
+     */
+    const sock = await connectSession(sessionId);
 
     session = activeSessions.get(sessionId);
 
@@ -1242,32 +1241,25 @@ async function pairSession(number) {
     }
 
     /*
-     * Make sure the session is marked as pairing.
+     * Make session as pairing.
      */
     session.pairing = true;
     session.pairingNumber = sessionId;
     session.pairingCode = null;
 
     /*
-     * @dexterid/baileys 2.2.9 supports
-     * requestPairingCode directly after socket creation.
+     * Mande kòd koneksyon WhatsApp la.
      */
     const code = await sock.requestPairingCode(sessionId);
 
-if (!code || !String(code).trim()) {
-  throw new Error(
-    "WhatsApp pa retounen okenn kòd koneksyon."
-  );
-}
+    if (!code || !String(code).trim()) {
+      throw new Error(
+        "WhatsApp pa retounen okenn kòd koneksyon."
+      );
+    }
 
-session.pairingCode = String(code).trim();
-
-return {
-  sessionId,
-  pairingCode: session.pairingCode
-};
     /*
-     * Keep the exact code returned by WhatsApp.
+     * Konsève kòd WhatsApp la jan li retounen an.
      */
     session.pairingCode = String(code).trim();
 
@@ -1279,6 +1271,7 @@ return {
       sessionId,
       pairingCode: session.pairingCode
     };
+
   } catch (error) {
     const currentSession =
       activeSessions.get(sessionId);
@@ -1302,6 +1295,7 @@ return {
     throw error;
   }
 }
+
 /*
 |--------------------------------------------------------------------------
 | DISCONNECT SESSION
