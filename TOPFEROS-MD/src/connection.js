@@ -564,6 +564,51 @@ async function sendWelcomeMessage(
   }
 }
 
+function waitForPairingReady(sock, timeoutMs = 15000) {
+  return new Promise((resolve, reject) => {
+    let finished = false;
+
+    const timer = setTimeout(() => {
+      finish(
+        new Error(
+          "WhatsApp pa t pare pou mande kòd la nan tan prevwa a."
+        )
+      );
+    }, timeoutMs);
+
+    function finish(error) {
+      if (finished) return;
+      finished = true;
+
+      clearTimeout(timer);
+      sock.ev.off("connection.update", onUpdate);
+
+      if (error) {
+        reject(error);
+      } else {
+        resolve(true);
+      }
+    }
+
+    function onUpdate(update) {
+      if (update.connection === "close") {
+        finish(
+          new Error(
+            "Koneksyon WhatsApp la fèmen anvan kòd la te mande."
+          )
+        );
+        return;
+      }
+
+      if (update.qr) {
+        finish();
+      }
+    }
+
+    sock.ev.on("connection.update", onUpdate);
+  });
+}
+
 /*
 |--------------------------------------------------------------------------
 | CONNECT SESSION
@@ -1174,38 +1219,35 @@ const session = {
 async function pairSession(number) {
   const sessionId = getSessionId(number);
 
-  if (
-    sessionId.length < 8 ||
-    sessionId.length > 15
-  ) {
-    throw new Error(
-      "Nimewo a pa valab. Mete kòd peyi a ak nimewo a sèlman."
-    );
+  if (sessionId.length < 8 || sessionId.length > 15) {
+    throw new Error("Nimewo WhatsApp la pa valab.");
   }
 
   let session = activeSessions.get(sessionId);
 
   if (session?.connected) {
-    throw new Error(
-      "Nimewo sa a deja konekte ak TOPFEROS MD."
-    );
+    throw new Error("Nimewo sa a deja konekte.");
   }
 
   if (session?.pairing) {
-    throw new Error(
-      "Gen yon demann kòd ki deja an kou. Tanpri tann."
-    );
+    throw new Error("Gen yon demann kòd ki deja an kou.");
   }
 
-  /*
-   * Fèmen ansyen socket la si li egziste.
-   */
   if (session?.sock) {
+    manuallyStopped.add(sessionId);
+
+    const timer = reconnectTimers.get(sessionId);
+
+    if (timer) {
+      clearTimeout(timer);
+      reconnectTimers.delete(sessionId);
+    }
+
     try {
       session.sock.end(undefined);
     } catch (error) {
       logger.warn(
-        `[${sessionId}] Erè pandan fèmti ansyen socket la: ${
+        `[${sessionId}] Fèmti ansyen socket la: ${
           error?.message || String(error)
         }`
       );
@@ -1214,80 +1256,62 @@ async function pairSession(number) {
     activeSessions.delete(sessionId);
   }
 
-  try {
-    /*
-     * Kreye sesyon WhatsApp la.
-     */
-    const sock = await connectSession(sessionId);
+  manuallyStopped.delete(sessionId);
 
+  try {
+    const sock = await connectSession(sessionId);
     session = activeSessions.get(sessionId);
 
     if (!session || !sock) {
+      throw new Error("Nou pa kapab kreye sesyon WhatsApp la.");
+    }
+
+    if (session.registered || sock.authState?.creds?.registered) {
       throw new Error(
-        "Nou pa kapab inisyalize sesyon WhatsApp la."
+        "Sesyon sa a deja anrejistre. Eseye rekonekte li."
       );
     }
 
-    /*
-     * Verifye si sesyon an deja anrejistre.
-     */
-    if (
-      session.registered === true ||
-      sock.authState?.creds?.registered === true
-    ) {
-      throw new Error(
-        "Sesyon sa a deja anrejistre. Rekonekte li olye ou mande yon nouvo kòd."
-      );
-    }
-
-    /*
-     * Make session as pairing.
-     */
     session.pairing = true;
     session.pairingNumber = sessionId;
     session.pairingCode = null;
 
-    /*
-     * Mande kòd koneksyon WhatsApp la.
-     */
-    const code = await sock.requestPairingCode(sessionId);
+    await waitForPairingReady(sock);
 
-    if (!code || !String(code).trim()) {
+    if (activeSessions.get(sessionId)?.sock !== sock) {
       throw new Error(
-        "WhatsApp pa retounen okenn kòd koneksyon."
+        "Sesyon an chanje pandan demann kòd la. Eseye ankò."
       );
     }
 
-    /*
-     * Konsève kòd WhatsApp la jan li retounen an.
-     */
+    const code = await sock.requestPairingCode(sessionId);
+
+    if (!code || !String(code).trim()) {
+      throw new Error("WhatsApp pa retounen yon kòd koneksyon.");
+    }
+
     session.pairingCode = String(code).trim();
 
     logger.info(
-      `[${sessionId}] WhatsApp pairing code generated successfully.`
+      `[${sessionId}] Pairing code generated successfully.`
     );
 
     return {
       sessionId,
       pairingCode: session.pairingCode
     };
-
   } catch (error) {
-    const currentSession =
-      activeSessions.get(sessionId);
+    const current = activeSessions.get(sessionId);
 
-    if (currentSession) {
-      currentSession.pairing = false;
-      currentSession.pairingNumber = null;
-      currentSession.pairingCode = null;
+    if (current) {
+      current.pairing = false;
+      current.pairingNumber = null;
+      current.pairingCode = null;
     }
 
     logger.error(
       {
-        error:
-          error?.stack ||
-          error?.message ||
-          String(error)
+        error: error?.stack || error?.message || String(error)
       },
       `[${sessionId}] Pairing failed.`
     );
@@ -1295,7 +1319,6 @@ async function pairSession(number) {
     throw error;
   }
 }
-
 /*
 |--------------------------------------------------------------------------
 | DISCONNECT SESSION
