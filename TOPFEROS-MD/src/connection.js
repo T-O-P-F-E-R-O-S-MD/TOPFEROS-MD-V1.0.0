@@ -564,24 +564,28 @@ async function sendWelcomeMessage(
   }
 }
 
-function waitForPairingReady(sock, timeoutMs = 15000) {
+
+function waitForPairingReady(sock, timeoutMs = 20000) {
   return new Promise((resolve, reject) => {
     let finished = false;
 
     const timer = setTimeout(() => {
       finish(
         new Error(
-          "WhatsApp pa t pare pou mande kòd la nan tan prevwa a."
+          "Delè a fini anvan WhatsApp te pare pou kòd la."
         )
       );
     }, timeoutMs);
 
+    function cleanup() {
+      clearTimeout(timer);
+      sock.ev.off("connection.update", onUpdate);
+    }
+
     function finish(error) {
       if (finished) return;
       finished = true;
-
-      clearTimeout(timer);
-      sock.ev.off("connection.update", onUpdate);
+      cleanup();
 
       if (error) {
         reject(error);
@@ -590,6 +594,27 @@ function waitForPairingReady(sock, timeoutMs = 15000) {
       }
     }
 
+    function onUpdate(update) {
+      if (update.connection === "close") {
+        finish(
+          new Error(
+            "WhatsApp fèmen koneksyon an anvan li te pare pou kòd la."
+          )
+        );
+        return;
+      }
+
+      if (
+        update.connection === "connecting" ||
+        update.qr
+      ) {
+        finish();
+      }
+    }
+
+       sock.ev.on("connection.update", onUpdate);
+  });
+}
     function onUpdate(update) {
       if (update.connection === "close") {
         finish(
