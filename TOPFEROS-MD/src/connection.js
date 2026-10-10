@@ -569,17 +569,12 @@ async function sendWelcomeMessage(
 | WAIT FOR PAIRING READY
 |--------------------------------------------------------------------------
 */
-
-function waitForPairingReady(sock, timeoutMs = 20000) {
+function waitForPairingReady(sock, sessionId, timeoutMs = 1500) {
   return new Promise((resolve, reject) => {
     let finished = false;
 
     const timer = setTimeout(() => {
-      finish(
-        new Error(
-          "Delè a fini anvan WhatsApp te pare pou kòd la."
-        )
-      );
+      finish();
     }, timeoutMs);
 
     function cleanup() {
@@ -589,33 +584,44 @@ function waitForPairingReady(sock, timeoutMs = 20000) {
 
     function finish(error) {
       if (finished) return;
-
       finished = true;
       cleanup();
 
       if (error) {
         reject(error);
       } else {
-        resolve(true);
+        resolve();
       }
     }
 
     function onUpdate(update) {
       if (update.connection === "close") {
+        const disconnectError = update.lastDisconnect?.error;
+        const statusCode = disconnectError?.output?.statusCode;
+        const detail =
+          disconnectError?.message ||
+          "Pa gen plis detay nan erè WhatsApp la.";
+
         finish(
           new Error(
-            "WhatsApp fèmen koneksyon an anvan li te pare pou kòd la."
+            `WhatsApp fèmen koneksyon an anvan kòd pairing lan. ` +
+              `Status=${statusCode || "unknown"}. Detay: ${detail}`
           )
         );
-        return;
-      }
-
-      if (update.qr) {
-        finish();
       }
     }
 
     sock.ev.on("connection.update", onUpdate);
+
+    const current = activeSessions.get(sessionId);
+
+    if (!current || current.sock !== sock) {
+      finish(
+        new Error(
+          "Sesyon WhatsApp la pa aktif ankò. Eseye mande yon nouvo kòd."
+        )
+      );
+    }
   });
 }
 
@@ -1286,7 +1292,7 @@ async function pairSession(number) {
     session.pairingNumber = sessionId;
     session.pairingCode = null;
 
-    await waitForPairingReady(sock);
+    await waitForPairingReady(sock, sessionId);
 
     if (activeSessions.get(sessionId)?.sock !== sock) {
       throw new Error(
