@@ -366,56 +366,63 @@
         statusMessage.textContent = "";
       });
 
-      form.addEventListener("submit", async (event) => {
-        event.preventDefault();
+     form.addEventListener("submit", async (event) => {
+  event.preventDefault();
 
-        const t = translations[selectedLanguage];
-        const number = phoneInput.value.replace(/\D/g, "");
+  const t = translations[selectedLanguage];
+  const number = phoneInput.value.replace(/\D/g, "");
 
-        if (number.length < 8 || number.length > 15) {
-          statusMessage.textContent = t.invalid;
-          return;
-        }
+  if (number.length < 8 || number.length > 15) {
+    statusMessage.textContent = t.invalid;
+    return;
+  }
 
-        generateButton.disabled = true;
-        codeBox.hidden = true;
-        statusMessage.textContent = "";
+  generateButton.disabled = true;
+  codeBox.hidden = true;
+  statusMessage.textContent = "";
+  currentCode = "";
 
-        try {
-          const response = await fetch("/api/parrain", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Accept": "application/json"
-            },
-            body: JSON.stringify({
-              number,
-              language: selectedLanguage
-            })
-          });
+  try {
+    const response = await fetch("/api/pair", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+      },
+      body: JSON.stringify({
+        number,
+        language: selectedLanguage
+      })
+    });
 
-          const result = await response.json().catch(() => null);
+    const result = await response.json().catch(() => null);
 
-          if (!response.ok || !result?.success || !result?.code) {
-            throw new Error(result?.message || t.failed);
-          }
+    if (
+      !response.ok ||
+      !result?.success ||
+      !result?.pairingCode
+    ) {
+      throw new Error(
+        result?.message || t.failed
+      );
+    }
 
-          currentCode = String(result.code);
-          codeElement.textContent = currentCode;
-          codeBox.hidden = false;
+    currentCode = String(result.pairingCode);
+    codeElement.textContent = currentCode;
+    codeBox.hidden = false;
 
-          const seconds = Number(result.expiresInSeconds);
-          expiration.textContent =
-            Number.isFinite(seconds) && seconds > 0
-              ? t.expired.replace("{seconds}", String(seconds))
-              : "";
+    expiration.textContent =
+      "Antre kòd sa a nan WhatsApp pou konekte aparèy la.";
 
-        } catch (error) {
-          statusMessage.textContent = error.message || t.failed;
-        } finally {
-          generateButton.disabled = false;
-        }
-      });
+    statusMessage.textContent = result.message || "";
+
+  } catch (error) {
+    statusMessage.textContent =
+      error.message || t.failed;
+  } finally {
+    generateButton.disabled = false;
+  }
+});
 
       $("copyButton").addEventListener("click", async () => {
         if (!currentCode) return;
