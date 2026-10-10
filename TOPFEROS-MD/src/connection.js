@@ -1252,19 +1252,20 @@ async function pairSession(number) {
      * @dexterid/baileys 2.2.9 supports
      * requestPairingCode directly after socket creation.
      */
-    const code = await sock.requestPairingCode(
-      sessionId
-    );
+    const code = await sock.requestPairingCode(sessionId);
 
-    if (
-      !code ||
-      !String(code).trim()
-    ) {
-      throw new Error(
-        "WhatsApp pa retounen okenn kòd koneksyon."
-      );
-    }
+if (!code || !String(code).trim()) {
+  throw new Error(
+    "WhatsApp pa retounen okenn kòd koneksyon."
+  );
+}
 
+session.pairingCode = String(code).trim();
+
+return {
+  sessionId,
+  pairingCode: session.pairingCode
+};
     /*
      * Keep the exact code returned by WhatsApp.
      */
