@@ -564,6 +564,11 @@ async function sendWelcomeMessage(
   }
 }
 
+/*
+|--------------------------------------------------------------------------
+| WAIT FOR PAIRING READY
+|--------------------------------------------------------------------------
+*/
 
 function waitForPairingReady(sock, timeoutMs = 20000) {
   return new Promise((resolve, reject) => {
@@ -584,6 +589,7 @@ function waitForPairingReady(sock, timeoutMs = 20000) {
 
     function finish(error) {
       if (finished) return;
+
       finished = true;
       cleanup();
 
@@ -599,27 +605,6 @@ function waitForPairingReady(sock, timeoutMs = 20000) {
         finish(
           new Error(
             "WhatsApp fèmen koneksyon an anvan li te pare pou kòd la."
-          )
-        );
-        return;
-      }
-
-      if (
-        update.connection === "connecting" ||
-        update.qr
-      ) {
-        finish();
-      }
-    }
-
-       sock.ev.on("connection.update", onUpdate);
-  });
-}
-    function onUpdate(update) {
-      if (update.connection === "close") {
-        finish(
-          new Error(
-            "Koneksyon WhatsApp la fèmen anvan kòd la te mande."
           )
         );
         return;
